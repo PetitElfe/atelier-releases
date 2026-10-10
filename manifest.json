@@ -5,47 +5,47 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "ffb237f3be5064d52730af494c4209e58776e485932c7da2bd5319e559f9c61a"
+      "sha256": "8edea59242ff76c41a6721ef54b2898d09142e4aa2f0f03b9e59cf7695644221"
     },
     {
       "path": "VERSION",
-      "sha256": "fe6ec99f639e51fa27a69c841b07a89a8c2e0123b47cf81d17a0164959d1d446"
+      "sha256": "297b50f08386d3521f8fdaf2f78eb8d9d0acdf452d2e61596905fba37208c792"
     },
     {
       "path": "app.py",
-      "sha256": "45a1a0e020bcbef771d098d8c134a214d65c3738296a639fd046f48e7d4f0eb0"
+      "sha256": "b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"
     },
     {
       "path": "app_part1.py",
-      "sha256": "83b0d2984312ec4b1f5c0646dfbdcf2f5cdb1a8e37342c2c1519716e964d38b6"
+      "sha256": "62d6f47fe180508fb79d35c12c7a841ceedadf681debdd311ac4a4e63713c67a"
     },
     {
       "path": "app_part2.py",
-      "sha256": "ab0fbf4839f0b6e871239cb522bb7bfc8486fa4b11bde50f536fa1a47522d712"
+      "sha256": "4692e9c32b47c9299b3eb4d396b1878583343cca2aa05fee3aab929140ec10a5"
     },
     {
       "path": "app_part3.py",
-      "sha256": "51dbd6e3606bc74ba8bbcdf82845057a6a747bf5fc887ea7c2f3597f61297db3"
+      "sha256": "aa33fb9232e5dc575c14485edb753c4f34558bcf8cfe8a63763b1ce674c60d39"
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "38271b95855f10a44a95010e8e8f66b26d1bd6f996abb01491db2606cfb94f34"
+      "sha256": "08a8afc4942a863c66edf085f2bbb639eb357204bd0fd6613f4a46a93700722e"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "b6fcd611443cffa5689b6c66cbdeb9cecd0b16a7eb852a6271adda99cc1be7a8"
+      "sha256": "d7cb04a6f54a6e97ab708e635e328ea80fbb570da48af77bb5d8a30df07c8fb6"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "6e6c8a2d974fb34d1f464a85a819541b5cc015ba9a0797d793eabb26bd6104a3"
+      "sha256": "10fa2a1328f0ce45d600dfaa74e111c1eb2a3fed07ffa29765e351b263c11e73"
     },
     {
       "path": "public/index.html",
-      "sha256": "c1c295f1cdb3eb47506aa6d1482e7f893e970f156f97df843eec61c6cccb6ee4"
+      "sha256": "1a96b4d658abf0b35c20ca4de49cc0ea7b06a375f51b9db2fc2f13d08df69c85"
     },
     {
       "path": "public/styles.css",
-      "sha256": "8bba7394142c461e5c5c018693545bf3f70520f2b7ff1b3a9d40278942578f92"
+      "sha256": "d0e0f045634c1d3bf9511a2fd2dce8de0d0cc84c307b33044c3e01b204050bec"
     }
   ],
   "notes": "0.1.2 : accueil fortement compacté pour tenir sur un écran standard sans défilement, avec cartes du haut et livre central réduits."
