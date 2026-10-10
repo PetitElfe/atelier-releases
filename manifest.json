@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "e9dd8507f4bf0c6f42458e41aea833ad0bd3f6127272335eee9bf4d58541ed67"
+      "sha256": "80447316529fc62014fbaa047fb67c51ac30e32830cda370405349d8d66d196c"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "aa129143840be3d1663cb09e605c787b8717f2d4399f9864b67b778e260bcce6"
+      "sha256": "df5f5d6fce6e7e6d20963d0dc8f9f6fa3879099c6b0cdda4a92f374485fd11cd"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "8dcaf132dca707d6449050eb27c1c2cc125e38ab7144293611bbaa7b5bc0846f"
+      "sha256": "10fa2a1328f0ce45d600dfaa74e111c1eb2a3fed07ffa29765e351b263c11e73"
     },
     {
       "path": "public/index.html",
-      "sha256": "cfc224b601f72d75b7516c1711e352a8f6781686248fc9f03226672b24576c72"
+      "sha256": "0b522ed649727a2178b9804a438a81d4b8390143b9f5e9cf0cb7223f2326c15f"
     },
     {
       "path": "public/styles.css",
-      "sha256": "a6f03ac4606e57a16d1c9706e0052952b8fddbdc1e8ed5d9a53ee43355ace629"
+      "sha256": "38e4cb17862e0fed1c77b1551b570ff8583186fac2bf2be1e0bcc8d15d63fac0"
     }
   ],
-  "notes": "0.1.0 : première vraie maquette du livre central de l’accueil, avec page gauche tâches + « Ne pas oublier », page droite « Que faire maintenant ? » + repas, en style journal italique sans image générée."
+  "notes": "0.1.1 : option A pour l’accueil avec livre central plus compact et trois zones au-dessus, plus duplication d’un rendez-vous en conservant exactement le même titre, sans suffixe « (1) »."
 }
