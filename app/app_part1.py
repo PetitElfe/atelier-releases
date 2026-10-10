@@ -58,9 +58,39 @@ CREATE TABLE IF NOT EXISTS reminders (
   snoozed_until TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  quantity TEXT DEFAULT '',
+  checked INTEGER NOT NULL DEFAULT 0,
+  archived INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS food_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  quantity TEXT DEFAULT '',
+  expiry_date TEXT,
+  notes TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS meal_ideas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  notes TEXT DEFAULT '',
+  archived INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
+CREATE INDEX IF NOT EXISTS idx_food_expiry ON food_items(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked);
+
 '''
 
 def conn():
