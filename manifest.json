@@ -1,0 +1,6 @@
+{
+  "version": "0.0.6",
+  "package_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/atelier-update.zip",
+  "sha256": "ad76bac81b3d40ea9b00c99118c12ab6107dd8abd3ea5a1de851043e7d7137ee",
+  "notes": "Activation du systeme de mise a jour automatique de L'Atelier."
+}
