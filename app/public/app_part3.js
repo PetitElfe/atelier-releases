@@ -82,7 +82,6 @@ function showView(view){
   $(`#${view}View`).classList.add('active-view');
   const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   document.body.classList.toggle('home-active',view==='home');
-  const topLayout=$('#homeLayoutTopActions'); if(topLayout) topLayout.classList.toggle('hidden',view!=='home');
   if(view==='calendar') applyCalendarMode();
   render();
 }
@@ -193,20 +192,22 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
   });
 }
 
-function initHomeLayoutEditor(){
-  const layoutSchema='2';
-  if(localStorage.getItem('atelierHomeLayoutSchema')!==layoutSchema){
-    ['calendar','upcoming','journal','reminders'].forEach(id=>localStorage.removeItem('atelierLayout_'+id));
-    localStorage.setItem('atelierHomeLayoutSchema',layoutSchema);
-  }
-  createLayoutEditor({
-    view:$('#homeView'),toggle:$('#toggleLayoutEdit'),reset:$('#resetLayout'),hint:$('#layoutEditHint'),
-    prefix:'atelierLayout_',
-    specs:[
-      {id:'calendar',el:$('#openCalendarCard')},
-      {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
-      {id:'journal',el:$('#journalBook')}
-    ]
+function applyFrozenHomeLayout(){
+  const specs=[
+    {id:'calendar',el:$('#openCalendarCard')},
+    {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
+    {id:'journal',el:$('#journalBook')}
+  ].filter(x=>x.el);
+  specs.forEach(item=>{
+    let d={x:0,y:0,scale:1};
+    try{
+      const saved=JSON.parse(localStorage.getItem('atelierLayout_'+item.id));
+      if(saved&&typeof saved==='object') d={x:Number(saved.x)||0,y:Number(saved.y)||0,scale:Number(saved.scale)||1};
+    }catch(e){}
+    item.el.classList.add('layout-object');
+    item.el.style.setProperty('--layout-x',(d.x||0)+'px');
+    item.el.style.setProperty('--layout-y',(d.y||0)+'px');
+    item.el.style.setProperty('--layout-scale',String(d.scale||1));
   });
 }
 
@@ -222,4 +223,4 @@ function initKitchenLayoutEditor(){
   });
 }
 
-applyCalendarMode(); syncNotifyButton(); initHomeLayoutEditor(); initKitchenLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
