@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.1.6'
+    server_version = 'AtelierLocal/0.2.0'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -64,6 +64,17 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/tasks':
                 rows = c.execute('SELECT * FROM tasks WHERE archived=0 ORDER BY completed, important DESC, COALESCE(due_date,\'9999-12-31\'), order_index, id').fetchall()
                 return self._json([dict(r) for r in rows])
+            if p == '/api/shopping':
+                rows = c.execute('SELECT * FROM shopping_items WHERE archived=0 ORDER BY checked, id').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/foods':
+                rows = c.execute("""SELECT * FROM food_items WHERE status='active'
+                                    ORDER BY CASE WHEN expiry_date IS NULL OR expiry_date='' THEN 1 ELSE 0 END,
+                                             expiry_date, id""").fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/meals':
+                rows = c.execute('SELECT * FROM meal_ideas WHERE archived=0 ORDER BY updated_at DESC, id DESC').fetchall()
+                return self._json([dict(r) for r in rows])
             if p == '/api/reminders':
                 rows = c.execute('''
                     SELECT r.*,
@@ -121,6 +132,24 @@ class Handler(BaseHTTPRequestHandler):
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
                 c.commit(); return self._json({'id':tid},201)
+            if p == '/api/shopping':
+                name=body.get('name','').strip()
+                if not name: return self._json({'error':'name required'},400)
+                cur=c.execute('INSERT INTO shopping_items(name,quantity,checked,archived,created_at,updated_at) VALUES(?,?,0,0,?,?)',
+                              (name,body.get('quantity',''),ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
+            if p == '/api/foods':
+                name=body.get('name','').strip()
+                if not name: return self._json({'error':'name required'},400)
+                cur=c.execute('INSERT INTO food_items(name,quantity,expiry_date,notes,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
+                              (name,body.get('quantity',''),body.get('expiry_date') or None,body.get('notes',''),'active',ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
+            if p == '/api/meals':
+                title=body.get('title','').strip()
+                if not title: return self._json({'error':'title required'},400)
+                cur=c.execute('INSERT INTO meal_ideas(title,notes,archived,created_at,updated_at) VALUES(?,?,0,?,?)',
+                              (title,body.get('notes',''),ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
 
     def do_PUT(self):
@@ -151,6 +180,27 @@ class Handler(BaseHTTPRequestHandler):
                         if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping':
+                iid=int(parts[2]); old=c.execute('SELECT * FROM shopping_items WHERE id=?',(iid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                d=dict(old); d.update(body)
+                c.execute('UPDATE shopping_items SET name=?,quantity=?,checked=?,archived=?,updated_at=? WHERE id=?',
+                          (d['name'],d.get('quantity',''),1 if d.get('checked') else 0,1 if d.get('archived') else 0,ts,iid))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='foods':
+                iid=int(parts[2]); old=c.execute('SELECT * FROM food_items WHERE id=?',(iid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                d=dict(old); d.update(body)
+                c.execute('UPDATE food_items SET name=?,quantity=?,expiry_date=?,notes=?,status=?,updated_at=? WHERE id=?',
+                          (d['name'],d.get('quantity',''),d.get('expiry_date') or None,d.get('notes',''),d.get('status','active'),ts,iid))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='meals':
+                iid=int(parts[2]); old=c.execute('SELECT * FROM meal_ideas WHERE id=?',(iid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                d=dict(old); d.update(body)
+                c.execute('UPDATE meal_ideas SET title=?,notes=?,archived=?,updated_at=? WHERE id=?',
+                          (d['title'],d.get('notes',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2]); action=parts[3]
