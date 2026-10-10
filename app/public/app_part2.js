@@ -68,3 +68,86 @@ function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_a
 function wireReminderEditor(){ const ed=$('#reminderEditor'); const defaultDate=ed?.dataset.defaultDate||''; $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate)); wireRemoveRem()}); wireRemoveRem(); }
 function wireRemoveRem(){ $('#reminderEditor .remove-rem').forEach(b=>b.onclick=()=>b.parentElement.remove()); }
 function collectReminders(){ return $('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
+
+
+function foodDateLabel(s){
+  if(!s) return 'Sans date';
+  const today=parseYMD(ymd(new Date())), d=parseYMD(s), diff=Math.round((d-today)/86400000);
+  if(diff<0) return `Périmé depuis ${Math.abs(diff)} j`;
+  if(diff===0) return "À consommer aujourd’hui";
+  if(diff===1) return 'Expire demain';
+  return `Expire dans ${diff} j · ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}`;
+}
+
+function renderKitchen(){
+  const shopping=$('#shoppingList'), foods=$('#foodList'), meals=$('#mealList');
+  if(!shopping||!foods||!meals) return;
+
+  shopping.innerHTML='';
+  if(!state.shopping.length) shopping.innerHTML='<div class="kitchen-empty">La liste de courses est vide.</div>';
+  state.shopping.forEach(item=>{
+    const row=document.createElement('div'); row.className='kitchen-row'+(item.checked?' is-done':'');
+    row.innerHTML=`<input class="kitchen-check" type="checkbox" ${item.checked?'checked':''}><div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(item.quantity||'')}</span></div><div class="kitchen-actions"><button class="to-food">→ Aliment</button><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
+    row.querySelector('.kitchen-check').addEventListener('change',async e=>{await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({checked:e.target.checked})});await refresh()});
+    row.querySelector('.to-food').addEventListener('click',()=>openFoodModal(null,item.name,item.quantity,item.id));
+    row.querySelector('.edit').addEventListener('click',()=>openShoppingModal(item));
+    row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
+    shopping.appendChild(row);
+  });
+
+  foods.innerHTML='';
+  if(!state.foods.length) foods.innerHTML='<div class="kitchen-empty">Aucun aliment enregistré.</div>';
+  state.foods.forEach(item=>{
+    const row=document.createElement('div'); row.className='kitchen-row food-row';
+    const urgent=item.expiry_date && Math.round((parseYMD(item.expiry_date)-parseYMD(ymd(new Date())))/86400000)<=3;
+    row.innerHTML=`<div class="food-dot ${urgent?'urgent':''}"></div><div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(item.quantity||'')}${item.quantity&&item.expiry_date?' · ':''}${esc(foodDateLabel(item.expiry_date))}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="consume">Consommé</button></div>`;
+    row.querySelector('.edit').addEventListener('click',()=>openFoodModal(item));
+    row.querySelector('.consume').addEventListener('click',async()=>{await api(`/api/foods/${item.id}`,{method:'PUT',body:JSON.stringify({status:'consumed'})});await refresh()});
+    foods.appendChild(row);
+  });
+
+  meals.innerHTML='';
+  if(!state.meals.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas pour le moment.</div>';
+  state.meals.forEach(item=>{
+    const row=document.createElement('div'); row.className='kitchen-row meal-row';
+    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><strong>${esc(item.title)}</strong><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
+    row.querySelector('.edit').addEventListener('click',()=>openMealModal(item));
+    row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/meals/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
+    meals.appendChild(row);
+  });
+}
+
+function openShoppingModal(item=null){
+  const editing=!!item;
+  openModal(`<h2>${editing?'Modifier l’article':'Ajouter aux courses'}</h2><form id="shoppingForm" class="form-grid">
+    <div class="field full"><label>Article / aliment</label><input name="name" required value="${esc(item?.name||'')}" placeholder="ex. Champignons"></div>
+    <div class="field full"><label>Quantité</label><input name="quantity" value="${esc(item?.quantity||'')}" placeholder="ex. 500 g, 2 paquets…"></div>
+    <div class="form-actions field full"><button type="button" id="cancelShopping">Annuler</button><button class="primary">Enregistrer</button></div>
+  </form>`);
+  const f=$('#shoppingForm'); $('#cancelShopping').onclick=closeModal;
+  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/shopping/${item.id}`:'/api/shopping',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()};
+}
+
+function openFoodModal(item=null,prefillName='',prefillQuantity='',shoppingId=null){
+  const editing=!!item;
+  openModal(`<h2>${editing?'Modifier l’aliment':'Ajouter un aliment'}</h2><form id="foodForm" class="form-grid">
+    <div class="field"><label>Aliment</label><input name="name" required value="${esc(item?.name||prefillName)}" placeholder="ex. Crème fraîche"></div>
+    <div class="field"><label>Quantité</label><input name="quantity" value="${esc(item?.quantity||prefillQuantity)}" placeholder="ex. 1 pot"></div>
+    <div class="field full"><label>Date de péremption</label><input name="expiry_date" type="date" value="${esc(item?.expiry_date||'')}"></div>
+    <div class="field full"><label>Note</label><textarea name="notes" placeholder="Facultatif">${esc(item?.notes||'')}</textarea></div>
+    <div class="form-actions field full"><button type="button" id="cancelFood">Annuler</button><button class="primary">Enregistrer</button></div>
+  </form>`);
+  const f=$('#foodForm'); $('#cancelFood').onclick=closeModal;
+  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});if(shoppingId)await api(`/api/shopping/${shoppingId}`,{method:'PUT',body:JSON.stringify({archived:true})});closeModal();await refresh()};
+}
+
+function openMealModal(item=null){
+  const editing=!!item;
+  openModal(`<h2>${editing?'Modifier l’idée de repas':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid">
+    <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
+    <div class="field full"><label>Note</label><textarea name="notes" placeholder="Ingrédients, variante, envie particulière…">${esc(item?.notes||'')}</textarea></div>
+    <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
+  </form>`);
+  const f=$('#mealForm'); $('#cancelMeal').onclick=closeModal;
+  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()};
+}
