@@ -25,10 +25,16 @@ function fmtRelativeDate(s){
 
 async function refresh(){
   const start=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1), end=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+2,0);
-  [state.events,state.tasks,state.reminders,state.shopping,state.foods,state.meals]=await Promise.all([
-    api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`), api('/api/tasks'), api('/api/reminders'),
-    api('/api/shopping'), api('/api/foods'), api('/api/meals')
-  ]);
+  const reqs=[
+    ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
+    ['tasks',api('/api/tasks')],
+    ['reminders',api('/api/reminders')],
+    ['shopping',api('/api/shopping')],
+    ['foods',api('/api/foods')],
+    ['meals',api('/api/meals')]
+  ];
+  const results=await Promise.allSettled(reqs.map(x=>x[1]));
+  results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
 function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); updateClock(); }
