@@ -193,6 +193,11 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
 }
 
 function initHomeLayoutEditor(){
+  const layoutSchema='2';
+  if(localStorage.getItem('atelierHomeLayoutSchema')!==layoutSchema){
+    ['calendar','upcoming','journal','reminders'].forEach(id=>localStorage.removeItem('atelierLayout_'+id));
+    localStorage.setItem('atelierHomeLayoutSchema',layoutSchema);
+  }
   createLayoutEditor({
     view:$('#homeView'),toggle:$('#toggleLayoutEdit'),reset:$('#resetLayout'),hint:$('#layoutEditHint'),
     prefix:'atelierLayout_',
