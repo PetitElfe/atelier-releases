@@ -141,3 +141,57 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 .home-appt-row.is-closed .home-appt-main{text-decoration:line-through;opacity:.5}
 .home-appt-row.is-postponed .home-appt-state{color:var(--gold)}.home-appt-row.is-done .home-appt-state{color:#7ba183}.home-appt-row.is-cancelled .home-appt-state{color:#b56d64}
 .event-instance-closed{text-decoration:line-through!important;opacity:.5}
+
+
+/* 0.4 — formulaires plus compacts */
+@media(min-width:760px){
+  .modal{width:min(920px,calc(100vw - 28px));max-height:calc(100vh - 24px);padding:14px 16px}
+  #modalBody>h2{font-size:25px;line-height:1.05;margin:0 34px 10px 0}
+  .modal .form-grid{gap:7px 8px}
+  .modal .field{gap:3px}
+  .modal .field>label{font-size:12px}
+  .modal input,.modal select,.modal textarea{padding:6px 8px;border-radius:7px}
+  .modal textarea{min-height:62px}
+  .modal .form-actions{margin-top:7px}
+  .event-form-compact{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .event-form-compact .field.full{grid-column:1/-1}
+  .event-form-compact .field-help{font-size:10px;margin:-3px 0 0}
+  .event-form-compact .checkline{min-height:30px}
+  .event-form-compact textarea{min-height:55px}
+  .event-form-compact .reminder-row-edit{grid-template-columns:minmax(0,1.1fr) 120px 90px auto}
+}
+
+/* 0.4 — semainier compact : 7h–22h sur un écran desktop */
+.week-layout{grid-template-columns:170px minmax(0,1fr);gap:10px}
+.mini-panel{padding:8px}
+.mini-month{gap:2px;margin:7px 0 9px;font-size:10px}
+.mini-month .mday{padding:3px 0}
+.week-scroll{overflow:hidden}
+.week-grid{grid-template-columns:44px repeat(7,minmax(0,1fr));min-width:0}
+.week-grid>div{padding:2px;min-height:28px}
+.week-head{font-size:10px;line-height:1.15}
+.time-label{font-size:9px;padding-right:4px!important}
+.week-item{font-size:9px;line-height:1.05;margin:1px 0;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.week-slot.has-many{min-height:38px}
+@media(max-width:900px){
+  .week-layout{grid-template-columns:1fr}
+  .week-scroll{overflow:auto}
+  .week-grid{min-width:820px}
+}
+
+/* 0.4 — courses utilisables rapidement, y compris sur petit écran */
+.kitchen-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.shopping-row{grid-template-columns:auto minmax(0,1fr) auto auto}
+.shopping-count,.inline-stepper{display:flex;align-items:center;gap:5px}
+.shopping-count button,.inline-stepper button{width:28px;height:28px;padding:0;border-radius:7px}
+.shopping-count strong{min-width:26px;text-align:center;font-size:12px}
+.inline-stepper strong{min-width:30px;text-align:center}
+.food-dot.pending{background:var(--gold)}
+.food-row.date-pending{border-left:2px solid #b79a6888}
+.compact-form textarea{min-height:62px}
+@media(max-width:750px){
+  .kitchen-head{align-items:stretch;flex-direction:column}
+  .kitchen-head-actions{justify-content:flex-start}
+  .shopping-row{grid-template-columns:auto minmax(0,1fr) auto}
+  .shopping-row .kitchen-actions{grid-column:2/-1}
+}
