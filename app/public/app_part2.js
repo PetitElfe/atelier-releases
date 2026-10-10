@@ -204,10 +204,17 @@ function openMealModal(item=null){
     <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
     <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, envie particulière, accompagnement…">${esc(item?.notes||'')}</textarea></div>
     <div class="field"><label>Recette de base pour</label><div class="servings-input-line"><input name="base_servings" type="number" min="1" max="99" value="${Math.max(1,Number(item?.base_servings)||4)}"><span>personnes</span></div></div>
-    <div class="field recipe-image-edit"><label>Image</label><input id="mealImageInput" type="file" accept="image/*"><button id="removeMealImage" type="button" class="secondary">Retirer l’image</button></div>
-    <div id="mealImagePreviewWrap" class="field full meal-image-preview-wrap ${mealImageData?'':'hidden'}"><img id="mealImagePreview" src="${mealImageData}" alt="Aperçu de la recette"></div>
+    <div class="field recipe-image-edit">
+      <label>Image</label>
+      <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
+      <button id="mealImagePicker" class="meal-image-picker ${mealImageData?'has-image':''}" type="button">
+        <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
+        <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>＋ Ajouter une image</strong><small>Cliquer pour choisir une photo</small></span>
+        <span id="removeMealImage" class="meal-image-remove ${mealImageData?'':'hidden'}" role="button" aria-label="Retirer l’image" title="Retirer l’image">×</span>
+      </button>
+    </div>
     <div class="field full ingredient-editor">
-      <div class="ingredient-editor-head"><label>Ingrédients</label><button id="addIngredientRow" type="button">+ Ingrédient</button></div>
+      <div class="ingredient-editor-head"><div><label>Ingrédients</label><small>Une ligne par ingrédient</small></div><button id="addIngredientRow" class="ingredient-add-btn" type="button">＋ Ajouter</button></div>
       <div class="ingredient-edit-labels"><span>Quantité</span><span>Unité</span><span>Ingrédient</span><span></span></div>
       <div id="ingredientEditRows"></div>
     </div>
@@ -215,17 +222,30 @@ function openMealModal(item=null){
     <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
 
-  const form=$('#mealForm'), rows=$('#ingredientEditRows'), previewWrap=$('#mealImagePreviewWrap'), preview=$('#mealImagePreview');
+  const form=$('#mealForm'), rows=$('#ingredientEditRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
+  const syncMealImagePreview=()=>{
+    const has=!!mealImageData;
+    preview.classList.toggle('hidden',!has);
+    placeholder.classList.toggle('hidden',has);
+    removeImage.classList.toggle('hidden',!has);
+    picker.classList.toggle('has-image',has);
+    if(has){preview.src=mealImageData;preview.alt='Aperçu de la recette'}else{preview.removeAttribute('src');preview.alt=''}
+  };
   (ingredients.length?ingredients:[{}]).forEach(x=>addIngredientEditorRow(rows,x));
-  $('#addIngredientRow').onclick=()=>addIngredientEditorRow(rows,{});
+  $('#addIngredientRow').onclick=()=>{addIngredientEditorRow(rows,{});rows.lastElementChild?.querySelector('.ing-name')?.focus()};
   $('#cancelMeal').onclick=closeModal;
-  $('#removeMealImage').onclick=()=>{mealImageData='';preview.src='';previewWrap.classList.add('hidden')};
-  $('#mealImageInput').onchange=async e=>{
+  picker.onclick=e=>{
+    if(e.target.closest('#removeMealImage'))return;
+    imageInput.click();
+  };
+  removeImage.onclick=e=>{e.preventDefault();e.stopPropagation();mealImageData='';imageInput.value='';syncMealImagePreview()};
+  imageInput.onchange=async e=>{
     const file=e.target.files?.[0]; if(!file)return;
     if(file.size>5*1024*1024){alert("Image trop lourde : choisis une image de moins de 5 Mo.");e.target.value='';return}
-    try{mealImageData=await readMealImage(file);preview.src=mealImageData;previewWrap.classList.remove('hidden')}
+    try{mealImageData=await readMealImage(file);syncMealImagePreview()}
     catch(err){alert(err.message||"Impossible d’ajouter cette image.")}
   };
+  syncMealImagePreview();
 
   form.onsubmit=async e=>{
     e.preventDefault();
