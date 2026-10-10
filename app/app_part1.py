@@ -58,6 +58,12 @@ CREATE TABLE IF NOT EXISTS reminders (
   snoozed_until TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS event_completions (
+  event_id INTEGER NOT NULL,
+  instance_date TEXT NOT NULL,
+  completed_at TEXT NOT NULL,
+  PRIMARY KEY(event_id, instance_date)
+);
 CREATE TABLE IF NOT EXISTS shopping_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -94,6 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
 CREATE INDEX IF NOT EXISTS idx_food_expiry ON food_items(expiry_date);
 CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked);
+CREATE INDEX IF NOT EXISTS idx_event_completions_date ON event_completions(instance_date);
 
 '''
 
