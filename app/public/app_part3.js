@@ -142,21 +142,23 @@ function initHomeLayoutEditor(){
   specs.forEach(item=>{
     item.el.classList.add('layout-object');
     const controls=document.createElement('div'); controls.className='layout-controls';
-    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
+    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
     item.el.appendChild(controls);
     apply(item,read(item.id));
 
     const moveHandle=controls.querySelector('.layout-move-handle');
     const resizeHandle=controls.querySelector('.layout-resize-handle');
 
-    moveHandle.addEventListener('pointerdown',e=>{
-      if(!home.classList.contains('layout-editing'))return;
+    const startMove=e=>{
+      if(!home.classList.contains('layout-editing') || e.target.closest('.layout-resize-handle'))return;
       e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
       const start=read(item.id), sx=e.clientX, sy=e.clientY;
       const move=ev=>{const d={...start,x:(start.x||0)+(ev.clientX-sx),y:(start.y||0)+(ev.clientY-sy)};apply(item,d);save(item.id,d)};
       const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
       window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    });
+    };
+    moveHandle.addEventListener('pointerdown',startMove);
+    item.el.addEventListener('pointerdown',startMove);
 
     resizeHandle.addEventListener('pointerdown',e=>{
       if(!home.classList.contains('layout-editing'))return;
@@ -170,7 +172,7 @@ function initHomeLayoutEditor(){
 
   toggle.addEventListener('click',()=>{
     const editing=home.classList.toggle('layout-editing');
-    toggle.textContent=editing?'✓ Terminer la disposition':'✥ Modifier la disposition';
+    toggle.textContent=editing?'✓ Terminer':'✥ Modifier la disposition';
     reset.classList.toggle('hidden',!editing); hint?.classList.toggle('hidden',!editing);
   });
   reset.addEventListener('click',()=>{
@@ -204,21 +206,23 @@ function initKitchenLayoutEditor(){
   specs.forEach(item=>{
     item.el.classList.add('layout-object');
     const controls=document.createElement('div'); controls.className='layout-controls';
-    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
+    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
     item.el.appendChild(controls);
     apply(item,read(item.id));
 
     const moveHandle=controls.querySelector('.layout-move-handle');
     const resizeHandle=controls.querySelector('.layout-resize-handle');
 
-    moveHandle.addEventListener('pointerdown',e=>{
-      if(!view.classList.contains('layout-editing'))return;
+    const startMove=e=>{
+      if(!view.classList.contains('layout-editing') || e.target.closest('.layout-resize-handle'))return;
       e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
       const start=read(item.id), sx=e.clientX, sy=e.clientY;
       const move=ev=>{const d={...start,x:(start.x||0)+(ev.clientX-sx),y:(start.y||0)+(ev.clientY-sy)};apply(item,d);save(item.id,d)};
       const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
       window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    });
+    };
+    moveHandle.addEventListener('pointerdown',startMove);
+    item.el.addEventListener('pointerdown',startMove);
 
     resizeHandle.addEventListener('pointerdown',e=>{
       if(!view.classList.contains('layout-editing'))return;
@@ -232,7 +236,7 @@ function initKitchenLayoutEditor(){
 
   toggle.addEventListener('click',()=>{
     const editing=view.classList.toggle('layout-editing');
-    toggle.textContent=editing?'✓ Terminer la disposition':'✥ Modifier la disposition';
+    toggle.textContent=editing?'✓ Terminer':'✥ Modifier la disposition';
     reset.classList.toggle('hidden',!editing); hint?.classList.toggle('hidden',!editing);
   });
   reset.addEventListener('click',()=>{
