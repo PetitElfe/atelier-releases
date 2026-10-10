@@ -110,7 +110,8 @@ function renderKitchen(){
   if(!state.meals.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas pour le moment.</div>';
   state.meals.forEach(item=>{
     const row=document.createElement('div'); row.className='kitchen-row meal-row';
-    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><strong>${esc(item.title)}</strong><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
+    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><strong>${esc(item.title)}</strong><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="recipe">Recette</button><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
+    row.querySelector('.recipe').addEventListener('click',()=>openMealRecipeModal(item));
     row.querySelector('.edit').addEventListener('click',()=>openMealModal(item));
     row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/meals/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
     meals.appendChild(row);
@@ -145,9 +146,26 @@ function openMealModal(item=null){
   const editing=!!item;
   openModal(`<h2>${editing?'Modifier l’idée de repas':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid">
     <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
-    <div class="field full"><label>Note</label><textarea name="notes" placeholder="Ingrédients, variante, envie particulière…">${esc(item?.notes||'')}</textarea></div>
+    <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, envie particulière, accompagnement…">${esc(item?.notes||'')}</textarea></div>
+    <div class="field full"><label>Recette</label><textarea name="recipe" class="recipe-editor" placeholder="Ingrédients, quantités, étapes de préparation…">${esc(item?.recipe||'')}</textarea></div>
     <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
   const f=$('#mealForm'); $('#cancelMeal').onclick=closeModal;
   f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()};
+}
+
+function openMealRecipeModal(item){
+  const hasRecipe=(item?.recipe||'').trim();
+  openModal(`<div class="recipe-view">
+    <div class="section-kicker">RECETTE</div>
+    <h2>${esc(item?.title||'Idée de repas')}</h2>
+    ${item?.notes?`<p class="recipe-note">${esc(item.notes)}</p>`:''}
+    <div class="recipe-paper">${hasRecipe?esc(item.recipe).replace(/\n/g,'<br>'):'<span class="muted">Aucune recette enregistrée pour le moment.</span>'}</div>
+    <div class="form-actions">
+      <button type="button" id="closeRecipe">Fermer</button>
+      <button type="button" id="editRecipe" class="primary">${hasRecipe?'Modifier la recette':'Ajouter la recette'}</button>
+    </div>
+  </div>`);
+  $('#closeRecipe').onclick=closeModal;
+  $('#editRecipe').onclick=()=>openMealModal(item);
 }
