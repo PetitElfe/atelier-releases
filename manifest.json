@@ -1,5 +1,5 @@
 {
-  "version": "0.1.4",
+  "version": "0.1.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "8a3dad16d348c163566a456fcf650d85d7aeeda5e53d01ee1fa8dc15212915a7"
+      "sha256": "800cf1c0392b24de7c0a1c6ea6778ecb433dec71c49a150bce96a98477527b2f"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "12ecb367a74bfbf694ea7293d2ee1be71905d8cb757d4f1989fc072c6257174d"
+      "sha256": "c79496a1bbbd576543f9b0ce9347aaa9d5c8f64a80fc064620f5a35a059a67b9"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "10fa2a1328f0ce45d600dfaa74e111c1eb2a3fed07ffa29765e351b263c11e73"
+      "sha256": "8b830731ea2162815f301c20bbfe9b14b37d792a9a74c72fd0998c45f0b0f79b"
     },
     {
       "path": "public/index.html",
-      "sha256": "58241759948b8efb4730196c8091794ad0e95ab957e0fa74e54ae17a883ac557"
+      "sha256": "b437db4ba97f10e53ff012246a61127e820d914eb54a84e9b1349fdce4e9f850"
     },
     {
       "path": "public/styles.css",
-      "sha256": "d06e60b729e4ca31c90bb4d8cd3329c40c9c2f5839f583d9873556f4f8d7a426"
+      "sha256": "5c7594ab581709f34788e7976492136d119c1c1fac2e43e907df80a972ed4cdf"
     }
   ],
-  "notes": "0.1.4 : livre central resserré à environ 660 px, textes légèrement réduits, et blocs du haut encore plus compacts pour laisser davantage d’espace vide volontaire autour."
+  "notes": "0.1.5 : livre encore plus compact, blocs du haut espacés davantage, et poignée de redimensionnement directement sur le livre pour régler sa taille comme une image. Le pourcentage choisi est mémorisé localement."
 }
