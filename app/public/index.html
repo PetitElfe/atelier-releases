@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.1.5</title>
+  <title>L’Atelier — Alpha 0.1.6</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.1.5</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.1.6</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -30,6 +30,11 @@
 
   <main>
     <section id="homeView" class="view active-view">
+      <div class="home-layout-toolbar">
+        <button id="toggleLayoutEdit" class="secondary" type="button">✥ Modifier la disposition</button>
+        <button id="resetLayout" class="secondary hidden" type="button">Réinitialiser</button>
+        <span id="layoutEditHint" class="layout-edit-hint hidden">Glisse un élément pour le déplacer · ↘ pour le redimensionner</span>
+      </div>
       <div class="desk-top-row">
         <button id="openCalendarCard" class="desk-object pinned-calendar" type="button">
           <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
@@ -58,8 +63,6 @@
       </div>
 
       <div id="journalBook" class="journal-book" aria-label="Journal de l’Atelier">
-        <div id="journalScaleValue" class="journal-scale-value" aria-live="polite">100%</div>
-        <button id="journalResizeGrip" class="journal-resize-grip" type="button" title="Glisse pour redimensionner le livre" aria-label="Redimensionner le livre">↘</button>
         <section class="journal-page journal-left">
           <div class="journal-date" id="homeDate"></div>
 
