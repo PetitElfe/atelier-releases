@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.2.8'
+    server_version = 'AtelierLocal/0.2.9'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -147,8 +147,8 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/meals':
                 title=body.get('title','').strip()
                 if not title: return self._json({'error':'title required'},400)
-                cur=c.execute('INSERT INTO meal_ideas(title,notes,archived,created_at,updated_at) VALUES(?,?,0,?,?)',
-                              (title,body.get('notes',''),ts,ts))
+                cur=c.execute('INSERT INTO meal_ideas(title,notes,recipe,archived,created_at,updated_at) VALUES(?,?,?,0,?,?)',
+                              (title,body.get('notes',''),body.get('recipe',''),ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
 
@@ -199,8 +199,8 @@ class Handler(BaseHTTPRequestHandler):
                 iid=int(parts[2]); old=c.execute('SELECT * FROM meal_ideas WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('UPDATE meal_ideas SET title=?,notes=?,archived=?,updated_at=? WHERE id=?',
-                          (d['title'],d.get('notes',''),1 if d.get('archived') else 0,ts,iid))
+                c.execute('UPDATE meal_ideas SET title=?,notes=?,recipe=?,archived=?,updated_at=? WHERE id=?',
+                          (d['title'],d.get('notes',''),d.get('recipe',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2]); action=parts[3]
