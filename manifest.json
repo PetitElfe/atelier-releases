@@ -1,5 +1,5 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "998f6b887ed7a6ef44e84210d0237b715bed42ea7254f48dc418afec0a484103"
+      "sha256": "3ab94c04d24986f3af288ba1cda2c0bbddbc5a89dff097182805f54578e1ea75"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "89bf44b300d5d862c68a8af790061093983b63af60d720c91d9db0f244524028"
+      "sha256": "9a793d284d7e44fdd7792423aa2d5fd1b831034e72f50a7c573e40eb3efb1ab1"
     },
     {
       "path": "app_part3.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "368000b8bc6e4a1aa11e042a9b0d555bb69519473b289c273ebae41604ad1a3c"
+      "sha256": "1a3e0cd59cb6cbedeee27df5c38210b1eb4e2ff65eadfd6c7a1485cb29ec7ad0"
     },
     {
       "path": "public/app_part2.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "00894d9961b5e47b15d1df57abd10ba97eca5383a07c2ff3caed281da5e72491"
+      "sha256": "7f5a4091580385d44b8b7fe23cea718eee195ccdeee8ce34f0f9f8b0ac55c6ed"
     },
     {
       "path": "public/styles.css",
       "sha256": "926f637cbd31854787d41c38a81bc26c6c8747466e22f032a2a9dbe3e987fba8"
     }
   ],
-  "notes": "0.2.2 : correction du mode de disposition. En mode édition, on peut maintenant attraper directement tout un bloc pour le déplacer, la poignée de redimensionnement est plus grande et visible, et les transformations des cartes de l’accueil n’empêchent plus déplacement et redimensionnement."
+  "notes": "0.2.3 : correction d’un écran d’accueil partiellement vide lorsqu’une API récente n’est pas encore disponible côté serveur. Les blocs calendrier, rendez-vous, rappels, tâches et objectifs restent affichés même si un module annexe échoue à charger."
 }
