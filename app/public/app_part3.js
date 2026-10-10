@@ -81,6 +81,7 @@ function showView(view){
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
   const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  document.body.classList.toggle('home-active',view==='home');
   const topLayout=$('#homeLayoutTopActions'); if(topLayout) topLayout.classList.toggle('hidden',view!=='home');
   if(view==='calendar') applyCalendarMode();
   render();
