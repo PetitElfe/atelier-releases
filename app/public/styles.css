@@ -195,3 +195,47 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
   .shopping-row{grid-template-columns:auto minmax(0,1fr) auto}
   .shopping-row .kitchen-actions{grid-column:2/-1}
 }
+
+
+/* 0.4.1 — semainier plus étroit, heures plus lisibles */
+@media(min-width:901px){
+  #weekPanel{max-width:1180px;margin:0 auto}
+  .week-layout{
+    grid-template-columns:150px minmax(0,930px);
+    justify-content:center;
+    gap:12px;
+  }
+  .week-scroll{
+    width:100%;
+    max-width:930px;
+    margin:0 auto;
+    overflow:hidden;
+  }
+  .week-grid{
+    grid-template-columns:58px repeat(7,minmax(0,1fr));
+    width:100%;
+    min-width:0;
+  }
+  .week-grid>div{
+    min-height:23px;
+    padding:1px 2px;
+  }
+  .week-head{
+    font-size:11px;
+    line-height:1.05;
+    padding:3px 2px!important;
+  }
+  .time-label{
+    font-size:12px;
+    font-weight:700;
+    line-height:1;
+    padding:6px 6px 0 0!important;
+    text-align:right;
+  }
+  .week-item{
+    font-size:9px;
+    line-height:1;
+    padding:2px 3px;
+  }
+  .week-slot.has-many{min-height:30px}
+}
