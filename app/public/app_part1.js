@@ -78,7 +78,7 @@ function renderHome(){
   const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='<div class="meal-line">Ajouter une idée de repas…</div><div class="meal-line">Ajouter une idée de repas…</div>';
 
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
-  const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,5);
+  const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,3);
   if(!upcoming.length) upcomingRoot.innerHTML='<div class="home-empty">Aucun rendez-vous à venir.</div>';
   upcoming.forEach(e=>{
     const b=document.createElement('button'); b.type='button'; b.className='home-row';
@@ -88,7 +88,7 @@ function renderHome(){
   });
 
   const remRoot=$('#homeReminderPreview'); remRoot.innerHTML='';
-  const reminders=state.reminders.slice(0,4);
+  const reminders=state.reminders.slice(0,3);
   if(!reminders.length) remRoot.innerHTML='<div class="home-empty">Aucun rappel en attente.</div>';
   reminders.forEach(r=>{
     const b=document.createElement('button'); b.type='button'; b.className='home-row';
