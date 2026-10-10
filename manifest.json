@@ -1,5 +1,5 @@
 {
-  "version": "0.3.1",
+  "version": "0.3.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "79e3f22ca37c7fdf4c29ae3648d6b008c3cb6547260a453409275470919dc674"
+      "sha256": "511a100eedfb9ea66441e5d506392dba2d8aa290f98c4c544c70ae75ec3c3396"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "9d838658955cb4d214fed49afed5f9eca62c96db5d82b7d07bd7b3c88677a8da"
+      "sha256": "25f492257bed4498ddc911cc38f12ba7abba1c77ed7dfd22f9cd227a7df5f080"
     },
     {
       "path": "app_part2.py",
-      "sha256": "347900f008d3310711d8ffad96d076116eda86b8045e1848c4496d4d9892b597"
+      "sha256": "539cce1d2002a9a08ce7fccd66a3d725af6bd4d6cc6a5b16959c266e08c9ed15"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "b37ff28f43eeadec37d24d33363e0441380a99fe0bf888fcd8987e6085632720"
+      "sha256": "f12cf6d7eba67bd3a737272043708df06f16bfbc0e5ae0f600528f4aed4cdcd6"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "45015d39f8b14f2f2a76cbe1b1b6a4073d5d740fe2030837cccaa85f12b7163b"
+      "sha256": "aef7cadf45b04d0553f8964f4643ae2066d8f62049edb02ed4a119860da17da5"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "d773839bf026ad1a7b8b66e8eabf71f6dad7884d473ff01b32e1432f596992ee"
+      "sha256": "db073f99a355397fc5d713a2c79fb24cc70f3f5dffd67a45b0b5a94aaeba976f"
     },
     {
       "path": "public/index.html",
-      "sha256": "523276d3f82f626d423afd64676bce9b73428b2060c0f72f8129bd9cfe53334a"
+      "sha256": "ddd1d639e6325174aba9fd6be4f6c52d4ac529cad8360bcb9d6de4c168661df0"
     },
     {
       "path": "public/styles.css",
-      "sha256": "14214c54ef8f73b8bf27524e3c565e37da5afb32719b65ebb7f5184e8e318566"
+      "sha256": "68c198d2aef806bea1795ead3d44d22b64c4f66f3a0cfb02441262c2620ff884"
     }
   ],
-  "notes": "0.3.1 : l’éditeur de recette a été simplifié visuellement. Le champ fichier natif est remplacé par une zone image cliquable ; lorsqu’une image est présente, une croix permet de la retirer directement. Le bloc ingrédients est également plus compact et le bouton d’ajout est intégré à son en-tête."
+  "notes": "0.3.2 : dans « À venir », chaque rendez-vous a trois actions rapides : ✓ effectué, ↪ reporter et × annuler. Effectué/annulé/reporté barre l’ancien rendez-vous et le conserve dans le calendrier. Reporter demande uniquement une nouvelle date et une nouvelle heure, puis crée le rendez-vous déplacé à cette nouvelle place. Le lendemain, les rendez-vous passés quittent automatiquement la liste « À venir »."
 }
