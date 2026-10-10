@@ -1,0 +1,78 @@
+function openEventModal(e=null,presetDate=null,presetTime=null){
+  const editing=!!e; const reminders=editing?state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
+  openModal(`<h2>${editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid">
+    <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
+    <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
+    <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général · blanc</option><option value="medical">Médical · vert</option><option value="important">Important · rouge</option></select></div>
+    <div class="field"><label>Début</label><input name="start_time" type="time" value="${esc(e?.start_time||presetTime||'')}"></div>
+    <div class="field"><label>Fin</label><input name="end_time" type="time" value="${esc(e?.end_time||'')}"></div>
+    <div class="field"><label>Lieu</label><input name="location" value="${esc(e?.location||'')}"></div>
+    <div class="field"><label>Contact</label><input name="contact" value="${esc(e?.contact||'')}"></div>
+    <div class="field full"><label>URL</label><input name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"></div>
+    <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
+    <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
+    <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
+    <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    ${reminderEditor(reminders,'du rendez-vous')}
+    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="openUrl">Ouvrir le lien</button>':''}<button class="primary" type="submit">Enregistrer</button></div>
+  </form>`);
+  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal; $('#openUrl')?.addEventListener('click',()=>{if(e?.url)window.open(e.url,'_blank')});
+  f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); await api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}); closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
+}
+
+function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
+  openModal(`<h2>${editing?'Modifier la tâche':'Nouvelle tâche'}</h2><form id="taskForm" class="form-grid">
+    <div class="field full"><label>Tâche</label><input name="title" required value="${esc(t?.title||'')}"></div>
+    <div class="field"><label>Date</label><input name="due_date" type="date" value="${esc(t?.due_date||ymd(new Date()))}"></div>
+    <div class="field"><label>Heure</label><input name="due_time" type="time" value="${esc(t?.due_time||'')}"></div>
+    <div class="field full checkline"><input id="important" name="important" type="checkbox" ${t?.important?'checked':''}><label for="important">Important 👺</label></div>
+    <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
+    ${reminderEditor(reminders,'de la tâche')}
+    <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
+  </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();await api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()}); }
+
+function openSnooze(r){ openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm"><div class="field"><label>Nouvelle date et heure</label><input id="snoozeAt" type="datetime-local" required></div><div class="form-actions"><button type="button" id="cancelSnooze">Annuler</button><button class="primary">Reporter</button></div></form>`); $('#cancelSnooze').onclick=closeModal; $('#snoozeForm').onsubmit=async e=>{e.preventDefault();await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:$('#snoozeAt').value})});closeModal();await refresh()}; }
+
+async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(new Date().toISOString().slice(0,19))}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
+const shown=new Set();
+function notifyReminder(r){
+  if(shown.has(r.id))return; shown.add(r.id); const title=r.title||r.entity_title||`Rappel #${r.id}`;
+  if(Notification.permission==='granted') new Notification('L’Atelier',{body:title});
+  const t=document.createElement('div');t.className='toast';t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">Rappel à traiter</div><div class="task-actions"><button class="finish">Fini</button><button class="later">Reporter</button></div>`;
+  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/finish`,{method:'PUT',body:'{}'});t.remove();await refresh()};
+  t.querySelector('.later').onclick=()=>{t.remove();openSnooze(r)}; $('#toastArea').appendChild(t);
+}
+
+function showView(view){
+  state.view=view;
+  $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  $$('.view').forEach(v=>v.classList.remove('active-view'));
+  $(`#${view}View`).classList.add('active-view');
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  if(view==='calendar') applyCalendarMode();
+  render();
+}
+function setCalendarMode(mode){state.calendarMode=mode;applyCalendarMode();}
+function applyCalendarMode(){
+  $$('.calendar-modes button').forEach(b=>b.classList.toggle('active',b.dataset.calendarMode===state.calendarMode));
+  $$('.calendar-panel').forEach(p=>p.classList.remove('active-calendar-panel'));
+  $(`#${state.calendarMode}Panel`).classList.add('active-calendar-panel');
+}
+
+$$('.tabs button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+$$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
+$('#openCalendarCard').onclick=()=>showView('calendar');
+$('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
+$('#openTasksFromHome').onclick=()=>showView('tasks');
+$('#openRemindersFromHome').onclick=()=>showView('reminders');
+$('#homeAddTask').onclick=()=>openTaskModal(); $('#homeAddEvent').onclick=()=>openEventModal(null,ymd(new Date()));
+$('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
+$('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
+$('#todayBtn').onclick=()=>{state.cursor=new Date();$('#jumpDate').value=ymd(state.cursor);if(state.view!=='home')showView('calendar');else refresh()};
+$('#jumpDate').value=ymd(new Date()); $('#jumpDate').onchange=e=>{if(e.target.value){state.cursor=parseYMD(e.target.value);showView('calendar');refresh()}};
+$('#addTask').onclick=()=>openTaskModal(); $('#addEventWeek').onclick=()=>openEventModal(null,ymd(state.cursor)); $('#modalClose').onclick=closeModal;
+// Un clic accidentel autour d'un formulaire ne le ferme plus : on protège ce qui est en cours d'écriture.
+$('#modalBackdrop').addEventListener('click',e=>{ if(e.target===$('#modalBackdrop')) e.preventDefault(); });
+$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} const p=await Notification.requestPermission();$('#notifyBtn').textContent=p==='granted'?'Notifications activées':'Notifications refusées'; };
+
+applyCalendarMode(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
