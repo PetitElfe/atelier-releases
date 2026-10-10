@@ -243,18 +243,70 @@ function openMealModal(item=null){
   };
 }
 
-function openMealRecipeModal(item){
-  const hasRecipe=(item?.recipe||'').trim();
-  openModal(`<div class="recipe-view">
-    <div class="section-kicker">RECETTE</div>
-    <h2>${esc(item?.title||'Idée de repas')}</h2>
-    ${item?.notes?`<p class="recipe-note">${esc(item.notes)}</p>`:''}
-    <div class="recipe-paper">${hasRecipe?esc(item.recipe).replace(/\n/g,'<br>'):'<span class="muted">Aucune recette enregistrée pour le moment.</span>'}</div>
-    <div class="form-actions">
-      <button type="button" id="closeRecipe">Fermer</button>
-      <button type="button" id="editRecipe" class="primary">${hasRecipe?'Modifier la recette':'Ajouter la recette'}</button>
-    </div>
-  </div>`);
-  $('#closeRecipe').onclick=closeModal;
-  $('#editRecipe').onclick=()=>openMealModal(item);
+function renderMealRecipePage(item){
+  if(!item)return;
+  const base=Math.max(1,Number(item.base_servings)||4);
+  recipeTargetServings=Math.max(1,Number(recipeTargetServings)||base);
+  $('#recipePageTitle').textContent=item.title||'Recette';
+
+  const note=$('#recipePageNote');
+  note.textContent=item.notes||'';
+  note.classList.toggle('hidden',!item.notes);
+
+  const img=$('#recipePageImage'), noImg=$('#recipeNoImage');
+  if(item.image_data){
+    img.src=item.image_data;
+    img.alt=item.title||'Image de la recette';
+    img.classList.remove('hidden');
+    noImg.classList.add('hidden');
+  }else{
+    img.removeAttribute('src');
+    img.classList.add('hidden');
+    noImg.classList.remove('hidden');
+  }
+
+  $('#recipeServingsValue').textContent=String(recipeTargetServings);
+  const list=$('#recipeIngredientsList');
+  list.innerHTML='';
+  const ingredients=parseMealIngredients(item);
+  if(!ingredients.length){
+    list.innerHTML='<div class="recipe-empty">Aucun ingrédient renseigné.</div>';
+  }else{
+    const factor=recipeTargetServings/base;
+    ingredients.forEach(ing=>{
+      const row=document.createElement('div');
+      row.className='recipe-ingredient-row';
+      const qty=formatScaledQuantity(ing.quantity,factor);
+      row.innerHTML=`<span class="recipe-ingredient-qty">${esc([qty,ing.unit].filter(Boolean).join(' '))}</span><span class="recipe-ingredient-name">${esc(ing.name||'')}</span>`;
+      list.appendChild(row);
+    });
+  }
+
+  const instructions=$('#recipeInstructions');
+  instructions.innerHTML=item.recipe?.trim()
+    ? esc(item.recipe).replace(/\n/g,'<br>')
+    : '<span class="recipe-empty">Aucune étape de préparation renseignée.</span>';
 }
+
+function openMealRecipeModal(item){
+  if(!item)return;
+  if(state.view!=='recipe')recipeReturnView=state.view==='home'?'home':'kitchen';
+  recipeCurrentMealId=item.id;
+  recipeTargetServings=Math.max(1,Number(item.base_servings)||4);
+  showView('recipe');
+  renderMealRecipePage(item);
+
+  $('#backFromRecipe').onclick=()=>showView(recipeReturnView||'kitchen');
+  $('#editRecipePage').onclick=()=>openMealModal(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+  $('#recipeServingsMinus').onclick=()=>{
+    if(recipeTargetServings>1){
+      recipeTargetServings--;
+      renderMealRecipePage(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+    }
+  };
+  $('#recipeServingsPlus').onclick=()=>{
+    recipeTargetServings++;
+    renderMealRecipePage(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+  };
+}
+
