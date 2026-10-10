@@ -1,19 +1,52 @@
 {
-  "version": "0.0.9",
+  "version": "0.0.10",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
-    {"path":"README.md","sha256":"8edea59242ff76c41a6721ef54b2898d09142e4aa2f0f03b9e59cf7695644221"},
-    {"path":"VERSION","sha256":"8e26776d08f7af45c99612b3a4d3c32d7dd10cc11ce6064291aeee1814c88922"},
-    {"path":"app.py","sha256":"b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"},
-    {"path":"app_part1.py","sha256":"62d6f47fe180508fb79d35c12c7a841ceedadf681debdd311ac4a4e63713c67a"},
-    {"path":"app_part2.py","sha256":"8b5e6d13f0141d5adedcd0ee406a6e66b2a4b2c90081894949e2afec5adc70a5"},
-    {"path":"app_part3.py","sha256":"aa33fb9232e5dc575c14485edb753c4f34558bcf8cfe8a63763b1ce674c60d39"},
-    {"path":"public/app_part1.js","sha256":"0732072f966954637ada29c912d1e6b7f3218510abdb7b425a8c375bc6178c72"},
-    {"path":"public/app_part2.js","sha256":"d7cb04a6f54a6e97ab708e635e328ea80fbb570da48af77bb5d8a30df07c8fb6"},
-    {"path":"public/app_part3.js","sha256":"cc121d45be716a97833711ff48a403de9e6a9a260410f3d3d674423374764bc3"},
-    {"path":"public/index.html","sha256":"a9b19cf6b9298b98801935b6b1629290e625ba824f931320d99438bb1cbe6283"},
-    {"path":"public/styles.css","sha256":"260d8cc1e6605df5d5cf6ad5f61022337483762b641e5fdd9c1c4756bf84188f"}
+    {
+      "path": "README.md",
+      "sha256": "8edea59242ff76c41a6721ef54b2898d09142e4aa2f0f03b9e59cf7695644221"
+    },
+    {
+      "path": "VERSION",
+      "sha256": "e37abd76504e8f67025e1a06df134beaa0316572e664e4cc4622b282a692a662"
+    },
+    {
+      "path": "app.py",
+      "sha256": "b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"
+    },
+    {
+      "path": "app_part1.py",
+      "sha256": "62d6f47fe180508fb79d35c12c7a841ceedadf681debdd311ac4a4e63713c67a"
+    },
+    {
+      "path": "app_part2.py",
+      "sha256": "8b5e6d13f0141d5adedcd0ee406a6e66b2a4b2c90081894949e2afec5adc70a5"
+    },
+    {
+      "path": "app_part3.py",
+      "sha256": "aa33fb9232e5dc575c14485edb753c4f34558bcf8cfe8a63763b1ce674c60d39"
+    },
+    {
+      "path": "public/app_part1.js",
+      "sha256": "0732072f966954637ada29c912d1e6b7f3218510abdb7b425a8c375bc6178c72"
+    },
+    {
+      "path": "public/app_part2.js",
+      "sha256": "d7cb04a6f54a6e97ab708e635e328ea80fbb570da48af77bb5d8a30df07c8fb6"
+    },
+    {
+      "path": "public/app_part3.js",
+      "sha256": "8dcaf132dca707d6449050eb27c1c2cc125e38ab7144293611bbaa7b5bc0846f"
+    },
+    {
+      "path": "public/index.html",
+      "sha256": "99de07555e1f9ee94b2e94ef8d886198bfda1870b2347f018de4155c97535c21"
+    },
+    {
+      "path": "public/styles.css",
+      "sha256": "7d3b06e9c8ad4b88ebc25a7b8d564dc0b7299ae49c529e48470e6bb609a4fcc5"
+    }
   ],
-  "notes": "0.0.9 : date et heure des rappels séparées pour saisie directe, champ temps de trajet pour les rendez-vous, et mémorisation automatique des habitudes d'un rendez-vous portant le même nom (catégorie, contact et trajet)."
+  "notes": "0.0.10 : en-tête allégé avec date centrée sans encadré et bouton de notifications compact sous forme de cloche."
 }
