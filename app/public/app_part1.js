@@ -11,8 +11,8 @@ function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
 function esc(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function eventClass(c){ return c==='medical'?'event-medical':c==='important'?'event-important':'event-general'; }
-function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled'; }
-function eventInstanceIcon(e){ return e.instance_done?'✓':e.instance_action==='postponed'?'↪':e.instance_action==='cancelled'?'×':''; }
+function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled' || e.status==='done' || e.status==='cancelled'; }
+function eventInstanceIcon(e){ return (e.instance_done||e.status==='done')?'✓':e.instance_action==='postponed'?'↪':(e.instance_action==='cancelled'||e.status==='cancelled')?'×':''; }
 function fmtTime(t){ return t ? t.replace(':','h') : ''; }
 function fmtFrenchDate(d){ return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 function fmtRelativeDate(s){
