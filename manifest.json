@@ -1,5 +1,5 @@
 {
-  "version": "0.3.2",
+  "version": "0.4.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "511a100eedfb9ea66441e5d506392dba2d8aa290f98c4c544c70ae75ec3c3396"
+      "sha256": "40b8eb4000a913a7791090535f291d3d369874162a89ef3c9e3d4e887a1b9e79"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "25f492257bed4498ddc911cc38f12ba7abba1c77ed7dfd22f9cd227a7df5f080"
+      "sha256": "b2905ef7c3185af03ef284225917608d74d0d1de26e5b42f54aeb386b0a68579"
     },
     {
       "path": "app_part2.py",
-      "sha256": "539cce1d2002a9a08ce7fccd66a3d725af6bd4d6cc6a5b16959c266e08c9ed15"
+      "sha256": "cb1bf0a8241cd764f162fb252d98576640456a0241759ee62e95b7de5ea62c95"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "aef7cadf45b04d0553f8964f4643ae2066d8f62049edb02ed4a119860da17da5"
+      "sha256": "6ca6c28358a1d377499749c7238110c7713fba60630dc1596fd440141e66aa56"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "db073f99a355397fc5d713a2c79fb24cc70f3f5dffd67a45b0b5a94aaeba976f"
+      "sha256": "009b9596b42a1842906fa3e23532e070fa71786945b0b1e142019a61d1f6a8d1"
     },
     {
       "path": "public/index.html",
-      "sha256": "ddd1d639e6325174aba9fd6be4f6c52d4ac529cad8360bcb9d6de4c168661df0"
+      "sha256": "ee1596f0f9b6e492f8a823ba7b667ac1b9d48f6877d4623a63913d9a4f6f90ae"
     },
     {
       "path": "public/styles.css",
-      "sha256": "68c198d2aef806bea1795ead3d44d22b64c4f66f3a0cfb02441262c2620ff884"
+      "sha256": "dc9b1b9ccf07250d87fcc36d06f9263fc4953ef0c8bf2b66a03459eb3f7161ef"
     }
   ],
-  "notes": "0.3.2 : dans « À venir », chaque rendez-vous a trois actions rapides : ✓ effectué, ↪ reporter et × annuler. Effectué/annulé/reporté barre l’ancien rendez-vous et le conserve dans le calendrier. Reporter demande uniquement une nouvelle date et une nouvelle heure, puis crée le rendez-vous déplacé à cette nouvelle place. Le lendemain, les rendez-vous passés quittent automatiquement la liste « À venir »."
+  "notes": "0.4.0 : formulaires plus compacts et semainier resserré pour tenir sur un écran desktop. La page courante est mémorisée pour éviter les retours intempestifs à l’accueil. Les nouvelles recettes ne préremplissent plus 4 personnes : le nombre de portions de base est saisi explicitement, puis le carnet utilise − et +. La liste de courses gagne un compteur −/+ du nombre réellement acheté, prix et calories, puis « Valider les achats » transfère les produits cochés directement vers les aliments à la maison. Les produits transférés arrivent avec « Date à renseigner » et peuvent ensuite recevoir une date ou être marqués « Sans date »."
 }
