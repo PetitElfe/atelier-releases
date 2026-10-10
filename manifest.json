@@ -1,5 +1,5 @@
 {
-  "version": "0.1.5",
+  "version": "0.1.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "800cf1c0392b24de7c0a1c6ea6778ecb433dec71c49a150bce96a98477527b2f"
+      "sha256": "1f2110568627307becae713f8b808f3d9d912d4b2a24ed6a78605f03f7437d3c"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "c79496a1bbbd576543f9b0ce9347aaa9d5c8f64a80fc064620f5a35a059a67b9"
+      "sha256": "60f0170444252451bb606a39934571d35ea8215380039168ef401da44b2c3dfd"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "8b830731ea2162815f301c20bbfe9b14b37d792a9a74c72fd0998c45f0b0f79b"
+      "sha256": "4c69d41390cc7599850fe93c9fbf91c5e1a4295b6bc71ca076fc20237871404f"
     },
     {
       "path": "public/index.html",
-      "sha256": "b437db4ba97f10e53ff012246a61127e820d914eb54a84e9b1349fdce4e9f850"
+      "sha256": "e197d51b0cc1230fded6187af5a8295e4a66cdfe0b9a3d45ab75bb4fd89444a1"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5c7594ab581709f34788e7976492136d119c1c1fac2e43e907df80a972ed4cdf"
+      "sha256": "5c42fc81f4cf0a143cd0386696d5a90a47dec6d1e7aec42a914c133dd4f6f42d"
     }
   ],
-  "notes": "0.1.5 : livre encore plus compact, blocs du haut espacés davantage, et poignée de redimensionnement directement sur le livre pour régler sa taille comme une image. Le pourcentage choisi est mémorisé localement."
+  "notes": "0.1.6 : mode « Modifier la disposition » sur l’accueil. Calendrier, À venir, Rappels et livre peuvent être déplacés et redimensionnés comme des images. Positions et tailles sont mémorisées localement, avec bouton de réinitialisation."
 }
