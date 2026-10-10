@@ -96,8 +96,6 @@ $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalend
 $('#openCalendarCard').onclick=()=>showView('calendar');
 $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
 $('#openTasksFromHome').onclick=()=>showView('tasks');
-$('#openRemindersFromHome').onclick=()=>showView('reminders');
-$('#homeAddTask').onclick=()=>openTaskModal(); $('#homeAddEvent').onclick=()=>openEventModal(null,ymd(new Date()));
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 $('#todayBtn').onclick=()=>{state.cursor=new Date();$('#jumpDate').value=ymd(state.cursor);if(state.view!=='home')showView('calendar');else refresh()};
@@ -194,7 +192,6 @@ function initHomeLayoutEditor(){
     specs:[
       {id:'calendar',el:$('#openCalendarCard')},
       {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
-      {id:'reminders',el:$('.desk-top-row .desk-note:nth-child(3)')},
       {id:'journal',el:$('#journalBook')}
     ]
   });
