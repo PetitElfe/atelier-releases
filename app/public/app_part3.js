@@ -81,6 +81,7 @@ function showView(view){
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
   const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const topLayout=$('#homeLayoutTopActions'); if(topLayout) topLayout.classList.toggle('hidden',view!=='home');
   if(view==='calendar') applyCalendarMode();
   render();
 }
@@ -167,6 +168,12 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
       item.el.appendChild(controls);
     }
     apply(item,read(item.id));
+    item.el.addEventListener('click',e=>{
+      if(view.classList.contains('layout-editing') && !e.target.closest('.layout-controls')){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },true);
     item.el.addEventListener('mousedown',e=>beginMove(e,item));
     controls.querySelector('.layout-move-handle').addEventListener('mousedown',e=>beginMove(e,item));
     controls.querySelector('.layout-resize-handle').addEventListener('mousedown',e=>beginResize(e,item));
