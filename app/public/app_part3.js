@@ -178,4 +178,66 @@ function initHomeLayoutEditor(){
   });
 }
 
-applyCalendarMode(); syncNotifyButton(); initHomeLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+
+function initKitchenLayoutEditor(){
+  const view=$('#kitchenView'), toggle=$('#toggleKitchenLayoutEdit'), reset=$('#resetKitchenLayout'), hint=$('#kitchenLayoutHint');
+  if(!view||!toggle||!reset)return;
+  const specs=[
+    {id:'shopping',el:$('#shoppingPanel')},
+    {id:'foods',el:$('#foodPanel')},
+    {id:'meals',el:$('#mealPanel')}
+  ].filter(x=>x.el);
+  const key=id=>`atelierKitchenLayout_${id}`;
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  function read(id){
+    try{return JSON.parse(localStorage.getItem(key(id)))||{x:0,y:0,scale:1}}catch(e){return{x:0,y:0,scale:1}}
+  }
+  function save(id,data){localStorage.setItem(key(id),JSON.stringify(data))}
+  function apply(item,data){
+    item.el.style.setProperty('--layout-x',`${data.x||0}px`);
+    item.el.style.setProperty('--layout-y',`${data.y||0}px`);
+    item.el.style.setProperty('--layout-scale',String(data.scale||1));
+    const val=item.el.querySelector('.layout-scale-value'); if(val) val.textContent=`${Math.round((data.scale||1)*100)}%`;
+  }
+
+  specs.forEach(item=>{
+    item.el.classList.add('layout-object');
+    const controls=document.createElement('div'); controls.className='layout-controls';
+    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
+    item.el.appendChild(controls);
+    apply(item,read(item.id));
+
+    const moveHandle=controls.querySelector('.layout-move-handle');
+    const resizeHandle=controls.querySelector('.layout-resize-handle');
+
+    moveHandle.addEventListener('pointerdown',e=>{
+      if(!view.classList.contains('layout-editing'))return;
+      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
+      const start=read(item.id), sx=e.clientX, sy=e.clientY;
+      const move=ev=>{const d={...start,x:(start.x||0)+(ev.clientX-sx),y:(start.y||0)+(ev.clientY-sy)};apply(item,d);save(item.id,d)};
+      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
+      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
+    });
+
+    resizeHandle.addEventListener('pointerdown',e=>{
+      if(!view.classList.contains('layout-editing'))return;
+      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
+      const start=read(item.id), sx=e.clientX, sy=e.clientY;
+      const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;const d={...start,scale:clamp((start.scale||1)+delta,.5,1.5)};apply(item,d);save(item.id,d)};
+      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
+      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
+    });
+  });
+
+  toggle.addEventListener('click',()=>{
+    const editing=view.classList.toggle('layout-editing');
+    toggle.textContent=editing?'✓ Terminer la disposition':'✥ Modifier la disposition';
+    reset.classList.toggle('hidden',!editing); hint?.classList.toggle('hidden',!editing);
+  });
+  reset.addEventListener('click',()=>{
+    specs.forEach(item=>{const d={x:0,y:0,scale:1};save(item.id,d);apply(item,d)});
+  });
+}
+
+applyCalendarMode(); syncNotifyButton(); initHomeLayoutEditor(); initKitchenLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
