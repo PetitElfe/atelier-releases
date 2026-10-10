@@ -1,5 +1,5 @@
 {
-  "version": "0.0.10",
+  "version": "0.1.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "e37abd76504e8f67025e1a06df134beaa0316572e664e4cc4622b282a692a662"
+      "sha256": "e9dd8507f4bf0c6f42458e41aea833ad0bd3f6127272335eee9bf4d58541ed67"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "8b5e6d13f0141d5adedcd0ee406a6e66b2a4b2c90081894949e2afec5adc70a5"
+      "sha256": "aa129143840be3d1663cb09e605c787b8717f2d4399f9864b67b778e260bcce6"
     },
     {
       "path": "app_part3.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "0732072f966954637ada29c912d1e6b7f3218510abdb7b425a8c375bc6178c72"
+      "sha256": "6fb7c58c4d03e9fb092acb4305106df6667a0dc4c0d5223bf7fbbd2cedbb7be3"
     },
     {
       "path": "public/app_part2.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "99de07555e1f9ee94b2e94ef8d886198bfda1870b2347f018de4155c97535c21"
+      "sha256": "cfc224b601f72d75b7516c1711e352a8f6781686248fc9f03226672b24576c72"
     },
     {
       "path": "public/styles.css",
-      "sha256": "7d3b06e9c8ad4b88ebc25a7b8d564dc0b7299ae49c529e48470e6bb609a4fcc5"
+      "sha256": "a6f03ac4606e57a16d1c9706e0052952b8fddbdc1e8ed5d9a53ee43355ace629"
     }
   ],
-  "notes": "0.0.10 : en-tête allégé avec date centrée sans encadré et bouton de notifications compact sous forme de cloche."
+  "notes": "0.1.0 : première vraie maquette du livre central de l’accueil, avec page gauche tâches + « Ne pas oublier », page droite « Que faire maintenant ? » + repas, en style journal italique sans image générée."
 }
