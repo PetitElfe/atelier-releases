@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.3.1'
+    server_version = 'AtelierLocal/0.3.2'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -44,7 +44,14 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/events':
                 start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
                 rows = c.execute('SELECT * FROM events WHERE event_date <= ? ORDER BY event_date,start_time,id', (end,)).fetchall()
-                return self._json(expand_events(rows, start, end))
+                expanded = expand_events(rows, start, end)
+                done_rows = c.execute('SELECT event_id,instance_date,completed_at FROM event_completions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
+                done_map = {(r['event_id'],r['instance_date']): r['completed_at'] for r in done_rows}
+                for e in expanded:
+                    completed_at = done_map.get((e['id'], e.get('instance_date') or e['event_date']))
+                    e['instance_done'] = bool(completed_at)
+                    e['instance_completed_at'] = completed_at or ''
+                return self._json(expanded)
             if p == '/api/event-template':
                 title = (q.get('title', [''])[0] or '').strip()
                 if not title:
