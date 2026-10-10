@@ -1,5 +1,5 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "71015c979ccb0fc8a0be7ca0ae83046ab045cdc2c8faa09fb2f0f7e440f9b4a6"
+      "sha256": "998f6b887ed7a6ef44e84210d0237b715bed42ea7254f48dc418afec0a484103"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "8f9d99f1d1979599d1506dc5b78f3f439c6d6006d7ff8ccde1205a4ea8efafc7"
+      "sha256": "89bf44b300d5d862c68a8af790061093983b63af60d720c91d9db0f244524028"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "097bd8cad8388c0e967522f2402559ff0c23ee571b98215f5b253f0a7c99384f"
+      "sha256": "401ec5f5459652e5a40db66f9dc26c6d75ab5bc4f4ad2ad6d58669e7a00d1c26"
     },
     {
       "path": "public/index.html",
-      "sha256": "0f53367f66c3cea3c36c61461556a86807baefff9d6aae4d1fc9275b11e251ce"
+      "sha256": "00894d9961b5e47b15d1df57abd10ba97eca5383a07c2ff3caed281da5e72491"
     },
     {
       "path": "public/styles.css",
-      "sha256": "ad7c944d7d8641dc968a64dea45f881e1720b1b47523e2fc40196c724355ceeb"
+      "sha256": "926f637cbd31854787d41c38a81bc26c6c8747466e22f032a2a9dbe3e987fba8"
     }
   ],
-  "notes": "0.2.1 : les trois blocs de la page Courses & repas peuvent maintenant être déplacés et redimensionnés comme les éléments de l’accueil. Les positions et tailles sont mémorisées localement, avec réinitialisation possible."
+  "notes": "0.2.2 : correction du mode de disposition. En mode édition, on peut maintenant attraper directement tout un bloc pour le déplacer, la poignée de redimensionnement est plus grande et visible, et les transformations des cartes de l’accueil n’empêchent plus déplacement et redimensionnement."
 }
