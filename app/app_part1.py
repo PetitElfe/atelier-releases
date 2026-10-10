@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS meal_ideas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   notes TEXT DEFAULT '',
+  recipe TEXT DEFAULT '',
   archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -107,6 +108,9 @@ with conn() as c:
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
+    meal_cols = {r['name'] for r in c.execute('PRAGMA table_info(meal_ideas)').fetchall()}
+    if 'recipe' not in meal_cols:
+        c.execute("ALTER TABLE meal_ideas ADD COLUMN recipe TEXT DEFAULT ''")
     c.commit()
 
 
