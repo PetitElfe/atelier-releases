@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.1.6</title>
+  <title>L’Atelier — Alpha 0.2.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.1.6</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.2.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -26,6 +26,7 @@
     <button data-view="calendar">Calendrier</button>
     <button data-view="tasks">Tâches</button>
     <button data-view="reminders">Rappels</button>
+    <button data-view="kitchen">Courses & repas</button>
   </nav>
 
   <main>
@@ -152,6 +153,24 @@
       <div class="panel-head"><h2>Rappels non traités</h2></div>
       <p class="muted">Les rappels ignorés restent ici jusqu’à ce que tu les traites.</p>
       <div id="reminderList" class="reminder-list"></div>
+    </section>
+
+    <section id="kitchenView" class="view">
+      <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Courses, aliments & repas</h2></div></div>
+      <div class="kitchen-grid">
+        <section class="kitchen-panel">
+          <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Ce qu’il faut acheter.</p></div><button id="addShopping" class="primary">+ Article</button></div>
+          <div id="shoppingList" class="kitchen-list"></div>
+        </section>
+        <section class="kitchen-panel">
+          <div class="kitchen-head"><div><h3>Aliments à la maison</h3><p>Avec leur date de péremption.</p></div><button id="addFood" class="primary">+ Aliment</button></div>
+          <div id="foodList" class="kitchen-list"></div>
+        </section>
+        <section class="kitchen-panel">
+          <div class="kitchen-head"><div><h3>Idées de repas</h3><p>Des plats à garder sous la main.</p></div><button id="addMeal" class="primary">+ Idée</button></div>
+          <div id="mealList" class="kitchen-list"></div>
+        </section>
+      </div>
     </section>
   </main>
 
