@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.3.2'
+    server_version = 'AtelierLocal/0.4.0'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -149,21 +149,28 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/shopping':
                 name=body.get('name','').strip()
                 if not name: return self._json({'error':'name required'},400)
-                cur=c.execute('INSERT INTO shopping_items(name,quantity,checked,archived,created_at,updated_at) VALUES(?,?,0,0,?,?)',
-                              (name,body.get('quantity',''),ts,ts))
+                count=max(1,int(body.get('purchase_count') or 1))
+                cur=c.execute('''INSERT INTO shopping_items(name,quantity,purchase_count,price,calories,checked,archived,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,0,0,?,?)''',
+                              (name,body.get('quantity',''),count,float_or_none(body.get('price')),float_or_none(body.get('calories')),ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/foods':
                 name=body.get('name','').strip()
                 if not name: return self._json({'error':'name required'},400)
-                cur=c.execute('INSERT INTO food_items(name,quantity,expiry_date,notes,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
-                              (name,body.get('quantity',''),body.get('expiry_date') or None,body.get('notes',''),'active',ts,ts))
+                mode=(body.get('expiry_mode') or ('date' if body.get('expiry_date') else 'none')).strip()
+                if mode not in ('pending','date','none'): mode='pending'
+                expiry=(body.get('expiry_date') or None) if mode=='date' else None
+                units=max(1,int(body.get('units_count') or 1))
+                cur=c.execute('''INSERT INTO food_items(name,quantity,units_count,price,calories,expiry_date,expiry_mode,notes,status,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
+                              (name,body.get('quantity',''),units,float_or_none(body.get('price')),float_or_none(body.get('calories')),expiry,mode,body.get('notes',''),'active',ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/meals':
                 title=body.get('title','').strip()
                 if not title: return self._json({'error':'title required'},400)
                 cur=c.execute('''INSERT INTO meal_ideas(title,notes,recipe,base_servings,ingredients_json,image_data,archived,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?,0,?,?)''',
-                              (title,body.get('notes',''),body.get('recipe',''),max(1,int(body.get('base_servings') or 4)),
+                              (title,body.get('notes',''),body.get('recipe',''),max(1,int(body.get('base_servings') or 1)),
                                body.get('ingredients_json','[]'),body.get('image_data',''),ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
