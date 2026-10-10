@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS shopping_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   quantity TEXT DEFAULT '',
+  purchase_count INTEGER NOT NULL DEFAULT 1,
+  price REAL,
+  calories REAL,
   checked INTEGER NOT NULL DEFAULT 0,
   archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
@@ -85,7 +88,11 @@ CREATE TABLE IF NOT EXISTS food_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   quantity TEXT DEFAULT '',
+  units_count INTEGER NOT NULL DEFAULT 1,
+  price REAL,
+  calories REAL,
   expiry_date TEXT,
+  expiry_mode TEXT NOT NULL DEFAULT 'pending',
   notes TEXT DEFAULT '',
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL,
@@ -127,6 +134,23 @@ with conn() as c:
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
+    shopping_cols = {r['name'] for r in c.execute('PRAGMA table_info(shopping_items)').fetchall()}
+    if 'purchase_count' not in shopping_cols:
+        c.execute("ALTER TABLE shopping_items ADD COLUMN purchase_count INTEGER NOT NULL DEFAULT 1")
+    if 'price' not in shopping_cols:
+        c.execute("ALTER TABLE shopping_items ADD COLUMN price REAL")
+    if 'calories' not in shopping_cols:
+        c.execute("ALTER TABLE shopping_items ADD COLUMN calories REAL")
+    food_cols = {r['name'] for r in c.execute('PRAGMA table_info(food_items)').fetchall()}
+    if 'units_count' not in food_cols:
+        c.execute("ALTER TABLE food_items ADD COLUMN units_count INTEGER NOT NULL DEFAULT 1")
+    if 'price' not in food_cols:
+        c.execute("ALTER TABLE food_items ADD COLUMN price REAL")
+    if 'calories' not in food_cols:
+        c.execute("ALTER TABLE food_items ADD COLUMN calories REAL")
+    if 'expiry_mode' not in food_cols:
+        c.execute("ALTER TABLE food_items ADD COLUMN expiry_mode TEXT NOT NULL DEFAULT 'pending'")
+        c.execute("UPDATE food_items SET expiry_mode=CASE WHEN expiry_date IS NOT NULL AND expiry_date<>'' THEN 'date' ELSE 'none' END")
     meal_cols = {r['name'] for r in c.execute('PRAGMA table_info(meal_ideas)').fetchall()}
     if 'recipe' not in meal_cols:
         c.execute("ALTER TABLE meal_ideas ADD COLUMN recipe TEXT DEFAULT ''")
