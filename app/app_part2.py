@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.2.4'
+    server_version = 'AtelierLocal/0.2.5'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
