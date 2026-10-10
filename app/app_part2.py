@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.0.8'
+    server_version = 'AtelierLocal/0.0.9'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -45,6 +45,22 @@ class Handler(BaseHTTPRequestHandler):
                 start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
                 rows = c.execute('SELECT * FROM events WHERE event_date <= ? ORDER BY event_date,start_time,id', (end,)).fetchall()
                 return self._json(expand_events(rows, start, end))
+            if p == '/api/event-template':
+                title = (q.get('title', [''])[0] or '').strip()
+                if not title:
+                    return self._json({'found': False})
+                row = c.execute(
+                    '''SELECT category,contact,travel_time
+                       FROM events
+                       WHERE lower(trim(title)) = lower(trim(?))
+                       ORDER BY event_date DESC, updated_at DESC, id DESC
+                       LIMIT 1''',
+                    (title,)
+                ).fetchone()
+                if not row:
+                    return self._json({'found': False})
+                data = dict(row); data['found'] = True
+                return self._json(data)
             if p == '/api/tasks':
                 rows = c.execute('SELECT * FROM tasks WHERE archived=0 ORDER BY completed, important DESC, COALESCE(due_date,\'9999-12-31\'), order_index, id').fetchall()
                 return self._json([dict(r) for r in rows])
@@ -82,11 +98,11 @@ class Handler(BaseHTTPRequestHandler):
                 vals = (
                     body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
                     1 if body.get('all_day') else 0, body.get('category','general'), body.get('location',''), body.get('notes',''),
-                    body.get('contact',''), body.get('url',''), body.get('status','planned'), body.get('recurrence','none'),
+                    body.get('contact',''), body.get('travel_time',''), body.get('url',''), body.get('status','planned'), body.get('recurrence','none'),
                     1 if body.get('show_in_month', True) else 0, ts, ts)
                 if not vals[0] or not vals[1]: return self._json({'error':'title and event_date required'},400)
-                cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,url,status,recurrence,show_in_month,created_at,updated_at)
-                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                 eid=cur.lastrowid
                 for ra in body.get('reminders',[]) or []:
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
@@ -114,8 +130,8 @@ class Handler(BaseHTTPRequestHandler):
                 eid=int(parts[2]); old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
-                          (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
+                c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
+                          (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('travel_time',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
                 if 'reminders' in body:
                     c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
                     for ra in body.get('reminders',[]) or []:
