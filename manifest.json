@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9"
+      "sha256": "71015c979ccb0fc8a0be7ca0ae83046ab045cdc2c8faa09fb2f0f7e440f9b4a6"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "9c22153263375cf6a9a38b74a0fdcdba2342c12994e5c9d870b41f892b4365e1"
+      "sha256": "8f9d99f1d1979599d1506dc5b78f3f439c6d6006d7ff8ccde1205a4ea8efafc7"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "fa76d568551c221bcf3f52da42d77c0b011ee70aefa985a329ff0f5c95483943"
+      "sha256": "097bd8cad8388c0e967522f2402559ff0c23ee571b98215f5b253f0a7c99384f"
     },
     {
       "path": "public/index.html",
-      "sha256": "e77225ded462e367cf8af7658b89f3b01acb5521850673ed3c84ef1abddbe9da"
+      "sha256": "0f53367f66c3cea3c36c61461556a86807baefff9d6aae4d1fc9275b11e251ce"
     },
     {
       "path": "public/styles.css",
-      "sha256": "cdf62343a8d4b7845b9481cc8693c93be6e1fedb76c1788ed0987548b9b2061a"
+      "sha256": "ad7c944d7d8641dc968a64dea45f881e1720b1b47523e2fc40196c724355ceeb"
     }
   ],
-  "notes": "0.2.0 : nouveau système Courses & repas avec liste de courses, aliments à la maison et dates de péremption, idées de repas, transfert d’un achat vers les aliments, affichage automatique des aliments à consommer dans J-3 et idées de repas sur le livre d’accueil."
+  "notes": "0.2.1 : les trois blocs de la page Courses & repas peuvent maintenant être déplacés et redimensionnés comme les éléments de l’accueil. Les positions et tailles sont mémorisées localement, avec réinitialisation possible."
 }
