@@ -1,5 +1,5 @@
 {
-  "version": "0.2.6",
+  "version": "0.2.7",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "be3c6d2c6c406a64d44f0b6464a887e290416dd90c524094485b1be00936d6d7"
+      "sha256": "5b57e3b8c153d1d33b0c0f1ee29d3de1bf93232ed95aa78b80fe885e99faa915"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "b5c62a69d12a614c6c28c80fc59eb17f8987537982ebd6c6a2b0f75fe3c90c7e"
+      "sha256": "17c4ee52bf88bb512ba3613c168452ae5260edaae0b0b8979f9a5543caf3de7e"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "b840cfac2f21d643d0220576857089a6843e0245cedc8cd0c5e27a133effea73"
+      "sha256": "caf66c7bfb23f8dc53f2cda3580145a4d96a2c6d65c0a7eac4562dd17e9a80c9"
     },
     {
       "path": "public/index.html",
-      "sha256": "295b3dc99a1709b9cb53910309697fb6338ce57ffbc8cc84b0ab51c9414fddae"
+      "sha256": "c34dad37829f561ef39759685a33f62e18badf0a761e606612a33ce2aaad8d9f"
     },
     {
       "path": "public/styles.css",
-      "sha256": "e72af41921b33893a12a616a420db60033724d9c3061de7df3ea5316df17b9aa"
+      "sha256": "327a8da316d7b9ef9d26ab1ae648ace4e7f2345218b753020e9702a426e634c3"
     }
   ],
-  "notes": "0.2.6 : le bouton de modification de la disposition de l’accueil est déplacé dans l’en-tête. Pendant le mode disposition, les éléments de l’accueil sont temporairement désactivés : cliquer ou glisser le calendrier, À venir ou le livre ne déclenche plus leurs actions. On peut donc les déplacer/redimensionner sans ouvrir leurs pages."
+  "notes": "0.2.7 : correction des positions de l’accueil après redémarrage. Les anciens décalages enregistrés avec l’ancienne référence de mise en page sont remis à zéro une seule fois. La composition provisoire devient stable : « À venir » à gauche, calendrier à droite, livre au centre. Les nouveaux déplacements et tailles restent ensuite mémorisés normalement."
 }
