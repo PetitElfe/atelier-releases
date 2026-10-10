@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.2.9</title>
+  <title>L’Atelier — Alpha 0.3.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.2.9</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.3.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -160,6 +160,42 @@
           <div id="mealList" class="kitchen-list"></div>
         </section>
       </div>
+    </section>
+
+    <section id="recipeView" class="view recipe-page-view">
+      <div class="recipe-page-toolbar">
+        <button id="backFromRecipe" type="button">← Retour</button>
+        <button id="editRecipePage" class="primary" type="button">Modifier la recette</button>
+      </div>
+
+      <article class="recipe-carnet" aria-label="Carnet de recette">
+        <section class="recipe-carnet-page recipe-carnet-left">
+          <div class="section-kicker">RECETTE</div>
+          <h2 id="recipePageTitle">Recette</h2>
+          <p id="recipePageNote" class="recipe-page-note"></p>
+
+          <div id="recipeImageFrame" class="recipe-image-frame">
+            <img id="recipePageImage" alt="" class="hidden" />
+            <div id="recipeNoImage" class="recipe-no-image">Aucune image pour cette recette</div>
+          </div>
+
+          <div class="recipe-servings">
+            <span>Pour</span>
+            <button id="recipeServingsMinus" type="button" aria-label="Retirer une portion">−</button>
+            <strong id="recipeServingsValue">4</strong>
+            <button id="recipeServingsPlus" type="button" aria-label="Ajouter une portion">+</button>
+            <span>personnes</span>
+          </div>
+
+          <h3>Ingrédients</h3>
+          <div id="recipeIngredientsList" class="recipe-ingredients-list"></div>
+        </section>
+
+        <section class="recipe-carnet-page recipe-carnet-right">
+          <h3>Préparation</h3>
+          <div id="recipeInstructions" class="recipe-instructions"></div>
+        </section>
+      </article>
     </section>
   </main>
 
