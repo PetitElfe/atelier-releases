@@ -17,7 +17,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     : editing
       ? state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)}))
       : [];
-  openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid">
+  openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid event-form-compact">
     <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
     <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général · blanc</option><option value="medical">Médical · vert</option><option value="important">Important · rouge</option></select></div>
@@ -95,6 +95,7 @@ function notifyReminder(r){
 
 function showView(view){
   state.view=view;
+  if(view!=='recipe') localStorage.setItem('atelierLastView',view);
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
@@ -120,7 +121,7 @@ $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state
 $('#todayBtn').onclick=()=>{state.cursor=new Date();$('#jumpDate').value=ymd(state.cursor);if(state.view!=='home')showView('calendar');else refresh()};
 $('#jumpDate').value=ymd(new Date()); $('#jumpDate').onchange=e=>{if(e.target.value){state.cursor=parseYMD(e.target.value);showView('calendar');refresh()}};
 $('#addTask').onclick=()=>openTaskModal(); $('#addEventWeek').onclick=()=>openEventModal(null,ymd(state.cursor)); $('#modalClose').onclick=closeModal;
-$('#addShopping').onclick=()=>openShoppingModal(); $('#addFood').onclick=()=>openFoodModal(); $('#addMeal').onclick=()=>openMealModal();
+$('#addShopping').onclick=()=>openShoppingModal(); $('#addFood').onclick=()=>openFoodModal(); $('#addMeal').onclick=()=>openMealModal(); $('#validateShopping').onclick=()=>validateShoppingPurchases();
 // Un clic accidentel autour d'un formulaire ne le ferme plus : on protège ce qui est en cours d'écriture.
 $('#modalBackdrop').addEventListener('click',e=>{ if(e.target===$('#modalBackdrop')) e.preventDefault(); });
 function syncNotifyButton(){
@@ -241,6 +242,9 @@ function initKitchenLayoutEditor(){
   });
 }
 
-applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor();
+const savedView=localStorage.getItem('atelierLastView');
+refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen'].includes(savedView))showView(savedView)});
+setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
