@@ -3,19 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.0.8</title>
+  <title>L’Atelier — Alpha 0.0.10</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <div class="eyebrow">L’ATELIER · ALPHA 0.0.8</div>
+    <div class="top-brand">
+      <div class="eyebrow">L’ATELIER · ALPHA 0.0.10</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
+    <div class="top-date-wrap">
+      <input id="jumpDate" class="top-date-input" type="date" title="Aller à une date" aria-label="Aller à une date" />
+    </div>
     <div class="top-actions">
-      <input id="jumpDate" type="date" title="Aller à une date" />
       <button id="todayBtn">Aujourd’hui</button>
-      <button id="notifyBtn" class="secondary">Activer les notifications</button>
+      <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
     </div>
   </header>
 
