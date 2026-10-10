@@ -1,5 +1,5 @@
 {
-  "version": "0.2.7",
+  "version": "0.2.8",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "5b57e3b8c153d1d33b0c0f1ee29d3de1bf93232ed95aa78b80fe885e99faa915"
+      "sha256": "283571d2642fc7b3befd294f45d53b896a1d54d34c86235b13151192b380606a"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "17c4ee52bf88bb512ba3613c168452ae5260edaae0b0b8979f9a5543caf3de7e"
+      "sha256": "59ea31a600511cd5e714b272cc269821e59fae53596fe79f5cb51539b7272811"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "caf66c7bfb23f8dc53f2cda3580145a4d96a2c6d65c0a7eac4562dd17e9a80c9"
+      "sha256": "62eb7a98b45e7da9f87a959ca6d700f0374c2763ed6632e8e8996979b0b17f34"
     },
     {
       "path": "public/index.html",
-      "sha256": "c34dad37829f561ef39759685a33f62e18badf0a761e606612a33ce2aaad8d9f"
+      "sha256": "3ffbb7671ae15e09e8b86f64fc8a610b6d49cd5a8786d61bb0303f3dae7a4db2"
     },
     {
       "path": "public/styles.css",
-      "sha256": "327a8da316d7b9ef9d26ab1ae648ace4e7f2345218b753020e9702a426e634c3"
+      "sha256": "d55566221fa6fd040e643943fa14b0248ac65d2857f55815f371153bfecfe9ce"
     }
   ],
-  "notes": "0.2.7 : correction des positions de l’accueil après redémarrage. Les anciens décalages enregistrés avec l’ancienne référence de mise en page sont remis à zéro une seule fois. La composition provisoire devient stable : « À venir » à gauche, calendrier à droite, livre au centre. Les nouveaux déplacements et tailles restent ensuite mémorisés normalement."
+  "notes": "0.2.8 : l’accueil desktop n’affiche plus de barre de défilement verticale inutile. Le livre reste visuellement centré même quand sa taille est modifiée, et l’espacement de la composition provisoire est légèrement resserré. Sur petits écrans, le défilement reste disponible si nécessaire."
 }
