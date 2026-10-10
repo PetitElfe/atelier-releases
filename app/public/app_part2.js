@@ -275,7 +275,7 @@ function openMealModal(item=null){
   openModal(`<h2>${editing?'Modifier la recette':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid recipe-form">
     <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
     <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, envie particulière, accompagnement…">${esc(item?.notes||'')}</textarea></div>
-    <div class="field"><label>Recette de base pour</label><div class="servings-input-line"><input name="base_servings" type="number" min="1" max="99" value="${Math.max(1,Number(item?.base_servings)||4)}"><span>personnes</span></div></div>
+    <div class="field"><label>Cette recette est écrite pour</label><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="ex. 4" value="${editing?Math.max(1,Number(item?.base_servings)||1):''}"><span>personnes</span></div></div>
     <div class="field recipe-image-edit">
       <label>Image</label>
       <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
@@ -322,7 +322,7 @@ function openMealModal(item=null){
   form.onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(form).entries());
-    payload.base_servings=Math.max(1,Number(payload.base_servings)||4);
+    payload.base_servings=Math.max(1,Number(payload.base_servings)||1);
     payload.ingredients_json=JSON.stringify(collectIngredientEditorRows(rows));
     payload.image_data=mealImageData;
     await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
@@ -337,7 +337,7 @@ function openMealModal(item=null){
 
 function renderMealRecipePage(item){
   if(!item)return;
-  const base=Math.max(1,Number(item.base_servings)||4);
+  const base=Math.max(1,Number(item.base_servings)||1);
   recipeTargetServings=Math.max(1,Number(recipeTargetServings)||base);
   $('#recipePageTitle').textContent=item.title||'Recette';
 
@@ -384,7 +384,7 @@ function openMealRecipeModal(item){
   if(!item)return;
   if(state.view!=='recipe')recipeReturnView=state.view==='home'?'home':'kitchen';
   recipeCurrentMealId=item.id;
-  recipeTargetServings=Math.max(1,Number(item.base_servings)||4);
+  recipeTargetServings=Math.max(1,Number(item.base_servings)||1);
   showView('recipe');
   renderMealRecipePage(item);
 
