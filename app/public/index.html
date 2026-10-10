@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.0.10</title>
+  <title>L’Atelier — Alpha 0.1.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.0.10</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.1.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -30,31 +30,58 @@
 
   <main>
     <section id="homeView" class="view active-view">
-      <div class="home-intro">
-        <div>
-          <div class="home-date" id="homeDate"></div>
-          <div class="home-clock" id="homeClock"></div>
-        </div>
+      <div class="home-desk-tools">
+        <button id="openCalendarCard" class="pinned-calendar" type="button">
+          <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
+          <div id="homeMiniCalendar" class="home-mini-calendar"></div>
+        </button>
         <div class="home-quick-actions">
           <button id="homeAddTask" class="primary">+ Tâche</button>
           <button id="homeAddEvent">+ Rendez-vous</button>
         </div>
       </div>
 
-      <div class="home-layout">
-        <button id="openCalendarCard" class="home-card calendar-card" type="button">
-          <div class="card-head"><span>Calendrier</span><span class="card-link">Ouvrir →</span></div>
-          <div id="homeMiniCalendar" class="home-mini-calendar"></div>
-        </button>
+      <div class="journal-book" aria-label="Journal de l’Atelier">
+        <section class="journal-page journal-left">
+          <div class="journal-date" id="homeDate"></div>
 
-        <section class="home-card book-card" aria-labelledby="todayTasksTitle">
-          <div class="card-head">
-            <span id="todayTasksTitle">Tâches du jour</span>
-            <button id="openTasksFromHome" class="text-button" type="button">Tout voir →</button>
+          <div class="journal-section">
+            <div class="journal-heading">Ne pas oublier</div>
+            <div id="homeDeadlineLines" class="deadline-lines"></div>
           </div>
-          <div id="homeTodayTasks" class="home-list"></div>
+
+          <div class="journal-divider"></div>
+
+          <div class="journal-section journal-tasks-section">
+            <div class="journal-title-row">
+              <div class="journal-heading">Tâches du jour</div>
+              <button id="openTasksFromHome" class="journal-link" type="button">tout voir →</button>
+            </div>
+            <div id="homeTodayTasks" class="journal-task-list"></div>
+          </div>
         </section>
 
+        <section class="journal-page journal-right">
+          <div class="journal-section">
+            <div class="journal-heading">Que faire maintenant ?</div>
+            <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
+          </div>
+
+          <div class="journal-divider"></div>
+
+          <div class="journal-section">
+            <div class="journal-heading">Idées de repas</div>
+            <div id="homeMealIdeas" class="meal-ideas"></div>
+          </div>
+
+          <div id="homeExpiryBlock" class="journal-section expiry-block hidden">
+            <div class="journal-heading">À consommer bientôt</div>
+            <div id="homeExpiryList"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="home-utility-row">
         <section class="home-card" aria-labelledby="upcomingTitle">
           <div class="card-head">
             <span id="upcomingTitle">Prochains rendez-vous</span>
@@ -72,7 +99,7 @@
         </section>
       </div>
 
-      <div class="alpha-note">Accueil provisoire : on branche d’abord les fonctions utiles. Le vrai livre, Spooky et les illustrations viendront ensuite.</div>
+      <div class="alpha-note">Première maquette fonctionnelle du journal. Les objectifs, repas et produits à consommer seront branchés progressivement aux vraies données.</div>
     </section>
 
     <section id="calendarView" class="view">
