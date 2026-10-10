@@ -83,3 +83,8 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 
 #homeView.active-view{min-height:calc(100vh - 150px);max-height:calc(100vh - 150px);overflow:visible}
 @media(max-width:900px),(max-height:680px){body.home-active{overflow-y:auto}#homeView.active-view{max-height:none}}
+
+.recipe-editor{min-height:220px}
+.recipe-view h2{margin:4px 0 8px}
+.recipe-note{color:var(--muted);font-style:italic;margin:0 0 12px}
+.recipe-paper{min-height:180px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#171411;line-height:1.55;white-space:normal}
