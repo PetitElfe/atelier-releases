@@ -94,6 +94,14 @@ $('#jumpDate').value=ymd(new Date()); $('#jumpDate').onchange=e=>{if(e.target.va
 $('#addTask').onclick=()=>openTaskModal(); $('#addEventWeek').onclick=()=>openEventModal(null,ymd(state.cursor)); $('#modalClose').onclick=closeModal;
 // Un clic accidentel autour d'un formulaire ne le ferme plus : on protège ce qui est en cours d'écriture.
 $('#modalBackdrop').addEventListener('click',e=>{ if(e.target===$('#modalBackdrop')) e.preventDefault(); });
-$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} const p=await Notification.requestPermission();$('#notifyBtn').textContent=p==='granted'?'Notifications activées':'Notifications refusées'; };
+function syncNotifyButton(){
+  const b=$('#notifyBtn'); if(!b)return;
+  const granted=('Notification' in window)&&Notification.permission==='granted';
+  b.textContent=granted?'🔔':'🔕';
+  b.classList.toggle('is-active',granted);
+  b.title=granted?'Notifications activées':'Activer les notifications';
+  b.setAttribute('aria-label',b.title);
+}
+$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} await Notification.requestPermission(); syncNotifyButton(); };
 
-applyCalendarMode(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+applyCalendarMode(); syncNotifyButton(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
