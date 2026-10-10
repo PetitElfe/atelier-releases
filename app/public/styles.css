@@ -128,3 +128,16 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 .ingredient-edit-row input{background:#26211c}
 .ingredient-edit-row .ing-remove{border-color:#5c473c;background:transparent;color:#b99679}
 @media(max-width:700px){.recipe-image-edit{grid-column:1/-1}.meal-image-picker{height:180px}.ingredient-edit-labels{display:none}.ingredient-edit-row{grid-template-columns:72px 82px minmax(0,1fr) 36px}}
+
+
+/* Actions rapides des rendez-vous sur l’accueil */
+.home-appt-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px;border-bottom:1px solid #4b4036}
+.home-appt-row .home-row{border-bottom:0!important;min-width:0}
+.home-appt-main{display:grid;grid-template-columns:52px minmax(0,1fr);align-items:center;width:100%;text-align:left}
+.home-appt-actions{display:flex;align-items:center;gap:2px;padding-right:2px}
+.appt-action{width:20px;height:20px;padding:0;border-radius:5px;background:#211c18;border:1px solid #4c4036;color:#d7c6ab;font-size:11px;line-height:1}
+.appt-action.done:hover{border-color:#6f9a78;color:#9ac5a3}.appt-action.postpone:hover{border-color:var(--gold);color:var(--gold)}.appt-action.cancel:hover{border-color:#a9665e;color:#cf8177}
+.home-appt-state{display:grid;place-items:center;width:22px;height:22px;font-size:13px;color:#9c8b74}
+.home-appt-row.is-closed .home-appt-main{text-decoration:line-through;opacity:.5}
+.home-appt-row.is-postponed .home-appt-state{color:var(--gold)}.home-appt-row.is-done .home-appt-state{color:#7ba183}.home-appt-row.is-cancelled .home-appt-state{color:#b56d64}
+.event-instance-closed{text-decoration:line-through!important;opacity:.5}
