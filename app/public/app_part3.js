@@ -80,7 +80,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',recipe:'Recette'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   render();
