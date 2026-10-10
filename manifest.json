@@ -1,5 +1,5 @@
 {
-  "version": "0.2.9",
+  "version": "0.3.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "2f2b333be8858cb384114251b668bb1c9e45a0bb8393600b7ad4093d0e8e72f6"
+      "sha256": "d915cc95d6ca8f47ae297713ed46d4e5c5d99ddd29fc3c61e263bdf305f2b5b0"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "e6febbb469a2748f5fd1532678d682e7b3171b21f9074c92dee5666186e0358f"
+      "sha256": "9d838658955cb4d214fed49afed5f9eca62c96db5d82b7d07bd7b3c88677a8da"
     },
     {
       "path": "app_part2.py",
-      "sha256": "61c1f22da72cde701839bd55d6c45012aaa6859fd400bcdc8fe2e25c96d5068b"
+      "sha256": "76f78a77242dd36a7aa38a158bcb7217769459015a26eae29ba6a357f3dc8344"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "3f21dbee1b6c6b9a0674da5fe6939116d18923eee70a572b2ef6e0c4f402c443"
+      "sha256": "610ca830a025e8c522423f1c3674f5a8867a781c3ae7a96841c4572705a6d20c"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c54c8d99cb2f62bef65650d93533bb21b62388e7e771c1911762cfe3f4adfa62"
+      "sha256": "d773839bf026ad1a7b8b66e8eabf71f6dad7884d473ff01b32e1432f596992ee"
     },
     {
       "path": "public/index.html",
-      "sha256": "0c0cf2b742fbbc68a0df18a652e5b63a039d62cc23134f684281b27912414377"
+      "sha256": "f02e76536557158b45158406d93022f96005709f94a7d8d91bc1b9f4ab3693f3"
     },
     {
       "path": "public/styles.css",
-      "sha256": "4acbcd578b1b5de5b4e9afae2049b2365cd748a45db8b5e39bfe6502a8fabd68"
+      "sha256": "9604e251ffa4ad10d890dff7e0a852c51bd8270ffff9fc4d9059614b963732c2"
     }
   ],
-  "notes": "0.2.9 : les idées de repas ont maintenant une vraie section Recette. Un clic sur un plat depuis l’accueil ouvre sa recette, et la page Courses & repas propose un bouton Recette. La disposition de l’accueil est temporairement figée : les contrôles d’édition sont retirés, mais les positions et tailles déjà enregistrées sont conservées au redémarrage."
+  "notes": "0.3.0 : les idées de repas ouvrent maintenant une vraie page de carnet de recette avec titre, image personnelle, ingrédients structurés et préparation. La recette possède un nombre de portions de base ; les boutons − et + recalculent automatiquement les quantités d’ingrédients pour le nombre de personnes choisi. La disposition de l’accueil reste figée et ses positions enregistrées ne sont pas modifiées."
 }
