@@ -115,15 +115,6 @@ function renderHome(){
     b.addEventListener('click',()=>openEventModal(e)); upcomingRoot.appendChild(b);
   });
 
-  const remRoot=$('#homeReminderPreview'); remRoot.innerHTML='';
-  const reminders=state.reminders.slice(0,3);
-  if(!reminders.length) remRoot.innerHTML='<div class="home-empty">Aucun rappel en attente.</div>';
-  reminders.forEach(r=>{
-    const b=document.createElement('button'); b.type='button'; b.className='home-row';
-    const title=r.title || r.entity_title || `${r.entity_type==='event'?'Rendez-vous':'Tâche'} #${r.entity_id}`;
-    b.innerHTML=`<span class="home-row-time">🔔</span><span><div class="home-row-title">${esc(title)}</div><div class="home-row-meta">${esc((r.snoozed_until||r.remind_at).replace('T',' '))}</div></span>`;
-    b.addEventListener('click',()=>showView('reminders')); remRoot.appendChild(b);
-  });
 }
 
 function renderHomeMiniCalendar(){
