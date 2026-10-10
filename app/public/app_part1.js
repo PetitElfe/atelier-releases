@@ -37,14 +37,45 @@ function renderHome(){
   $('#homeDate').textContent=fmtFrenchDate(now).replace(/^./,c=>c.toUpperCase());
   renderHomeMiniCalendar();
 
+  const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
+  const urgentTasks=state.tasks.filter(t=>!t.completed&&t.important&&t.due_date).map(t=>({type:'task',date:t.due_date,title:t.title,item:t}));
+  const urgentEvents=state.events.filter(e=>e.status!=='cancelled'&&e.category==='important'&&e.instance_date>=today).map(e=>({type:'event',date:e.instance_date,title:e.title,item:e}));
+  const deadlines=[...urgentTasks,...urgentEvents].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  if(!deadlines.length){
+    deadlineRoot.innerHTML='<div class="deadline-empty">Rien d’urgent pour le moment.</div><div class="deadline-empty">&nbsp;</div><div class="deadline-empty">&nbsp;</div>';
+  }else{
+    deadlines.forEach(d=>{
+      const b=document.createElement('button'); b.type='button'; b.className='deadline-line';
+      b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span>${esc(d.title)}</span>`;
+      b.addEventListener('click',()=>d.type==='task'?openTaskModal(d.item):openEventModal(d.item)); deadlineRoot.appendChild(b);
+    });
+    for(let i=deadlines.length;i<3;i++){ const blank=document.createElement('div'); blank.className='deadline-empty'; blank.innerHTML='&nbsp;'; deadlineRoot.appendChild(blank); }
+  }
+
   const taskRoot=$('#homeTodayTasks'); taskRoot.innerHTML='';
-  const todayTasks=state.tasks.filter(t=>!t.completed && (!t.due_date || t.due_date<=today)).slice(0,6);
-  if(!todayTasks.length) taskRoot.innerHTML='<div class="home-empty">Rien à faire pour le moment c:</div>';
+  const todayTasks=state.tasks.filter(t=>!t.completed && (!t.due_date || t.due_date<=today)).slice(0,10);
+  if(!todayTasks.length) taskRoot.innerHTML='<div class="journal-empty">Rien à faire pour le moment c:</div>';
   todayTasks.forEach(t=>{
-    const b=document.createElement('button'); b.type='button'; b.className='home-row';
-    b.innerHTML=`<span class="home-row-time">${t.due_time?fmtTime(t.due_time):'☐'}</span><span><div class="home-row-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="home-row-meta">${t.due_date?fmtRelativeDate(t.due_date):'Sans date'}</div></span>`;
+    const b=document.createElement('button'); b.type='button'; b.className='journal-task';
+    b.innerHTML=`<span class="journal-task-mark">${t.important?'✦':'☐'}</span><span class="journal-task-title">${esc(t.title)}</span><span class="journal-task-time">${t.due_time?fmtTime(t.due_time):''}</span>`;
     b.addEventListener('click',()=>openTaskModal(t)); taskRoot.appendChild(b);
   });
+
+  const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
+  const objectiveSeeds=[
+    ['Anglais','Reprendre là où tu t’es arrêtée.'],
+    ['League of Legends','Une petite action vaut mieux qu’un énorme bloc.'],
+    ['Art','Garder une trace de l’idée du moment.'],
+    ['JDR','Avancer sur un détail concret.'],
+    ['Maison','Choisir une chose simple à régler.']
+  ];
+  objectiveSeeds.forEach(([name,context])=>{
+    const el=document.createElement('div'); el.className='objective-note';
+    el.innerHTML=`<div class="objective-name">${esc(name)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>Ajouter une petite action…</li></ul>`;
+    objectiveRoot.appendChild(el);
+  });
+
+  const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='<div class="meal-line">Ajouter une idée de repas…</div><div class="meal-line">Ajouter une idée de repas…</div>';
 
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
   const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,5);
