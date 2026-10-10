@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "d915cc95d6ca8f47ae297713ed46d4e5c5d99ddd29fc3c61e263bdf305f2b5b0"
+      "sha256": "79e3f22ca37c7fdf4c29ae3648d6b008c3cb6547260a453409275470919dc674"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "76f78a77242dd36a7aa38a158bcb7217769459015a26eae29ba6a357f3dc8344"
+      "sha256": "347900f008d3310711d8ffad96d076116eda86b8045e1848c4496d4d9892b597"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "610ca830a025e8c522423f1c3674f5a8867a781c3ae7a96841c4572705a6d20c"
+      "sha256": "45015d39f8b14f2f2a76cbe1b1b6a4073d5d740fe2030837cccaa85f12b7163b"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f02e76536557158b45158406d93022f96005709f94a7d8d91bc1b9f4ab3693f3"
+      "sha256": "523276d3f82f626d423afd64676bce9b73428b2060c0f72f8129bd9cfe53334a"
     },
     {
       "path": "public/styles.css",
-      "sha256": "9604e251ffa4ad10d890dff7e0a852c51bd8270ffff9fc4d9059614b963732c2"
+      "sha256": "14214c54ef8f73b8bf27524e3c565e37da5afb32719b65ebb7f5184e8e318566"
     }
   ],
-  "notes": "0.3.0 : les idées de repas ouvrent maintenant une vraie page de carnet de recette avec titre, image personnelle, ingrédients structurés et préparation. La recette possède un nombre de portions de base ; les boutons − et + recalculent automatiquement les quantités d’ingrédients pour le nombre de personnes choisi. La disposition de l’accueil reste figée et ses positions enregistrées ne sont pas modifiées."
+  "notes": "0.3.1 : l’éditeur de recette a été simplifié visuellement. Le champ fichier natif est remplacé par une zone image cliquable ; lorsqu’une image est présente, une croix permet de la retirer directement. Le bloc ingrédients est également plus compact et le bouton d’ajout est intégré à son en-tête."
 }
