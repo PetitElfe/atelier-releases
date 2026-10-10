@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS events (
   location TEXT DEFAULT '',
   notes TEXT DEFAULT '',
   contact TEXT DEFAULT '',
+  travel_time TEXT DEFAULT '',
   url TEXT DEFAULT '',
   status TEXT NOT NULL DEFAULT 'planned',
   recurrence TEXT NOT NULL DEFAULT 'none',
@@ -70,10 +71,13 @@ def conn():
 
 with conn() as c:
     c.executescript(SCHEMA)
-    cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
-    if 'title' not in cols:
+    reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
+    if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
-        c.commit()
+    event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
+    if 'travel_time' not in event_cols:
+        c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
+    c.commit()
 
 
 def now_iso():
