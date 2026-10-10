@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>L’Atelier — Alpha 0.0.8</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.0.8</div>
+      <h1 id="pageTitle">Accueil</h1>
+    </div>
+    <div class="top-actions">
+      <input id="jumpDate" type="date" title="Aller à une date" />
+      <button id="todayBtn">Aujourd’hui</button>
+      <button id="notifyBtn" class="secondary">Activer les notifications</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Navigation principale">
+    <button data-view="home" class="active">Accueil</button>
+    <button data-view="calendar">Calendrier</button>
+    <button data-view="tasks">Tâches</button>
+    <button data-view="reminders">Rappels</button>
+  </nav>
+
+  <main>
+    <section id="homeView" class="view active-view">
+      <div class="home-intro">
+        <div>
+          <div class="home-date" id="homeDate"></div>
+          <div class="home-clock" id="homeClock"></div>
+        </div>
+        <div class="home-quick-actions">
+          <button id="homeAddTask" class="primary">+ Tâche</button>
+          <button id="homeAddEvent">+ Rendez-vous</button>
+        </div>
+      </div>
+
+      <div class="home-layout">
+        <button id="openCalendarCard" class="home-card calendar-card" type="button">
+          <div class="card-head"><span>Calendrier</span><span class="card-link">Ouvrir →</span></div>
+          <div id="homeMiniCalendar" class="home-mini-calendar"></div>
+        </button>
+
+        <section class="home-card book-card" aria-labelledby="todayTasksTitle">
+          <div class="card-head">
+            <span id="todayTasksTitle">Tâches du jour</span>
+            <button id="openTasksFromHome" class="text-button" type="button">Tout voir →</button>
+          </div>
+          <div id="homeTodayTasks" class="home-list"></div>
+        </section>
+
+        <section class="home-card" aria-labelledby="upcomingTitle">
+          <div class="card-head">
+            <span id="upcomingTitle">Prochains rendez-vous</span>
+            <button id="openCalendarFromUpcoming" class="text-button" type="button">Calendrier →</button>
+          </div>
+          <div id="homeUpcoming" class="home-list"></div>
+        </section>
+
+        <section class="home-card" aria-labelledby="remindersTitle">
+          <div class="card-head">
+            <span id="remindersTitle">Rappels</span>
+            <button id="openRemindersFromHome" class="text-button" type="button">Tout voir →</button>
+          </div>
+          <div id="homeReminderPreview" class="home-list"></div>
+        </section>
+      </div>
+
+      <div class="alpha-note">Accueil provisoire : on branche d’abord les fonctions utiles. Le vrai livre, Spooky et les illustrations viendront ensuite.</div>
+    </section>
+
+    <section id="calendarView" class="view">
+      <div class="calendar-toolbar">
+        <div>
+          <div class="section-kicker">ESPACE CALENDRIER</div>
+          <h2>Calendrier & semainier</h2>
+        </div>
+        <div class="calendar-modes" role="tablist" aria-label="Vue du calendrier">
+          <button data-calendar-mode="month" class="active">Mois</button>
+          <button data-calendar-mode="week">Semaine</button>
+        </div>
+      </div>
+
+      <div id="monthPanel" class="calendar-panel active-calendar-panel">
+        <div class="view-head">
+          <button id="prevMonth" aria-label="Mois précédent">‹</button>
+          <h2 id="monthTitle"></h2>
+          <button id="nextMonth" aria-label="Mois suivant">›</button>
+        </div>
+        <div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+        <div id="monthGrid" class="month-grid"></div>
+      </div>
+
+      <div id="weekPanel" class="calendar-panel">
+        <div class="week-layout">
+          <aside class="mini-panel">
+            <div class="view-head compact">
+              <button id="prevWeek">‹</button><h2 id="weekTitle"></h2><button id="nextWeek">›</button>
+            </div>
+            <div id="miniMonth" class="mini-month"></div>
+            <button id="addEventWeek" class="primary wide">+ Rendez-vous</button>
+          </aside>
+          <div class="week-scroll">
+            <div id="weekGrid" class="week-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tasksView" class="view">
+      <div class="panel-head"><h2>Tâches</h2><button id="addTask" class="primary">+ Ajouter une tâche</button></div>
+      <div id="taskList" class="task-list"></div>
+    </section>
+
+    <section id="remindersView" class="view">
+      <div class="panel-head"><h2>Rappels non traités</h2></div>
+      <p class="muted">Les rappels ignorés restent ici jusqu’à ce que tu les traites.</p>
+      <div id="reminderList" class="reminder-list"></div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button id="modalClose" class="modal-close" aria-label="Fermer">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toastArea" class="toast-area" aria-live="polite"></div>
+  <script src="/app_part1.js"></script>
+  <script src="/app_part2.js"></script>
+  <script src="/app_part3.js"></script>
+</body>
+</html>
