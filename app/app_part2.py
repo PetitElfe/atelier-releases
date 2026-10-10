@@ -268,19 +268,34 @@ class Handler(BaseHTTPRequestHandler):
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
                 c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping' and parts[2]=='validate':
+                rows=c.execute('SELECT * FROM shopping_items WHERE archived=0 AND checked=1 ORDER BY id').fetchall()
+                moved=[]
+                for row in rows:
+                    cur=c.execute('''INSERT INTO food_items(name,quantity,units_count,price,calories,expiry_date,expiry_mode,notes,status,created_at,updated_at)
+                                     VALUES(?,?,?,?,?,NULL,'pending','', 'active',?,?)''',
+                                  (row['name'],row['quantity'] or '',max(1,int(row['purchase_count'] or 1)),row['price'],row['calories'],ts,ts))
+                    moved.append(cur.lastrowid)
+                    c.execute('UPDATE shopping_items SET archived=1,updated_at=? WHERE id=?',(ts,row['id']))
+                c.commit(); return self._json({'ok':True,'count':len(moved),'food_ids':moved})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping':
                 iid=int(parts[2]); old=c.execute('SELECT * FROM shopping_items WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('UPDATE shopping_items SET name=?,quantity=?,checked=?,archived=?,updated_at=? WHERE id=?',
-                          (d['name'],d.get('quantity',''),1 if d.get('checked') else 0,1 if d.get('archived') else 0,ts,iid))
+                c.execute('''UPDATE shopping_items SET name=?,quantity=?,purchase_count=?,price=?,calories=?,checked=?,archived=?,updated_at=? WHERE id=?''',
+                          (d['name'],d.get('quantity',''),max(1,int(d.get('purchase_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
+                           1 if d.get('checked') else 0,1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='foods':
                 iid=int(parts[2]); old=c.execute('SELECT * FROM food_items WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('UPDATE food_items SET name=?,quantity=?,expiry_date=?,notes=?,status=?,updated_at=? WHERE id=?',
-                          (d['name'],d.get('quantity',''),d.get('expiry_date') or None,d.get('notes',''),d.get('status','active'),ts,iid))
+                mode=(d.get('expiry_mode') or ('date' if d.get('expiry_date') else 'none')).strip()
+                if mode not in ('pending','date','none'): mode='pending'
+                expiry=(d.get('expiry_date') or None) if mode=='date' else None
+                c.execute('''UPDATE food_items SET name=?,quantity=?,units_count=?,price=?,calories=?,expiry_date=?,expiry_mode=?,notes=?,status=?,updated_at=? WHERE id=?''',
+                          (d['name'],d.get('quantity',''),max(1,int(d.get('units_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
+                           expiry,mode,d.get('notes',''),d.get('status','active'),ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='meals':
                 iid=int(parts[2]); old=c.execute('SELECT * FROM meal_ideas WHERE id=?',(iid,)).fetchone()
@@ -289,7 +304,7 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE meal_ideas
                              SET title=?,notes=?,recipe=?,base_servings=?,ingredients_json=?,image_data=?,archived=?,updated_at=?
                              WHERE id=?''',
-                          (d['title'],d.get('notes',''),d.get('recipe',''),max(1,int(d.get('base_servings') or 4)),
+                          (d['title'],d.get('notes',''),d.get('recipe',''),max(1,int(d.get('base_servings') or 1)),
                            d.get('ingredients_json','[]'),d.get('image_data',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
