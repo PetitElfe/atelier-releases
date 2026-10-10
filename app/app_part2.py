@@ -171,6 +171,50 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
+                eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
+                if not instance_date: return self._json({'error':'instance_date required'},400)
+                if body.get('done', True):
+                    c.execute('''INSERT INTO event_completions(event_id,instance_date,completed_at)
+                                 VALUES(?,?,?)
+                                 ON CONFLICT(event_id,instance_date) DO UPDATE SET completed_at=excluded.completed_at''',
+                              (eid,instance_date,ts))
+                else:
+                    c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                c.commit(); return self._json({'ok':True})
+
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='instance-action':
+                eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip(); action=(body.get('action') or '').strip()
+                if not instance_date or action not in ('postponed','cancelled'):
+                    return self._json({'error':'invalid action'},400)
+                old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                moved_event_id=None
+                if action=='postponed':
+                    new_date=(body.get('new_date') or '').strip(); new_time=(body.get('new_time') or '').strip()
+                    if not new_date or not new_time: return self._json({'error':'new_date and new_time required'},400)
+                    new_end=None
+                    if old['start_time'] and old['end_time']:
+                        try:
+                            sh,sm=map(int,old['start_time'].split(':')); eh,em=map(int,old['end_time'].split(':'))
+                            duration=(eh*60+em)-(sh*60+sm)
+                            if duration<0: duration+=24*60
+                            nh,nm=map(int,new_time.split(':')); end_minutes=(nh*60+nm+duration)%(24*60)
+                            new_end=f'{end_minutes//60:02d}:{end_minutes%60:02d}'
+                        except Exception:
+                            new_end=None
+                    vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['location'],old['notes'],
+                          old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
+                    cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                    moved_event_id=cur.lastrowid
+                c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
+                             VALUES(?,?,?,?,?)
+                             ON CONFLICT(event_id,instance_date) DO UPDATE SET action=excluded.action,moved_event_id=excluded.moved_event_id,action_at=excluded.action_at''',
+                          (eid,instance_date,action,moved_event_id,ts))
+                c.commit(); return self._json({'ok':True,'moved_event_id':moved_event_id})
+
             if len(parts)==3 and parts[0]=='api' and parts[1]=='events':
                 eid=int(parts[2]); old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
