@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f62184cee8787f2f6941c82041a5725d4edc9aa293ebe5dbf664406e82ec1fe1"
+      "sha256": "e2f7bb608ebc9e24092ffcb796ad0aa83f0015afe23635f017df52273150f00d"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "a0f11714b22f640133d7e4029c5bd7cc00e6693c534aa30e49d8a836949f765b"
+      "sha256": "81a6635eb370eb80e2edc3ca51de20d82ad3bc1a533d92091eb9681543549eed"
     },
     {
       "path": "app_part3.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f3382c761cd7e133aa52a6d0809552919d7a8721e6be8f5382956b8918e75ace"
+      "sha256": "c1933c88ad16eb423c97342df97dd007d3b7b2535b9a828372949c92d5c4daf7"
     },
     {
       "path": "public/styles.css",
       "sha256": "c4b790e71847cd4a167f5aeb88da6792188637a61618bf509bedfa3a82293aed"
     }
   ],
-  "notes": "0.4.1 : le semainier desktop est moins large et recentré. La colonne des heures est élargie et les heures passent en police plus grande et plus grasse, tandis que les cases horaires sont un peu moins hautes afin de garder la semaine compacte sur un écran."
+  "notes": "0.4.2 : version de récupération pour forcer la mise à jour complète après un état local partiel. Contient les changements de 0.4.0/0.4.1, notamment semainier plus étroit et heures plus lisibles."
 }
