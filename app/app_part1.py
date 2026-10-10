@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS meal_ideas (
   title TEXT NOT NULL,
   notes TEXT DEFAULT '',
   recipe TEXT DEFAULT '',
+  base_servings INTEGER NOT NULL DEFAULT 4,
+  ingredients_json TEXT DEFAULT '[]',
+  image_data TEXT DEFAULT '',
   archived INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -111,6 +114,12 @@ with conn() as c:
     meal_cols = {r['name'] for r in c.execute('PRAGMA table_info(meal_ideas)').fetchall()}
     if 'recipe' not in meal_cols:
         c.execute("ALTER TABLE meal_ideas ADD COLUMN recipe TEXT DEFAULT ''")
+    if 'base_servings' not in meal_cols:
+        c.execute("ALTER TABLE meal_ideas ADD COLUMN base_servings INTEGER NOT NULL DEFAULT 4")
+    if 'ingredients_json' not in meal_cols:
+        c.execute("ALTER TABLE meal_ideas ADD COLUMN ingredients_json TEXT DEFAULT '[]'")
+    if 'image_data' not in meal_cols:
+        c.execute("ALTER TABLE meal_ideas ADD COLUMN image_data TEXT DEFAULT ''")
     c.commit()
 
 
