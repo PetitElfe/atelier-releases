@@ -216,7 +216,7 @@ function openFoodModal(item=null,prefillName='',prefillQuantity=''){
 
 let recipeReturnView='kitchen';
 let recipeCurrentMealId=null;
-let recipeTargetServings=4;
+let recipeTargetServings=1;
 
 function parseMealIngredients(item){
   try{
