@@ -115,4 +115,19 @@ function syncNotifyButton(){
 }
 $('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} await Notification.requestPermission(); syncNotifyButton(); };
 
-applyCalendarMode(); syncNotifyButton(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+function initJournalResizer(){
+  const book=$('#journalBook'), grip=$('#journalResizeGrip'), value=$('#journalScaleValue');
+  if(!book||!grip||!value)return;
+  const clamp=v=>Math.max(.55,Math.min(1.3,v));
+  const apply=v=>{ const scale=clamp(v); book.style.zoom=String(scale); value.textContent=`${Math.round(scale*100)}%`; localStorage.setItem('atelierJournalScale',String(scale)); };
+  apply(Number(localStorage.getItem('atelierJournalScale'))||1);
+  grip.addEventListener('pointerdown',e=>{
+    e.preventDefault(); grip.setPointerCapture?.(e.pointerId);
+    const startX=e.clientX, startY=e.clientY, start=Number(localStorage.getItem('atelierJournalScale'))||1;
+    const move=ev=>{ const delta=((ev.clientX-startX)+(ev.clientY-startY))/900; apply(start+delta); };
+    const end=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',end); };
+    window.addEventListener('pointermove',move); window.addEventListener('pointerup',end);
+  });
+}
+
+applyCalendarMode(); syncNotifyButton(); initJournalResizer(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
