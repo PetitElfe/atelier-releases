@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.2.0</title>
+  <title>L’Atelier — Alpha 0.2.1</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.2.0</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.2.1</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -157,16 +157,21 @@
 
     <section id="kitchenView" class="view">
       <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Courses, aliments & repas</h2></div></div>
+      <div class="home-layout-toolbar kitchen-layout-toolbar">
+        <button id="toggleKitchenLayoutEdit" class="secondary" type="button">✥ Modifier la disposition</button>
+        <button id="resetKitchenLayout" class="secondary hidden" type="button">Réinitialiser</button>
+        <span id="kitchenLayoutHint" class="layout-edit-hint hidden">Glisse un bloc pour le déplacer · ↘ pour le redimensionner</span>
+      </div>
       <div class="kitchen-grid">
-        <section class="kitchen-panel">
+        <section id="shoppingPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Ce qu’il faut acheter.</p></div><button id="addShopping" class="primary">+ Article</button></div>
           <div id="shoppingList" class="kitchen-list"></div>
         </section>
-        <section class="kitchen-panel">
+        <section id="foodPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Aliments à la maison</h3><p>Avec leur date de péremption.</p></div><button id="addFood" class="primary">+ Aliment</button></div>
           <div id="foodList" class="kitchen-list"></div>
         </section>
-        <section class="kitchen-panel">
+        <section id="mealPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Idées de repas</h3><p>Des plats à garder sous la main.</p></div><button id="addMeal" class="primary">+ Idée</button></div>
           <div id="mealList" class="kitchen-list"></div>
         </section>
