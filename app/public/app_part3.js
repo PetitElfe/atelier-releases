@@ -116,131 +116,99 @@ function syncNotifyButton(){
 }
 $('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} await Notification.requestPermission(); syncNotifyButton(); };
 
-function initHomeLayoutEditor(){
-  const home=$('#homeView'), toggle=$('#toggleLayoutEdit'), reset=$('#resetLayout'), hint=$('#layoutEditHint');
-  if(!home||!toggle||!reset)return;
-  const specs=[
-    {id:'calendar',el:$('#openCalendarCard')},
-    {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
-    {id:'reminders',el:$('.desk-top-row .desk-note:nth-child(3)')},
-    {id:'journal',el:$('#journalBook')}
-  ].filter(x=>x.el);
-  const key=id=>`atelierLayout_${id}`;
+function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
+  if(!view||!toggle||!reset)return;
+  specs=specs.filter(x=>x.el);
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  const key=id=>prefix+id;
 
   function read(id){
-    try{return JSON.parse(localStorage.getItem(key(id)))||{x:0,y:0,scale:1}}catch(e){return{x:0,y:0,scale:1}}
+    try{
+      const v=JSON.parse(localStorage.getItem(key(id)));
+      return v&&typeof v==='object'?{x:Number(v.x)||0,y:Number(v.y)||0,scale:Number(v.scale)||1}:{x:0,y:0,scale:1};
+    }catch(e){return{x:0,y:0,scale:1}}
   }
-  function save(id,data){localStorage.setItem(key(id),JSON.stringify(data))}
-  function apply(item,data){
-    item.el.style.setProperty('--layout-x',`${data.x||0}px`);
-    item.el.style.setProperty('--layout-y',`${data.y||0}px`);
-    item.el.style.setProperty('--layout-scale',String(data.scale||1));
-    const val=item.el.querySelector('.layout-scale-value'); if(val) val.textContent=`${Math.round((data.scale||1)*100)}%`;
+  function save(id,d){localStorage.setItem(key(id),JSON.stringify(d))}
+  function apply(item,d){
+    item.el.style.setProperty('--layout-x',(d.x||0)+'px');
+    item.el.style.setProperty('--layout-y',(d.y||0)+'px');
+    item.el.style.setProperty('--layout-scale',String(d.scale||1));
+    const value=item.el.querySelector('.layout-scale-value');
+    if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
+  }
+  function setScale(item,next){
+    const d=read(item.id); d.scale=clamp(next,.45,1.6); save(item.id,d); apply(item,d);
+  }
+  function beginMove(e,item){
+    if(!view.classList.contains('layout-editing')||e.button!==0)return;
+    if(e.target.closest('.layout-size-btn,.layout-resize-handle'))return;
+    e.preventDefault(); e.stopPropagation();
+    const d=read(item.id), sx=e.clientX, sy=e.clientY, ox=d.x||0, oy=d.y||0;
+    item.el.classList.add('layout-selected');
+    const move=ev=>{d.x=ox+(ev.clientX-sx);d.y=oy+(ev.clientY-sy);apply(item,d)};
+    const up=()=>{save(item.id,d);item.el.classList.remove('layout-selected');document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+  }
+  function beginResize(e,item){
+    if(!view.classList.contains('layout-editing')||e.button!==0)return;
+    e.preventDefault();e.stopPropagation();
+    const d=read(item.id), startScale=d.scale||1, sx=e.clientX, sy=e.clientY;
+    item.el.classList.add('layout-selected');
+    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,1.6);apply(item,d)};
+    const up=()=>{save(item.id,d);item.el.classList.remove('layout-selected');document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
   }
 
   specs.forEach(item=>{
     item.el.classList.add('layout-object');
-    const controls=document.createElement('div'); controls.className='layout-controls';
-    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
-    item.el.appendChild(controls);
+    let controls=item.el.querySelector(':scope > .layout-controls');
+    if(!controls){
+      controls=document.createElement('div');
+      controls.className='layout-controls';
+      controls.innerHTML='<span class="layout-move-handle">✥ Déplacer</span><div class="layout-size-controls"><button type="button" class="layout-size-btn minus">−</button><span class="layout-scale-value">100%</span><button type="button" class="layout-size-btn plus">+</button></div><span class="layout-resize-handle" title="Tirer pour redimensionner">↘</span>';
+      item.el.appendChild(controls);
+    }
     apply(item,read(item.id));
-
-    const moveHandle=controls.querySelector('.layout-move-handle');
-    const resizeHandle=controls.querySelector('.layout-resize-handle');
-
-    const startMove=e=>{
-      if(!home.classList.contains('layout-editing') || e.target.closest('.layout-resize-handle'))return;
-      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
-      const start=read(item.id), sx=e.clientX, sy=e.clientY;
-      const move=ev=>{const d={...start,x:(start.x||0)+(ev.clientX-sx),y:(start.y||0)+(ev.clientY-sy)};apply(item,d);save(item.id,d)};
-      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    };
-    moveHandle.addEventListener('pointerdown',startMove);
-    item.el.addEventListener('pointerdown',startMove);
-
-    resizeHandle.addEventListener('pointerdown',e=>{
-      if(!home.classList.contains('layout-editing'))return;
-      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
-      const start=read(item.id), sx=e.clientX, sy=e.clientY;
-      const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;const d={...start,scale:clamp((start.scale||1)+delta,.5,1.5)};apply(item,d);save(item.id,d)};
-      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    });
+    item.el.addEventListener('mousedown',e=>beginMove(e,item));
+    controls.querySelector('.layout-move-handle').addEventListener('mousedown',e=>beginMove(e,item));
+    controls.querySelector('.layout-resize-handle').addEventListener('mousedown',e=>beginResize(e,item));
+    controls.querySelector('.minus').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const d=read(item.id);setScale(item,(d.scale||1)-.05)});
+    controls.querySelector('.plus').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const d=read(item.id);setScale(item,(d.scale||1)+.05)});
   });
 
   toggle.addEventListener('click',()=>{
-    const editing=home.classList.toggle('layout-editing');
+    const editing=view.classList.toggle('layout-editing');
     toggle.textContent=editing?'✓ Terminer':'✥ Modifier la disposition';
-    reset.classList.toggle('hidden',!editing); hint?.classList.toggle('hidden',!editing);
+    reset.classList.toggle('hidden',!editing);
+    if(hint)hint.classList.toggle('hidden',!editing);
   });
   reset.addEventListener('click',()=>{
     specs.forEach(item=>{const d={x:0,y:0,scale:1};save(item.id,d);apply(item,d)});
   });
 }
 
+function initHomeLayoutEditor(){
+  createLayoutEditor({
+    view:$('#homeView'),toggle:$('#toggleLayoutEdit'),reset:$('#resetLayout'),hint:$('#layoutEditHint'),
+    prefix:'atelierLayout_',
+    specs:[
+      {id:'calendar',el:$('#openCalendarCard')},
+      {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
+      {id:'reminders',el:$('.desk-top-row .desk-note:nth-child(3)')},
+      {id:'journal',el:$('#journalBook')}
+    ]
+  });
+}
 
 function initKitchenLayoutEditor(){
-  const view=$('#kitchenView'), toggle=$('#toggleKitchenLayoutEdit'), reset=$('#resetKitchenLayout'), hint=$('#kitchenLayoutHint');
-  if(!view||!toggle||!reset)return;
-  const specs=[
-    {id:'shopping',el:$('#shoppingPanel')},
-    {id:'foods',el:$('#foodPanel')},
-    {id:'meals',el:$('#mealPanel')}
-  ].filter(x=>x.el);
-  const key=id=>`atelierKitchenLayout_${id}`;
-  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-
-  function read(id){
-    try{return JSON.parse(localStorage.getItem(key(id)))||{x:0,y:0,scale:1}}catch(e){return{x:0,y:0,scale:1}}
-  }
-  function save(id,data){localStorage.setItem(key(id),JSON.stringify(data))}
-  function apply(item,data){
-    item.el.style.setProperty('--layout-x',`${data.x||0}px`);
-    item.el.style.setProperty('--layout-y',`${data.y||0}px`);
-    item.el.style.setProperty('--layout-scale',String(data.scale||1));
-    const val=item.el.querySelector('.layout-scale-value'); if(val) val.textContent=`${Math.round((data.scale||1)*100)}%`;
-  }
-
-  specs.forEach(item=>{
-    item.el.classList.add('layout-object');
-    const controls=document.createElement('div'); controls.className='layout-controls';
-    controls.innerHTML='<span class="layout-move-handle" title="Déplacer">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Redimensionner">↘</span>';
-    item.el.appendChild(controls);
-    apply(item,read(item.id));
-
-    const moveHandle=controls.querySelector('.layout-move-handle');
-    const resizeHandle=controls.querySelector('.layout-resize-handle');
-
-    const startMove=e=>{
-      if(!view.classList.contains('layout-editing') || e.target.closest('.layout-resize-handle'))return;
-      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
-      const start=read(item.id), sx=e.clientX, sy=e.clientY;
-      const move=ev=>{const d={...start,x:(start.x||0)+(ev.clientX-sx),y:(start.y||0)+(ev.clientY-sy)};apply(item,d);save(item.id,d)};
-      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    };
-    moveHandle.addEventListener('pointerdown',startMove);
-    item.el.addEventListener('pointerdown',startMove);
-
-    resizeHandle.addEventListener('pointerdown',e=>{
-      if(!view.classList.contains('layout-editing'))return;
-      e.preventDefault(); e.stopPropagation(); item.el.classList.add('layout-selected');
-      const start=read(item.id), sx=e.clientX, sy=e.clientY;
-      const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;const d={...start,scale:clamp((start.scale||1)+delta,.5,1.5)};apply(item,d);save(item.id,d)};
-      const end=()=>{item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);
-    });
-  });
-
-  toggle.addEventListener('click',()=>{
-    const editing=view.classList.toggle('layout-editing');
-    toggle.textContent=editing?'✓ Terminer':'✥ Modifier la disposition';
-    reset.classList.toggle('hidden',!editing); hint?.classList.toggle('hidden',!editing);
-  });
-  reset.addEventListener('click',()=>{
-    specs.forEach(item=>{const d={x:0,y:0,scale:1};save(item.id,d);apply(item,d)});
+  createLayoutEditor({
+    view:$('#kitchenView'),toggle:$('#toggleKitchenLayoutEdit'),reset:$('#resetKitchenLayout'),hint:$('#kitchenLayoutHint'),
+    prefix:'atelierKitchenLayout_',
+    specs:[
+      {id:'shopping',el:$('#shoppingPanel')},
+      {id:'foods',el:$('#foodPanel')},
+      {id:'meals',el:$('#mealPanel')}
+    ]
   });
 }
 
