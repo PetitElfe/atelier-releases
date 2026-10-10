@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "40b8eb4000a913a7791090535f291d3d369874162a89ef3c9e3d4e887a1b9e79"
+      "sha256": "f62184cee8787f2f6941c82041a5725d4edc9aa293ebe5dbf664406e82ec1fe1"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "cb1bf0a8241cd764f162fb252d98576640456a0241759ee62e95b7de5ea62c95"
+      "sha256": "a0f11714b22f640133d7e4029c5bd7cc00e6693c534aa30e49d8a836949f765b"
     },
     {
       "path": "app_part3.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "ee1596f0f9b6e492f8a823ba7b667ac1b9d48f6877d4623a63913d9a4f6f90ae"
+      "sha256": "f3382c761cd7e133aa52a6d0809552919d7a8721e6be8f5382956b8918e75ace"
     },
     {
       "path": "public/styles.css",
-      "sha256": "dc9b1b9ccf07250d87fcc36d06f9263fc4953ef0c8bf2b66a03459eb3f7161ef"
+      "sha256": "c4b790e71847cd4a167f5aeb88da6792188637a61618bf509bedfa3a82293aed"
     }
   ],
-  "notes": "0.4.0 : formulaires plus compacts et semainier resserré pour tenir sur un écran desktop. La page courante est mémorisée pour éviter les retours intempestifs à l’accueil. Les nouvelles recettes ne préremplissent plus 4 personnes : le nombre de portions de base est saisi explicitement, puis le carnet utilise − et +. La liste de courses gagne un compteur −/+ du nombre réellement acheté, prix et calories, puis « Valider les achats » transfère les produits cochés directement vers les aliments à la maison. Les produits transférés arrivent avec « Date à renseigner » et peuvent ensuite recevoir une date ou être marqués « Sans date »."
+  "notes": "0.4.1 : le semainier desktop est moins large et recentré. La colonne des heures est élargie et les heures passent en police plus grande et plus grasse, tandis que les cases horaires sont un peu moins hautes afin de garder la semaine compacte sur un écran."
 }
