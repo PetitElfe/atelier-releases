@@ -1,19 +1,19 @@
 {
-  "version": "0.0.8",
+  "version": "0.0.9",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {"path":"README.md","sha256":"8edea59242ff76c41a6721ef54b2898d09142e4aa2f0f03b9e59cf7695644221"},
-    {"path":"VERSION","sha256":"7105589d4dbff8c4bfb35a52b415c9157683ff001725ac002ceb245a53590fd9"},
+    {"path":"VERSION","sha256":"8e26776d08f7af45c99612b3a4d3c32d7dd10cc11ce6064291aeee1814c88922"},
     {"path":"app.py","sha256":"b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"},
-    {"path":"app_part1.py","sha256":"3c8bfc63a650e62b73c8e1f37810abfe4ceafa3b1689b9196d03c81758004678"},
-    {"path":"app_part2.py","sha256":"867ac065ac2ba052ee985fda7afdcf31a1a5a459cf6d8c5b909c30804b45f129"},
+    {"path":"app_part1.py","sha256":"62d6f47fe180508fb79d35c12c7a841ceedadf681debdd311ac4a4e63713c67a"},
+    {"path":"app_part2.py","sha256":"8b5e6d13f0141d5adedcd0ee406a6e66b2a4b2c90081894949e2afec5adc70a5"},
     {"path":"app_part3.py","sha256":"aa33fb9232e5dc575c14485edb753c4f34558bcf8cfe8a63763b1ce674c60d39"},
     {"path":"public/app_part1.js","sha256":"0732072f966954637ada29c912d1e6b7f3218510abdb7b425a8c375bc6178c72"},
-    {"path":"public/app_part2.js","sha256":"2b6f107b7a7d0ec572614b5c2fe0264a498721f34d69974ff5d63331970e5600"},
-    {"path":"public/app_part3.js","sha256":"33dbeb37a8db2c814f3e22466ea78eadf33c94278c135ace9d38f39acd6a6f91"},
+    {"path":"public/app_part2.js","sha256":"d7cb04a6f54a6e97ab708e635e328ea80fbb570da48af77bb5d8a30df07c8fb6"},
+    {"path":"public/app_part3.js","sha256":"cc121d45be716a97833711ff48a403de9e6a9a260410f3d3d674423374764bc3"},
     {"path":"public/index.html","sha256":"a9b19cf6b9298b98801935b6b1629290e625ba824f931320d99438bb1cbe6283"},
-    {"path":"public/styles.css","sha256":"e8b8c6aacde1f0c107ba18bde84228584f53cc118d5ae41d1423b26bb72fe320"}
+    {"path":"public/styles.css","sha256":"260d8cc1e6605df5d5cf6ad5f61022337483762b641e5fdd9c1c4756bf84188f"}
   ],
-  "notes": "0.0.8 : rappels sans nom manuel, formulaires protégés contre les clics accidentels et double-clic dans le calendrier mensuel pour créer un rendez-vous."
+  "notes": "0.0.9 : date et heure des rappels séparées pour saisie directe, champ temps de trajet pour les rendez-vous, et mémorisation automatique des habitudes d'un rendez-vous portant le même nom (catégorie, contact et trajet)."
 }
