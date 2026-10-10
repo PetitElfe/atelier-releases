@@ -198,14 +198,49 @@ function readMealImage(file){
 
 function openMealModal(item=null){
   const editing=!!item;
-  openModal(`<h2>${editing?'Modifier l’idée de repas':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid">
+  const ingredients=parseMealIngredients(item);
+  let mealImageData=item?.image_data||'';
+  openModal(`<h2>${editing?'Modifier la recette':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid recipe-form">
     <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
     <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, envie particulière, accompagnement…">${esc(item?.notes||'')}</textarea></div>
-    <div class="field full"><label>Recette</label><textarea name="recipe" class="recipe-editor" placeholder="Ingrédients, quantités, étapes de préparation…">${esc(item?.recipe||'')}</textarea></div>
+    <div class="field"><label>Recette de base pour</label><div class="servings-input-line"><input name="base_servings" type="number" min="1" max="99" value="${Math.max(1,Number(item?.base_servings)||4)}"><span>personnes</span></div></div>
+    <div class="field recipe-image-edit"><label>Image</label><input id="mealImageInput" type="file" accept="image/*"><button id="removeMealImage" type="button" class="secondary">Retirer l’image</button></div>
+    <div id="mealImagePreviewWrap" class="field full meal-image-preview-wrap ${mealImageData?'':'hidden'}"><img id="mealImagePreview" src="${mealImageData}" alt="Aperçu de la recette"></div>
+    <div class="field full ingredient-editor">
+      <div class="ingredient-editor-head"><label>Ingrédients</label><button id="addIngredientRow" type="button">+ Ingrédient</button></div>
+      <div class="ingredient-edit-labels"><span>Quantité</span><span>Unité</span><span>Ingrédient</span><span></span></div>
+      <div id="ingredientEditRows"></div>
+    </div>
+    <div class="field full"><label>Préparation</label><textarea name="recipe" class="recipe-editor" placeholder="Écris ici les étapes de préparation…">${esc(item?.recipe||'')}</textarea></div>
     <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
-  const f=$('#mealForm'); $('#cancelMeal').onclick=closeModal;
-  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()};
+
+  const form=$('#mealForm'), rows=$('#ingredientEditRows'), previewWrap=$('#mealImagePreviewWrap'), preview=$('#mealImagePreview');
+  (ingredients.length?ingredients:[{}]).forEach(x=>addIngredientEditorRow(rows,x));
+  $('#addIngredientRow').onclick=()=>addIngredientEditorRow(rows,{});
+  $('#cancelMeal').onclick=closeModal;
+  $('#removeMealImage').onclick=()=>{mealImageData='';preview.src='';previewWrap.classList.add('hidden')};
+  $('#mealImageInput').onchange=async e=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    if(file.size>5*1024*1024){alert("Image trop lourde : choisis une image de moins de 5 Mo.");e.target.value='';return}
+    try{mealImageData=await readMealImage(file);preview.src=mealImageData;previewWrap.classList.remove('hidden')}
+    catch(err){alert(err.message||"Impossible d’ajouter cette image.")}
+  };
+
+  form.onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(form).entries());
+    payload.base_servings=Math.max(1,Number(payload.base_servings)||4);
+    payload.ingredients_json=JSON.stringify(collectIngredientEditorRows(rows));
+    payload.image_data=mealImageData;
+    await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    closeModal();
+    await refresh();
+    if(editing&&state.view==='recipe'){
+      const updated=state.meals.find(m=>m.id===item.id);
+      if(updated)openMealRecipeModal(updated);
+    }
+  };
 }
 
 function openMealRecipeModal(item){
