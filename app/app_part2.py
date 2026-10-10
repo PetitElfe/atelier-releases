@@ -208,6 +208,26 @@ class Handler(BaseHTTPRequestHandler):
                     cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
                                      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                     moved_event_id=cur.lastrowid
+
+                if old['recurrence']=='none':
+                    if action=='cancelled':
+                        c.execute("UPDATE reminders SET status='done' WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
+                    elif action=='postponed' and moved_event_id:
+                        try:
+                            old_dt=datetime.fromisoformat(f"{instance_date}T{old['start_time'] or '00:00'}")
+                            new_dt=datetime.fromisoformat(f"{new_date}T{new_time}")
+                            delta=new_dt-old_dt
+                            rems=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
+                            for rem in rems:
+                                shifted=(datetime.fromisoformat(rem['remind_at'])+delta).replace(microsecond=0).isoformat()
+                                snoozed=None
+                                if rem['snoozed_until']:
+                                    snoozed=(datetime.fromisoformat(rem['snoozed_until'])+delta).replace(microsecond=0).isoformat()
+                                c.execute('UPDATE reminders SET entity_id=?,remind_at=?,snoozed_until=? WHERE id=?',
+                                          (moved_event_id,shifted,snoozed,rem['id']))
+                        except Exception:
+                            pass
+
                 c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                 c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
                              VALUES(?,?,?,?,?)
