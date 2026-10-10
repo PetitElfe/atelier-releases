@@ -1,5 +1,5 @@
 {
-  "version": "0.2.4",
+  "version": "0.2.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "1725bfa6524c5265e7c171cf06568417d39b947fff49c242f03859479c82334b"
+      "sha256": "e959f750e92dbb7614ae28ac96f0a37272caed81d8bbb758791af7bfbb6106a0"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "2729f01602e10c362128edf99566fb92a579a8e2dcbdb7c54b95d668f9ce8f7c"
+      "sha256": "594353524683f1120cd765c16d177091a22fd1cf619b0bf60c21c60cd79bcc93"
     },
     {
       "path": "app_part3.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "1a3e0cd59cb6cbedeee27df5c38210b1eb4e2ff65eadfd6c7a1485cb29ec7ad0"
+      "sha256": "cdcb6b0083a1338f8971ee22f56a65b5722695642312188df557416ea398b0e8"
     },
     {
       "path": "public/app_part2.js",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "b43f7952537d31b779f89f0b0a5185f18beb78fd3ab106ed4f6f043e65d341a3"
+      "sha256": "4ee474d3ef45b5040ad027d658d72af049b8d46b427d224fea8fc4cf8967b934"
     },
     {
       "path": "public/index.html",
-      "sha256": "0be40180da60030ed7fc4b794ab1c25e593c5eb7f73219057283081f65d303ad"
+      "sha256": "0f97d5a59c92aa5271215197246226c84f189d7bd1ac727cc14c5a1e41ffa978"
     },
     {
       "path": "public/styles.css",
-      "sha256": "14acdfea461a7a832d087b481269e1e62df78715ec9d750ac8dc673960d73089"
+      "sha256": "7c212bf556afcca4c243a8806281c8337422981f26ab7ea3533ca4f8bc6b7b28"
     }
   ],
-  "notes": "0.2.4 : refonte du mode disposition pour qu’il fonctionne de façon fiable à la souris. En mode édition, on peut glisser directement les blocs, tirer la poignée ↘ pour redimensionner, ou utiliser les boutons − et + pour ajuster la taille. Réglages mémorisés localement."
+  "notes": "0.2.5 : le bloc « Rappels » a été retiré de l’accueil. Les rappels continuent de fonctionner, de notifier et restent accessibles dans leur onglet dédié, mais ils n’encombrent plus la page d’accueil."
 }
