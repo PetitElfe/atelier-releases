@@ -1,0 +1,156 @@
+class Handler(BaseHTTPRequestHandler):
+    server_version = 'AtelierLocal/0.0.8'
+
+    def log_message(self, fmt, *args):
+        print('[Atelier]', fmt % args)
+
+    def _json(self, data, status=200):
+        raw = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def _body(self):
+        n = int(self.headers.get('Content-Length', '0') or 0)
+        if not n: return {}
+        try: return json.loads(self.rfile.read(n).decode('utf-8'))
+        except Exception: return {}
+
+    def _serve_static(self, path):
+        rel = 'index.html' if path in ('','/') else path.lstrip('/')
+        target = (PUBLIC / rel).resolve()
+        if PUBLIC.resolve() not in target.parents and target != PUBLIC.resolve():
+            self.send_error(403); return
+        if not target.exists() or not target.is_file():
+            target = PUBLIC / 'index.html'
+        data = target.read_bytes()
+        ctype = mimetypes.guess_type(str(target))[0] or 'application/octet-stream'
+        self.send_response(200)
+        self.send_header('Content-Type', ctype + ('; charset=utf-8' if ctype.startswith('text/') or ctype.endswith('javascript') else ''))
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers(); self.wfile.write(data)
+
+    def do_GET(self):
+        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if not p.startswith('/api/'):
+            return self._serve_static(p)
+        if p == '/api/version':
+            version_file = ROOT / 'VERSION'
+            version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
+            return self._json({'version': version})
+        with conn() as c:
+            if p == '/api/events':
+                start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
+                rows = c.execute('SELECT * FROM events WHERE event_date <= ? ORDER BY event_date,start_time,id', (end,)).fetchall()
+                return self._json(expand_events(rows, start, end))
+            if p == '/api/tasks':
+                rows = c.execute('SELECT * FROM tasks WHERE archived=0 ORDER BY completed, important DESC, COALESCE(due_date,\'9999-12-31\'), order_index, id').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/reminders':
+                rows = c.execute('''
+                    SELECT r.*,
+                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
+                           ELSE (SELECT title FROM tasks WHERE id=r.entity_id) END AS entity_title
+                    FROM reminders r
+                    WHERE r.status != 'done'
+                    ORDER BY COALESCE(r.snoozed_until,r.remind_at),r.id
+                ''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/reminders/due':
+                now = q.get('now', [now_iso()])[0]
+                rows = c.execute('''
+                    SELECT r.*, 
+                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
+                           ELSE (SELECT title FROM tasks WHERE id=r.entity_id) END AS entity_title
+                    FROM reminders r
+                    WHERE r.status='pending' AND COALESCE(r.snoozed_until,r.remind_at) <= ?
+                    ORDER BY COALESCE(r.snoozed_until,r.remind_at), r.id
+                ''', (now,)).fetchall()
+                return self._json([dict(r) for r in rows])
+        return self._json({'error':'not found'},404)
+
+    def do_POST(self):
+        u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
+        if p == '/api/version':
+            version_file = ROOT / 'VERSION'
+            version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
+            return self._json({'version': version})
+        with conn() as c:
+            if p == '/api/events':
+                vals = (
+                    body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
+                    1 if body.get('all_day') else 0, body.get('category','general'), body.get('location',''), body.get('notes',''),
+                    body.get('contact',''), body.get('url',''), body.get('status','planned'), body.get('recurrence','none'),
+                    1 if body.get('show_in_month', True) else 0, ts, ts)
+                if not vals[0] or not vals[1]: return self._json({'error':'title and event_date required'},400)
+                cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,url,status,recurrence,show_in_month,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                eid=cur.lastrowid
+                for ra in body.get('reminders',[]) or []:
+                    if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
+                    when = (ra or {}).get('remind_at')
+                    if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
+                c.commit(); return self._json({'id':eid},201)
+            if p == '/api/tasks':
+                title=body.get('title','').strip()
+                if not title: return self._json({'error':'title required'},400)
+                oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM tasks').fetchone()['n']
+                cur=c.execute('''INSERT INTO tasks(title,due_date,due_time,notes,completed,archived,important,order_index,created_at,updated_at)
+                                 VALUES(?,?,?,?,0,0,?,?,?,?)''',(title,body.get('due_date') or None,body.get('due_time') or None,body.get('notes',''),1 if body.get('important') else 0,oi,ts,ts))
+                tid=cur.lastrowid
+                for ra in body.get('reminders',[]) or []:
+                    if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
+                    when = (ra or {}).get('remind_at')
+                    if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                c.commit(); return self._json({'id':tid},201)
+        return self._json({'error':'not found'},404)
+
+    def do_PUT(self):
+        u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        with conn() as c:
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='events':
+                eid=int(parts[2]); old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                d=dict(old); d.update(body)
+                c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
+                          (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
+                if 'reminders' in body:
+                    c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
+                    for ra in body.get('reminders',[]) or []:
+                        if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
+                        when = (ra or {}).get('remind_at')
+                        if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='tasks':
+                tid=int(parts[2]); old=c.execute('SELECT * FROM tasks WHERE id=?',(tid,)).fetchone()
+                if not old: return self._json({'error':'not found'},404)
+                d=dict(old); d.update(body)
+                c.execute('''UPDATE tasks SET title=?,due_date=?,due_time=?,notes=?,completed=?,archived=?,important=?,order_index=?,updated_at=? WHERE id=?''',
+                          (d['title'],d.get('due_date') or None,d.get('due_time') or None,d.get('notes',''),1 if d.get('completed') else 0,1 if d.get('archived') else 0,1 if d.get('important') else 0,int(d.get('order_index') or 0),ts,tid))
+                if 'reminders' in body:
+                    c.execute("DELETE FROM reminders WHERE entity_type='task' AND entity_id=? AND status!='done'",(tid,))
+                    for ra in body.get('reminders',[]) or []:
+                        if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
+                        when = (ra or {}).get('remind_at')
+                        if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
+                rid=int(parts[2]); action=parts[3]
+                if action=='done':
+                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,)); c.commit(); return self._json({'ok':True})
+                if action=='finish':
+                    rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
+                    if not rem: return self._json({'error':'not found'},404)
+                    if rem['entity_type']=='task':
+                        c.execute("UPDATE tasks SET completed=1,updated_at=? WHERE id=?",(ts,rem['entity_id']))
+                    elif rem['entity_type']=='event':
+                        c.execute("UPDATE events SET status='done',updated_at=? WHERE id=?",(ts,rem['entity_id']))
+                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,))
+                    c.commit(); return self._json({'ok':True})
+                if action=='snooze':
+                    val=body.get('snoozed_until')
+                    if not val: return self._json({'error':'snoozed_until required'},400)
+                    c.execute("UPDATE reminders SET status='pending',snoozed_until=? WHERE id=?",(val,rid)); c.commit(); return self._json({'ok':True})
+        return self._json({'error':'not found'},404)
