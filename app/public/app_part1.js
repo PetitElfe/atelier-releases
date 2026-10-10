@@ -87,7 +87,7 @@ function renderHome(){
   if(!meals.length) mealRoot.innerHTML='<button class="meal-line meal-line-button" type="button">Ajouter une idée de repas…</button>';
   meals.forEach(m=>{
     const b=document.createElement('button'); b.type='button'; b.className='meal-line meal-line-button';
-    b.textContent=m.title; b.addEventListener('click',()=>openMealModal(m)); mealRoot.appendChild(b);
+    b.textContent=m.title; b.addEventListener('click',()=>openMealRecipeModal(m)); mealRoot.appendChild(b);
   });
 
   const expiryBlock=$('#homeExpiryBlock'), expiryList=$('#homeExpiryList'); expiryList.innerHTML='';
