@@ -11,6 +11,8 @@ function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
 function esc(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function eventClass(c){ return c==='medical'?'event-medical':c==='important'?'event-important':'event-general'; }
+function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled'; }
+function eventInstanceIcon(e){ return e.instance_done?'✓':e.instance_action==='postponed'?'↪':e.instance_action==='cancelled'?'×':''; }
 function fmtTime(t){ return t ? t.replace(':','h') : ''; }
 function fmtFrenchDate(d){ return d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 function fmtRelativeDate(s){
@@ -46,7 +48,7 @@ function renderHome(){
 
   const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
   const urgentTasks=state.tasks.filter(t=>!t.completed&&t.important&&t.due_date).map(t=>({type:'task',date:t.due_date,title:t.title,item:t}));
-  const urgentEvents=state.events.filter(e=>e.status!=='cancelled'&&e.category==='important'&&e.instance_date>=today).map(e=>({type:'event',date:e.instance_date,title:e.title,item:e}));
+  const urgentEvents=state.events.filter(e=>e.status!=='cancelled'&&!eventInstanceClosed(e)&&e.category==='important'&&e.instance_date>=today).map(e=>({type:'event',date:e.instance_date,title:e.title,item:e}));
   const deadlines=[...urgentTasks,...urgentEvents].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
   if(!deadlines.length){
     deadlineRoot.innerHTML='<div class="deadline-empty">Rien d’urgent pour le moment.</div><div class="deadline-empty">&nbsp;</div><div class="deadline-empty">&nbsp;</div>';
@@ -109,10 +111,26 @@ function renderHome(){
   const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,3);
   if(!upcoming.length) upcomingRoot.innerHTML='<div class="home-empty">Aucun rendez-vous à venir.</div>';
   upcoming.forEach(e=>{
-    const b=document.createElement('button'); b.type='button'; b.className='home-row';
+    const row=document.createElement('div');
+    const closed=eventInstanceClosed(e);
+    row.className='home-appt-row'+(closed?' is-closed':'')+(e.instance_action?' is-'+e.instance_action:'')+(e.instance_done?' is-done':'');
+    const main=document.createElement('button'); main.type='button'; main.className='home-row home-appt-main';
     const time=e.all_day?'Jour':(e.start_time?fmtTime(e.start_time):'—');
-    b.innerHTML=`<span class="home-row-time">${time}</span><span><div class="home-row-title">${esc(e.title)}</div><div class="home-row-meta">${fmtRelativeDate(e.instance_date)}${e.location?' · '+esc(e.location):''}</div></span>`;
-    b.addEventListener('click',()=>openEventModal(e)); upcomingRoot.appendChild(b);
+    main.innerHTML=`<span class="home-row-time">${time}</span><span><div class="home-row-title">${esc(e.title)}</div><div class="home-row-meta">${fmtRelativeDate(e.instance_date)}${e.location?' · '+esc(e.location):''}</div></span>`;
+    main.addEventListener('click',()=>openEventModal(e));
+    const actions=document.createElement('div'); actions.className='home-appt-actions';
+    if(closed){
+      const mark=document.createElement('span'); mark.className='home-appt-state'; mark.textContent=eventInstanceIcon(e); actions.appendChild(mark);
+    }else{
+      const done=document.createElement('button'); done.type='button'; done.className='appt-action done'; done.title='Effectué'; done.textContent='✓';
+      done.onclick=async()=>{await api(`/api/events/${e.id}/complete-instance`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date,done:true})});await refresh()};
+      const postpone=document.createElement('button'); postpone.type='button'; postpone.className='appt-action postpone'; postpone.title='Reporter'; postpone.textContent='↪';
+      postpone.onclick=()=>openPostponeEventModal(e);
+      const cancel=document.createElement('button'); cancel.type='button'; cancel.className='appt-action cancel'; cancel.title='Annuler'; cancel.textContent='×';
+      cancel.onclick=async()=>{await api(`/api/events/${e.id}/instance-action`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date,action:'cancelled'})});await refresh()};
+      actions.append(done,postpone,cancel);
+    }
+    row.append(main,actions); upcomingRoot.appendChild(row);
   });
 
 }
