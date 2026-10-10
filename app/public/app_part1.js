@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], meals:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -25,12 +25,13 @@ function fmtRelativeDate(s){
 
 async function refresh(){
   const start=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1), end=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+2,0);
-  [state.events,state.tasks,state.reminders]=await Promise.all([
-    api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`), api('/api/tasks'), api('/api/reminders')
+  [state.events,state.tasks,state.reminders,state.shopping,state.foods,state.meals]=await Promise.all([
+    api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`), api('/api/tasks'), api('/api/reminders'),
+    api('/api/shopping'), api('/api/foods'), api('/api/meals')
   ]);
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); updateClock(); }
+function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
@@ -75,7 +76,28 @@ function renderHome(){
     objectiveRoot.appendChild(el);
   });
 
-  const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='<div class="meal-line">Ajouter une idée de repas…</div><div class="meal-line">Ajouter une idée de repas…</div>';
+  const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='';
+  const meals=state.meals.slice(0,3);
+  if(!meals.length) mealRoot.innerHTML='<button class="meal-line meal-line-button" type="button">Ajouter une idée de repas…</button>';
+  meals.forEach(m=>{
+    const b=document.createElement('button'); b.type='button'; b.className='meal-line meal-line-button';
+    b.textContent=m.title; b.addEventListener('click',()=>openMealModal(m)); mealRoot.appendChild(b);
+  });
+
+  const expiryBlock=$('#homeExpiryBlock'), expiryList=$('#homeExpiryList'); expiryList.innerHTML='';
+  const todayDate=parseYMD(today);
+  const expiring=state.foods.filter(f=>{
+    if(!f.expiry_date) return false;
+    const diff=Math.round((parseYMD(f.expiry_date)-todayDate)/86400000);
+    return diff<=3;
+  }).sort((a,b)=>(a.expiry_date||'9999').localeCompare(b.expiry_date||'9999'));
+  expiryBlock.classList.toggle('hidden',!expiring.length);
+  expiring.slice(0,4).forEach(f=>{
+    const diff=Math.round((parseYMD(f.expiry_date)-todayDate)/86400000);
+    const label=diff<0?'Périmé':diff===0?"Aujourd’hui":`J-${diff}`;
+    const b=document.createElement('button'); b.type='button'; b.className='meal-line meal-line-button expiry-line';
+    b.innerHTML=`<span>${esc(f.name)}</span><strong>${label}</strong>`; b.addEventListener('click',()=>openFoodModal(f)); expiryList.appendChild(b);
+  });
 
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
   const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,3);
