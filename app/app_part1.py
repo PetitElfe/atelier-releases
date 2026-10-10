@@ -169,6 +169,14 @@ def now_iso():
 def rowdict(row):
     return dict(row) if row else None
 
+def float_or_none(value):
+    try:
+        if value is None or str(value).strip() == '':
+            return None
+        return float(str(value).replace(',', '.'))
+    except Exception:
+        return None
+
 def expand_events(rows, start_s, end_s):
     try:
         start = date.fromisoformat(start_s)
