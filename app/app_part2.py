@@ -47,10 +47,17 @@ class Handler(BaseHTTPRequestHandler):
                 expanded = expand_events(rows, start, end)
                 done_rows = c.execute('SELECT event_id,instance_date,completed_at FROM event_completions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
                 done_map = {(r['event_id'],r['instance_date']): r['completed_at'] for r in done_rows}
+                action_rows = c.execute('SELECT event_id,instance_date,action,moved_event_id,action_at FROM event_instance_actions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
+                action_map = {(r['event_id'],r['instance_date']): dict(r) for r in action_rows}
                 for e in expanded:
-                    completed_at = done_map.get((e['id'], e.get('instance_date') or e['event_date']))
+                    key = (e['id'], e.get('instance_date') or e['event_date'])
+                    completed_at = done_map.get(key)
+                    action = action_map.get(key)
                     e['instance_done'] = bool(completed_at)
                     e['instance_completed_at'] = completed_at or ''
+                    e['instance_action'] = action['action'] if action else ''
+                    e['moved_event_id'] = action['moved_event_id'] if action else None
+                    e['instance_action_at'] = action['action_at'] if action else ''
                 return self._json(expanded)
             if p == '/api/event-template':
                 title = (q.get('title', [''])[0] or '').strip()
