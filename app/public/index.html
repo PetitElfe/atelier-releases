@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.1.0</title>
+  <title>L’Atelier — Alpha 0.1.1</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.1.0</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.1.1</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -30,15 +30,31 @@
 
   <main>
     <section id="homeView" class="view active-view">
-      <div class="home-desk-tools">
-        <button id="openCalendarCard" class="pinned-calendar" type="button">
+      <div class="desk-top-row">
+        <button id="openCalendarCard" class="desk-object pinned-calendar" type="button">
           <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
           <div id="homeMiniCalendar" class="home-mini-calendar"></div>
         </button>
-        <div class="home-quick-actions">
-          <button id="homeAddTask" class="primary">+ Tâche</button>
-          <button id="homeAddEvent">+ Rendez-vous</button>
-        </div>
+
+        <section class="desk-object desk-note" aria-labelledby="upcomingTitle">
+          <div class="desk-note-head">
+            <span id="upcomingTitle">À venir</span>
+            <button id="openCalendarFromUpcoming" class="journal-link" type="button">calendrier →</button>
+          </div>
+          <div id="homeUpcoming" class="desk-mini-list"></div>
+        </section>
+
+        <section class="desk-object desk-note" aria-labelledby="remindersTitle">
+          <div class="desk-note-head">
+            <span id="remindersTitle">Rappels</span>
+            <button id="openRemindersFromHome" class="journal-link" type="button">tout voir →</button>
+          </div>
+          <div id="homeReminderPreview" class="desk-mini-list"></div>
+          <div class="home-quick-actions">
+            <button id="homeAddTask" class="primary">+ Tâche</button>
+            <button id="homeAddEvent">+ Rendez-vous</button>
+          </div>
+        </section>
       </div>
 
       <div class="journal-book" aria-label="Journal de l’Atelier">
@@ -81,25 +97,7 @@
         </section>
       </div>
 
-      <div class="home-utility-row">
-        <section class="home-card" aria-labelledby="upcomingTitle">
-          <div class="card-head">
-            <span id="upcomingTitle">Prochains rendez-vous</span>
-            <button id="openCalendarFromUpcoming" class="text-button" type="button">Calendrier →</button>
-          </div>
-          <div id="homeUpcoming" class="home-list"></div>
-        </section>
-
-        <section class="home-card" aria-labelledby="remindersTitle">
-          <div class="card-head">
-            <span id="remindersTitle">Rappels</span>
-            <button id="openRemindersFromHome" class="text-button" type="button">Tout voir →</button>
-          </div>
-          <div id="homeReminderPreview" class="home-list"></div>
-        </section>
-      </div>
-
-      <div class="alpha-note">Première maquette fonctionnelle du journal. Les objectifs, repas et produits à consommer seront branchés progressivement aux vraies données.</div>
+      <div class="alpha-note">Maquette A : le livre devient un objet central plus compact, avec trois zones utiles au-dessus.</div>
     </section>
 
     <section id="calendarView" class="view">
