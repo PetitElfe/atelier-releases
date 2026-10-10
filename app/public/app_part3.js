@@ -1,3 +1,15 @@
+async function applyEventTemplate(f,touched={}){
+  const title=f.title.value.trim(); if(!title) return;
+  try{
+    const tpl=await api(`/api/event-template?title=${encodeURIComponent(title)}`);
+    if(!tpl?.found) return;
+    if(!touched.category) f.category.value=tpl.category||'general';
+    if(!touched.contact && !f.contact.value.trim()) f.contact.value=tpl.contact||'';
+    if(!touched.travel_time && !f.travel_time.value.trim()) f.travel_time.value=tpl.travel_time||'';
+    const hint=$('#eventTemplateHint'); if(hint) hint.textContent='Habitudes reprises du dernier rendez-vous portant ce nom.';
+  }catch(e){}
+}
+
 function openEventModal(e=null,presetDate=null,presetTime=null){
   const editing=!!e; const reminders=editing?state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
   openModal(`<h2>${editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid">
@@ -8,16 +20,25 @@ function openEventModal(e=null,presetDate=null,presetTime=null){
     <div class="field"><label>Fin</label><input name="end_time" type="time" value="${esc(e?.end_time||'')}"></div>
     <div class="field"><label>Lieu</label><input name="location" value="${esc(e?.location||'')}"></div>
     <div class="field"><label>Contact</label><input name="contact" value="${esc(e?.contact||'')}"></div>
+    <div class="field"><label>Temps de trajet</label><input name="travel_time" placeholder="ex. 25 min ou 1h10" value="${esc(e?.travel_time||'')}"></div>
+    <div id="eventTemplateHint" class="field-help full"></div>
     <div class="field full"><label>URL</label><input name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"></div>
     <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
     <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
-    ${reminderEditor(reminders,'du rendez-vous')}
+    ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="openUrl">Ouvrir le lien</button>':''}<button class="primary" type="submit">Enregistrer</button></div>
   </form>`);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal; $('#openUrl')?.addEventListener('click',()=>{if(e?.url)window.open(e.url,'_blank')});
-  f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); await api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}); closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
+  const touched={category:false,contact:false,travel_time:false}; let templateTimer=null;
+  if(!editing){
+    f.category.addEventListener('change',()=>touched.category=true);
+    f.contact.addEventListener('input',()=>touched.contact=true);
+    f.travel_time.addEventListener('input',()=>touched.travel_time=true);
+    f.title.addEventListener('input',()=>{clearTimeout(templateTimer);templateTimer=setTimeout(()=>applyEventTemplate(f,touched),300)});
+  }
+  f.addEventListener('submit',async ev=>{ev.preventDefault(); if(!editing) await applyEventTemplate(f,touched); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); await api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}); closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
 }
 
 function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
@@ -27,11 +48,11 @@ function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state
     <div class="field"><label>Heure</label><input name="due_time" type="time" value="${esc(t?.due_time||'')}"></div>
     <div class="field full checkline"><input id="important" name="important" type="checkbox" ${t?.important?'checked':''}><label for="important">Important 👺</label></div>
     <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
-    ${reminderEditor(reminders,'de la tâche')}
+    ${reminderEditor(reminders,'de la tâche',t?.due_date||ymd(new Date()))}
     <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
   </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();await api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()}); }
 
-function openSnooze(r){ openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm"><div class="field"><label>Nouvelle date et heure</label><input id="snoozeAt" type="datetime-local" required></div><div class="form-actions"><button type="button" id="cancelSnooze">Annuler</button><button class="primary">Reporter</button></div></form>`); $('#cancelSnooze').onclick=closeModal; $('#snoozeForm').onsubmit=async e=>{e.preventDefault();await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:$('#snoozeAt').value})});closeModal();await refresh()}; }
+function openSnooze(r){ const raw=(r.snoozed_until||r.remind_at||'').slice(0,16); openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid"><div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div><div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div><div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button class="primary">Reporter</button></div></form>`); $('#cancelSnooze').onclick=closeModal; $('#snoozeForm').onsubmit=async e=>{e.preventDefault();const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})});closeModal();await refresh()}; }
 
 async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(new Date().toISOString().slice(0,19))}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
 const shown=new Set();
