@@ -63,6 +63,24 @@ function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state
     <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
   </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();await api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()}); }
 
+function openPostponeEventModal(e){
+  const date=e?.instance_date||e?.event_date||ymd(new Date());
+  const time=e?.start_time||'09:00';
+  openModal(`<h2>Reporter le rendez-vous</h2><form id="postponeEventForm" class="form-grid">
+    <div class="field"><label>Nouvelle date</label><input id="postponeEventDate" type="date" required value="${esc(date)}"></div>
+    <div class="field"><label>Nouvelle heure</label><input id="postponeEventTime" type="time" required value="${esc(time)}"></div>
+    <div class="form-actions field full"><button type="button" id="cancelPostponeEvent">Annuler</button><button class="primary">Reporter</button></div>
+  </form>`);
+  $('#cancelPostponeEvent').onclick=closeModal;
+  $('#postponeEventForm').onsubmit=async ev=>{
+    ev.preventDefault();
+    const new_date=$('#postponeEventDate').value, new_time=$('#postponeEventTime').value;
+    await api(`/api/events/${e.id}/instance-action`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date||e.event_date,action:'postponed',new_date,new_time})});
+    closeModal();
+    await refresh();
+  };
+}
+
 function openSnooze(r){ const raw=(r.snoozed_until||r.remind_at||'').slice(0,16); openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid"><div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div><div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div><div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button class="primary">Reporter</button></div></form>`); $('#cancelSnooze').onclick=closeModal; $('#snoozeForm').onsubmit=async e=>{e.preventDefault();const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})});closeModal();await refresh()}; }
 
 async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(new Date().toISOString().slice(0,19))}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
@@ -224,3 +242,5 @@ function initKitchenLayoutEditor(){
 }
 
 applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor(); refresh(); setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+let atelierLastDay=ymd(new Date());
+setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
