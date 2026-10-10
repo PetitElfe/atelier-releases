@@ -142,6 +142,60 @@ function openFoodModal(item=null,prefillName='',prefillQuantity='',shoppingId=nu
   f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});if(shoppingId)await api(`/api/shopping/${shoppingId}`,{method:'PUT',body:JSON.stringify({archived:true})});closeModal();await refresh()};
 }
 
+let recipeReturnView='kitchen';
+let recipeCurrentMealId=null;
+let recipeTargetServings=4;
+
+function parseMealIngredients(item){
+  try{
+    const rows=JSON.parse(item?.ingredients_json||'[]');
+    return Array.isArray(rows)?rows:[];
+  }catch(e){return []}
+}
+
+function parseScalableQuantity(raw){
+  const s=String(raw||'').trim().replace(',','.');
+  if(!s)return null;
+  const mixed=s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if(mixed&&Number(mixed[3]))return Number(mixed[1])+Number(mixed[2])/Number(mixed[3]);
+  const frac=s.match(/^(\d+)\/(\d+)$/);
+  if(frac&&Number(frac[2]))return Number(frac[1])/Number(frac[2]);
+  if(/^\d+(?:\.\d+)?$/.test(s))return Number(s);
+  return null;
+}
+
+function formatScaledQuantity(raw,factor){
+  const n=parseScalableQuantity(raw);
+  if(n===null)return raw||'';
+  const rounded=Math.round(n*factor*100)/100;
+  return String(rounded).replace('.',',');
+}
+
+function addIngredientEditorRow(root,row={}){
+  const line=document.createElement('div');
+  line.className='ingredient-edit-row';
+  line.innerHTML=`<input class="ing-qty" inputmode="decimal" placeholder="Qté" value="${esc(row.quantity??'')}"><input class="ing-unit" placeholder="Unité" value="${esc(row.unit??'')}"><input class="ing-name" placeholder="Ingrédient" value="${esc(row.name??'')}"><button type="button" class="ing-remove">×</button>`;
+  line.querySelector('.ing-remove').onclick=()=>line.remove();
+  root.appendChild(line);
+}
+
+function collectIngredientEditorRows(root){
+  return [...root.querySelectorAll('.ingredient-edit-row')].map(line=>({
+    quantity:line.querySelector('.ing-qty').value.trim(),
+    unit:line.querySelector('.ing-unit').value.trim(),
+    name:line.querySelector('.ing-name').value.trim()
+  })).filter(x=>x.name);
+}
+
+function readMealImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Impossible de lire l’image."));
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.readAsDataURL(file);
+  });
+}
+
 function openMealModal(item=null){
   const editing=!!item;
   openModal(`<h2>${editing?'Modifier l’idée de repas':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid">
