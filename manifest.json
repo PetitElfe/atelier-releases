@@ -1,5 +1,5 @@
 {
-  "version": "0.2.5",
+  "version": "0.2.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "e959f750e92dbb7614ae28ac96f0a37272caed81d8bbb758791af7bfbb6106a0"
+      "sha256": "be3c6d2c6c406a64d44f0b6464a887e290416dd90c524094485b1be00936d6d7"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "594353524683f1120cd765c16d177091a22fd1cf619b0bf60c21c60cd79bcc93"
+      "sha256": "b5c62a69d12a614c6c28c80fc59eb17f8987537982ebd6c6a2b0f75fe3c90c7e"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "4ee474d3ef45b5040ad027d658d72af049b8d46b427d224fea8fc4cf8967b934"
+      "sha256": "b840cfac2f21d643d0220576857089a6843e0245cedc8cd0c5e27a133effea73"
     },
     {
       "path": "public/index.html",
-      "sha256": "0f97d5a59c92aa5271215197246226c84f189d7bd1ac727cc14c5a1e41ffa978"
+      "sha256": "295b3dc99a1709b9cb53910309697fb6338ce57ffbc8cc84b0ab51c9414fddae"
     },
     {
       "path": "public/styles.css",
-      "sha256": "7c212bf556afcca4c243a8806281c8337422981f26ab7ea3533ca4f8bc6b7b28"
+      "sha256": "e72af41921b33893a12a616a420db60033724d9c3061de7df3ea5316df17b9aa"
     }
   ],
-  "notes": "0.2.5 : le bloc « Rappels » a été retiré de l’accueil. Les rappels continuent de fonctionner, de notifier et restent accessibles dans leur onglet dédié, mais ils n’encombrent plus la page d’accueil."
+  "notes": "0.2.6 : le bouton de modification de la disposition de l’accueil est déplacé dans l’en-tête. Pendant le mode disposition, les éléments de l’accueil sont temporairement désactivés : cliquer ou glisser le calendrier, À venir ou le livre ne déclenche plus leurs actions. On peut donc les déplacer/redimensionner sans ouvrir leurs pages."
 }
