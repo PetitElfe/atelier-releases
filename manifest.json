@@ -1,5 +1,5 @@
 {
-  "version": "0.1.6",
+  "version": "0.2.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "1f2110568627307becae713f8b808f3d9d912d4b2a24ed6a78605f03f7437d3c"
+      "sha256": "1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "62d6f47fe180508fb79d35c12c7a841ceedadf681debdd311ac4a4e63713c67a"
+      "sha256": "8b7a2fed61675d26419f7f2e971eee92e06e4d21214bd1981f9547ab118c2a88"
     },
     {
       "path": "app_part2.py",
-      "sha256": "60f0170444252451bb606a39934571d35ea8215380039168ef401da44b2c3dfd"
+      "sha256": "9c22153263375cf6a9a38b74a0fdcdba2342c12994e5c9d870b41f892b4365e1"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "08a8afc4942a863c66edf085f2bbb639eb357204bd0fd6613f4a46a93700722e"
+      "sha256": "368000b8bc6e4a1aa11e042a9b0d555bb69519473b289c273ebae41604ad1a3c"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "d7cb04a6f54a6e97ab708e635e328ea80fbb570da48af77bb5d8a30df07c8fb6"
+      "sha256": "3156decc77f8d86ead181a1a1995cd506e312dbbe0c9e6a7b25676a17a905007"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "4c69d41390cc7599850fe93c9fbf91c5e1a4295b6bc71ca076fc20237871404f"
+      "sha256": "fa76d568551c221bcf3f52da42d77c0b011ee70aefa985a329ff0f5c95483943"
     },
     {
       "path": "public/index.html",
-      "sha256": "e197d51b0cc1230fded6187af5a8295e4a66cdfe0b9a3d45ab75bb4fd89444a1"
+      "sha256": "e77225ded462e367cf8af7658b89f3b01acb5521850673ed3c84ef1abddbe9da"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5c42fc81f4cf0a143cd0386696d5a90a47dec6d1e7aec42a914c133dd4f6f42d"
+      "sha256": "cdf62343a8d4b7845b9481cc8693c93be6e1fedb76c1788ed0987548b9b2061a"
     }
   ],
-  "notes": "0.1.6 : mode « Modifier la disposition » sur l’accueil. Calendrier, À venir, Rappels et livre peuvent être déplacés et redimensionnés comme des images. Positions et tailles sont mémorisées localement, avec bouton de réinitialisation."
+  "notes": "0.2.0 : nouveau système Courses & repas avec liste de courses, aliments à la maison et dates de péremption, idées de repas, transfert d’un achat vers les aliments, affichage automatique des aliments à consommer dans J-3 et idées de repas sur le livre d’accueil."
 }
