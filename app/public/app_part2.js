@@ -71,12 +71,24 @@ function collectReminders(){ return $('#reminderEditor .reminder-row-edit').map(
 
 
 function foodDateLabel(s){
-  if(!s) return 'Sans date';
+  if(!s) return '';
   const today=parseYMD(ymd(new Date())), d=parseYMD(s), diff=Math.round((d-today)/86400000);
   if(diff<0) return `Périmé depuis ${Math.abs(diff)} j`;
   if(diff===0) return "À consommer aujourd’hui";
   if(diff===1) return 'Expire demain';
   return `Expire dans ${diff} j · ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}`;
+}
+
+function foodExpiryLabel(item){
+  if(item?.expiry_mode==='pending') return 'Date à renseigner';
+  if(item?.expiry_mode==='none') return 'Sans date';
+  return foodDateLabel(item?.expiry_date) || 'Date à renseigner';
+}
+
+function fmtMoney(v){
+  if(v===null||v===undefined||v==='')return '';
+  const n=Number(v); if(!Number.isFinite(n))return '';
+  return n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 }
 
 function renderKitchen(){
@@ -86,10 +98,26 @@ function renderKitchen(){
   shopping.innerHTML='';
   if(!state.shopping.length) shopping.innerHTML='<div class="kitchen-empty">La liste de courses est vide.</div>';
   state.shopping.forEach(item=>{
-    const row=document.createElement('div'); row.className='kitchen-row'+(item.checked?' is-done':'');
-    row.innerHTML=`<input class="kitchen-check" type="checkbox" ${item.checked?'checked':''}><div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(item.quantity||'')}</span></div><div class="kitchen-actions"><button class="to-food">→ Aliment</button><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
-    row.querySelector('.kitchen-check').addEventListener('change',async e=>{await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({checked:e.target.checked})});await refresh()});
-    row.querySelector('.to-food').addEventListener('click',()=>openFoodModal(null,item.name,item.quantity,item.id));
+    const count=Math.max(1,Number(item.purchase_count)||1);
+    const row=document.createElement('div'); row.className='kitchen-row shopping-row'+(item.checked?' is-done':'');
+    const extras=[
+      item.quantity||'',
+      item.price!==null&&item.price!==''?fmtMoney(item.price):'',
+      item.calories!==null&&item.calories!==''?`${Number(item.calories)} kcal`:''
+    ].filter(Boolean).join(' · ');
+    row.innerHTML=`<input class="kitchen-check" type="checkbox" ${item.checked?'checked':''} aria-label="Pris">
+      <div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(extras)}</span></div>
+      <div class="shopping-count" aria-label="Nombre pris">
+        <button class="count-minus" type="button" aria-label="Retirer un exemplaire">−</button>
+        <strong>×${count}</strong>
+        <button class="count-plus" type="button" aria-label="Ajouter un exemplaire">+</button>
+      </div>
+      <div class="kitchen-actions"><button class="edit">Modifier</button><button class="remove">×</button></div>`;
+    row.querySelector('.kitchen-check').addEventListener('change',async e=>{
+      await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({checked:e.target.checked})});await refresh()
+    });
+    row.querySelector('.count-minus').onclick=async()=>{if(count<=1)return;await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({purchase_count:count-1})});await refresh()};
+    row.querySelector('.count-plus').onclick=async()=>{await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({purchase_count:count+1})});await refresh()};
     row.querySelector('.edit').addEventListener('click',()=>openShoppingModal(item));
     row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/shopping/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
     shopping.appendChild(row);
@@ -98,9 +126,19 @@ function renderKitchen(){
   foods.innerHTML='';
   if(!state.foods.length) foods.innerHTML='<div class="kitchen-empty">Aucun aliment enregistré.</div>';
   state.foods.forEach(item=>{
-    const row=document.createElement('div'); row.className='kitchen-row food-row';
-    const urgent=item.expiry_date && Math.round((parseYMD(item.expiry_date)-parseYMD(ymd(new Date())))/86400000)<=3;
-    row.innerHTML=`<div class="food-dot ${urgent?'urgent':''}"></div><div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(item.quantity||'')}${item.quantity&&item.expiry_date?' · ':''}${esc(foodDateLabel(item.expiry_date))}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="consume">Consommé</button></div>`;
+    const row=document.createElement('div'); row.className='kitchen-row food-row'+(item.expiry_mode==='pending'?' date-pending':'');
+    const urgent=item.expiry_mode==='date' && item.expiry_date && Math.round((parseYMD(item.expiry_date)-parseYMD(ymd(new Date())))/86400000)<=3;
+    const count=Math.max(1,Number(item.units_count)||1);
+    const details=[
+      count>1?`×${count}`:'',
+      item.quantity||'',
+      foodExpiryLabel(item),
+      item.price!==null&&item.price!==''?fmtMoney(item.price):'',
+      item.calories!==null&&item.calories!==''?`${Number(item.calories)} kcal`:''
+    ].filter(Boolean).join(' · ');
+    row.innerHTML=`<div class="food-dot ${urgent?'urgent':item.expiry_mode==='pending'?'pending':''}"></div>
+      <div class="kitchen-main"><strong>${esc(item.name)}</strong><span>${esc(details)}</span></div>
+      <div class="kitchen-actions"><button class="edit">${item.expiry_mode==='pending'?'Date':'Modifier'}</button><button class="consume">Consommé</button></div>`;
     row.querySelector('.edit').addEventListener('click',()=>openFoodModal(item));
     row.querySelector('.consume').addEventListener('click',async()=>{await api(`/api/foods/${item.id}`,{method:'PUT',body:JSON.stringify({status:'consumed'})});await refresh()});
     foods.appendChild(row);
@@ -118,28 +156,62 @@ function renderKitchen(){
   });
 }
 
+async function validateShoppingPurchases(){
+  const selected=state.shopping.filter(x=>x.checked);
+  if(!selected.length){alert('Coche au moins un produit acheté.');return}
+  const res=await api('/api/shopping/validate',{method:'PUT',body:'{}'});
+  await refresh();
+  if(res.count) alert(`${res.count} produit${res.count>1?'s':''} ajouté${res.count>1?'s':''} à la maison. Tu peux maintenant renseigner les dates.`);
+}
+
 function openShoppingModal(item=null){
   const editing=!!item;
-  openModal(`<h2>${editing?'Modifier l’article':'Ajouter aux courses'}</h2><form id="shoppingForm" class="form-grid">
+  openModal(`<h2>${editing?'Modifier l’article':'Ajouter aux courses'}</h2><form id="shoppingForm" class="form-grid compact-form">
     <div class="field full"><label>Article / aliment</label><input name="name" required value="${esc(item?.name||'')}" placeholder="ex. Champignons"></div>
-    <div class="field full"><label>Quantité</label><input name="quantity" value="${esc(item?.quantity||'')}" placeholder="ex. 500 g, 2 paquets…"></div>
+    <div class="field full"><label>Format / quantité</label><input name="quantity" value="${esc(item?.quantity||'')}" placeholder="ex. paquet 500 g, bouteille 1 L…"></div>
+    <div class="field"><label>Prix du produit (€)</label><input name="price" inputmode="decimal" value="${esc(item?.price??'')}" placeholder="ex. 2,49"></div>
+    <div class="field"><label>Calories du produit (kcal)</label><input name="calories" inputmode="decimal" value="${esc(item?.calories??'')}" placeholder="ex. 420"></div>
     <div class="form-actions field full"><button type="button" id="cancelShopping">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
   const f=$('#shoppingForm'); $('#cancelShopping').onclick=closeModal;
-  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/shopping/${item.id}`:'/api/shopping',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()};
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(f).entries());
+    if(!editing)payload.purchase_count=1;
+    await api(editing?`/api/shopping/${item.id}`:'/api/shopping',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    closeModal();await refresh();
+  };
 }
 
-function openFoodModal(item=null,prefillName='',prefillQuantity='',shoppingId=null){
+function openFoodModal(item=null,prefillName='',prefillQuantity=''){
   const editing=!!item;
-  openModal(`<h2>${editing?'Modifier l’aliment':'Ajouter un aliment'}</h2><form id="foodForm" class="form-grid">
+  const mode=item?.expiry_mode||'pending';
+  openModal(`<h2>${editing?'Modifier l’aliment':'Ajouter un aliment'}</h2><form id="foodForm" class="form-grid compact-form">
     <div class="field"><label>Aliment</label><input name="name" required value="${esc(item?.name||prefillName)}" placeholder="ex. Crème fraîche"></div>
-    <div class="field"><label>Quantité</label><input name="quantity" value="${esc(item?.quantity||prefillQuantity)}" placeholder="ex. 1 pot"></div>
-    <div class="field full"><label>Date de péremption</label><input name="expiry_date" type="date" value="${esc(item?.expiry_date||'')}"></div>
+    <div class="field"><label>Format / quantité</label><input name="quantity" value="${esc(item?.quantity||prefillQuantity)}" placeholder="ex. pot 20 cl"></div>
+    <div class="field"><label>Nombre à la maison</label><div class="inline-stepper"><button id="foodCountMinus" type="button">−</button><strong id="foodCountValue">${Math.max(1,Number(item?.units_count)||1)}</strong><button id="foodCountPlus" type="button">+</button></div><input id="foodCountInput" name="units_count" type="hidden" value="${Math.max(1,Number(item?.units_count)||1)}"></div>
+    <div class="field"><label>Suivi de date</label><select name="expiry_mode"><option value="pending">À renseigner</option><option value="date">Avec une date</option><option value="none">Sans date</option></select></div>
+    <div id="foodExpiryDateField" class="field"><label>Date</label><input name="expiry_date" type="date" value="${esc(item?.expiry_date||'')}"></div>
+    <div class="field"><label>Prix du produit (€)</label><input name="price" inputmode="decimal" value="${esc(item?.price??'')}" placeholder="ex. 2,49"></div>
+    <div class="field"><label>Calories du produit (kcal)</label><input name="calories" inputmode="decimal" value="${esc(item?.calories??'')}" placeholder="ex. 420"></div>
     <div class="field full"><label>Note</label><textarea name="notes" placeholder="Facultatif">${esc(item?.notes||'')}</textarea></div>
     <div class="form-actions field full"><button type="button" id="cancelFood">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
-  const f=$('#foodForm'); $('#cancelFood').onclick=closeModal;
-  f.onsubmit=async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(f).entries());await api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});if(shoppingId)await api(`/api/shopping/${shoppingId}`,{method:'PUT',body:JSON.stringify({archived:true})});closeModal();await refresh()};
+  const f=$('#foodForm'), countInput=$('#foodCountInput'), countValue=$('#foodCountValue'), dateField=$('#foodExpiryDateField');
+  f.expiry_mode.value=mode;
+  const syncDate=()=>dateField.classList.toggle('hidden',f.expiry_mode.value!=='date');
+  const setCount=n=>{n=Math.max(1,n);countInput.value=String(n);countValue.textContent=String(n)};
+  $('#foodCountMinus').onclick=()=>setCount(Number(countInput.value)-1);
+  $('#foodCountPlus').onclick=()=>setCount(Number(countInput.value)+1);
+  f.expiry_mode.onchange=syncDate;syncDate();
+  $('#cancelFood').onclick=closeModal;
+  f.onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(f).entries());
+    if(payload.expiry_mode!=='date')payload.expiry_date='';
+    await api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    closeModal();await refresh();
+  };
 }
 
 let recipeReturnView='kitchen';
