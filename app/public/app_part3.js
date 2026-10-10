@@ -10,9 +10,14 @@ async function applyEventTemplate(f,touched={}){
   }catch(e){}
 }
 
-function openEventModal(e=null,presetDate=null,presetTime=null){
-  const editing=!!e; const reminders=editing?state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
-  openModal(`<h2>${editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid">
+function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
+  const editing=!!e&&!duplicate;
+  const reminders=duplicate&&Array.isArray(e?.reminders)
+    ? e.reminders
+    : editing
+      ? state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)}))
+      : [];
+  openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid">
     <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
     <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général · blanc</option><option value="medical">Médical · vert</option><option value="important">Important · rouge</option></select></div>
@@ -28,9 +33,15 @@ function openEventModal(e=null,presetDate=null,presetTime=null){
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
     <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
-    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="openUrl">Ouvrir le lien</button>':''}<button class="primary" type="submit">Enregistrer</button></div>
+    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="duplicateEvent">Dupliquer</button><button type="button" id="openUrl">Ouvrir le lien</button>':''}<button class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal; $('#openUrl')?.addEventListener('click',()=>{if(e?.url)window.open(e.url,'_blank')});
+  $('#duplicateEvent')?.addEventListener('click',()=>{
+    const fd=new FormData(f); const copy=Object.fromEntries(fd.entries());
+    copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time; copy.reminders=collectReminders();
+    // Le titre reste strictement identique : jamais de « (1) » ajouté automatiquement.
+    openEventModal(copy,copy.event_date,copy.start_time,true);
+  });
   const touched={category:false,contact:false,travel_time:false}; let templateTimer=null;
   if(!editing){
     f.category.addEventListener('change',()=>touched.category=true);
