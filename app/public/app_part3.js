@@ -313,7 +313,11 @@ function syncGlobalLayoutEditing(){
     if(view)view.classList.add('layout-editing');
   }
   const toggle=$('#globalLayoutEdit'), reset=$('#globalLayoutReset');
-  if(toggle)toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+  if(toggle){
+    toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+    toggle.classList.toggle('is-active',globalLayoutEditing);
+    toggle.setAttribute('aria-pressed',globalLayoutEditing?'true':'false');
+  }
   if(reset)reset.classList.toggle('hidden',!globalLayoutEditing);
 }
 
