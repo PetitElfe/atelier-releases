@@ -1,15 +1,15 @@
 {
-  "version": "0.5.6",
+  "version": "0.5.7",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "bd8d72e2d1a75b8b07c035f8615d783a9b3c02280d420afbb4caef62d6b8c5d6"
+      "sha256": "63b038c361641701e561e1e80ae24d355e0e71144425946484a00a5f2dd00313"
     },
     {
       "path": "VERSION",
-      "sha256": "f669b5e9183901b78b0952eb71f8fe54bdcff9cc3d155710c61e25be7b35b058"
+      "sha256": "79d7614c17275d8e26f7c386169e65f3073bfcf583757b84bcda201134e628b4"
     },
     {
       "path": "app.py",
@@ -17,7 +17,7 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "aecd54762cbd58931dd26c789f44bc819247483943208093b2ed3d07608202dc"
+      "sha256": "35500420740f322a5dc88d4f4661d53d521a69a8e51d349accd1eebc63566e98"
     },
     {
       "path": "app_part2.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "1f96e0544965141d6c3453d1f4d8e5aaa95cbe23754d31e010a8e895150d4635"
+      "sha256": "764042ff5b9d9cebf44d67eac1ab0b893cb3fc8aea529d9f2a7997512c889933"
     },
     {
       "path": "public/styles.css",
       "sha256": "899d98cb3a8fc5ab534442d70e3de1f4722b761edc1552776c94ae174e59124d"
     }
   ],
-  "notes": "0.5.6 : hotfix de démarrage. Corrige l’erreur de syntaxe de la migration des sources de recettes introduite en 0.5.5, sans modifier les données utilisateur ni retirer les fonctions recettes ajoutées."
+  "notes": "0.5.7 : hotfix de démarrage renforcé. Supprime le bloc Python dupliqué resté après la 0.5.6 et corrige le placement de source_url dans le schéma des recettes. Aucune donnée utilisateur n’est supprimée."
 }
