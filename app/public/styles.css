@@ -239,3 +239,9 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
   }
   .week-slot.has-many{min-height:30px}
 }
+
+
+/* 0.4.3 — retours d’erreur visibles pour les actions */
+.form-error{padding:8px 10px;border:1px solid #8f4f49;border-radius:8px;background:#3a201d;color:#f0c3bc;font-size:12px}
+.error-toast{border-color:#8f4f49!important;background:#2b1b19!important}
+button:disabled{opacity:.55;cursor:wait}
