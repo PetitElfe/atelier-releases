@@ -152,7 +152,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':str(exc)},400)
             except Exception as exc:
                 print('[Atelier] Import recette URL:', exc)
-                return self._json({'error':"Impossible de lire cette page. Essaie le copier-coller du texte."},502)
+                return self._json({'error':"Impossible de lire cette page. Vérifie le lien ou essaie une autre recette."},502)
         with conn() as c:
             if p == '/api/events':
                 vals = (
@@ -225,10 +225,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not book_id or not c.execute('SELECT id FROM recipe_books WHERE id=?',(book_id,)).fetchone():
                     row=c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
                     book_id=row['id'] if row else None
-                cur=c.execute('''INSERT INTO recipes(title,book_id,notes,recipe,base_servings,ingredients_json,image_data,archived,created_at,updated_at)
-                                 VALUES(?,?,?,?,?,?,?,0,?,?)''',
+                cur=c.execute('''INSERT INTO recipes(title,book_id,notes,recipe,base_servings,ingredients_json,image_data,source_url,archived,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,0,?,?)''',
                               (title,book_id,body.get('notes',''),body.get('recipe',''),max(1,int_or_none(body.get('base_servings')) or 1),
-                               body.get('ingredients_json','[]'),body.get('image_data',''),ts,ts))
+                               body.get('ingredients_json','[]'),body.get('image_data',''),body.get('source_url',''),ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
 
@@ -461,10 +461,10 @@ class Handler(BaseHTTPRequestHandler):
                     row=c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
                     book_id=row['id'] if row else None
                 c.execute('''UPDATE recipes
-                             SET title=?,book_id=?,notes=?,recipe=?,base_servings=?,ingredients_json=?,image_data=?,archived=?,updated_at=?
+                             SET title=?,book_id=?,notes=?,recipe=?,base_servings=?,ingredients_json=?,image_data=?,source_url=?,archived=?,updated_at=?
                              WHERE id=?''',
                           (d['title'],book_id,d.get('notes',''),d.get('recipe',''),max(1,int_or_none(d.get('base_servings')) or 1),
-                           d.get('ingredients_json','[]'),d.get('image_data',''),1 if d.get('archived') else 0,ts,iid))
+                           d.get('ingredients_json','[]'),d.get('image_data',''),d.get('source_url',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2]); action=parts[3]

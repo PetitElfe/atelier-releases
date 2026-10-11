@@ -1,15 +1,15 @@
 {
-  "version": "0.5.4",
+  "version": "0.5.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "da87b33ccaa67ce946061218c509b78eb2baec319199a182bad6ac72d2516c71"
+      "sha256": "bc5870d52bf55c4c4f2f4f6bb6fc73f32a9157d0b58345b3884e2f8cf8e018f3"
     },
     {
       "path": "VERSION",
-      "sha256": "a7711142bc1fc55c16b9147a1503a4f2c4717be5c1e4437772a047f52ef81db2"
+      "sha256": "ac3bf208eb88be6542e3fc750b511b112cf25bc40e46dca2a50819e43cf59096"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "a4a125280bbf48f86d62ae7e294b1b49fc25b984f5cf5e0cc2e9c129d8146e95"
+      "sha256": "8d82b3b1f3d74d8ab68713a8bf5d0ea49669fd87e11fcfdcf9b2dcc8b795b7be"
     },
     {
       "path": "app_part2.py",
-      "sha256": "69ba1f0221ab7d5e4bb9c33808b70afe6d18297816f4df01742407cf4df9739b"
+      "sha256": "fd5462f0f95ae0700398329aa1436430f20b3f34497377fe5257a7e07d9c1886"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "058e331893900e9d1b7e0e0ee4edea6c208510c3b15643e0ed8c4b7ef5a376d5"
+      "sha256": "1defa44988c1639e7b770af757b9525c164c7a3e7c96d948f6b0e58bd4b5a6d0"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "969eebc64ddb9bf331b2d3acb376d7b15629e0ccc6c9e0747c4c8d1b28baec9b"
+      "sha256": "9e3fb387bee182b79df14255abc1976de51d24c7002099eedad930b6aab39652"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5795617e8702b4d6b5cee5442cbb69583f480df37d23a87650023a9abd43d881"
+      "sha256": "899d98cb3a8fc5ab534442d70e3de1f4722b761edc1552776c94ae174e59124d"
     }
   ],
-  "notes": "0.5.4 : remplace les confirmations brutes du navigateur par des dialogues L’Atelier, réorganise complètement l’éditeur de recette (titre centré, vignette photo, ingrédients compacts), sépare clairement recette vide et exemple Potiflette, corrige l’exemple en « 1 potimarron » et rend l’import beaucoup plus clair avec deux modes distincts : URL ou texte."
+  "notes": "0.5.5 : import de recettes uniquement par URL, source séparée et cliquable en bas du carnet, préparation structurée en étapes numérotées, changement d’image clarifié et proportions recalculables soit par le nombre de personnes, soit en modifiant directement une quantité d’ingrédient."
 }
