@@ -117,6 +117,32 @@ CREATE TABLE IF NOT EXISTS meal_ideas (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS recipe_books (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS recipes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  legacy_meal_id INTEGER UNIQUE,
+  title TEXT NOT NULL,
+  book_id INTEGER,
+  notes TEXT DEFAULT '',
+  recipe TEXT DEFAULT '',
+  base_servings INTEGER NOT NULL DEFAULT 1,
+  ingredients_json TEXT DEFAULT '[]',
+  image_data TEXT DEFAULT '',
+  archived INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(book_id) REFERENCES recipe_books(id)
+);
+CREATE TABLE IF NOT EXISTS meal_idea_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  recipe_id INTEGER NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
@@ -124,6 +150,8 @@ CREATE INDEX IF NOT EXISTS idx_food_expiry ON food_items(expiry_date);
 CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked);
 CREATE INDEX IF NOT EXISTS idx_event_completions_date ON event_completions(instance_date);
 CREATE INDEX IF NOT EXISTS idx_event_instance_actions_date ON event_instance_actions(instance_date);
+CREATE INDEX IF NOT EXISTS idx_recipes_book ON recipes(book_id, archived);
+CREATE INDEX IF NOT EXISTS idx_meal_idea_links_recipe ON meal_idea_links(recipe_id);
 
 '''
 
@@ -167,6 +195,22 @@ with conn() as c:
         c.execute("ALTER TABLE meal_ideas ADD COLUMN ingredients_json TEXT DEFAULT '[]'")
     if 'image_data' not in meal_cols:
         c.execute("ALTER TABLE meal_ideas ADD COLUMN image_data TEXT DEFAULT ''")
+
+    migration_ts = datetime.now().replace(microsecond=0).isoformat()
+    for book_name in ('À classer', 'Salé', 'Sucré', 'Sauces'):
+        c.execute('INSERT OR IGNORE INTO recipe_books(name,created_at) VALUES(?,?)', (book_name,migration_ts))
+    default_book = c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
+    if default_book:
+        c.execute('''INSERT OR IGNORE INTO recipes(
+                       legacy_meal_id,title,book_id,notes,recipe,base_servings,ingredients_json,image_data,archived,created_at,updated_at
+                     )
+                     SELECT id,title,?,notes,recipe,
+                            CASE WHEN base_servings IS NULL OR base_servings < 1 THEN 1 ELSE base_servings END,
+                            ingredients_json,image_data,archived,created_at,updated_at
+                     FROM meal_ideas''', (default_book['id'],))
+        c.execute('''INSERT OR IGNORE INTO meal_idea_links(recipe_id,created_at)
+                     SELECT id,COALESCE(created_at,?) FROM recipes WHERE legacy_meal_id IS NOT NULL''',
+                  (migration_ts,))
     c.commit()
 
 
@@ -181,6 +225,14 @@ def float_or_none(value):
         if value is None or str(value).strip() == '':
             return None
         return float(str(value).replace(',', '.'))
+    except Exception:
+        return None
+
+def int_or_none(value):
+    try:
+        if value is None or str(value).strip() == '':
+            return None
+        return int(value)
     except Exception:
         return None
 
