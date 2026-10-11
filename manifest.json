@@ -1,15 +1,15 @@
 {
-  "version": "0.5.3",
+  "version": "0.5.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "6d0eb9f28e403ea91867e03ad5b337e741987953ed327dfc922904dc6be65723"
+      "sha256": "da87b33ccaa67ce946061218c509b78eb2baec319199a182bad6ac72d2516c71"
     },
     {
       "path": "VERSION",
-      "sha256": "27ecff1fcdaf65ab46c1bb99c1072d6d134a0e8dd97dd95cfa88696b9ed453b2"
+      "sha256": "a7711142bc1fc55c16b9147a1503a4f2c4717be5c1e4437772a047f52ef81db2"
     },
     {
       "path": "app.py",
@@ -17,7 +17,7 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "cc3dbb95697ec041289e9dd6a13b70a06b5042460cacc33abdec795b201f1ea2"
+      "sha256": "a4a125280bbf48f86d62ae7e294b1b49fc25b984f5cf5e0cc2e9c129d8146e95"
     },
     {
       "path": "app_part2.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "378af1a9955e3cc16cba815d3edadb7a6b51c71df852c3d49c9664695dddba56"
+      "sha256": "507a27f25b488acc07a8c5004737bb394f82035655bf478d29cddbeac9e6b3dc"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "44e3bd659ae219d60a62aeab90fc72968535b7366887ee95c947d1dc99177f45"
+      "sha256": "058e331893900e9d1b7e0e0ee4edea6c208510c3b15643e0ed8c4b7ef5a376d5"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "e311bc5a82803abe11c0186c173f68441221efca3ff216fa3e9dd983dac3592c"
+      "sha256": "5d9dff3e87e6e5f6ab095a65414f58996ba9e6cdbf86347e939e7553be9fab63"
     },
     {
       "path": "public/index.html",
-      "sha256": "04a291e5298564eeb70fa33b940a1cb7706ce85877b19fd91d4d9dd164bf7b36"
+      "sha256": "969eebc64ddb9bf331b2d3acb376d7b15629e0ccc6c9e0747c4c8d1b28baec9b"
     },
     {
       "path": "public/styles.css",
-      "sha256": "49593ac097769a8627221560a307a93149bb2c7d8634f02e877a69fde4fd3566"
+      "sha256": "5795617e8702b4d6b5cee5442cbb69583f480df37d23a87650023a9abd43d881"
     }
   ],
-  "notes": "0.5.3 : harmonise les scrollbars avec le thème sombre, permet de renommer/supprimer les livres de recettes (les recettes sont déplacées dans « À classer »), ajoute une recette de test optionnelle et permet d’importer une recette soit par texte, soit directement par URL avec préremplissage depuis les données structurées Recipe de la page."
+  "notes": "0.5.4 : remplace les confirmations brutes du navigateur par des dialogues L’Atelier, réorganise complètement l’éditeur de recette (titre centré, vignette photo, ingrédients compacts), sépare clairement recette vide et exemple Potiflette, corrige l’exemple en « 1 potimarron » et rend l’import beaucoup plus clair avec deux modes distincts : URL ou texte."
 }
