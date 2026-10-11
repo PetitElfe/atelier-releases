@@ -148,8 +148,8 @@ function renderKitchen(){
   if(!state.meals.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas pour le moment.</div>';
   state.meals.forEach(item=>{
     const row=document.createElement('div'); row.className='kitchen-row meal-row';
-    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><strong>${esc(item.title)}</strong><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="recipe">Recette</button><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
-    row.querySelector('.recipe').addEventListener('click',()=>openMealRecipeModal(item));
+    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><button class="meal-title-open" type="button">${esc(item.title)}</button><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
+    row.querySelector('.meal-title-open').addEventListener('click',()=>openMealRecipeModal(item));
     row.querySelector('.edit').addEventListener('click',()=>openMealModal(item));
     row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/meals/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
     meals.appendChild(row);
