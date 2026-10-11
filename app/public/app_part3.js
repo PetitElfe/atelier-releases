@@ -92,7 +92,31 @@ function openPostponeEventModal(e){
   };
 }
 
-function openSnooze(r){ const raw=(r.snoozed_until||r.remind_at||'').slice(0,16); openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid"><div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div><div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div><div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button class="primary">Reporter</button></div></form>`); $('#cancelSnooze').onclick=closeModal; $('#snoozeForm').onsubmit=async e=>{e.preventDefault();const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})});closeModal();await refresh()}; }
+function openSnooze(r){
+  const raw=(r.snoozed_until||r.remind_at||'').slice(0,16);
+  openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid">
+    <div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div>
+    <div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div>
+    <div id="snoozeError" class="form-error field full hidden"></div>
+    <div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button id="submitSnooze" class="primary">Reporter</button></div>
+  </form>`);
+  $('#cancelSnooze').onclick=closeModal;
+  $('#snoozeForm').onsubmit=async e=>{
+    e.preventDefault();
+    const submit=$('#submitSnooze'), error=$('#snoozeError');
+    const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;
+    error.classList.add('hidden'); error.textContent='';
+    submit.disabled=true; submit.textContent='Report…';
+    const result=await runUiAction('Impossible de reporter le rappel',()=>api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})}));
+    if(!result.ok){
+      error.textContent=result.error?.message||'Le report a échoué.';
+      error.classList.remove('hidden');
+      submit.disabled=false; submit.textContent='Reporter';
+      return;
+    }
+    closeModal();await refresh();
+  };
+}
 
 async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(new Date().toISOString().slice(0,19))}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
 const shown=new Set();
