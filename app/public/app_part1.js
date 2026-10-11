@@ -5,7 +5,27 @@ const months = ['janvier','février','mars','avril','mai','juin','juillet','aoû
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const api = async (url, opts={}) => { const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts}); if(!r.ok) throw new Error(await r.text()); return r.json(); };
+const api = async (url, opts={}) => {
+  const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+  const raw=await r.text();
+  let data={};
+  try{data=raw?JSON.parse(raw):{}}catch(e){data={raw}}
+  if(!r.ok){
+    const err=new Error(data.error||data.detail||raw||`Erreur HTTP ${r.status}`);
+    err.status=r.status; err.data=data; throw err;
+  }
+  return data;
+};
+function showUiError(err,prefix='Une erreur est survenue'){
+  const msg=(err&&err.message)?err.message:String(err||'Erreur inconnue');
+  const area=$('#toastArea');
+  if(!area){alert(`${prefix} : ${msg}`);return}
+  const t=document.createElement('div');
+  t.className='toast error-toast';
+  t.innerHTML=`<strong>⚠ ${esc(prefix)}</strong><div class="task-meta">${esc(msg)}</div>`;
+  area.appendChild(t);
+  setTimeout(()=>t.remove(),6500);
+}
 function parseYMD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
 function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
@@ -123,11 +143,23 @@ function renderHome(){
       const mark=document.createElement('span'); mark.className='home-appt-state'; mark.textContent=eventInstanceIcon(e); actions.appendChild(mark);
     }else{
       const done=document.createElement('button'); done.type='button'; done.className='appt-action done'; done.title='Effectué'; done.textContent='✓';
-      done.onclick=async()=>{await api(`/api/events/${e.id}/complete-instance`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date,done:true})});await refresh()};
+      done.onclick=async()=>{
+        done.disabled=true;
+        try{
+          await api(`/api/events/${e.id}/complete-instance`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date,done:true})});
+          await refresh();
+        }catch(err){showUiError(err,'Impossible de valider le rendez-vous');done.disabled=false}
+      };
       const postpone=document.createElement('button'); postpone.type='button'; postpone.className='appt-action postpone'; postpone.title='Reporter'; postpone.textContent='↪';
       postpone.onclick=()=>openPostponeEventModal(e);
       const cancel=document.createElement('button'); cancel.type='button'; cancel.className='appt-action cancel'; cancel.title='Annuler'; cancel.textContent='×';
-      cancel.onclick=async()=>{await api(`/api/events/${e.id}/instance-action`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date,action:'cancelled'})});await refresh()};
+      cancel.onclick=async()=>{
+        cancel.disabled=true;
+        try{
+          await api(`/api/events/${e.id}/cancel-instance`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date})});
+          await refresh();
+        }catch(err){showUiError(err,"Impossible d’annuler le rendez-vous");cancel.disabled=false}
+      };
       actions.append(done,postpone,cancel);
     }
     row.append(main,actions); upcomingRoot.appendChild(row);
