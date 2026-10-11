@@ -1,15 +1,15 @@
 {
-  "version": "0.5.5",
+  "version": "0.5.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "bc5870d52bf55c4c4f2f4f6bb6fc73f32a9157d0b58345b3884e2f8cf8e018f3"
+      "sha256": "bd8d72e2d1a75b8b07c035f8615d783a9b3c02280d420afbb4caef62d6b8c5d6"
     },
     {
       "path": "VERSION",
-      "sha256": "ac3bf208eb88be6542e3fc750b511b112cf25bc40e46dca2a50819e43cf59096"
+      "sha256": "f669b5e9183901b78b0952eb71f8fe54bdcff9cc3d155710c61e25be7b35b058"
     },
     {
       "path": "app.py",
@@ -17,7 +17,7 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "8d82b3b1f3d74d8ab68713a8bf5d0ea49669fd87e11fcfdcf9b2dcc8b795b7be"
+      "sha256": "aecd54762cbd58931dd26c789f44bc819247483943208093b2ed3d07608202dc"
     },
     {
       "path": "app_part2.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "9e3fb387bee182b79df14255abc1976de51d24c7002099eedad930b6aab39652"
+      "sha256": "1f96e0544965141d6c3453d1f4d8e5aaa95cbe23754d31e010a8e895150d4635"
     },
     {
       "path": "public/styles.css",
       "sha256": "899d98cb3a8fc5ab534442d70e3de1f4722b761edc1552776c94ae174e59124d"
     }
   ],
-  "notes": "0.5.5 : import de recettes uniquement par URL, source séparée et cliquable en bas du carnet, préparation structurée en étapes numérotées, changement d’image clarifié et proportions recalculables soit par le nombre de personnes, soit en modifiant directement une quantité d’ingrédient."
+  "notes": "0.5.6 : hotfix de démarrage. Corrige l’erreur de syntaxe de la migration des sources de recettes introduite en 0.5.5, sans modifier les données utilisateur ni retirer les fonctions recettes ajoutées."
 }
