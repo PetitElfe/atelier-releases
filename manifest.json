@@ -1,5 +1,5 @@
 {
-  "version": "0.4.2",
+  "version": "0.4.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "e2f7bb608ebc9e24092ffcb796ad0aa83f0015afe23635f017df52273150f00d"
+      "sha256": "520a19075780a38b440395e2c70e20d7cddd96b8c2e2c2403b265cbb74a1b333"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "81a6635eb370eb80e2edc3ca51de20d82ad3bc1a533d92091eb9681543549eed"
+      "sha256": "b74c862dfbc71c5b339c7befb7dc8476a0a54e98ccb8f7d87acafd636ad4a523"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "f12cf6d7eba67bd3a737272043708df06f16bfbc0e5ae0f600528f4aed4cdcd6"
+      "sha256": "d04dc0c4111afd0b9fc15b9b8bc86018e9b3927b50881ed6f731b7d6296aa807"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "6ca6c28358a1d377499749c7238110c7713fba60630dc1596fd440141e66aa56"
+      "sha256": "a90ccbc9ceee08e9418f575e15124d05095967067b04e95059d228f1cf14ad11"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "009b9596b42a1842906fa3e23532e070fa71786945b0b1e142019a61d1f6a8d1"
+      "sha256": "847c8e1cc0b83078e145fddb7f669827ab2762c5f1047516babb2143c95dd855"
     },
     {
       "path": "public/index.html",
-      "sha256": "c1933c88ad16eb423c97342df97dd007d3b7b2535b9a828372949c92d5c4daf7"
+      "sha256": "dfcd744c6217a079b63df2bd954fd4772d7c64023b88cab570054d09e0ffe7b9"
     },
     {
       "path": "public/styles.css",
-      "sha256": "c4b790e71847cd4a167f5aeb88da6792188637a61618bf509bedfa3a82293aed"
+      "sha256": "3aedb930fa9e8a22760bc845b67e26bb4bf3a15736fc64ab19fbc21de50699cc"
     }
   ],
-  "notes": "0.4.2 : version de récupération pour forcer la mise à jour complète après un état local partiel. Contient les changements de 0.4.0/0.4.1, notamment semainier plus étroit et heures plus lisibles."
+  "notes": "0.4.3 : correction du report de rendez-vous avec un endpoint dédié et transaction plus robuste. Le report affiche désormais une erreur claire au lieu de sembler ne rien faire. Les actions ✓ / ×, le report de rappel et les principaux formulaires récents affichent aussi leurs erreurs au lieu d’échouer silencieusement. Un nouveau clic de report ne crée pas de doublon si une occurrence reportée existe déjà."
 }
