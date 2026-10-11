@@ -589,12 +589,16 @@ function openRecipeModal(item=null,prefill=null){
     <div class="recipe-edit-intro">
       <div class="recipe-avatar-field">
         <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
-        <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir ou changer l’image de la recette">
-          <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
-          <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>＋ Photo</strong><small>Ajouter</small></span>
-          <span id="mealImageChangeHint" class="recipe-image-change-hint ${mealImageData?'':'hidden'}">Changer</span>
-          <span id="removeMealImage" class="meal-image-remove ${mealImageData?'':'hidden'}" role="button" aria-label="Retirer l’image" title="Retirer l’image">×</span>
-        </button>
+        <div class="recipe-avatar-row">
+          <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir ou changer l’image de la recette">
+            <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
+            <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>Photo</strong><small>Aucune image</small></span>
+          </button>
+          <div class="recipe-avatar-actions">
+            <button id="changeMealImage" type="button">${mealImageData?'Changer':'+ Ajouter'}</button>
+            <button id="removeMealImage" class="recipe-image-remove-outside ${mealImageData?'':'hidden'}" type="button">× Retirer</button>
+          </div>
+        </div>
       </div>
 
       <div class="recipe-edit-summary">
@@ -627,14 +631,14 @@ function openRecipeModal(item=null,prefill=null){
 
   document.querySelector('.modal')?.classList.add('recipe-editor-modal');
 
-  const form=$('#mealForm'), rows=$('#ingredientEditRows'), stepRows=$('#recipeStepRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), changeHint=$('#mealImageChangeHint'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
+  const form=$('#mealForm'), rows=$('#ingredientEditRows'), stepRows=$('#recipeStepRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), changeImage=$('#changeMealImage'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
   const syncMealImagePreview=()=>{
     const has=!!mealImageData;
     preview.classList.toggle('hidden',!has);
     placeholder.classList.toggle('hidden',has);
-    changeHint.classList.toggle('hidden',!has);
     removeImage.classList.toggle('hidden',!has);
     picker.classList.toggle('has-image',has);
+    changeImage.textContent=has?'Changer':'+ Ajouter';
     if(has){preview.src=mealImageData;preview.alt='Aperçu de la recette'}else{preview.removeAttribute('src');preview.alt=''}
   };
   (ingredients.length?ingredients:[{}]).forEach(x=>addIngredientEditorRow(rows,x));
@@ -642,11 +646,9 @@ function openRecipeModal(item=null,prefill=null){
   $('#addIngredientRow').onclick=()=>{addIngredientEditorRow(rows,{});rows.lastElementChild?.querySelector('.ing-name')?.focus()};
   $('#addRecipeStep').onclick=()=>{addRecipeStepEditorRow(stepRows,'');stepRows.lastElementChild?.querySelector('.recipe-step-edit-text')?.focus()};
   $('#cancelMeal').onclick=closeModal;
-  picker.onclick=e=>{
-    if(e.target.closest('#removeMealImage'))return;
-    imageInput.click();
-  };
-  removeImage.onclick=e=>{e.preventDefault();e.stopPropagation();mealImageData='';imageInput.value='';syncMealImagePreview()};
+  picker.onclick=()=>imageInput.click();
+  changeImage.onclick=()=>imageInput.click();
+  removeImage.onclick=e=>{e.preventDefault();mealImageData='';imageInput.value='';syncMealImagePreview()};
   imageInput.onchange=async e=>{
     const file=e.target.files?.[0]; if(!file)return;
     if(file.size>5*1024*1024){showUiMessage('Image trop lourde','Choisis une image de moins de 5 Mo.');e.target.value='';return}
