@@ -247,7 +247,7 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 button:disabled{opacity:.55;cursor:wait}
 
 
-/* 0.5.1 — édition globale de la disposition */
+/* 0.5.2 — édition globale de la disposition */
 #globalLayoutEdit,#globalLayoutReset{white-space:nowrap}
 #globalLayoutEdit.is-active{border-color:var(--gold);color:var(--gold);background:#241d14}
 .layout-controls>.layout-scale-value{position:absolute;right:48px;bottom:11px;min-width:42px;text-align:center}
@@ -291,3 +291,58 @@ button:disabled{opacity:.55;cursor:wait}
   text-decoration:none;
 }
 .meal-title-open:hover{color:var(--gold);border:0;text-decoration:underline}
+
+
+/* 0.5.2 — semainier plus long, plus lisible et scrollable */
+@media(min-width:901px){
+  #weekPanel{width:min(1240px,100%);max-width:1240px;margin:0 auto}
+  .week-layout{grid-template-columns:160px minmax(0,1060px);gap:12px;align-items:start}
+  .week-scroll{width:100%;max-width:1060px;max-height:calc(100vh - 205px);overflow:auto;scrollbar-gutter:stable;border-radius:10px}
+  .week-grid{grid-template-columns:82px repeat(7,minmax(118px,1fr));min-width:950px;width:100%}
+  .week-grid>div{min-height:56px;padding:4px 5px}
+  .week-head{min-height:46px;font-size:13px;line-height:1.1;padding:6px 4px!important}
+  .time-label{font-size:18px;font-weight:700;line-height:1;padding:18px 10px 0 0!important;position:sticky;left:0;background:var(--panel);z-index:1}
+  .week-grid>.week-head:first-child{position:sticky;left:0;top:0;z-index:4}
+  .week-item{font-size:11px;line-height:1.15;padding:4px 5px}
+  .week-slot.has-many{min-height:74px}
+}
+
+/* Bibliothèque Cuisine */
+.journal-heading-button{width:100%;display:flex;align-items:center;justify-content:space-between;padding:0;border:0;background:transparent;text-align:left}
+.journal-heading-button:hover{border:0;color:#6f604c}
+.objective-open{width:100%;display:block;background:transparent;color:#2a241d;border:0;border-radius:0;text-align:left;font-style:italic;padding:0 0 4px}
+.objective-open:hover{border:0;background:#00000008}
+.cuisine-library-head{align-items:flex-end}
+.cuisine-library-head p{margin:5px 0 0;max-width:720px}
+.cuisine-library-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.cuisine-library{display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start}
+.recipe-library-sidebar{position:sticky;top:78px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px}
+.recipe-library-sidebar label,.recipe-books-title{display:block;font-size:11px;color:var(--gold);margin-bottom:6px}
+.recipe-library-sidebar input{width:100%;margin-bottom:14px}
+.recipe-books-title{margin-top:3px}
+.recipe-book-shelf{display:flex;flex-direction:column;gap:5px}
+.recipe-book-button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;padding:8px 9px;background:#1b1815}
+.recipe-book-button small{color:var(--muted);font-size:10px}
+.recipe-book-button.active{border-color:var(--gold);background:#2c241b}
+.recipe-library-content{min-width:0}
+.recipe-library-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.recipe-library-card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px}
+.recipe-library-title{display:block;width:100%;padding:0;border:0;background:transparent;color:var(--text);font-weight:700;font-size:16px;text-align:left}
+.recipe-library-title:hover{border:0;color:var(--gold);text-decoration:underline}
+.recipe-library-meta{min-height:30px;margin:5px 0 10px;color:var(--muted);font-size:11px;line-height:1.35}
+.recipe-library-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.recipe-library-actions button{padding:6px 8px;font-size:11px}
+.library-empty{grid-column:1/-1;padding:28px 14px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center;font-style:italic}
+.meal-idea-picker-list{display:flex;flex-direction:column;gap:5px;max-height:50vh;overflow:auto;margin-top:10px}
+.meal-idea-picker-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.meal-idea-picker-row>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.meal-idea-picker-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meal-idea-picker-row span{font-size:10px;color:var(--muted)}
+.recipe-import-text{min-height:330px}
+@media(max-width:850px){
+  .cuisine-library-head{align-items:flex-start;flex-direction:column}
+  .cuisine-library-actions{justify-content:flex-start}
+  .cuisine-library{grid-template-columns:1fr}
+  .recipe-library-sidebar{position:static}
+  .recipe-book-shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
