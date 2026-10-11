@@ -110,7 +110,14 @@ function renderHome(){
 
   const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='';
   const meals=state.meals.slice(0,3);
-  if(!meals.length) mealRoot.innerHTML='<button class="meal-line meal-line-button" type="button">Ajouter une idée de repas…</button>';
+  if(!meals.length){
+    const addMeal=document.createElement('button');
+    addMeal.className='meal-line meal-line-button';
+    addMeal.type='button';
+    addMeal.textContent='Ajouter une idée de repas…';
+    addMeal.addEventListener('click',()=>openMealModal());
+    mealRoot.appendChild(addMeal);
+  }
   meals.forEach(m=>{
     const b=document.createElement('button'); b.type='button'; b.className='meal-line meal-line-button';
     b.textContent=m.title; b.addEventListener('click',()=>openMealRecipeModal(m)); mealRoot.appendChild(b);
