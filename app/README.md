@@ -1,8 +1,8 @@
-# L’Atelier 0.5.6
+# L’Atelier 0.5.7
 
-Hotfix de démarrage :
-- corrige l’erreur de syntaxe introduite dans la migration de la source des recettes en 0.5.5 ;
-- restaure le démarrage normal de L’Atelier ;
+Hotfix de démarrage renforcé :
+- supprime le bloc dupliqué resté par erreur à la fin de `app_part1.py` après le correctif 0.5.6 ;
+- corrige la définition du champ `source_url` dans le schéma des recettes pour les nouvelles installations ;
 - conserve toutes les fonctions de la 0.5.5 : import par URL, source cliquable, étapes numérotées, changement d’image et recalcul des proportions depuis un ingrédient.
 
-Aucune donnée utilisateur n’est supprimée ni réinitialisée.
+Cette version a été préparée spécifiquement pour restaurer un démarrage propre sans toucher aux données utilisateur.
