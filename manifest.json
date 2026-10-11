@@ -1,5 +1,5 @@
 {
-  "version": "0.4.4",
+  "version": "0.5.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "175307e07ac7f0bdc0f3dba371ba3a202aaf3c0117368a93d2331e1bea4af4f3"
+      "sha256": "a0ad50640139a524f86591157145bf1d4674ea9c065bfea21558f0f7b04430c8"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "23a20bd4c2d21042b226bc9b82efa08b7b03be7ff8f5497c05362566f49e008a"
+      "sha256": "1dd73960a4d0c13ad0c33e7e92c9504322e354e8055b3aa5a5f568d6a98ebaf5"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "d04dc0c4111afd0b9fc15b9b8bc86018e9b3927b50881ed6f731b7d6296aa807"
+      "sha256": "af0b82069de5db3568b153fc9b710aa3824ff95038b2df11f0cef005a0d105b6"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "a90ccbc9ceee08e9418f575e15124d05095967067b04e95059d228f1cf14ad11"
+      "sha256": "871ac8bee637d878337059fc61b047b2e0ac829c42faf3333555bc98836bbb04"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "d7424dc8e48449eb39565654f3e649d385e641d537bff4477b2c45ac872dd98c"
+      "sha256": "fb96f3bbac6b3045e05cd8e0c3b43489262a86460c523dc8e2f6f20e0e2b86f9"
     },
     {
       "path": "public/index.html",
-      "sha256": "7a1a0bc6c661aeafe3ce0530c5cd01416c8a5575564d2ba4a2fd1e9f9d2e4a64"
+      "sha256": "ea0cc682c54833364050b6538a0bd5676445d99f48c466e0aed23b28d7bd78ed"
     },
     {
       "path": "public/styles.css",
-      "sha256": "3aedb930fa9e8a22760bc845b67e26bb4bf3a15736fc64ab19fbc21de50699cc"
+      "sha256": "8566887aa75f2133c19c08666180b01978d11d274cd9075932390719036e76e7"
     }
   ],
-  "notes": "0.4.4 : corrige la cause des interfaces à jour servies par un ancien serveur Python. L’Atelier n’utilise plus silencieusement un autre port si une vieille instance occupe 8765 : il tente de l’arrêter puis redémarre une seule instance propre. L’interface détecte aussi un backend trop ancien. Le report de rendez-vous conserve la correction 0.4.3 avec erreur visible en cas d’échec."
+  "notes": "0.5.0 : mise à jour par bloc. Un bouton global « Modifier » apparaît à côté de « Aujourd’hui » et permet de déplacer par drag et de redimensionner par le coin les principaux éléments de chaque onglet, y compris le semainier. Le semainier est aussi plus grand par défaut. Dans Cuisine, cliquer directement sur le titre d’un plat ouvre son carnet de recette. « Cuisine » apparaît désormais dans les objectifs provisoires ; la future bibliothèque Cuisine (livres Sucré/Salé/Sauces et livres personnalisés) est préparée au niveau conception mais n’est pas encore figée."
 }
