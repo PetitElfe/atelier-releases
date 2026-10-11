@@ -493,3 +493,23 @@ button:disabled{opacity:.55;cursor:wait}
   .recipe-ingredient-row{grid-template-columns:105px minmax(0,1fr)}
   .recipe-ingredient-qty-input{width:56px!important}
 }
+
+
+/* 0.5.8 — contrôles photo à côté de l’aperçu */
+.recipe-edit-intro{grid-template-columns:270px minmax(0,1fr)}
+.recipe-avatar-field{display:block}
+.recipe-avatar-row{display:flex;align-items:center;justify-content:center;gap:12px}
+.recipe-avatar-actions{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:92px}
+.recipe-avatar-actions button{padding:6px 9px;font-size:11px}
+.recipe-image-remove-outside{border-color:#744b45;color:#c98a80;background:transparent}
+.recipe-image-remove-outside:hover{border-color:#a65a52;color:#e5a49a;background:#3a211e}
+.recipe-avatar-picker .meal-image-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.recipe-avatar-picker .meal-image-placeholder strong{font-size:14px}
+.recipe-avatar-picker .meal-image-placeholder small{font-size:10px}
+.recipe-avatar-picker.has-image .meal-image-placeholder{display:none!important}
+.recipe-image-change-hint{display:none!important}
+.recipe-avatar-picker .meal-image-remove{display:none!important}
+@media(max-width:700px){
+  .recipe-edit-intro{grid-template-columns:1fr}
+  .recipe-avatar-row{justify-content:center}
+}
