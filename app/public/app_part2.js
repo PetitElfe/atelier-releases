@@ -159,7 +159,9 @@ function renderKitchen(){
 async function validateShoppingPurchases(){
   const selected=state.shopping.filter(x=>x.checked);
   if(!selected.length){alert('Coche au moins un produit acheté.');return}
-  const res=await api('/api/shopping/validate',{method:'PUT',body:'{}'});
+  const result=await runUiAction('Impossible de valider les achats',()=>api('/api/shopping/validate',{method:'PUT',body:'{}'}));
+  if(!result.ok)return;
+  const res=result.value;
   await refresh();
   if(res.count) alert(`${res.count} produit${res.count>1?'s':''} ajouté${res.count>1?'s':''} à la maison. Tu peux maintenant renseigner les dates.`);
 }
@@ -178,7 +180,8 @@ function openShoppingModal(item=null){
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(f).entries());
     if(!editing)payload.purchase_count=1;
-    await api(editing?`/api/shopping/${item.id}`:'/api/shopping',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    const result=await runUiAction("Impossible d’enregistrer l’article",()=>api(editing?`/api/shopping/${item.id}`:'/api/shopping',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
     closeModal();await refresh();
   };
 }
@@ -209,7 +212,8 @@ function openFoodModal(item=null,prefillName='',prefillQuantity=''){
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(f).entries());
     if(payload.expiry_mode!=='date')payload.expiry_date='';
-    await api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    const result=await runUiAction("Impossible d’enregistrer l’aliment",()=>api(editing?`/api/foods/${item.id}`:'/api/foods',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
     closeModal();await refresh();
   };
 }
@@ -325,7 +329,8 @@ function openMealModal(item=null){
     payload.base_servings=Math.max(1,Number(payload.base_servings)||1);
     payload.ingredients_json=JSON.stringify(collectIngredientEditorRows(rows));
     payload.image_data=mealImageData;
-    await api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});
+    const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
     closeModal();
     await refresh();
     if(editing&&state.view==='recipe'){
