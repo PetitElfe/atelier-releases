@@ -239,7 +239,14 @@ with conn() as c:
         if (row['source_url'] or '').strip():
             continue
         notes=row['notes'] or ''
-        match=re.search(r'(?mi)^\s*Source\s*:\s*(https?://\S+)\s*
+        match=re.search(r'(?mi)^\s*Source\s*:\s*(https?://\S+)\s*$', notes)
+        if match:
+            source_url=match.group(1).strip()
+            cleaned=(notes[:match.start()]+notes[match.end():]).strip()
+            c.execute('UPDATE recipes SET source_url=?,notes=?,updated_at=? WHERE id=?',
+                      (source_url,cleaned,migration_ts,row['id']))
+    c.commit()
+
 
 
 def now_iso():
