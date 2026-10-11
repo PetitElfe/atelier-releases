@@ -26,6 +26,10 @@ function showUiError(err,prefix='Une erreur est survenue'){
   area.appendChild(t);
   setTimeout(()=>t.remove(),6500);
 }
+async function runUiAction(label,fn){
+  try{return {ok:true,value:await fn()}}
+  catch(err){showUiError(err,label);return {ok:false,error:err}}
+}
 function parseYMD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
 function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
