@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], meals:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -57,13 +57,15 @@ async function refresh(){
     ['reminders',api('/api/reminders')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],
-    ['meals',api('/api/meals')]
+    ['recipeBooks',api('/api/recipe-books')],
+    ['recipes',api('/api/recipes')],
+    ['mealIdeas',api('/api/meal-ideas')]
   ];
   const results=await Promise.allSettled(reqs.map(x=>x[1]));
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); updateClock(); }
+function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
@@ -103,24 +105,27 @@ function renderHome(){
     ['Cuisine','Préparer, classer ou tester une recette.']
   ];
   objectiveSeeds.forEach(([name,context])=>{
-    const el=document.createElement('div'); el.className='objective-note';
-    el.innerHTML=`<div class="objective-name">${esc(name)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>Ajouter une petite action…</li></ul>`;
+    const el=document.createElement(name==='Cuisine'?'button':'div');
+    el.className='objective-note'+(name==='Cuisine'?' objective-open':'');
+    if(name==='Cuisine')el.type='button';
+    el.innerHTML=`<div class="objective-name">${esc(name)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${name==='Cuisine'?'Ouvrir la bibliothèque de recettes':'Ajouter une petite action…'}</li></ul>`;
+    if(name==='Cuisine')el.addEventListener('click',()=>showView('cuisine'));
     objectiveRoot.appendChild(el);
   });
 
   const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='';
-  const meals=state.meals.slice(0,3);
+  const meals=state.mealIdeas.slice(0,3);
   if(!meals.length){
     const addMeal=document.createElement('button');
     addMeal.className='meal-line meal-line-button';
     addMeal.type='button';
-    addMeal.textContent='Ajouter une idée de repas…';
-    addMeal.addEventListener('click',()=>openMealModal());
+    addMeal.textContent='Choisir une idée depuis la bibliothèque…';
+    addMeal.addEventListener('click',()=>openMealIdeaPicker());
     mealRoot.appendChild(addMeal);
   }
   meals.forEach(m=>{
     const b=document.createElement('button'); b.type='button'; b.className='meal-line meal-line-button';
-    b.textContent=m.title; b.addEventListener('click',()=>openMealRecipeModal(m)); mealRoot.appendChild(b);
+    b.textContent=m.title; b.addEventListener('click',()=>openRecipePage(m)); mealRoot.appendChild(b);
   });
 
   const expiryBlock=$('#homeExpiryBlock'), expiryList=$('#homeExpiryList'); expiryList.innerHTML='';
