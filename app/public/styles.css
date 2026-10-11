@@ -245,3 +245,48 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 .form-error{padding:8px 10px;border:1px solid #8f4f49;border-radius:8px;background:#3a201d;color:#f0c3bc;font-size:12px}
 .error-toast{border-color:#8f4f49!important;background:#2b1b19!important}
 button:disabled{opacity:.55;cursor:wait}
+
+
+/* 0.5.0 — édition globale de la disposition */
+#globalLayoutEdit,#globalLayoutReset{white-space:nowrap}
+.layout-controls>.layout-scale-value{position:absolute;right:48px;bottom:11px;min-width:42px;text-align:center}
+.layout-editing .layout-object{user-select:none}
+.layout-editing .layout-object .layout-resize-handle{width:38px;height:38px;font-size:19px}
+.layout-editing .layout-object .layout-move-handle{opacity:.9}
+.layout-object{will-change:transform}
+#weekPanel.layout-object,#monthPanel.layout-object,.recipe-carnet.layout-object{transform-origin:top center}
+
+/* Semainier : base plus généreuse, puis réglable manuellement */
+@media(min-width:901px){
+  #weekPanel{max-width:1320px;margin:0 auto}
+  .week-layout{
+    grid-template-columns:155px minmax(0,1080px);
+    justify-content:center;
+    gap:12px;
+  }
+  .week-scroll{max-width:1080px}
+  .week-grid{grid-template-columns:64px repeat(7,minmax(0,1fr))}
+  .week-grid>div{min-height:25px}
+  .time-label{
+    font-size:13px;
+    font-weight:700;
+    padding:6px 8px 0 0!important;
+  }
+  .week-head{font-size:12px}
+}
+
+/* Recettes */
+.meal-title-open{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  font:inherit;
+  font-weight:700;
+  text-align:left;
+  text-decoration:none;
+}
+.meal-title-open:hover{color:var(--gold);border:0;text-decoration:underline}
