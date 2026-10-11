@@ -145,15 +145,200 @@ function renderKitchen(){
   });
 
   meals.innerHTML='';
-  if(!state.meals.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas pour le moment.</div>';
-  state.meals.forEach(item=>{
+  if(!state.mealIdeas.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas choisie pour le moment.</div>';
+  state.mealIdeas.forEach(item=>{
     const row=document.createElement('div'); row.className='kitchen-row meal-row';
-    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><button class="meal-title-open" type="button">${esc(item.title)}</button><span>${esc(item.notes||'')}</span></div><div class="kitchen-actions"><button class="edit">Modifier</button><button class="remove">Retirer</button></div>`;
-    row.querySelector('.meal-title-open').addEventListener('click',()=>openMealRecipeModal(item));
-    row.querySelector('.edit').addEventListener('click',()=>openMealModal(item));
-    row.querySelector('.remove').addEventListener('click',async()=>{await api(`/api/meals/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
+    row.innerHTML=`<div class="meal-symbol">✧</div><div class="kitchen-main"><button class="meal-title-open" type="button">${esc(item.title)}</button><span>${esc(item.book_name||item.notes||'')}</span></div><div class="kitchen-actions"><button class="remove">Retirer</button></div>`;
+    row.querySelector('.meal-title-open').addEventListener('click',()=>openRecipePage(item));
+    row.querySelector('.remove').addEventListener('click',async()=>{
+      const result=await runUiAction("Impossible de retirer l’idée",()=>api(`/api/meal-ideas/${item.idea_id}`,{method:'DELETE'}));
+      if(result.ok)await refresh();
+    });
     meals.appendChild(row);
   });
+}
+
+
+let recipeBookFilter='all';
+let recipeSearchQuery='';
+
+function normalizeRecipeSearch(value=''){
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+
+function renderCuisineLibrary(){
+  const shelf=$('#recipeBookShelf'), list=$('#recipeLibraryList'), search=$('#recipeSearch');
+  if(!shelf||!list||!search)return;
+  search.value=recipeSearchQuery;
+  search.oninput=e=>{recipeSearchQuery=e.target.value;renderCuisineLibrary()};
+
+  shelf.innerHTML='';
+  const makeBookButton=(id,label,count)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='recipe-book-button'+(String(recipeBookFilter)===String(id)?' active':'');
+    b.innerHTML=`<span>${esc(label)}</span><small>${count}</small>`;
+    b.onclick=()=>{recipeBookFilter=id;renderCuisineLibrary()};
+    shelf.appendChild(b);
+  };
+  makeBookButton('all','Toutes les recettes',state.recipes.length);
+  state.recipeBooks.forEach(book=>makeBookButton(book.id,book.name,Number(book.recipe_count)||0));
+
+  const q=normalizeRecipeSearch(recipeSearchQuery);
+  const rows=state.recipes.filter(item=>{
+    const inBook=recipeBookFilter==='all'||Number(item.book_id)===Number(recipeBookFilter);
+    const hay=normalizeRecipeSearch([item.title,item.book_name,item.notes].filter(Boolean).join(' '));
+    return inBook&&(!q||hay.includes(q));
+  });
+
+  list.innerHTML='';
+  if(!rows.length){
+    list.innerHTML='<div class="library-empty">Aucune recette ne correspond à cette recherche.</div>';
+    return;
+  }
+  const selectedIds=new Set(state.mealIdeas.map(x=>Number(x.id)));
+  rows.forEach(item=>{
+    const card=document.createElement('article');
+    card.className='recipe-library-card';
+    card.innerHTML=`
+      <button class="recipe-library-title" type="button">${esc(item.title)}</button>
+      <div class="recipe-library-meta">${esc(item.book_name||'À classer')}${item.notes?' · '+esc(item.notes):''}</div>
+      <div class="recipe-library-actions">
+        <button class="idea" type="button" ${selectedIds.has(Number(item.id))?'disabled':''}>${selectedIds.has(Number(item.id))?'Déjà dans les idées':'＋ Idée de repas'}</button>
+        <button class="edit" type="button">Modifier</button>
+      </div>`;
+    card.querySelector('.recipe-library-title').onclick=()=>openRecipePage(item);
+    card.querySelector('.edit').onclick=()=>openRecipeModal(item);
+    card.querySelector('.idea').onclick=async()=>{
+      if(await addRecipeToMealIdeas(item.id))renderCuisineLibrary();
+    };
+    list.appendChild(card);
+  });
+}
+
+async function addRecipeToMealIdeas(recipeId){
+  const result=await runUiAction("Impossible d’ajouter l’idée de repas",()=>api('/api/meal-ideas',{method:'POST',body:JSON.stringify({recipe_id:recipeId})}));
+  if(!result.ok)return false;
+  await refresh();
+  return true;
+}
+
+function openMealIdeaPicker(){
+  openModal(`<h2>Choisir une idée de repas</h2>
+    <p class="field-help">Cette liste vient de ta bibliothèque Cuisine. Ajouter une idée ne crée pas une nouvelle recette.</p>
+    <div class="field"><label>Rechercher</label><input id="mealIdeaSearch" autocomplete="off" placeholder="Potiflette, sauce, gâteau…"></div>
+    <div id="mealIdeaPickerList" class="meal-idea-picker-list"></div>
+    <div class="form-actions"><button type="button" id="closeMealIdeaPicker">Fermer</button></div>`);
+  $('#closeMealIdeaPicker').onclick=closeModal;
+  const input=$('#mealIdeaSearch'), root=$('#mealIdeaPickerList');
+  const draw=()=>{
+    const q=normalizeRecipeSearch(input.value);
+    const selectedIds=new Set(state.mealIdeas.map(x=>Number(x.id)));
+    const rows=state.recipes.filter(x=>!q||normalizeRecipeSearch([x.title,x.book_name,x.notes].filter(Boolean).join(' ')).includes(q));
+    root.innerHTML='';
+    if(!rows.length){root.innerHTML='<div class="library-empty">Aucune recette trouvée.</div>';return}
+    rows.forEach(item=>{
+      const row=document.createElement('div');
+      row.className='meal-idea-picker-row';
+      const selected=selectedIds.has(Number(item.id));
+      row.innerHTML=`<div><strong>${esc(item.title)}</strong><span>${esc(item.book_name||'À classer')}</span></div><button type="button" ${selected?'disabled':''}>${selected?'Ajoutée':'Ajouter'}</button>`;
+      row.querySelector('button').onclick=async()=>{
+        if(await addRecipeToMealIdeas(item.id))draw();
+      };
+      root.appendChild(row);
+    });
+  };
+  input.oninput=draw;
+  draw();
+  input.focus();
+}
+
+function openRecipeBookModal(){
+  openModal(`<h2>Nouveau livre de recettes</h2><form id="recipeBookForm" class="form-grid">
+    <div class="field full"><label>Nom du livre</label><input name="name" required placeholder="ex. Soupes, Pains, Recettes de Mamie…"></div>
+    <div class="field-help full">Pour l’instant, on crée seulement le livre. Les options personnalisables du livre seront définies pendant les prochains tests.</div>
+    <div class="form-actions field full"><button type="button" id="cancelRecipeBook">Annuler</button><button class="primary">Créer</button></div>
+  </form>`);
+  $('#cancelRecipeBook').onclick=closeModal;
+  $('#recipeBookForm').onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
+    const result=await runUiAction("Impossible de créer le livre",()=>api('/api/recipe-books',{method:'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
+    closeModal();await refresh();showView('cuisine');
+  };
+}
+
+function fractionToAscii(s=''){
+  return String(s).replaceAll('½','1/2').replaceAll('¼','1/4').replaceAll('¾','3/4').replaceAll('⅓','1/3').replaceAll('⅔','2/3').replaceAll('⅛','1/8').replaceAll('⅜','3/8').replaceAll('⅝','5/8').replaceAll('⅞','7/8');
+}
+
+function parsePastedIngredientLine(line){
+  let s=fractionToAscii(String(line||'').replace(/^[•·*\-–—]+\s*/,'').trim());
+  if(!s)return null;
+  const m=s.match(/^((?:\d+\s+\d+\/\d+)|(?:\d+\/\d+)|(?:\d+(?:[.,]\d+)?))\s*(.*)$/);
+  let quantity='',rest=s;
+  if(m){quantity=m[1].replace('.',',');rest=m[2].trim()}
+  const unitRe=/^(kg|g|mg|l|dl|cl|ml|c\.?(?:\s*à\s*)?(?:soupe|café)|cuillères?\s+à\s+(?:soupe|café)|cuillères?|pincées?|sachets?|boîtes?|boites?|pots?|tranches?|gousses?|branches?|verres?)\b\s*/i;
+  const u=rest.match(unitRe);
+  let unit='';
+  if(u){unit=u[1];rest=rest.slice(u[0].length).trim()}
+  rest=rest.replace(/^d['’]\s*/i,"d’").replace(/^de\s+/i,'').trim();
+  return rest?{quantity,unit,name:rest}:null;
+}
+
+function parsePastedRecipeText(raw){
+  const text=String(raw||'').replace(/\u00a0/g,' ');
+  const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const ingIndex=lines.findIndex(x=>/^ingr[ée]dients?\b/i.test(x));
+  let prepIndex=lines.findIndex(x=>/^(préparation|preparation|instructions?|étapes?|etapes?)\b/i.test(x));
+  if(prepIndex<0)prepIndex=lines.findIndex(x=>/^étape\s*\d+/i.test(x));
+
+  const meta=/^(marmiton|recette|temps|préparation|preparation|cuisson|repos|difficulté|difficulte|coût|cout|bon marché|très facile|facile)\b/i;
+  const titlePool=(ingIndex>0?lines.slice(0,ingIndex):lines.slice(0,Math.min(lines.length,8))).filter(x=>!meta.test(x)&&!/^\d+\s*(min|h|personnes?|portions?)\b/i.test(x));
+  const title=(titlePool[0]||'').replace(/^recette\s+(de|du|des)\s+/i,'').trim();
+
+  const servingMatch=text.match(/(?:pour\s*)?(\d+)\s*(?:personnes?|portions?)/i);
+  const base_servings=servingMatch?Math.max(1,Number(servingMatch[1])||1):1;
+
+  let ingredientLines=[];
+  if(ingIndex>=0){
+    const end=prepIndex>ingIndex?prepIndex:lines.length;
+    ingredientLines=lines.slice(ingIndex+1,end);
+  }
+  ingredientLines=ingredientLines.filter(x=>!meta.test(x)&&!/^\d+\s*(min|h)\b/i.test(x));
+  const ingredients=ingredientLines.map(parsePastedIngredientLine).filter(Boolean);
+
+  let prepLines=[];
+  if(prepIndex>=0)prepLines=lines.slice(prepIndex+1);
+  prepLines=prepLines.filter(x=>!meta.test(x)).map(x=>x.replace(/^étape\s*\d+\s*[:.-]?\s*/i,'').trim()).filter(Boolean);
+
+  return {
+    title,
+    notes:'Importée par copier-coller — vérifie les champs avant d’enregistrer.',
+    base_servings,
+    ingredients_json:JSON.stringify(ingredients),
+    recipe:prepLines.join('\n'),
+    image_data:''
+  };
+}
+
+function openRecipeImportModal(){
+  openModal(`<h2>Importer une recette par copier-coller</h2><form id="recipeImportForm" class="form-grid">
+    <div class="field full"><label>Texte de la recette</label><textarea id="recipePasteText" class="recipe-import-text" required placeholder="Copie la recette depuis Marmiton puis colle son texte ici…"></textarea></div>
+    <div class="field-help full">L’Atelier essaiera de ranger automatiquement le titre, les portions, les ingrédients et les étapes. Tu pourras tout vérifier et corriger avant l’enregistrement.</div>
+    <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button class="primary">Analyser</button></div>
+  </form>`);
+  $('#cancelRecipeImport').onclick=closeModal;
+  $('#recipeImportForm').onsubmit=e=>{
+    e.preventDefault();
+    const parsed=parsePastedRecipeText($('#recipePasteText').value);
+    if(!parsed.title){
+      showUiError(new Error("Je n’ai pas réussi à repérer le titre. Ajoute-le sur la première ligne puis réessaie."),'Import de recette');
+      return;
+    }
+    openRecipeModal(null,parsed);
+  };
 }
 
 async function validateShoppingPurchases(){
@@ -219,10 +404,10 @@ function openFoodModal(item=null,prefillName='',prefillQuantity=''){
 }
 
 let recipeReturnView='kitchen';
-let recipeCurrentMealId=null;
+let recipeCurrentId=null;
 let recipeTargetServings=1;
 
-function parseMealIngredients(item){
+function parseRecipeIngredients(item){
   try{
     const rows=JSON.parse(item?.ingredients_json||'[]');
     return Array.isArray(rows)?rows:[];
@@ -263,7 +448,7 @@ function collectIngredientEditorRows(root){
   })).filter(x=>x.name);
 }
 
-function readMealImage(file){
+function readRecipeImage(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onerror=()=>reject(new Error("Impossible de lire l’image."));
@@ -272,14 +457,19 @@ function readMealImage(file){
   });
 }
 
-function openMealModal(item=null){
-  const editing=!!item;
-  const ingredients=parseMealIngredients(item);
-  let mealImageData=item?.image_data||'';
-  openModal(`<h2>${editing?'Modifier la recette':'Nouvelle idée de repas'}</h2><form id="mealForm" class="form-grid recipe-form">
-    <div class="field full"><label>Plat / idée</label><input name="title" required value="${esc(item?.title||'')}" placeholder="ex. Potiflette"></div>
-    <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, envie particulière, accompagnement…">${esc(item?.notes||'')}</textarea></div>
-    <div class="field"><label>Cette recette est écrite pour</label><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="ex. 4" value="${editing?Math.max(1,Number(item?.base_servings)||1):''}"><span>personnes</span></div></div>
+function openRecipeModal(item=null,prefill=null){
+  const editing=!!item?.id;
+  const source=item||prefill||{};
+  const ingredients=parseRecipeIngredients(source);
+  let mealImageData=source.image_data||'';
+  const fallbackBook=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')?.id||state.recipeBooks[0]?.id||'';
+  const selectedBook=Number(source.book_id)||Number(fallbackBook)||'';
+  const bookOptions=state.recipeBooks.map(book=>`<option value="${book.id}" ${Number(book.id)===Number(selectedBook)?'selected':''}>${esc(book.name)}</option>`).join('');
+  openModal(`<h2>${editing?'Modifier la recette':'Nouvelle recette'}</h2><form id="mealForm" class="form-grid recipe-form">
+    <div class="field full"><label>Titre de la recette</label><input name="title" required value="${esc(source.title||'')}" placeholder="ex. Potiflette"></div>
+    <div class="field"><label>Livre</label><select name="book_id">${bookOptions}</select></div>
+    <div class="field"><label>Cette recette est écrite pour</label><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="ex. 4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></div>
+    <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, source, accompagnement…">${esc(source.notes||'')}</textarea></div>
     <div class="field recipe-image-edit">
       <label>Image</label>
       <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
@@ -294,7 +484,7 @@ function openMealModal(item=null){
       <div class="ingredient-edit-labels"><span>Quantité</span><span>Unité</span><span>Ingrédient</span><span></span></div>
       <div id="ingredientEditRows"></div>
     </div>
-    <div class="field full"><label>Préparation</label><textarea name="recipe" class="recipe-editor" placeholder="Écris ici les étapes de préparation…">${esc(item?.recipe||'')}</textarea></div>
+    <div class="field full"><label>Préparation</label><textarea name="recipe" class="recipe-editor" placeholder="Écris ici les étapes de préparation…">${esc(source.recipe||'')}</textarea></div>
     <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
   </form>`);
 
@@ -318,7 +508,7 @@ function openMealModal(item=null){
   imageInput.onchange=async e=>{
     const file=e.target.files?.[0]; if(!file)return;
     if(file.size>5*1024*1024){alert("Image trop lourde : choisis une image de moins de 5 Mo.");e.target.value='';return}
-    try{mealImageData=await readMealImage(file);syncMealImagePreview()}
+    try{mealImageData=await readRecipeImage(file);syncMealImagePreview()}
     catch(err){alert(err.message||"Impossible d’ajouter cette image.")}
   };
   syncMealImagePreview();
@@ -326,21 +516,22 @@ function openMealModal(item=null){
   form.onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(form).entries());
+    payload.book_id=Number(payload.book_id)||null;
     payload.base_servings=Math.max(1,Number(payload.base_servings)||1);
     payload.ingredients_json=JSON.stringify(collectIngredientEditorRows(rows));
     payload.image_data=mealImageData;
-    const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/meals/${item.id}`:'/api/meals',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/recipes/${item.id}`:'/api/recipes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
     closeModal();
     await refresh();
     if(editing&&state.view==='recipe'){
-      const updated=state.meals.find(m=>m.id===item.id);
-      if(updated)openMealRecipeModal(updated);
+      const updated=state.recipes.find(m=>m.id===item.id);
+      if(updated)openRecipePage(updated);
     }
   };
 }
 
-function renderMealRecipePage(item){
+function renderRecipePage(item){
   if(!item)return;
   const base=Math.max(1,Number(item.base_servings)||1);
   recipeTargetServings=Math.max(1,Number(recipeTargetServings)||base);
@@ -365,7 +556,7 @@ function renderMealRecipePage(item){
   $('#recipeServingsValue').textContent=String(recipeTargetServings);
   const list=$('#recipeIngredientsList');
   list.innerHTML='';
-  const ingredients=parseMealIngredients(item);
+  const ingredients=parseRecipeIngredients(item);
   if(!ingredients.length){
     list.innerHTML='<div class="recipe-empty">Aucun ingrédient renseigné.</div>';
   }else{
@@ -385,25 +576,25 @@ function renderMealRecipePage(item){
     : '<span class="recipe-empty">Aucune étape de préparation renseignée.</span>';
 }
 
-function openMealRecipeModal(item){
+function openRecipePage(item){
   if(!item)return;
-  if(state.view!=='recipe')recipeReturnView=state.view==='home'?'home':'kitchen';
-  recipeCurrentMealId=item.id;
+  if(state.view!=='recipe')recipeReturnView=['home','kitchen','cuisine'].includes(state.view)?state.view:'cuisine';
+  recipeCurrentId=item.id;
   recipeTargetServings=Math.max(1,Number(item.base_servings)||1);
   showView('recipe');
-  renderMealRecipePage(item);
+  renderRecipePage(item);
 
   $('#backFromRecipe').onclick=()=>showView(recipeReturnView||'kitchen');
-  $('#editRecipePage').onclick=()=>openMealModal(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+  $('#editRecipePage').onclick=()=>openRecipeModal(state.recipes.find(m=>m.id===recipeCurrentId)||item);
   $('#recipeServingsMinus').onclick=()=>{
     if(recipeTargetServings>1){
       recipeTargetServings--;
-      renderMealRecipePage(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+      renderRecipePage(state.recipes.find(m=>m.id===recipeCurrentId)||item);
     }
   };
   $('#recipeServingsPlus').onclick=()=>{
     recipeTargetServings++;
-    renderMealRecipePage(state.meals.find(m=>m.id===recipeCurrentMealId)||item);
+    renderRecipePage(state.recipes.find(m=>m.id===recipeCurrentId)||item);
   };
 }
 
