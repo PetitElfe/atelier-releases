@@ -1,5 +1,5 @@
 {
-  "version": "0.4.3",
+  "version": "0.4.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "520a19075780a38b440395e2c70e20d7cddd96b8c2e2c2403b265cbb74a1b333"
+      "sha256": "175307e07ac7f0bdc0f3dba371ba3a202aaf3c0117368a93d2331e1bea4af4f3"
     },
     {
       "path": "app.py",
@@ -21,11 +21,11 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "b74c862dfbc71c5b339c7befb7dc8476a0a54e98ccb8f7d87acafd636ad4a523"
+      "sha256": "23a20bd4c2d21042b226bc9b82efa08b7b03be7ff8f5497c05362566f49e008a"
     },
     {
       "path": "app_part3.py",
-      "sha256": "aa33fb9232e5dc575c14485edb753c4f34558bcf8cfe8a63763b1ce674c60d39"
+      "sha256": "315e47041262749c46bea343bcf37ec2e1b4e1d3967faef3e7ae38864f822c96"
     },
     {
       "path": "public/app_part1.js",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "847c8e1cc0b83078e145fddb7f669827ab2762c5f1047516babb2143c95dd855"
+      "sha256": "d7424dc8e48449eb39565654f3e649d385e641d537bff4477b2c45ac872dd98c"
     },
     {
       "path": "public/index.html",
-      "sha256": "dfcd744c6217a079b63df2bd954fd4772d7c64023b88cab570054d09e0ffe7b9"
+      "sha256": "7a1a0bc6c661aeafe3ce0530c5cd01416c8a5575564d2ba4a2fd1e9f9d2e4a64"
     },
     {
       "path": "public/styles.css",
       "sha256": "3aedb930fa9e8a22760bc845b67e26bb4bf3a15736fc64ab19fbc21de50699cc"
     }
   ],
-  "notes": "0.4.3 : correction du report de rendez-vous avec un endpoint dédié et transaction plus robuste. Le report affiche désormais une erreur claire au lieu de sembler ne rien faire. Les actions ✓ / ×, le report de rappel et les principaux formulaires récents affichent aussi leurs erreurs au lieu d’échouer silencieusement. Un nouveau clic de report ne crée pas de doublon si une occurrence reportée existe déjà."
+  "notes": "0.4.4 : corrige la cause des interfaces à jour servies par un ancien serveur Python. L’Atelier n’utilise plus silencieusement un autre port si une vieille instance occupe 8765 : il tente de l’arrêter puis redémarre une seule instance propre. L’interface détecte aussi un backend trop ancien. Le report de rendez-vous conserve la correction 0.4.3 avec erreur visible en cas d’échec."
 }
