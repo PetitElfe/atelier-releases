@@ -13,9 +13,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='Sil
 
 echo [2/3] Verification des mises a jour...
 if exist "%~dp0Mettre a jour.bat" (
-  "%ComSpec%" /d /c ""%~dp0Mettre a jour.bat""
+  (echo.) | "%ComSpec%" /d /c ""%~dp0Mettre a jour.bat""
 ) else if exist "%~dp0Mettre à jour.bat" (
-  "%ComSpec%" /d /c ""%~dp0Mettre à jour.bat""
+  (echo.) | "%ComSpec%" /d /c ""%~dp0Mettre à jour.bat""
 ) else (
   echo [ATTENTION] Le fichier de mise a jour est introuvable.
   echo L'Atelier va tout de meme demarrer.
