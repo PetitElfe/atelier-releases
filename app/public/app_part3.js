@@ -153,7 +153,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',recipe:'Recette'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   syncGlobalLayoutEditing();
@@ -176,7 +176,9 @@ $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state
 $('#todayBtn').onclick=()=>{state.cursor=new Date();$('#jumpDate').value=ymd(state.cursor);if(state.view!=='home')showView('calendar');else refresh()};
 $('#jumpDate').value=ymd(new Date()); $('#jumpDate').onchange=e=>{if(e.target.value){state.cursor=parseYMD(e.target.value);showView('calendar');refresh()}};
 $('#addTask').onclick=()=>openTaskModal(); $('#addEventWeek').onclick=()=>openEventModal(null,ymd(state.cursor)); $('#modalClose').onclick=closeModal;
-$('#addShopping').onclick=()=>openShoppingModal(); $('#addFood').onclick=()=>openFoodModal(); $('#addMeal').onclick=()=>openMealModal(); $('#validateShopping').onclick=()=>validateShoppingPurchases();
+$('#addShopping').onclick=()=>openShoppingModal(); $('#addFood').onclick=()=>openFoodModal(); $('#chooseMealIdea').onclick=()=>openMealIdeaPicker(); $('#validateShopping').onclick=()=>validateShoppingPurchases();
+$('#homeMealIdeaPicker').onclick=()=>openMealIdeaPicker();
+$('#addRecipe').onclick=()=>openRecipeModal(); $('#importRecipe').onclick=()=>openRecipeImportModal(); $('#addRecipeBook').onclick=()=>openRecipeBookModal();
 // Un clic accidentel autour d'un formulaire ne le ferme plus : on protège ce qui est en cours d'écriture.
 $('#modalBackdrop').addEventListener('click',e=>{ if(e.target===$('#modalBackdrop')) e.preventDefault(); });
 function syncNotifyButton(){
@@ -281,6 +283,7 @@ function getGlobalLayoutSpecs(){
     {view:'kitchen',id:'shopping',el:$('#shoppingPanel'),key:'atelierKitchenLayout_shopping'},
     {view:'kitchen',id:'foods',el:$('#foodPanel'),key:'atelierKitchenLayout_foods'},
     {view:'kitchen',id:'meals',el:$('#mealPanel'),key:'atelierKitchenLayout_meals'},
+    {view:'cuisine',id:'library',el:$('.cuisine-library'),key:'atelierViewLayout_cuisine_library'},
     {view:'recipe',id:'recipe',el:$('.recipe-carnet'),key:'atelierViewLayout_recipe_carnet'}
   ].filter(x=>x.el);
 }
@@ -382,7 +385,7 @@ function initGlobalLayoutEditor(){
 
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
-refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
+refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
 setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);

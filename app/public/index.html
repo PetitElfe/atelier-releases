@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.5.1</title>
+  <title>L’Atelier — Alpha 0.5.2</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.5.1</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.5.2</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -29,6 +29,7 @@
     <button data-view="tasks">Tâches</button>
     <button data-view="reminders">Rappels</button>
     <button data-view="kitchen">Courses & repas</button>
+    <button data-view="cuisine">Cuisine</button>
   </nav>
 
   <main>
@@ -78,7 +79,7 @@
           <div class="journal-divider"></div>
 
           <div class="journal-section">
-            <div class="journal-heading">Idées de repas</div>
+            <button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button>
             <div id="homeMealIdeas" class="meal-ideas"></div>
           </div>
 
@@ -153,8 +154,36 @@
           <div id="foodList" class="kitchen-list"></div>
         </section>
         <section id="mealPanel" class="kitchen-panel">
-          <div class="kitchen-head"><div><h3>Idées de repas</h3><p>Des plats à garder sous la main.</p></div><button id="addMeal" class="primary">+ Idée</button></div>
+          <div class="kitchen-head"><div><h3>Idées de repas</h3><p>Choisies dans ta bibliothèque de recettes.</p></div><button id="chooseMealIdea" class="primary">+ Choisir</button></div>
           <div id="mealList" class="kitchen-list"></div>
+        </section>
+      </div>
+    </section>
+
+
+    <section id="cuisineView" class="view">
+      <div class="panel-head cuisine-library-head">
+        <div>
+          <div class="section-kicker">OBJECTIF · CUISINE</div>
+          <h2>Bibliothèque de recettes</h2>
+          <p class="muted">Les recettes vivent ici. Les « idées de repas » ne sont qu’une sélection de cette bibliothèque.</p>
+        </div>
+        <div class="cuisine-library-actions">
+          <button id="importRecipe" type="button">Coller une recette</button>
+          <button id="addRecipeBook" type="button">+ Livre</button>
+          <button id="addRecipe" class="primary" type="button">+ Recette</button>
+        </div>
+      </div>
+
+      <div class="cuisine-library">
+        <aside class="recipe-library-sidebar">
+          <label for="recipeSearch">Rechercher</label>
+          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Nom, livre, note…">
+          <div class="recipe-books-title">Livres</div>
+          <div id="recipeBookShelf" class="recipe-book-shelf"></div>
+        </aside>
+        <section class="recipe-library-content">
+          <div id="recipeLibraryList" class="recipe-library-list"></div>
         </section>
       </div>
     </section>

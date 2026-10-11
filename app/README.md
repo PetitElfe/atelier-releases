@@ -1,16 +1,18 @@
-# L’Atelier 0.5.1
+# L’Atelier 0.5.2
 
-Bloc Accueil / disposition :
-- bouton global « Modifier » placé à côté de « Aujourd’hui » ;
-- déplacement et redimensionnement des principaux éléments par glisser-déposer ;
-- taille et position conservées dans le navigateur ;
-- semainier desktop plus large par défaut et toujours redimensionnable ;
-- les titres des recettes ouvrent directement leur carnet ;
-- « Ajouter une idée de repas… » depuis l’accueil ouvre maintenant réellement la création d’une recette.
+Corrections du semainier :
+- lignes horaires nettement plus hautes ;
+- heures agrandies et plus lisibles ;
+- colonnes de jours moins étalées ;
+- défilement vertical interne avec en-tête collant.
 
-Fiabilité :
-- la version du serveur est lue depuis `VERSION` au lieu d’être dupliquée à plusieurs endroits ;
-- les fichiers de l’interface ne restent plus bloqués dans le cache du navigateur après une mise à jour ;
-- l’arrêt propre par `/api/shutdown` fonctionne aussi en POST, ce qui permet à une nouvelle instance de remplacer correctement l’ancienne sur le port 8765.
+Cuisine devient la première vraie bibliothèque d’objectif :
+- livres de recettes « À classer », « Salé », « Sucré » et « Sauces » ;
+- création de livres personnels ;
+- recherche de recettes ;
+- création et modification des recettes depuis la bibliothèque uniquement ;
+- les idées de repas sont maintenant une sélection de recettes existantes, avec recherche rapide ;
+- cliquer sur une idée de repas ouvre la page du carnet de cette recette ;
+- import d’une recette par copier-coller (par exemple depuis Marmiton), avec pré-rangement automatique du titre, des portions, des ingrédients et des étapes avant validation manuelle.
 
-Aucune migration de données n’est nécessaire pour cette version.
+Les anciennes recettes/idées enregistrées avec les versions précédentes sont migrées automatiquement vers la bibliothèque « À classer » et restent sélectionnées comme idées de repas.

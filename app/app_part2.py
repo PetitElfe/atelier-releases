@@ -92,8 +92,27 @@ class Handler(BaseHTTPRequestHandler):
                                     ORDER BY CASE WHEN expiry_date IS NULL OR expiry_date='' THEN 1 ELSE 0 END,
                                              expiry_date, id""").fetchall()
                 return self._json([dict(r) for r in rows])
-            if p == '/api/meals':
-                rows = c.execute('SELECT * FROM meal_ideas WHERE archived=0 ORDER BY updated_at DESC, id DESC').fetchall()
+            if p == '/api/recipe-books':
+                rows = c.execute('''SELECT b.id,b.name,COUNT(r.id) AS recipe_count
+                                    FROM recipe_books b
+                                    LEFT JOIN recipes r ON r.book_id=b.id AND r.archived=0
+                                    GROUP BY b.id,b.name
+                                    ORDER BY b.id''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p in ('/api/recipes','/api/meals'):
+                rows = c.execute('''SELECT r.*,b.name AS book_name
+                                    FROM recipes r
+                                    LEFT JOIN recipe_books b ON b.id=r.book_id
+                                    WHERE r.archived=0
+                                    ORDER BY lower(r.title),r.id''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/meal-ideas':
+                rows = c.execute('''SELECT m.id AS idea_id,r.*,b.name AS book_name
+                                    FROM meal_idea_links m
+                                    JOIN recipes r ON r.id=m.recipe_id
+                                    LEFT JOIN recipe_books b ON b.id=r.book_id
+                                    WHERE r.archived=0
+                                    ORDER BY m.created_at DESC,m.id DESC''').fetchall()
                 return self._json([dict(r) for r in rows])
             if p == '/api/reminders':
                 rows = c.execute('''
@@ -173,12 +192,34 @@ class Handler(BaseHTTPRequestHandler):
                                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
                               (name,body.get('quantity',''),units,float_or_none(body.get('price')),float_or_none(body.get('calories')),expiry,mode,body.get('notes',''),'active',ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
-            if p == '/api/meals':
+            if p == '/api/recipe-books':
+                name=(body.get('name') or '').strip()
+                if not name: return self._json({'error':'name required'},400)
+                try:
+                    cur=c.execute('INSERT INTO recipe_books(name,created_at) VALUES(?,?)',(name,ts))
+                    c.commit(); return self._json({'id':cur.lastrowid},201)
+                except sqlite3.IntegrityError:
+                    row=c.execute('SELECT id FROM recipe_books WHERE lower(name)=lower(?)',(name,)).fetchone()
+                    return self._json({'id':row['id'] if row else None,'existing':True})
+            if p == '/api/meal-ideas':
+                recipe_id=int_or_none(body.get('recipe_id'))
+                if not recipe_id: return self._json({'error':'recipe_id required'},400)
+                recipe=c.execute('SELECT id FROM recipes WHERE id=? AND archived=0',(recipe_id,)).fetchone()
+                if not recipe: return self._json({'error':'recipe not found'},404)
+                c.execute('INSERT OR IGNORE INTO meal_idea_links(recipe_id,created_at) VALUES(?,?)',(recipe_id,ts))
+                c.commit()
+                row=c.execute('SELECT id FROM meal_idea_links WHERE recipe_id=?',(recipe_id,)).fetchone()
+                return self._json({'id':row['id'],'recipe_id':recipe_id},201)
+            if p in ('/api/recipes','/api/meals'):
                 title=body.get('title','').strip()
                 if not title: return self._json({'error':'title required'},400)
-                cur=c.execute('''INSERT INTO meal_ideas(title,notes,recipe,base_servings,ingredients_json,image_data,archived,created_at,updated_at)
-                                 VALUES(?,?,?,?,?,?,0,?,?)''',
-                              (title,body.get('notes',''),body.get('recipe',''),max(1,int(body.get('base_servings') or 1)),
+                book_id=int_or_none(body.get('book_id'))
+                if not book_id or not c.execute('SELECT id FROM recipe_books WHERE id=?',(book_id,)).fetchone():
+                    row=c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
+                    book_id=row['id'] if row else None
+                cur=c.execute('''INSERT INTO recipes(title,book_id,notes,recipe,base_servings,ingredients_json,image_data,archived,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,0,?,?)''',
+                              (title,book_id,body.get('notes',''),body.get('recipe',''),max(1,int_or_none(body.get('base_servings')) or 1),
                                body.get('ingredients_json','[]'),body.get('image_data',''),ts,ts))
                 c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
@@ -391,14 +432,18 @@ class Handler(BaseHTTPRequestHandler):
                           (d['name'],d.get('quantity',''),max(1,int(d.get('units_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
                            expiry,mode,d.get('notes',''),d.get('status','active'),ts,iid))
                 c.commit(); return self._json({'ok':True})
-            if len(parts)==3 and parts[0]=='api' and parts[1]=='meals':
-                iid=int(parts[2]); old=c.execute('SELECT * FROM meal_ideas WHERE id=?',(iid,)).fetchone()
+            if len(parts)==3 and parts[0]=='api' and parts[1] in ('recipes','meals'):
+                iid=int(parts[2]); old=c.execute('SELECT * FROM recipes WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('''UPDATE meal_ideas
-                             SET title=?,notes=?,recipe=?,base_servings=?,ingredients_json=?,image_data=?,archived=?,updated_at=?
+                book_id=int_or_none(d.get('book_id'))
+                if not book_id or not c.execute('SELECT id FROM recipe_books WHERE id=?',(book_id,)).fetchone():
+                    row=c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
+                    book_id=row['id'] if row else None
+                c.execute('''UPDATE recipes
+                             SET title=?,book_id=?,notes=?,recipe=?,base_servings=?,ingredients_json=?,image_data=?,archived=?,updated_at=?
                              WHERE id=?''',
-                          (d['title'],d.get('notes',''),d.get('recipe',''),max(1,int(d.get('base_servings') or 1)),
+                          (d['title'],book_id,d.get('notes',''),d.get('recipe',''),max(1,int_or_none(d.get('base_servings')) or 1),
                            d.get('ingredients_json','[]'),d.get('image_data',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
@@ -418,4 +463,14 @@ class Handler(BaseHTTPRequestHandler):
                     val=body.get('snoozed_until')
                     if not val: return self._json({'error':'snoozed_until required'},400)
                     c.execute("UPDATE reminders SET status='pending',snoozed_until=? WHERE id=?",(val,rid)); c.commit(); return self._json({'ok':True})
+        return self._json({'error':'not found'},404)
+
+
+    def do_DELETE(self):
+        u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        with conn() as c:
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='meal-ideas':
+                iid=int(parts[2])
+                c.execute('DELETE FROM meal_idea_links WHERE id=?',(iid,))
+                c.commit(); return self._json({'ok':True})
         return self._json({'error':'not found'},404)
