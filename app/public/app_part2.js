@@ -646,15 +646,42 @@ function openRecipeModal(item=null,prefill=null){
   $('#addIngredientRow').onclick=()=>{addIngredientEditorRow(rows,{});rows.lastElementChild?.querySelector('.ing-name')?.focus()};
   $('#addRecipeStep').onclick=()=>{addRecipeStepEditorRow(stepRows,'');stepRows.lastElementChild?.querySelector('.recipe-step-edit-text')?.focus()};
   $('#cancelMeal').onclick=closeModal;
+  const applyMealImageFile=async file=>{
+    if(!file)return false;
+    if(!String(file.type||'').startsWith('image/')){
+      showUiMessage('Fichier incompatible','Glisse une image (JPG, PNG, WEBP…).');
+      return false;
+    }
+    if(file.size>5*1024*1024){
+      showUiMessage('Image trop lourde','Choisis une image de moins de 5 Mo.');
+      return false;
+    }
+    try{
+      mealImageData=await readRecipeImage(file);
+      imageInput.value='';
+      syncMealImagePreview();
+      return true;
+    }catch(err){
+      showUiMessage('Impossible d’ajouter l’image',err?.message||'Le fichier n’a pas pu être lu.');
+      return false;
+    }
+  };
   picker.onclick=()=>imageInput.click();
   changeImage.onclick=()=>imageInput.click();
   removeImage.onclick=e=>{e.preventDefault();mealImageData='';imageInput.value='';syncMealImagePreview()};
-  imageInput.onchange=async e=>{
-    const file=e.target.files?.[0]; if(!file)return;
-    if(file.size>5*1024*1024){showUiMessage('Image trop lourde','Choisis une image de moins de 5 Mo.');e.target.value='';return}
-    try{mealImageData=await readRecipeImage(file);syncMealImagePreview()}
-    catch(err){showUiMessage('Impossible d’ajouter l’image',err?.message||'Le fichier n’a pas pu être lu.')}
-  };
+  imageInput.onchange=async e=>{await applyMealImageFile(e.target.files?.[0])};
+
+  const avatarDropZone=picker.closest('.recipe-avatar-row')||picker;
+  const setImageDragState=active=>avatarDropZone.classList.toggle('is-image-dragover',active);
+  avatarDropZone.addEventListener('dragenter',e=>{e.preventDefault();setImageDragState(true)});
+  avatarDropZone.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';setImageDragState(true)});
+  avatarDropZone.addEventListener('dragleave',e=>{if(!avatarDropZone.contains(e.relatedTarget))setImageDragState(false)});
+  avatarDropZone.addEventListener('drop',async e=>{
+    e.preventDefault();
+    setImageDragState(false);
+    const file=[...(e.dataTransfer?.files||[])].find(f=>String(f.type||'').startsWith('image/'))||e.dataTransfer?.files?.[0];
+    await applyMealImageFile(file);
+  });
   syncMealImagePreview();
 
   form.onsubmit=async e=>{
