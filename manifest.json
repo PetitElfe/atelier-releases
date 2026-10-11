@@ -1,15 +1,15 @@
 {
-  "version": "0.5.8",
+  "version": "0.5.9",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "64be6d15dc81d745d65911b664307420e95ebf3ff22c1fa0d1b46b5c4912f353"
+      "sha256": "fd4b19b7a2de2e73657e080a1339440f5bc7426df2ae45a261f3e7b3ff9c8195"
     },
     {
       "path": "VERSION",
-      "sha256": "9a5e04d55ade7d167d2c3717946fb945d2036ac644486074f77df2bf1942b9db"
+      "sha256": "dcdecbc7866cc9413935ee7a76b92beba1e4494f63aa0df5d8b5afe979d16260"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "f577005bab79546aeaf38dfe756093294bb9545c49eec510fcd3d8937137ab6b"
+      "sha256": "7a82cd42f2e317464cc0a96053fb1a52c6e8b3e22aa79dfc4e2b2e363981f9c2"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f3349d756050ed502741f973fd17c8a8131dfa2b38de091c08ebe91f9be4f72c"
+      "sha256": "9be37de40c7aad5cc242521b936124204fc58a15cec114d3994778c1a0eac0a2"
     },
     {
       "path": "public/styles.css",
-      "sha256": "b87e75ebdcf87d792e19b7a73ac7d81df68ad8ae7bfecf60313508bd2abd546d"
+      "sha256": "bda1b242a77660cea2a17d98e960b549c50bede95d8e20fc28b49fe2a442e746"
     }
   ],
-  "notes": "0.5.8 : place les actions d’image de recette à côté de l’aperçu rond. La photo n’est plus recouverte par la croix ni par les textes Ajouter/Changer, tout en restant cliquable pour remplacer l’image."
+  "notes": "0.5.9 : ajoute le glisser-déposer d’images directement dans la zone photo de l’éditeur de recette, avec surbrillance de la zone et conservation des contrôles Ajouter/Changer/Retirer."
 }

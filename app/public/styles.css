@@ -513,3 +513,20 @@ button:disabled{opacity:.55;cursor:wait}
   .recipe-edit-intro{grid-template-columns:1fr}
   .recipe-avatar-row{justify-content:center}
 }
+
+
+/* 0.5.9 — glisser-déposer des images de recette */
+.recipe-avatar-row{position:relative;border-radius:18px;padding:6px;transition:background .15s ease,box-shadow .15s ease}
+.recipe-avatar-row.is-image-dragover{
+  background:#2f281f;
+  box-shadow:0 0 0 2px #9a784c inset,0 0 18px #00000055
+}
+.recipe-avatar-row.is-image-dragover .recipe-avatar-picker{
+  border-color:#c09a63!important;
+  transform:scale(1.02)
+}
+.recipe-avatar-row.is-image-dragover::after{
+  content:"Dépose l’image ici";
+  position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);
+  color:#caa46b;font-size:11px;white-space:nowrap
+}
