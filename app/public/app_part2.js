@@ -385,114 +385,50 @@ function parsePastedIngredientLine(line){
   return rest?{quantity,unit,name:rest}:null;
 }
 
-function parsePastedRecipeText(raw){
-  const text=String(raw||'').replace(/\u00a0/g,' ');
-  const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  const ingIndex=lines.findIndex(x=>/^ingr[ée]dients?\b/i.test(x));
-  let prepIndex=lines.findIndex(x=>/^(préparation|preparation|instructions?|étapes?|etapes?)\b/i.test(x));
-  if(prepIndex<0)prepIndex=lines.findIndex(x=>/^étape\s*\d+/i.test(x));
-
-  const meta=/^(marmiton|recette|temps|préparation|preparation|cuisson|repos|difficulté|difficulte|coût|cout|bon marché|très facile|facile)\b/i;
-  const titlePool=(ingIndex>0?lines.slice(0,ingIndex):lines.slice(0,Math.min(lines.length,8))).filter(x=>!meta.test(x)&&!/^\d+\s*(min|h|personnes?|portions?)\b/i.test(x));
-  const title=(titlePool[0]||'').replace(/^recette\s+(de|du|des)\s+/i,'').trim();
-
-  const servingMatch=text.match(/(?:pour\s*)?(\d+)\s*(?:personnes?|portions?)/i);
-  const base_servings=servingMatch?Math.max(1,Number(servingMatch[1])||1):1;
-
-  let ingredientLines=[];
-  if(ingIndex>=0){
-    const end=prepIndex>ingIndex?prepIndex:lines.length;
-    ingredientLines=lines.slice(ingIndex+1,end);
-  }
-  ingredientLines=ingredientLines.filter(x=>!meta.test(x)&&!/^\d+\s*(min|h)\b/i.test(x));
-  const ingredients=ingredientLines.map(parsePastedIngredientLine).filter(Boolean);
-
-  let prepLines=[];
-  if(prepIndex>=0)prepLines=lines.slice(prepIndex+1);
-  prepLines=prepLines.filter(x=>!meta.test(x)).map(x=>x.replace(/^étape\s*\d+\s*[:.-]?\s*/i,'').trim()).filter(Boolean);
-
-  return {
-    title,
-    notes:'Importée par copier-coller — vérifie les champs avant d’enregistrer.',
-    base_servings,
-    ingredients_json:JSON.stringify(ingredients),
-    recipe:prepLines.join('\n'),
-    image_data:''
-  };
-}
 
 function openRecipeImportModal(){
   openModal(`<div class="recipe-import">
     <div class="section-kicker">IMPORTER UNE RECETTE</div>
-    <h2>Comment veux-tu l’ajouter ?</h2>
-    <div class="recipe-import-tabs">
-      <button id="recipeImportUrlTab" class="active" type="button">🔗 Depuis un lien</button>
-      <button id="recipeImportTextTab" type="button">✎ Depuis du texte</button>
-    </div>
+    <h2>Colle simplement le lien</h2>
     <form id="recipeImportForm" class="form-grid">
-      <div id="recipeImportUrlMode" class="field full recipe-import-mode">
+      <div class="field full recipe-import-mode">
         <label>Adresse de la recette</label>
-        <input id="recipeImportUrl" type="url" placeholder="https://www.marmiton.org/recettes/…" autocomplete="off">
-        <div class="field-help">Colle simplement le lien. L’Atelier essaiera de récupérer le titre, les portions, les ingrédients, les étapes et l’image.</div>
-      </div>
-      <div id="recipeImportTextMode" class="field full recipe-import-mode hidden">
-        <label>Texte de la recette</label>
-        <textarea id="recipePasteText" class="recipe-import-text" placeholder="Copie le titre, les ingrédients et la préparation puis colle-les ici…"></textarea>
-        <div class="field-help">Utilise ce mode si le site bloque l’import par lien ou si tu as déjà le texte de la recette.</div>
+        <input id="recipeImportUrl" type="url" required placeholder="https://www.marmiton.org/recettes/…" autocomplete="off">
+        <div class="field-help">L’Atelier récupère automatiquement le titre, les portions, les ingrédients, les étapes et l’image quand le site les fournit.</div>
       </div>
       <div id="recipeImportError" class="form-error field full hidden"></div>
-      <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button id="submitRecipeImport" class="primary">Importer le lien</button></div>
+      <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button id="submitRecipeImport" class="primary">Importer la recette</button></div>
     </form>
   </div>`);
-  const urlTab=$('#recipeImportUrlTab'), textTab=$('#recipeImportTextTab'), urlMode=$('#recipeImportUrlMode'), textMode=$('#recipeImportTextMode');
-  const urlInput=$('#recipeImportUrl'), textInput=$('#recipePasteText'), submit=$('#submitRecipeImport'), error=$('#recipeImportError');
-  let mode='url';
-  const setMode=next=>{
-    mode=next;
-    urlTab.classList.toggle('active',mode==='url');
-    textTab.classList.toggle('active',mode==='text');
-    urlMode.classList.toggle('hidden',mode!=='url');
-    textMode.classList.toggle('hidden',mode!=='text');
-    submit.textContent=mode==='url'?'Importer le lien':'Analyser le texte';
-    error.classList.add('hidden');error.textContent='';
-    (mode==='url'?urlInput:textInput).focus();
-  };
-  urlTab.onclick=()=>setMode('url');
-  textTab.onclick=()=>setMode('text');
+  const urlInput=$('#recipeImportUrl'), submit=$('#submitRecipeImport'), error=$('#recipeImportError');
   $('#cancelRecipeImport').onclick=closeModal;
   $('#recipeImportForm').onsubmit=async e=>{
     e.preventDefault();
     error.classList.add('hidden');error.textContent='';
-    submit.disabled=true;submit.textContent=mode==='url'?'Import…':'Analyse…';
+    const raw=urlInput.value.trim();
+    if(!raw){error.textContent='Colle d’abord le lien de la recette.';error.classList.remove('hidden');return}
+    submit.disabled=true;submit.textContent='Import…';
     try{
-      let parsed;
-      if(mode==='url'){
-        const raw=urlInput.value.trim();
-        if(!raw)throw new Error('Colle d’abord le lien de la recette.');
-        const result=await api('/api/recipe-import-url',{method:'POST',body:JSON.stringify({url:raw})});
-        const ingredients=(result.ingredients||[]).map(parsePastedIngredientLine).filter(Boolean);
-        parsed={
-          title:result.title||'',
-          notes:[result.notes||'',result.source_url?`Source : ${result.source_url}`:''].filter(Boolean).join('\n'),
-          base_servings:Math.max(1,Number(result.base_servings)||1),
-          ingredients_json:JSON.stringify(ingredients),
-          recipe:result.recipe||'',
-          image_data:result.image_data||''
-        };
-      }else{
-        const raw=textInput.value.trim();
-        if(!raw)throw new Error('Colle d’abord le texte de la recette.');
-        parsed=parsePastedRecipeText(raw);
-      }
+      const result=await api('/api/recipe-import-url',{method:'POST',body:JSON.stringify({url:raw})});
+      const ingredients=(result.ingredients||[]).map(parsePastedIngredientLine).filter(Boolean);
+      const parsed={
+        title:result.title||'',
+        notes:result.notes||'',
+        source_url:result.source_url||raw,
+        base_servings:Math.max(1,Number(result.base_servings)||1),
+        ingredients_json:JSON.stringify(ingredients),
+        recipe:result.recipe||'',
+        image_data:result.image_data||''
+      };
       if(!parsed.title)throw new Error("Je n’ai pas réussi à repérer le titre.");
       openRecipeModal(null,parsed);
     }catch(err){
       error.textContent=err?.message||'Impossible d’importer cette recette.';
       error.classList.remove('hidden');
-      submit.disabled=false;submit.textContent=mode==='url'?'Importer le lien':'Analyser le texte';
+      submit.disabled=false;submit.textContent='Importer la recette';
     }
   };
-  setMode('url');
+  urlInput.focus();
 }
 async function validateShoppingPurchases(){
   const selected=state.shopping.filter(x=>x.checked);
@@ -601,6 +537,31 @@ function collectIngredientEditorRows(root){
   })).filter(x=>x.name);
 }
 
+function parseRecipeSteps(raw=''){
+  return String(raw||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>
+    x.replace(/^(?:étape\s*)?\d+\s*[.):-]?\s*/i,'').trim()
+  ).filter(Boolean);
+}
+
+function renumberRecipeSteps(root){
+  [...root.querySelectorAll('.recipe-step-edit-row')].forEach((row,index)=>{
+    row.querySelector('.recipe-step-edit-number').textContent=`Étape ${index+1}`;
+  });
+}
+
+function addRecipeStepEditorRow(root,text=''){
+  const row=document.createElement('div');
+  row.className='recipe-step-edit-row';
+  row.innerHTML=`<div class="recipe-step-edit-number"></div><textarea class="recipe-step-edit-text" placeholder="Décris cette étape…">${esc(text)}</textarea><button class="recipe-step-remove" type="button" aria-label="Supprimer cette étape">×</button>`;
+  row.querySelector('.recipe-step-remove').onclick=()=>{row.remove();renumberRecipeSteps(root)};
+  root.appendChild(row);
+  renumberRecipeSteps(root);
+}
+
+function collectRecipeSteps(root){
+  return [...root.querySelectorAll('.recipe-step-edit-text')].map(x=>x.value.trim()).filter(Boolean).join('\n');
+}
+
 function readRecipeImage(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
@@ -614,6 +575,7 @@ function openRecipeModal(item=null,prefill=null){
   const editing=!!item?.id;
   const source=item||prefill||{};
   const ingredients=parseRecipeIngredients(source);
+  const recipeSteps=parseRecipeSteps(source.recipe||'');
   let mealImageData=source.image_data||'';
   const fallbackBook=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')?.id||state.recipeBooks[0]?.id||'';
   const selectedBook=Number(source.book_id)||Number(fallbackBook)||'';
@@ -627,9 +589,10 @@ function openRecipeModal(item=null,prefill=null){
     <div class="recipe-edit-intro">
       <div class="recipe-avatar-field">
         <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
-        <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir l’image de la recette">
+        <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir ou changer l’image de la recette">
           <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
           <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>＋ Photo</strong><small>Ajouter</small></span>
+          <span id="mealImageChangeHint" class="recipe-image-change-hint ${mealImageData?'':'hidden'}">Changer</span>
           <span id="removeMealImage" class="meal-image-remove ${mealImageData?'':'hidden'}" role="button" aria-label="Retirer l’image" title="Retirer l’image">×</span>
         </button>
       </div>
@@ -639,19 +602,24 @@ function openRecipeModal(item=null,prefill=null){
           <label class="field"><span>Livre</span><select name="book_id">${bookOptions}</select></label>
           <label class="field"><span>Recette prévue pour</span><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></label>
         </div>
-        <label class="field recipe-note-field"><span>Petite note</span><textarea name="notes" placeholder="Source, variante, accompagnement…">${esc(source.notes||'')}</textarea></label>
+        <label class="field recipe-note-field"><span>Petite note</span><textarea name="notes" placeholder="Variante, accompagnement, conseil…">${esc(source.notes||'')}</textarea></label>
       </div>
     </div>
 
     <section class="recipe-edit-section ingredient-editor">
-      <div class="ingredient-editor-head"><div><h3>Ingrédients</h3><small>Pour un ingrédient entier, écris par exemple « 1 » + « potimarron » et laisse l’unité vide.</small></div><button id="addIngredientRow" class="ingredient-add-btn" type="button">＋ Ajouter</button></div>
+      <div class="ingredient-editor-head"><div><h3>Ingrédients</h3><small>Pour un ingrédient entier : « 1 » + « potimarron », unité vide.</small></div><button id="addIngredientRow" class="ingredient-add-btn" type="button">＋ Ajouter</button></div>
       <div class="ingredient-edit-labels"><span>Quantité + unité</span><span>Ingrédient</span><span></span></div>
       <div id="ingredientEditRows"></div>
     </section>
 
-    <section class="recipe-edit-section recipe-preparation-field">
-      <label>Préparation</label>
-      <textarea name="recipe" class="recipe-editor" placeholder="1. Première étape…&#10;2. Deuxième étape…">${esc(source.recipe||'')}</textarea>
+    <section class="recipe-edit-section recipe-steps-editor">
+      <div class="recipe-steps-editor-head"><div><h3>Préparation</h3><small>Une étape par bloc : elles seront numérotées automatiquement dans le carnet.</small></div><button id="addRecipeStep" type="button">＋ Étape</button></div>
+      <div id="recipeStepRows" class="recipe-step-edit-list"></div>
+    </section>
+
+    <section class="recipe-edit-section recipe-source-editor">
+      <label for="recipeSourceUrl">Source <span>(facultatif)</span></label>
+      <input id="recipeSourceUrl" name="source_url" type="url" value="${esc(source.source_url||'')}" placeholder="https://…">
     </section>
 
     <div class="form-actions recipe-form-actions"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer la recette</button></div>
@@ -659,17 +627,20 @@ function openRecipeModal(item=null,prefill=null){
 
   document.querySelector('.modal')?.classList.add('recipe-editor-modal');
 
-  const form=$('#mealForm'), rows=$('#ingredientEditRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
+  const form=$('#mealForm'), rows=$('#ingredientEditRows'), stepRows=$('#recipeStepRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), changeHint=$('#mealImageChangeHint'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
   const syncMealImagePreview=()=>{
     const has=!!mealImageData;
     preview.classList.toggle('hidden',!has);
     placeholder.classList.toggle('hidden',has);
+    changeHint.classList.toggle('hidden',!has);
     removeImage.classList.toggle('hidden',!has);
     picker.classList.toggle('has-image',has);
     if(has){preview.src=mealImageData;preview.alt='Aperçu de la recette'}else{preview.removeAttribute('src');preview.alt=''}
   };
   (ingredients.length?ingredients:[{}]).forEach(x=>addIngredientEditorRow(rows,x));
+  (recipeSteps.length?recipeSteps:['']).forEach(x=>addRecipeStepEditorRow(stepRows,x));
   $('#addIngredientRow').onclick=()=>{addIngredientEditorRow(rows,{});rows.lastElementChild?.querySelector('.ing-name')?.focus()};
+  $('#addRecipeStep').onclick=()=>{addRecipeStepEditorRow(stepRows,'');stepRows.lastElementChild?.querySelector('.recipe-step-edit-text')?.focus()};
   $('#cancelMeal').onclick=closeModal;
   picker.onclick=e=>{
     if(e.target.closest('#removeMealImage'))return;
@@ -690,6 +661,8 @@ function openRecipeModal(item=null,prefill=null){
     payload.book_id=Number(payload.book_id)||null;
     payload.base_servings=Math.max(1,Number(payload.base_servings)||1);
     payload.ingredients_json=JSON.stringify(collectIngredientEditorRows(rows));
+    payload.recipe=collectRecipeSteps(stepRows);
+    payload.source_url=(payload.source_url||'').trim();
     payload.image_data=mealImageData;
     const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/recipes/${item.id}`:'/api/recipes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
@@ -735,17 +708,49 @@ function renderRecipePage(item){
       const row=document.createElement('div');
       row.className='recipe-ingredient-row';
       const qty=formatScaledQuantity(ing.quantity,factor);
-      row.innerHTML=`<span class="recipe-ingredient-qty">${esc([qty,ing.unit].filter(Boolean).join(' '))}</span><span class="recipe-ingredient-name">${esc(ing.name||'')}</span>`;
+      const numericBase=parseScalableQuantity(ing.quantity);
+      if(numericBase!==null&&numericBase>0){
+        row.innerHTML=`<span class="recipe-ingredient-qty"><input class="recipe-ingredient-qty-input" inputmode="decimal" value="${esc(qty)}" aria-label="Quantité de ${esc(ing.name||'cet ingrédient')}"><span>${esc(ing.unit||'')}</span></span><span class="recipe-ingredient-name">${esc(ing.name||'')}</span>`;
+        const input=row.querySelector('.recipe-ingredient-qty-input');
+        input.addEventListener('change',()=>{
+          const wanted=parseScalableQuantity(input.value);
+          if(wanted===null||wanted<=0){renderRecipePage(item);return}
+          const next=Math.max(1,Math.round(base*(wanted/numericBase)));
+          recipeTargetServings=next;
+          renderRecipePage(item);
+        });
+      }else{
+        row.innerHTML=`<span class="recipe-ingredient-qty">${esc([qty,ing.unit].filter(Boolean).join(' '))}</span><span class="recipe-ingredient-name">${esc(ing.name||'')}</span>`;
+      }
       list.appendChild(row);
     });
   }
 
   const instructions=$('#recipeInstructions');
-  instructions.innerHTML=item.recipe?.trim()
-    ? esc(item.recipe).replace(/\n/g,'<br>')
-    : '<span class="recipe-empty">Aucune étape de préparation renseignée.</span>';
-}
+  const steps=parseRecipeSteps(item.recipe||'');
+  instructions.innerHTML='';
+  if(!steps.length){
+    instructions.innerHTML='<span class="recipe-empty">Aucune étape de préparation renseignée.</span>';
+  }else{
+    steps.forEach((step,index)=>{
+      const block=document.createElement('div');
+      block.className='recipe-step';
+      block.innerHTML=`<div class="recipe-step-number">Étape ${index+1}</div><div class="recipe-step-text">${esc(step)}</div>`;
+      instructions.appendChild(block);
+    });
+  }
 
+  const source=$('#recipeSourceLink');
+  if(item.source_url){
+    source.href=item.source_url;
+    source.textContent='Source : '+item.source_url;
+    source.classList.remove('hidden');
+  }else{
+    source.removeAttribute('href');
+    source.textContent='';
+    source.classList.add('hidden');
+  }
+}
 function openRecipePage(item){
   if(!item)return;
   if(state.view!=='recipe')recipeReturnView=['home','kitchen','cuisine'].includes(state.view)?state.view:'cuisine';
