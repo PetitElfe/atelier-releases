@@ -100,7 +100,7 @@ function renderHome(){
     ['League of Legends','Une petite action vaut mieux qu’un énorme bloc.'],
     ['Art','Garder une trace de l’idée du moment.'],
     ['JDR','Avancer sur un détail concret.'],
-    ['Maison','Choisir une chose simple à régler.']
+    ['Cuisine','Préparer, classer ou tester une recette.']
   ];
   objectiveSeeds.forEach(([name,context])=>{
     const el=document.createElement('div'); el.className='objective-note';
