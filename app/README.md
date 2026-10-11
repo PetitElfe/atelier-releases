@@ -1,15 +1,25 @@
-# L’Atelier 0.5.3
+# L’Atelier 0.5.4
 
-Corrections après test de la bibliothèque Cuisine :
-- scrollbar du semainier et des zones défilantes harmonisée avec le thème sombre ;
-- les livres de recettes (sauf « À classer ») peuvent être renommés et supprimés ;
-- supprimer un livre ne supprime pas ses recettes : elles sont déplacées dans « À classer » ;
-- une recette peut être archivée depuis la bibliothèque ;
-- quand la bibliothèque est vide, un bouton crée une « Potiflette — recette de test » pour vérifier la recherche, les portions, les idées de repas et le carnet.
+Bloc principal A/B/C — recettes et ergonomie.
 
-Import de recettes :
-- le bouton devient « Importer une recette » ;
-- il accepte soit le texte copié, soit directement une URL http/https ;
-- pour une URL, L’Atelier cherche les données structurées Recipe de la page et préremplit le titre, les portions, les ingrédients, les étapes, la description et l’image quand elles sont disponibles ;
-- aucune recette importée n’est enregistrée sans passer par l’éditeur de vérification ;
-- si le site ne fournit pas de recette structurée ou bloque la lecture, le copier-coller manuel reste disponible.
+A — Dialogues intégrés :
+- les confirmations importantes ne passent plus par les fenêtres brutes du navigateur ;
+- suppression de livre et archivage de recette utilisent une vraie modale L’Atelier ;
+- les messages liés aux achats, aux images et aux notifications utilisent également l’interface de L’Atelier.
+
+B — Éditeur de recette :
+- titre centré en haut, sans grosse boîte visuelle ;
+- image compacte en haut, façon vignette/profil de la recette ;
+- livre, portions et note regroupés proprement ;
+- quantité + unité rapprochées (« 200 g » ne prend plus une largeur disproportionnée) ;
+- ingrédients et préparation utilisent mieux l’espace disponible.
+
+C — Logique et import :
+- « + Recette » et « Créer ma première recette » ouvrent toujours une recette vide ;
+- la Potiflette est désormais explicitement un exemple optionnel séparé ;
+- l’exemple utilise « 1 potimarron » afin que les boutons de portions donnent 2 potimarrons quand on double ;
+- les Potiflettes de test déjà créées avec « 800 g de potimarron » sont corrigées automatiquement ;
+- l’import propose deux modes clairs : « Depuis un lien » ou « Depuis du texte » ;
+- l’import ouvre toujours l’éditeur de vérification avant sauvegarde.
+
+La pagination / animation de pages longues du carnet reste une évolution ultérieure : le carnet actuel est conservé.

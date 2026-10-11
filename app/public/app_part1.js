@@ -19,7 +19,7 @@ const api = async (url, opts={}) => {
 function showUiError(err,prefix='Une erreur est survenue'){
   const msg=(err&&err.message)?err.message:String(err||'Erreur inconnue');
   const area=$('#toastArea');
-  if(!area){alert(`${prefix} : ${msg}`);return}
+  if(!area){console.error(prefix+': '+msg);return}
   const t=document.createElement('div');
   t.className='toast error-toast';
   t.innerHTML=`<strong>⚠ ${esc(prefix)}</strong><div class="task-meta">${esc(msg)}</div>`;

@@ -60,8 +60,29 @@ function renderReminders(){
 }
 
 function openDayList(ds,items){ openModal(`<h2>${ds}</h2><div class="task-list">${items.map(e=>`<button class="event-pill ${eventClass(e.category)}" data-eid="${e.id}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`).join('')}</div>`); $$('#modalBody [data-eid]').forEach(b=>b.addEventListener('click',()=>{const e=state.events.find(x=>x.id===Number(b.dataset.eid));openEventModal(e)})); }
-function openModal(html){$('#modalBody').innerHTML=html;$('#modalBackdrop').classList.remove('hidden')}
+function openModal(html){
+  const modal=document.querySelector('.modal');
+  if(modal)modal.className='modal';
+  $('#modalBody').innerHTML=html;
+  $('#modalBackdrop').classList.remove('hidden');
+  $('#modalClose').onclick=closeModal;
+}
 function closeModal(){$('#modalBackdrop').classList.add('hidden');$('#modalBody').innerHTML=''}
+
+function showUiMessage(title,message,buttonLabel='D’accord'){
+  openModal(`<div class="atelier-dialog"><div class="section-kicker">L’ATELIER</div><h2>${esc(title)}</h2><p>${esc(message)}</p><div class="form-actions"><button id="atelierDialogOk" class="primary" type="button">${esc(buttonLabel)}</button></div></div>`);
+  $('#atelierDialogOk').onclick=closeModal;
+}
+
+function askUiConfirm(title,message,confirmLabel='Confirmer',danger=false){
+  return new Promise(resolve=>{
+    openModal(`<div class="atelier-dialog"><div class="section-kicker">L’ATELIER</div><h2>${esc(title)}</h2><p>${esc(message)}</p><div class="form-actions"><button id="atelierDialogCancel" type="button">Annuler</button><button id="atelierDialogConfirm" class="${danger?'danger-button':'primary'}" type="button">${esc(confirmLabel)}</button></div></div>`);
+    const finish=value=>{closeModal();resolve(value)};
+    $('#atelierDialogCancel').onclick=()=>finish(false);
+    $('#atelierDialogConfirm').onclick=()=>finish(true);
+    $('#modalClose').onclick=()=>finish(false);
+  });
+}
 
 function reminderEditor(existing=[], fallbackLabel='élément', defaultDate=''){ return `<div class="field full"><label>Rappels</label><div class="field-help">Laisse le nom vide : le rappel reprendra automatiquement le nom de ${fallbackLabel}. La date et l’heure sont séparées pour pouvoir les taper directement.</div><div id="reminderEditor" data-default-date="${esc(defaultDate)}">${existing.map(v=>reminderRow(v,defaultDate)).join('')}</div><button type="button" id="addReminder">+ Ajouter un rappel</button></div>`; }
 function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="remove-rem">×</button></div>`; }
@@ -207,7 +228,8 @@ function renderCuisineLibrary(){
   list.innerHTML='';
   if(!rows.length){
     if(!state.recipes.length){
-      list.innerHTML='<div class="library-empty">Aucune recette pour le moment.<br><button id="createTestRecipe" class="primary library-test-recipe" type="button">Créer une recette de test</button></div>';
+      list.innerHTML='<div class="library-empty"><strong>Ta bibliothèque est vide.</strong><br><span>Commence une vraie recette vide, ou ajoute l’exemple Potiflette uniquement pour tester.</span><div class="library-empty-actions"><button id="createBlankRecipe" class="primary" type="button">＋ Créer ma première recette</button><button id="createTestRecipe" type="button">Ajouter l’exemple Potiflette</button></div></div>';
+      $('#createBlankRecipe').onclick=()=>openRecipeModal();
       $('#createTestRecipe').onclick=createTestRecipe;
     }else{
       list.innerHTML='<div class="library-empty">Aucune recette ne correspond à cette recherche.</div>';
@@ -229,7 +251,8 @@ function renderCuisineLibrary(){
     card.querySelector('.recipe-library-title').onclick=()=>openRecipePage(item);
     card.querySelector('.edit').onclick=()=>openRecipeModal(item);
     card.querySelector('.archive').onclick=async()=>{
-      if(!confirm(`Archiver « ${item.title} » ? La recette ne sera pas supprimée définitivement.`))return;
+      const ok=await askUiConfirm('Archiver la recette',`Archiver « ${item.title} » ? Elle disparaîtra de la bibliothèque active, sans être supprimée définitivement.`,'Archiver',true);
+      if(!ok)return;
       const result=await runUiAction("Impossible d’archiver la recette",()=>api(`/api/recipes/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})}));
       if(result.ok)await refresh();
     };
@@ -261,7 +284,8 @@ async function deleteRecipeBook(book){
   const message=count
     ? `Supprimer le livre « ${book.name} » ? Ses ${count} recette${count>1?'s':''} seront déplacées dans « À classer ».`
     : `Supprimer le livre « ${book.name} » ?`;
-  if(!confirm(message))return;
+  const ok=await askUiConfirm('Supprimer le livre',message,'Supprimer',true);
+  if(!ok)return;
   const result=await runUiAction("Impossible de supprimer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
   if(!result.ok)return;
   if(String(recipeBookFilter)===String(book.id))recipeBookFilter='all';
@@ -276,9 +300,9 @@ async function createTestRecipe(){
     notes:'Recette de test : tu peux la modifier ou l’archiver après les vérifications.',
     base_servings:4,
     ingredients_json:JSON.stringify([
-      {quantity:'800',unit:'g',name:'potimarron'},
+      {quantity:'1',unit:'',name:'potimarron'},
       {quantity:'200',unit:'g',name:'lardons'},
-      {quantity:'200',unit:'g',name:'reblochon'},
+      {quantity:'1',unit:'',name:'reblochon'},
       {quantity:'20',unit:'cl',name:'crème fraîche'}
     ]),
     recipe:'Couper et cuire le potimarron jusqu’à ce qu’il soit tendre.\nFaire revenir les lardons.\nRéunir le tout dans un plat, ajouter la crème puis le reblochon.\nGratiner au four jusqu’à ce que le dessus soit bien doré.',
@@ -398,20 +422,53 @@ function parsePastedRecipeText(raw){
 }
 
 function openRecipeImportModal(){
-  openModal(`<h2>Importer une recette</h2><form id="recipeImportForm" class="form-grid">
-    <div class="field full"><label>URL ou texte de la recette</label><textarea id="recipePasteText" class="recipe-import-text" required placeholder="Colle l’adresse d’une recette Marmiton… ou colle directement le texte de la recette."></textarea></div>
-    <div class="field-help full">Si tu colles une URL, L’Atelier essaie de lire automatiquement la recette de la page. Dans tous les cas, il ouvre ensuite l’éditeur pour que tu vérifies avant d’enregistrer.</div>
-    <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button id="submitRecipeImport" class="primary">Analyser</button></div>
-  </form>`);
+  openModal(`<div class="recipe-import">
+    <div class="section-kicker">IMPORTER UNE RECETTE</div>
+    <h2>Comment veux-tu l’ajouter ?</h2>
+    <div class="recipe-import-tabs">
+      <button id="recipeImportUrlTab" class="active" type="button">🔗 Depuis un lien</button>
+      <button id="recipeImportTextTab" type="button">✎ Depuis du texte</button>
+    </div>
+    <form id="recipeImportForm" class="form-grid">
+      <div id="recipeImportUrlMode" class="field full recipe-import-mode">
+        <label>Adresse de la recette</label>
+        <input id="recipeImportUrl" type="url" placeholder="https://www.marmiton.org/recettes/…" autocomplete="off">
+        <div class="field-help">Colle simplement le lien. L’Atelier essaiera de récupérer le titre, les portions, les ingrédients, les étapes et l’image.</div>
+      </div>
+      <div id="recipeImportTextMode" class="field full recipe-import-mode hidden">
+        <label>Texte de la recette</label>
+        <textarea id="recipePasteText" class="recipe-import-text" placeholder="Copie le titre, les ingrédients et la préparation puis colle-les ici…"></textarea>
+        <div class="field-help">Utilise ce mode si le site bloque l’import par lien ou si tu as déjà le texte de la recette.</div>
+      </div>
+      <div id="recipeImportError" class="form-error field full hidden"></div>
+      <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button id="submitRecipeImport" class="primary">Importer le lien</button></div>
+    </form>
+  </div>`);
+  const urlTab=$('#recipeImportUrlTab'), textTab=$('#recipeImportTextTab'), urlMode=$('#recipeImportUrlMode'), textMode=$('#recipeImportTextMode');
+  const urlInput=$('#recipeImportUrl'), textInput=$('#recipePasteText'), submit=$('#submitRecipeImport'), error=$('#recipeImportError');
+  let mode='url';
+  const setMode=next=>{
+    mode=next;
+    urlTab.classList.toggle('active',mode==='url');
+    textTab.classList.toggle('active',mode==='text');
+    urlMode.classList.toggle('hidden',mode!=='url');
+    textMode.classList.toggle('hidden',mode!=='text');
+    submit.textContent=mode==='url'?'Importer le lien':'Analyser le texte';
+    error.classList.add('hidden');error.textContent='';
+    (mode==='url'?urlInput:textInput).focus();
+  };
+  urlTab.onclick=()=>setMode('url');
+  textTab.onclick=()=>setMode('text');
   $('#cancelRecipeImport').onclick=closeModal;
   $('#recipeImportForm').onsubmit=async e=>{
     e.preventDefault();
-    const raw=$('#recipePasteText').value.trim();
-    const submit=$('#submitRecipeImport');
-    submit.disabled=true;submit.textContent='Analyse…';
+    error.classList.add('hidden');error.textContent='';
+    submit.disabled=true;submit.textContent=mode==='url'?'Import…':'Analyse…';
     try{
       let parsed;
-      if(/^https?:\/\//i.test(raw)){
+      if(mode==='url'){
+        const raw=urlInput.value.trim();
+        if(!raw)throw new Error('Colle d’abord le lien de la recette.');
         const result=await api('/api/recipe-import-url',{method:'POST',body:JSON.stringify({url:raw})});
         const ingredients=(result.ingredients||[]).map(parsePastedIngredientLine).filter(Boolean);
         parsed={
@@ -423,25 +480,28 @@ function openRecipeImportModal(){
           image_data:result.image_data||''
         };
       }else{
+        const raw=textInput.value.trim();
+        if(!raw)throw new Error('Colle d’abord le texte de la recette.');
         parsed=parsePastedRecipeText(raw);
       }
       if(!parsed.title)throw new Error("Je n’ai pas réussi à repérer le titre.");
       openRecipeModal(null,parsed);
     }catch(err){
-      showUiError(err,'Import de recette');
-      submit.disabled=false;submit.textContent='Analyser';
+      error.textContent=err?.message||'Impossible d’importer cette recette.';
+      error.classList.remove('hidden');
+      submit.disabled=false;submit.textContent=mode==='url'?'Importer le lien':'Analyser le texte';
     }
   };
+  setMode('url');
 }
-
 async function validateShoppingPurchases(){
   const selected=state.shopping.filter(x=>x.checked);
-  if(!selected.length){alert('Coche au moins un produit acheté.');return}
+  if(!selected.length){showUiMessage('Aucun achat sélectionné','Coche au moins un produit acheté avant de valider.');return}
   const result=await runUiAction('Impossible de valider les achats',()=>api('/api/shopping/validate',{method:'PUT',body:'{}'}));
   if(!result.ok)return;
   const res=result.value;
   await refresh();
-  if(res.count) alert(`${res.count} produit${res.count>1?'s':''} ajouté${res.count>1?'s':''} à la maison. Tu peux maintenant renseigner les dates.`);
+  if(res.count) showUiMessage('Achats ajoutés',`${res.count} produit${res.count>1?'s':''} ajouté${res.count>1?'s':''} à la maison. Tu peux maintenant renseigner les dates.`);
 }
 
 function openShoppingModal(item=null){
@@ -528,7 +588,7 @@ function formatScaledQuantity(raw,factor){
 function addIngredientEditorRow(root,row={}){
   const line=document.createElement('div');
   line.className='ingredient-edit-row';
-  line.innerHTML=`<input class="ing-qty" inputmode="decimal" placeholder="Qté" value="${esc(row.quantity??'')}"><input class="ing-unit" placeholder="Unité" value="${esc(row.unit??'')}"><input class="ing-name" placeholder="Ingrédient" value="${esc(row.name??'')}"><button type="button" class="ing-remove">×</button>`;
+  line.innerHTML=`<div class="ingredient-measure"><input class="ing-qty" inputmode="decimal" placeholder="1" value="${esc(row.quantity??'')}"><input class="ing-unit" placeholder="g" value="${esc(row.unit??'')}"></div><input class="ing-name" placeholder="potimarron, chocolat…" value="${esc(row.name??'')}"><button type="button" class="ing-remove" aria-label="Retirer l’ingrédient">×</button>`;
   line.querySelector('.ing-remove').onclick=()=>line.remove();
   root.appendChild(line);
 }
@@ -558,28 +618,46 @@ function openRecipeModal(item=null,prefill=null){
   const fallbackBook=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')?.id||state.recipeBooks[0]?.id||'';
   const selectedBook=Number(source.book_id)||Number(fallbackBook)||'';
   const bookOptions=state.recipeBooks.map(book=>`<option value="${book.id}" ${Number(book.id)===Number(selectedBook)?'selected':''}>${esc(book.name)}</option>`).join('');
-  openModal(`<h2>${editing?'Modifier la recette':'Nouvelle recette'}</h2><form id="mealForm" class="form-grid recipe-form">
-    <div class="field full"><label>Titre de la recette</label><input name="title" required value="${esc(source.title||'')}" placeholder="ex. Potiflette"></div>
-    <div class="field"><label>Livre</label><select name="book_id">${bookOptions}</select></div>
-    <div class="field"><label>Cette recette est écrite pour</label><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="ex. 4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></div>
-    <div class="field full"><label>Petite note</label><textarea name="notes" placeholder="Variante, source, accompagnement…">${esc(source.notes||'')}</textarea></div>
-    <div class="field recipe-image-edit">
-      <label>Image</label>
-      <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
-      <button id="mealImagePicker" class="meal-image-picker ${mealImageData?'has-image':''}" type="button">
-        <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
-        <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>＋ Ajouter une image</strong><small>Cliquer pour choisir une photo</small></span>
-        <span id="removeMealImage" class="meal-image-remove ${mealImageData?'':'hidden'}" role="button" aria-label="Retirer l’image" title="Retirer l’image">×</span>
-      </button>
+  openModal(`<form id="mealForm" class="recipe-form recipe-form-04">
+    <div class="recipe-edit-heading">
+      <div class="section-kicker">${editing?'MODIFIER LA RECETTE':'NOUVELLE RECETTE'}</div>
+      <input class="recipe-title-input" name="title" required value="${esc(source.title||'')}" placeholder="Nom de la recette">
     </div>
-    <div class="field full ingredient-editor">
-      <div class="ingredient-editor-head"><div><label>Ingrédients</label><small>Une ligne par ingrédient</small></div><button id="addIngredientRow" class="ingredient-add-btn" type="button">＋ Ajouter</button></div>
-      <div class="ingredient-edit-labels"><span>Quantité</span><span>Unité</span><span>Ingrédient</span><span></span></div>
+
+    <div class="recipe-edit-intro">
+      <div class="recipe-avatar-field">
+        <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
+        <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir l’image de la recette">
+          <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
+          <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>＋ Photo</strong><small>Ajouter</small></span>
+          <span id="removeMealImage" class="meal-image-remove ${mealImageData?'':'hidden'}" role="button" aria-label="Retirer l’image" title="Retirer l’image">×</span>
+        </button>
+      </div>
+
+      <div class="recipe-edit-summary">
+        <div class="recipe-edit-meta">
+          <label class="field"><span>Livre</span><select name="book_id">${bookOptions}</select></label>
+          <label class="field"><span>Recette prévue pour</span><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></label>
+        </div>
+        <label class="field recipe-note-field"><span>Petite note</span><textarea name="notes" placeholder="Source, variante, accompagnement…">${esc(source.notes||'')}</textarea></label>
+      </div>
+    </div>
+
+    <section class="recipe-edit-section ingredient-editor">
+      <div class="ingredient-editor-head"><div><h3>Ingrédients</h3><small>Pour un ingrédient entier, écris par exemple « 1 » + « potimarron » et laisse l’unité vide.</small></div><button id="addIngredientRow" class="ingredient-add-btn" type="button">＋ Ajouter</button></div>
+      <div class="ingredient-edit-labels"><span>Quantité + unité</span><span>Ingrédient</span><span></span></div>
       <div id="ingredientEditRows"></div>
-    </div>
-    <div class="field full"><label>Préparation</label><textarea name="recipe" class="recipe-editor" placeholder="Écris ici les étapes de préparation…">${esc(source.recipe||'')}</textarea></div>
-    <div class="form-actions field full"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer</button></div>
+    </section>
+
+    <section class="recipe-edit-section recipe-preparation-field">
+      <label>Préparation</label>
+      <textarea name="recipe" class="recipe-editor" placeholder="1. Première étape…&#10;2. Deuxième étape…">${esc(source.recipe||'')}</textarea>
+    </section>
+
+    <div class="form-actions recipe-form-actions"><button type="button" id="cancelMeal">Annuler</button><button class="primary">Enregistrer la recette</button></div>
   </form>`);
+
+  document.querySelector('.modal')?.classList.add('recipe-editor-modal');
 
   const form=$('#mealForm'), rows=$('#ingredientEditRows'), preview=$('#mealImagePreview'), picker=$('#mealImagePicker'), placeholder=$('#mealImagePlaceholder'), removeImage=$('#removeMealImage'), imageInput=$('#mealImageInput');
   const syncMealImagePreview=()=>{
@@ -600,9 +678,9 @@ function openRecipeModal(item=null,prefill=null){
   removeImage.onclick=e=>{e.preventDefault();e.stopPropagation();mealImageData='';imageInput.value='';syncMealImagePreview()};
   imageInput.onchange=async e=>{
     const file=e.target.files?.[0]; if(!file)return;
-    if(file.size>5*1024*1024){alert("Image trop lourde : choisis une image de moins de 5 Mo.");e.target.value='';return}
+    if(file.size>5*1024*1024){showUiMessage('Image trop lourde','Choisis une image de moins de 5 Mo.');e.target.value='';return}
     try{mealImageData=await readRecipeImage(file);syncMealImagePreview()}
-    catch(err){alert(err.message||"Impossible d’ajouter cette image.")}
+    catch(err){showUiMessage('Impossible d’ajouter l’image',err?.message||'Le fichier n’a pas pu être lu.')}
   };
   syncMealImagePreview();
 
@@ -623,7 +701,6 @@ function openRecipeModal(item=null,prefill=null){
     }
   };
 }
-
 function renderRecipePage(item){
   if(!item)return;
   const base=Math.max(1,Number(item.base_servings)||1);
