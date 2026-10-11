@@ -49,7 +49,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     f.travel_time.addEventListener('input',()=>touched.travel_time=true);
     f.title.addEventListener('input',()=>{clearTimeout(templateTimer);templateTimer=setTimeout(()=>applyEventTemplate(f,touched),300)});
   }
-  f.addEventListener('submit',async ev=>{ev.preventDefault(); if(!editing) await applyEventTemplate(f,touched); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); await api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}); closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
+  f.addEventListener('submit',async ev=>{ev.preventDefault(); if(!editing) await applyEventTemplate(f,touched); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); const result=await runUiAction("Impossible d’enregistrer le rendez-vous",()=>api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)})); if(!result.ok)return; closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
 }
 
 function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
@@ -61,7 +61,7 @@ function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state
     <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'de la tâche',t?.due_date||ymd(new Date()))}
     <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
-  </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();await api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)});closeModal();await refresh()}); }
+  </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();const result=await runUiAction("Impossible d’enregistrer la tâche",()=>api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));if(!result.ok)return;closeModal();await refresh()}); }
 
 function openPostponeEventModal(e){
   const date=e?.instance_date||e?.event_date||ymd(new Date());
