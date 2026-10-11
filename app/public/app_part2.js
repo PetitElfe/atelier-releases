@@ -179,10 +179,23 @@ function renderCuisineLibrary(){
     b.className='recipe-book-button'+(String(recipeBookFilter)===String(id)?' active':'');
     b.innerHTML=`<span>${esc(label)}</span><small>${count}</small>`;
     b.onclick=()=>{recipeBookFilter=id;renderCuisineLibrary()};
-    shelf.appendChild(b);
+    return b;
   };
-  makeBookButton('all','Toutes les recettes',state.recipes.length);
-  state.recipeBooks.forEach(book=>makeBookButton(book.id,book.name,Number(book.recipe_count)||0));
+  shelf.appendChild(makeBookButton('all','Toutes les recettes',state.recipes.length));
+  state.recipeBooks.forEach(book=>{
+    const row=document.createElement('div');
+    row.className='recipe-book-row';
+    row.appendChild(makeBookButton(book.id,book.name,Number(book.recipe_count)||0));
+    if(String(book.name).toLowerCase()!=='à classer'){
+      const actions=document.createElement('div');
+      actions.className='recipe-book-actions';
+      actions.innerHTML='<button class="rename" type="button" title="Renommer">✎</button><button class="delete" type="button" title="Supprimer">×</button>';
+      actions.querySelector('.rename').onclick=e=>{e.stopPropagation();openRenameRecipeBookModal(book)};
+      actions.querySelector('.delete').onclick=e=>{e.stopPropagation();deleteRecipeBook(book)};
+      row.appendChild(actions);
+    }
+    shelf.appendChild(row);
+  });
 
   const q=normalizeRecipeSearch(recipeSearchQuery);
   const rows=state.recipes.filter(item=>{
@@ -193,7 +206,12 @@ function renderCuisineLibrary(){
 
   list.innerHTML='';
   if(!rows.length){
-    list.innerHTML='<div class="library-empty">Aucune recette ne correspond à cette recherche.</div>';
+    if(!state.recipes.length){
+      list.innerHTML='<div class="library-empty">Aucune recette pour le moment.<br><button id="createTestRecipe" class="primary library-test-recipe" type="button">Créer une recette de test</button></div>';
+      $('#createTestRecipe').onclick=createTestRecipe;
+    }else{
+      list.innerHTML='<div class="library-empty">Aucune recette ne correspond à cette recherche.</div>';
+    }
     return;
   }
   const selectedIds=new Set(state.mealIdeas.map(x=>Number(x.id)));
@@ -206,14 +224,70 @@ function renderCuisineLibrary(){
       <div class="recipe-library-actions">
         <button class="idea" type="button" ${selectedIds.has(Number(item.id))?'disabled':''}>${selectedIds.has(Number(item.id))?'Déjà dans les idées':'＋ Idée de repas'}</button>
         <button class="edit" type="button">Modifier</button>
+        <button class="archive" type="button">Archiver</button>
       </div>`;
     card.querySelector('.recipe-library-title').onclick=()=>openRecipePage(item);
     card.querySelector('.edit').onclick=()=>openRecipeModal(item);
+    card.querySelector('.archive').onclick=async()=>{
+      if(!confirm(`Archiver « ${item.title} » ? La recette ne sera pas supprimée définitivement.`))return;
+      const result=await runUiAction("Impossible d’archiver la recette",()=>api(`/api/recipes/${item.id}`,{method:'PUT',body:JSON.stringify({archived:true})}));
+      if(result.ok)await refresh();
+    };
     card.querySelector('.idea').onclick=async()=>{
       if(await addRecipeToMealIdeas(item.id))renderCuisineLibrary();
     };
     list.appendChild(card);
   });
+}
+
+
+function openRenameRecipeBookModal(book){
+  openModal(`<h2>Renommer le livre</h2><form id="renameRecipeBookForm" class="form-grid">
+    <div class="field full"><label>Nouveau nom</label><input name="name" required value="${esc(book.name)}"></div>
+    <div class="form-actions field full"><button type="button" id="cancelRenameBook">Annuler</button><button class="primary">Renommer</button></div>
+  </form>`);
+  $('#cancelRenameBook').onclick=closeModal;
+  $('#renameRecipeBookForm').onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
+    const result=await runUiAction("Impossible de renommer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'PUT',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
+    closeModal();await refresh();
+  };
+}
+
+async function deleteRecipeBook(book){
+  const count=Number(book.recipe_count)||0;
+  const message=count
+    ? `Supprimer le livre « ${book.name} » ? Ses ${count} recette${count>1?'s':''} seront déplacées dans « À classer ».`
+    : `Supprimer le livre « ${book.name} » ?`;
+  if(!confirm(message))return;
+  const result=await runUiAction("Impossible de supprimer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
+  if(!result.ok)return;
+  if(String(recipeBookFilter)===String(book.id))recipeBookFilter='all';
+  await refresh();
+}
+
+async function createTestRecipe(){
+  const sale=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='salé')||state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')||state.recipeBooks[0];
+  const payload={
+    title:'Potiflette — recette de test',
+    book_id:sale?.id||null,
+    notes:'Recette de test : tu peux la modifier ou l’archiver après les vérifications.',
+    base_servings:4,
+    ingredients_json:JSON.stringify([
+      {quantity:'800',unit:'g',name:'potimarron'},
+      {quantity:'200',unit:'g',name:'lardons'},
+      {quantity:'200',unit:'g',name:'reblochon'},
+      {quantity:'20',unit:'cl',name:'crème fraîche'}
+    ]),
+    recipe:'Couper et cuire le potimarron jusqu’à ce qu’il soit tendre.\nFaire revenir les lardons.\nRéunir le tout dans un plat, ajouter la crème puis le reblochon.\nGratiner au four jusqu’à ce que le dessus soit bien doré.',
+    image_data:''
+  };
+  const result=await runUiAction("Impossible de créer la recette de test",()=>api('/api/recipes',{method:'POST',body:JSON.stringify(payload)}));
+  if(!result.ok)return;
+  recipeBookFilter='all';recipeSearchQuery='';
+  await refresh();
 }
 
 async function addRecipeToMealIdeas(recipeId){
@@ -324,20 +398,39 @@ function parsePastedRecipeText(raw){
 }
 
 function openRecipeImportModal(){
-  openModal(`<h2>Importer une recette par copier-coller</h2><form id="recipeImportForm" class="form-grid">
-    <div class="field full"><label>Texte de la recette</label><textarea id="recipePasteText" class="recipe-import-text" required placeholder="Copie la recette depuis Marmiton puis colle son texte ici…"></textarea></div>
-    <div class="field-help full">L’Atelier essaiera de ranger automatiquement le titre, les portions, les ingrédients et les étapes. Tu pourras tout vérifier et corriger avant l’enregistrement.</div>
-    <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button class="primary">Analyser</button></div>
+  openModal(`<h2>Importer une recette</h2><form id="recipeImportForm" class="form-grid">
+    <div class="field full"><label>URL ou texte de la recette</label><textarea id="recipePasteText" class="recipe-import-text" required placeholder="Colle l’adresse d’une recette Marmiton… ou colle directement le texte de la recette."></textarea></div>
+    <div class="field-help full">Si tu colles une URL, L’Atelier essaie de lire automatiquement la recette de la page. Dans tous les cas, il ouvre ensuite l’éditeur pour que tu vérifies avant d’enregistrer.</div>
+    <div class="form-actions field full"><button type="button" id="cancelRecipeImport">Annuler</button><button id="submitRecipeImport" class="primary">Analyser</button></div>
   </form>`);
   $('#cancelRecipeImport').onclick=closeModal;
-  $('#recipeImportForm').onsubmit=e=>{
+  $('#recipeImportForm').onsubmit=async e=>{
     e.preventDefault();
-    const parsed=parsePastedRecipeText($('#recipePasteText').value);
-    if(!parsed.title){
-      showUiError(new Error("Je n’ai pas réussi à repérer le titre. Ajoute-le sur la première ligne puis réessaie."),'Import de recette');
-      return;
+    const raw=$('#recipePasteText').value.trim();
+    const submit=$('#submitRecipeImport');
+    submit.disabled=true;submit.textContent='Analyse…';
+    try{
+      let parsed;
+      if(/^https?:\/\//i.test(raw)){
+        const result=await api('/api/recipe-import-url',{method:'POST',body:JSON.stringify({url:raw})});
+        const ingredients=(result.ingredients||[]).map(parsePastedIngredientLine).filter(Boolean);
+        parsed={
+          title:result.title||'',
+          notes:[result.notes||'',result.source_url?`Source : ${result.source_url}`:''].filter(Boolean).join('\n'),
+          base_servings:Math.max(1,Number(result.base_servings)||1),
+          ingredients_json:JSON.stringify(ingredients),
+          recipe:result.recipe||'',
+          image_data:result.image_data||''
+        };
+      }else{
+        parsed=parsePastedRecipeText(raw);
+      }
+      if(!parsed.title)throw new Error("Je n’ai pas réussi à repérer le titre.");
+      openRecipeModal(null,parsed);
+    }catch(err){
+      showUiError(err,'Import de recette');
+      submit.disabled=false;submit.textContent='Analyser';
     }
-    openRecipeModal(null,parsed);
   };
 }
 
