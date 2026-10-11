@@ -128,6 +128,25 @@ function notifyReminder(r){
   t.querySelector('.later').onclick=()=>{t.remove();openSnooze(r)}; $('#toastArea').appendChild(t);
 }
 
+async function checkRuntimeCompatibility(){
+  try{
+    const r=await fetch('/api/runtime-version',{cache:'no-store'});
+    if(!r.ok) throw new Error('runtime endpoint unavailable');
+    const data=await r.json();
+    const uiText=document.querySelector('.eyebrow')?.textContent||'';
+    const m=uiText.match(/(\d+\.\d+\.\d+)/);
+    const uiVersion=m?m[1]:'';
+    if(uiVersion && data.version!==uiVersion){
+      showUiError(new Error(`Interface ${uiVersion}, serveur Python ${data.version}. Arrête puis relance complètement L’Atelier.`),'Serveur Python à redémarrer');
+      return false;
+    }
+    return true;
+  }catch(err){
+    showUiError(new Error("Un ancien serveur Python de L’Atelier est probablement encore actif. Ferme complètement L’Atelier puis relance-le."),'Serveur Python trop ancien');
+    return false;
+  }
+}
+
 function showView(view){
   state.view=view;
   if(view!=='recipe') localStorage.setItem('atelierLastView',view);
@@ -279,7 +298,7 @@ function initKitchenLayoutEditor(){
 
 applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
-refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen'].includes(savedView))showView(savedView)});
+refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
 setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
