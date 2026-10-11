@@ -189,7 +189,7 @@ function syncNotifyButton(){
   b.title=granted?'Notifications activées':'Activer les notifications';
   b.setAttribute('aria-label',b.title);
 }
-$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){alert('Ce navigateur ne prend pas en charge les notifications.');return} await Notification.requestPermission(); syncNotifyButton(); };
+$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){showUiMessage('Notifications indisponibles','Cette version du moteur d’affichage ne prend pas en charge les notifications système.');return} await Notification.requestPermission(); syncNotifyButton(); };
 
 function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
   if(!view||!toggle||!reset)return;
