@@ -1,7 +1,8 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+from urllib.request import Request, urlopen
 from pathlib import Path
-import sqlite3, json, mimetypes, os, threading, webbrowser
+import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress
 from datetime import datetime, date, timedelta
 
 ROOT = Path(__file__).resolve().parent
@@ -235,6 +236,133 @@ def int_or_none(value):
         return int(value)
     except Exception:
         return None
+
+
+def _recipe_type_is_recipe(value):
+    if isinstance(value, str):
+        return value.lower() == 'recipe'
+    if isinstance(value, list):
+        return any(_recipe_type_is_recipe(v) for v in value)
+    return False
+
+def _find_recipe_schema(value):
+    if isinstance(value, dict):
+        if _recipe_type_is_recipe(value.get('@type')):
+            return value
+        for key in ('@graph', 'mainEntity', 'mainEntityOfPage', 'itemListElement'):
+            if key in value:
+                found = _find_recipe_schema(value[key])
+                if found: return found
+        for child in value.values():
+            found = _find_recipe_schema(child)
+            if found: return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _find_recipe_schema(child)
+            if found: return found
+    return None
+
+def _recipe_instructions_text(value):
+    out=[]
+    def walk(v):
+        if isinstance(v, str):
+            s=v.strip()
+            if s: out.append(s)
+        elif isinstance(v, dict):
+            text=(v.get('text') or '').strip() if isinstance(v.get('text'),str) else ''
+            if text: out.append(text)
+            if 'itemListElement' in v: walk(v['itemListElement'])
+        elif isinstance(v, list):
+            for x in v: walk(x)
+    walk(value)
+    return '\n'.join(out)
+
+def _recipe_image_url(value):
+    if isinstance(value, str): return value.strip()
+    if isinstance(value, list):
+        for x in value:
+            u=_recipe_image_url(x)
+            if u: return u
+    if isinstance(value, dict):
+        for k in ('url','contentUrl'):
+            if isinstance(value.get(k),str) and value[k].strip(): return value[k].strip()
+    return ''
+
+def _recipe_servings(value):
+    if isinstance(value, (int,float)):
+        return max(1,int(value))
+    if isinstance(value, list):
+        for x in value:
+            n=_recipe_servings(x)
+            if n: return n
+    if isinstance(value, str):
+        m=re.search(r'\d+', value)
+        if m: return max(1,int(m.group(0)))
+    return 1
+
+def _validate_recipe_url(raw_url):
+    raw=(raw_url or '').strip()
+    u=urlparse(raw)
+    if u.scheme not in ('http','https') or not u.hostname:
+        raise ValueError('Colle une URL http ou https valide.')
+    try:
+        infos=socket.getaddrinfo(u.hostname, u.port or (443 if u.scheme=='https' else 80), type=socket.SOCK_STREAM)
+        for info in infos:
+            ip=ipaddress.ip_address(info[4][0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+                raise ValueError('Cette adresse locale ou privée ne peut pas être importée.')
+    except ValueError:
+        raise
+    except Exception:
+        raise ValueError('Impossible de résoudre cette adresse.')
+    return raw
+
+def import_recipe_from_url(raw_url):
+    url=_validate_recipe_url(raw_url)
+    req=Request(url, headers={
+        'User-Agent':'Mozilla/5.0 (LAtelier recipe importer)',
+        'Accept':'text/html,application/xhtml+xml'
+    })
+    with urlopen(req, timeout=10) as response:
+        final_url=response.geturl()
+        length=response.headers.get('Content-Length')
+        if length and int(length)>3_000_000:
+            raise ValueError('La page est trop volumineuse pour être importée.')
+        raw=response.read(3_000_001)
+        if len(raw)>3_000_000:
+            raise ValueError('La page est trop volumineuse pour être importée.')
+        charset=response.headers.get_content_charset() or 'utf-8'
+    page=raw.decode(charset, errors='replace')
+    scripts=re.findall(r'<script\b[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script\s*>', page, flags=re.I|re.S)
+    recipe=None
+    for blob in scripts:
+        try:
+            data=json.loads(html.unescape(blob).strip())
+        except Exception:
+            continue
+        recipe=_find_recipe_schema(data)
+        if recipe: break
+    if not recipe:
+        raise ValueError("Je n’ai pas trouvé de recette structurée sur cette page. Essaie le copier-coller du texte.")
+    title=str(recipe.get('name') or '').strip()
+    if not title:
+        raise ValueError("La page contient une recette, mais son titre n’a pas pu être lu.")
+    ingredients=recipe.get('recipeIngredient') or recipe.get('ingredients') or []
+    if isinstance(ingredients,str): ingredients=[ingredients]
+    ingredients=[str(x).strip() for x in ingredients if str(x).strip()]
+    description=html.unescape(str(recipe.get('description') or '')).strip()
+    description=re.sub(r'<[^>]+>',' ',description)
+    description=re.sub(r'\s+',' ',description).strip()
+    instructions=_recipe_instructions_text(recipe.get('recipeInstructions') or recipe.get('instructions') or '')
+    return {
+        'source_url': final_url,
+        'title': title,
+        'base_servings': _recipe_servings(recipe.get('recipeYield')),
+        'ingredients': ingredients,
+        'recipe': instructions,
+        'notes': description[:800],
+        'image_data': _recipe_image_url(recipe.get('image'))
+    }
 
 def expand_events(rows, start_s, end_s):
     try:
