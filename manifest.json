@@ -1,15 +1,15 @@
 {
-  "version": "0.5.2",
+  "version": "0.5.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "1ec286c4234b751ba3264ae5d3df4d3bbbf58d72188a6f238ace4333ac6be964"
+      "sha256": "6d0eb9f28e403ea91867e03ad5b337e741987953ed327dfc922904dc6be65723"
     },
     {
       "path": "VERSION",
-      "sha256": "26e0ab83aa1ff6bd0ae3882787a92663aa19db128e1241ffc99375fb9ca0c121"
+      "sha256": "27ecff1fcdaf65ab46c1bb99c1072d6d134a0e8dd97dd95cfa88696b9ed453b2"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "99773890915f9c5e81d0efada823a5712ddba3e29e40c0d907f874ddfc953395"
+      "sha256": "cc3dbb95697ec041289e9dd6a13b70a06b5042460cacc33abdec795b201f1ea2"
     },
     {
       "path": "app_part2.py",
-      "sha256": "c285f3b4df8bef855202d769249d157383e355c5bf506e9f080f66f1cd0fdfd3"
+      "sha256": "69ba1f0221ab7d5e4bb9c33808b70afe6d18297816f4df01742407cf4df9739b"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "6b470582942d7b89708f8a2e04f719c3215b2fbdc70d13d8f3e3e54e2b7b7298"
+      "sha256": "44e3bd659ae219d60a62aeab90fc72968535b7366887ee95c947d1dc99177f45"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "3c4282c1cc4666051fc2b8c0f68afcd5e73bc34f5d4860644c3454f904c29e0d"
+      "sha256": "04a291e5298564eeb70fa33b940a1cb7706ce85877b19fd91d4d9dd164bf7b36"
     },
     {
       "path": "public/styles.css",
-      "sha256": "b917354470f223db290675cc4741a3c811ecdb73be7a39eaaac327d8d3a3d29a"
+      "sha256": "49593ac097769a8627221560a307a93149bb2c7d8634f02e877a69fde4fd3566"
     }
   ],
-  "notes": "0.5.2 : corrige le semainier avec des lignes plus hautes, des heures plus lisibles, des colonnes mieux équilibrées et un scroll vertical. Cuisine devient la première bibliothèque d’objectif : livres de recettes, recherche, création depuis la bibliothèque, sélection des idées de repas depuis les recettes existantes et import par copier-coller d’une recette (ex. Marmiton) avec pré-rangement automatique à vérifier avant enregistrement. Les anciennes recettes/idées sont migrées automatiquement vers « À classer »."
+  "notes": "0.5.3 : harmonise les scrollbars avec le thème sombre, permet de renommer/supprimer les livres de recettes (les recettes sont déplacées dans « À classer »), ajoute une recette de test optionnelle et permet d’importer une recette soit par texte, soit directement par URL avec préremplissage depuis les données structurées Recipe de la page."
 }
