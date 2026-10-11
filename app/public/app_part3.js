@@ -156,6 +156,7 @@ function showView(view){
   const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',recipe:'Recette'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
+  syncGlobalLayoutEditing();
   render();
 }
 function setCalendarMode(mode){state.calendarMode=mode;applyCalendarMode();}
@@ -265,38 +266,117 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
   });
 }
 
-function applyFrozenHomeLayout(){
-  const specs=[
-    {id:'calendar',el:$('#openCalendarCard')},
-    {id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)')},
-    {id:'journal',el:$('#journalBook')}
+let globalLayoutEditing=false;
+let globalLayoutItems=[];
+
+function getGlobalLayoutSpecs(){
+  return [
+    {view:'home',id:'calendar',el:$('#openCalendarCard'),key:'atelierLayout_calendar'},
+    {view:'home',id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)'),key:'atelierLayout_upcoming'},
+    {view:'home',id:'journal',el:$('#journalBook'),key:'atelierLayout_journal'},
+    {view:'calendar',id:'month',el:$('#monthPanel'),key:'atelierViewLayout_calendar_month'},
+    {view:'calendar',id:'week',el:$('#weekPanel'),key:'atelierViewLayout_calendar_week'},
+    {view:'tasks',id:'tasks',el:$('#taskList'),key:'atelierViewLayout_tasks_list'},
+    {view:'reminders',id:'reminders',el:$('#reminderList'),key:'atelierViewLayout_reminders_list'},
+    {view:'kitchen',id:'shopping',el:$('#shoppingPanel'),key:'atelierKitchenLayout_shopping'},
+    {view:'kitchen',id:'foods',el:$('#foodPanel'),key:'atelierKitchenLayout_foods'},
+    {view:'kitchen',id:'meals',el:$('#mealPanel'),key:'atelierKitchenLayout_meals'},
+    {view:'recipe',id:'recipe',el:$('.recipe-carnet'),key:'atelierViewLayout_recipe_carnet'}
   ].filter(x=>x.el);
-  specs.forEach(item=>{
-    let d={x:0,y:0,scale:1};
-    try{
-      const saved=JSON.parse(localStorage.getItem('atelierLayout_'+item.id));
-      if(saved&&typeof saved==='object') d={x:Number(saved.x)||0,y:Number(saved.y)||0,scale:Number(saved.scale)||1};
-    }catch(e){}
+}
+
+function readGlobalLayout(item){
+  try{
+    const v=JSON.parse(localStorage.getItem(item.key));
+    return v&&typeof v==='object'
+      ? {x:Number(v.x)||0,y:Number(v.y)||0,scale:Number(v.scale)||1}
+      : {x:0,y:0,scale:1};
+  }catch(e){return{x:0,y:0,scale:1}}
+}
+
+function saveGlobalLayout(item,d){
+  localStorage.setItem(item.key,JSON.stringify({x:d.x||0,y:d.y||0,scale:d.scale||1}));
+}
+
+function applyGlobalLayout(item,d){
+  item.el.style.setProperty('--layout-x',(d.x||0)+'px');
+  item.el.style.setProperty('--layout-y',(d.y||0)+'px');
+  item.el.style.setProperty('--layout-scale',String(d.scale||1));
+  const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
+  if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
+}
+
+function syncGlobalLayoutEditing(){
+  $$('.view').forEach(v=>v.classList.remove('layout-editing'));
+  if(globalLayoutEditing){
+    const view=$('#'+state.view+'View');
+    if(view)view.classList.add('layout-editing');
+  }
+  const toggle=$('#globalLayoutEdit'), reset=$('#globalLayoutReset');
+  if(toggle)toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+  if(reset)reset.classList.toggle('hidden',!globalLayoutEditing);
+}
+
+function initGlobalLayoutEditor(){
+  globalLayoutItems=getGlobalLayoutSpecs();
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  globalLayoutItems.forEach(item=>{
     item.el.classList.add('layout-object');
-    item.el.style.setProperty('--layout-x',(d.x||0)+'px');
-    item.el.style.setProperty('--layout-y',(d.y||0)+'px');
-    item.el.style.setProperty('--layout-scale',String(d.scale||1));
+    let controls=item.el.querySelector(':scope > .layout-controls');
+    if(!controls){
+      controls=document.createElement('div');
+      controls.className='layout-controls';
+      controls.innerHTML='<span class="layout-move-handle">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
+      item.el.appendChild(controls);
+    }
+    applyGlobalLayout(item,readGlobalLayout(item));
+
+    const beginMove=e=>{
+      if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
+      if(e.target.closest('.layout-resize-handle'))return;
+      e.preventDefault();e.stopPropagation();
+      const d=readGlobalLayout(item),sx=e.clientX,sy=e.clientY,ox=d.x||0,oy=d.y||0;
+      item.el.classList.add('layout-selected');
+      const move=ev=>{d.x=ox+(ev.clientX-sx);d.y=oy+(ev.clientY-sy);applyGlobalLayout(item,d)};
+      const up=()=>{saveGlobalLayout(item,d);item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
+      window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+    };
+
+    const beginResize=e=>{
+      if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
+      e.preventDefault();e.stopPropagation();
+      const d=readGlobalLayout(item),start=d.scale||1,sx=e.clientX,sy=e.clientY;
+      item.el.classList.add('layout-selected');
+      const move=ev=>{
+        const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;
+        d.scale=clamp(start+delta,.55,1.75);
+        applyGlobalLayout(item,d);
+      };
+      const up=()=>{saveGlobalLayout(item,d);item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
+      window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+    };
+
+    item.el.addEventListener('pointerdown',beginMove);
+    controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',beginResize);
+    item.el.addEventListener('click',e=>{
+      if(globalLayoutEditing&&state.view===item.view&&!e.target.closest('.layout-controls')){
+        e.preventDefault();e.stopImmediatePropagation();
+      }
+    },true);
   });
+
+  $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
+  $('#globalLayoutReset').onclick=()=>{
+    globalLayoutItems.filter(x=>x.view===state.view).forEach(item=>{
+      const d={x:0,y:0,scale:1};
+      saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+    });
+  };
+  syncGlobalLayoutEditing();
 }
 
-function initKitchenLayoutEditor(){
-  createLayoutEditor({
-    view:$('#kitchenView'),toggle:$('#toggleKitchenLayoutEdit'),reset:$('#resetKitchenLayout'),hint:$('#kitchenLayoutHint'),
-    prefix:'atelierKitchenLayout_',
-    specs:[
-      {id:'shopping',el:$('#shoppingPanel')},
-      {id:'foods',el:$('#foodPanel')},
-      {id:'meals',el:$('#mealPanel')}
-    ]
-  });
-}
-
-applyCalendarMode(); syncNotifyButton(); applyFrozenHomeLayout(); initKitchenLayoutEditor();
+applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
 refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
 setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
