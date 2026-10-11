@@ -247,8 +247,9 @@ linear-gradient(#eadfc9,#e2d3b8);background-size:19px 19px,auto;position:relativ
 button:disabled{opacity:.55;cursor:wait}
 
 
-/* 0.5.0 — édition globale de la disposition */
+/* 0.5.1 — édition globale de la disposition */
 #globalLayoutEdit,#globalLayoutReset{white-space:nowrap}
+#globalLayoutEdit.is-active{border-color:var(--gold);color:var(--gold);background:#241d14}
 .layout-controls>.layout-scale-value{position:absolute;right:48px;bottom:11px;min-width:42px;text-align:center}
 .layout-editing .layout-object{user-select:none}
 .layout-editing .layout-object .layout-resize-handle{width:38px;height:38px;font-size:19px}
@@ -258,13 +259,13 @@ button:disabled{opacity:.55;cursor:wait}
 
 /* Semainier : base plus généreuse, puis réglable manuellement */
 @media(min-width:901px){
-  #weekPanel{max-width:1320px;margin:0 auto}
+  #weekPanel{width:min(1480px,100%);max-width:none;margin:0 auto}
   .week-layout{
-    grid-template-columns:155px minmax(0,1080px);
+    grid-template-columns:165px minmax(0,1fr);
     justify-content:center;
     gap:12px;
   }
-  .week-scroll{max-width:1080px}
+  .week-scroll{width:100%;max-width:none}
   .week-grid{grid-template-columns:64px repeat(7,minmax(0,1fr))}
   .week-grid>div{min-height:25px}
   .time-label{

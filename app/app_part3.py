@@ -49,8 +49,7 @@ def make_server(pid_file):
 
 
 if __name__ == '__main__':
-    version_file = ROOT / 'VERSION'
-    version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
+    version = atelier_version()
     pid_file = DATA / 'server.pid'
     port_file = DATA / 'server.port'
 

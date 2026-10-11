@@ -1,15 +1,15 @@
 {
-  "version": "0.5.0",
+  "version": "0.5.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "8edea59242ff76c41a6721ef54b2898d09142e4aa2f0f03b9e59cf7695644221"
+      "sha256": "a4b4b0691610915044451f95bcc9839d277675fcb11e3fe024c11e5141cb8aab"
     },
     {
       "path": "VERSION",
-      "sha256": "a0ad50640139a524f86591157145bf1d4674ea9c065bfea21558f0f7b04430c8"
+      "sha256": "aba951626c8690ce493cbc8f018205bb468003f61fbf00fd3d3c71cebabc0177"
     },
     {
       "path": "app.py",
@@ -17,19 +17,19 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "b2905ef7c3185af03ef284225917608d74d0d1de26e5b42f54aeb386b0a68579"
+      "sha256": "f608dd0f36fdf08acd3588f347e91ecb1873397aeaba63ffd2bbcc91e1096a1d"
     },
     {
       "path": "app_part2.py",
-      "sha256": "1dd73960a4d0c13ad0c33e7e92c9504322e354e8055b3aa5a5f568d6a98ebaf5"
+      "sha256": "dfcfb152d4bdae32f8db869cc2e2df5b00d8d88b63ba120d6688f65b9155a9e9"
     },
     {
       "path": "app_part3.py",
-      "sha256": "315e47041262749c46bea343bcf37ec2e1b4e1d3967faef3e7ae38864f822c96"
+      "sha256": "70c98367ff1ddb986c1d3693e23e55a4fc1ed92687fc1b2eacd8853161adfe75"
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "af0b82069de5db3568b153fc9b710aa3824ff95038b2df11f0cef005a0d105b6"
+      "sha256": "2dde78d2e609c9f115945e4f422bc795cfce8273ad63a974ad1c58b0e10a675c"
     },
     {
       "path": "public/app_part2.js",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "fb96f3bbac6b3045e05cd8e0c3b43489262a86460c523dc8e2f6f20e0e2b86f9"
+      "sha256": "512c3b3ee8ab1f32903162a5de4029e4f937f1fe9fb4e9e012d65817b371fd1f"
     },
     {
       "path": "public/index.html",
-      "sha256": "ea0cc682c54833364050b6538a0bd5676445d99f48c466e0aed23b28d7bd78ed"
+      "sha256": "f68fcc9063735b4db35e12cd8f2c98cde9c3fe80b5eaf4d45cbcf0b13b64f5f0"
     },
     {
       "path": "public/styles.css",
-      "sha256": "8566887aa75f2133c19c08666180b01978d11d274cd9075932390719036e76e7"
+      "sha256": "f0a5e104f8da31c38de1728861f6cee4f9415404cfb7afdcdc189a9c910ddccb"
     }
   ],
-  "notes": "0.5.0 : mise à jour par bloc. Un bouton global « Modifier » apparaît à côté de « Aujourd’hui » et permet de déplacer par drag et de redimensionner par le coin les principaux éléments de chaque onglet, y compris le semainier. Le semainier est aussi plus grand par défaut. Dans Cuisine, cliquer directement sur le titre d’un plat ouvre son carnet de recette. « Cuisine » apparaît désormais dans les objectifs provisoires ; la future bibliothèque Cuisine (livres Sucré/Salé/Sauces et livres personnalisés) est préparée au niveau conception mais n’est pas encore figée."
+  "notes": "0.5.1 : finalise le bloc Accueil/disposition. « Modifier » est placé à côté de « Aujourd’hui », son état actif est plus visible, le semainier desktop utilise davantage la largeur disponible et « Ajouter une idée de repas… » ouvre réellement la création d’une recette. Côté fiabilité, la version du serveur est centralisée dans VERSION, les fichiers de l’interface sont servis sans cache et /api/shutdown accepte maintenant POST afin qu’une nouvelle instance puisse arrêter proprement l’ancienne sur le port 8765."
 }

@@ -12,6 +12,13 @@ DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = 8765
 
+def atelier_version():
+    version_file = ROOT / 'VERSION'
+    try:
+        return version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
+    except Exception:
+        return '0.0.5'
+
 DATA.mkdir(exist_ok=True)
 
 SCHEMA = '''
