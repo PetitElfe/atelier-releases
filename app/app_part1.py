@@ -212,6 +212,22 @@ with conn() as c:
         c.execute('''INSERT OR IGNORE INTO meal_idea_links(recipe_id,created_at)
                      SELECT id,COALESCE(created_at,?) FROM recipes WHERE legacy_meal_id IS NOT NULL''',
                   (migration_ts,))
+
+    # 0.5.4 : la Potiflette générée pour les tests utilise un potimarron entier,
+    # pas 800 g. On ne touche qu'à cette recette d'exemple connue.
+    demo_rows=c.execute("SELECT id,ingredients_json FROM recipes WHERE title='Potiflette — recette de test'").fetchall()
+    for demo in demo_rows:
+        try:
+            ingredients=json.loads(demo['ingredients_json'] or '[]')
+            changed=False
+            for ing in ingredients:
+                if str(ing.get('name','')).strip().lower()=='potimarron' and str(ing.get('quantity','')).strip()=='800' and str(ing.get('unit','')).strip().lower()=='g':
+                    ing['quantity']='1'; ing['unit']=''; changed=True
+            if changed:
+                c.execute('UPDATE recipes SET ingredients_json=?,updated_at=? WHERE id=?',
+                          (json.dumps(ingredients,ensure_ascii=False),migration_ts,demo['id']))
+        except Exception:
+            pass
     c.commit()
 
 
