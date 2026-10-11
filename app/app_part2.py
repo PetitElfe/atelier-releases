@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.4.2'
+    server_version = 'AtelierLocal/0.4.3'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -189,6 +189,92 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                 c.commit(); return self._json({'ok':True})
+
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='postpone-instance':
+                try:
+                    eid=int(parts[2])
+                    instance_date=(body.get('instance_date') or '').strip()
+                    new_date=(body.get('new_date') or '').strip()
+                    new_time=(body.get('new_time') or '').strip()
+                    if not instance_date or not new_date or not new_time:
+                        return self._json({'error':'Date et heure requises pour le report.'},400)
+                    old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
+                    if not old: return self._json({'error':'Rendez-vous introuvable.'},404)
+
+                    existing=c.execute('SELECT * FROM event_instance_actions WHERE event_id=? AND instance_date=?',(eid,instance_date)).fetchone()
+                    moved_event_id=existing['moved_event_id'] if existing and existing['action']=='postponed' else None
+
+                    new_end=None
+                    if old['start_time'] and old['end_time']:
+                        try:
+                            sh,sm=map(int,old['start_time'].split(':')); eh,em=map(int,old['end_time'].split(':'))
+                            duration=(eh*60+em)-(sh*60+sm)
+                            if duration<0: duration+=24*60
+                            nh,nm=map(int,new_time.split(':'))
+                            end_minutes=(nh*60+nm+duration)%(24*60)
+                            new_end=f'{end_minutes//60:02d}:{end_minutes%60:02d}'
+                        except Exception:
+                            new_end=None
+
+                    if moved_event_id:
+                        moved=c.execute('SELECT id FROM events WHERE id=?',(moved_event_id,)).fetchone()
+                        if moved:
+                            c.execute('''UPDATE events SET event_date=?,start_time=?,end_time=?,updated_at=? WHERE id=?''',
+                                      (new_date,new_time,new_end,ts,moved_event_id))
+                        else:
+                            moved_event_id=None
+
+                    if not moved_event_id:
+                        vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['location'],old['notes'],
+                              old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
+                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                        moved_event_id=cur.lastrowid
+
+                    if old['recurrence']=='none':
+                        try:
+                            old_dt=datetime.fromisoformat(f"{instance_date}T{old['start_time'] or '00:00'}")
+                            new_dt=datetime.fromisoformat(f"{new_date}T{new_time}")
+                            delta=new_dt-old_dt
+                            rems=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
+                            for rem in rems:
+                                shifted=(datetime.fromisoformat(rem['remind_at'])+delta).replace(microsecond=0).isoformat()
+                                snoozed=None
+                                if rem['snoozed_until']:
+                                    snoozed=(datetime.fromisoformat(rem['snoozed_until'])+delta).replace(microsecond=0).isoformat()
+                                c.execute('UPDATE reminders SET entity_id=?,remind_at=?,snoozed_until=? WHERE id=?',
+                                          (moved_event_id,shifted,snoozed,rem['id']))
+                        except Exception as reminder_error:
+                            print('[Atelier] Report du rappel ignoré:', reminder_error)
+
+                    c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                    c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
+                                 VALUES(?,?,?,?,?)
+                                 ON CONFLICT(event_id,instance_date) DO UPDATE SET action='postponed',moved_event_id=excluded.moved_event_id,action_at=excluded.action_at''',
+                              (eid,instance_date,'postponed',moved_event_id,ts))
+                    c.commit()
+                    return self._json({'ok':True,'moved_event_id':moved_event_id,'new_date':new_date,'new_time':new_time})
+                except Exception as ex:
+                    print('[Atelier] Erreur report rendez-vous:', repr(ex))
+                    return self._json({'error':'Le report a échoué côté Atelier.','detail':str(ex)},500)
+
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='cancel-instance':
+                try:
+                    eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
+                    if not instance_date: return self._json({'error':'Date du rendez-vous requise.'},400)
+                    old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
+                    if not old: return self._json({'error':'Rendez-vous introuvable.'},404)
+                    c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                    c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
+                                 VALUES(?,?, 'cancelled', NULL, ?)
+                                 ON CONFLICT(event_id,instance_date) DO UPDATE SET action='cancelled',moved_event_id=NULL,action_at=excluded.action_at''',
+                              (eid,instance_date,ts))
+                    if old['recurrence']=='none':
+                        c.execute("UPDATE reminders SET status='done' WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
+                    c.commit(); return self._json({'ok':True})
+                except Exception as ex:
+                    print('[Atelier] Erreur annulation rendez-vous:', repr(ex))
+                    return self._json({'error':"L’annulation a échoué côté Atelier.",'detail':str(ex)},500)
 
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='instance-action':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip(); action=(body.get('action') or '').strip()
