@@ -1,18 +1,15 @@
-# L’Atelier 0.5.2
+# L’Atelier 0.5.3
 
-Corrections du semainier :
-- lignes horaires nettement plus hautes ;
-- heures agrandies et plus lisibles ;
-- colonnes de jours moins étalées ;
-- défilement vertical interne avec en-tête collant.
+Corrections après test de la bibliothèque Cuisine :
+- scrollbar du semainier et des zones défilantes harmonisée avec le thème sombre ;
+- les livres de recettes (sauf « À classer ») peuvent être renommés et supprimés ;
+- supprimer un livre ne supprime pas ses recettes : elles sont déplacées dans « À classer » ;
+- une recette peut être archivée depuis la bibliothèque ;
+- quand la bibliothèque est vide, un bouton crée une « Potiflette — recette de test » pour vérifier la recherche, les portions, les idées de repas et le carnet.
 
-Cuisine devient la première vraie bibliothèque d’objectif :
-- livres de recettes « À classer », « Salé », « Sucré » et « Sauces » ;
-- création de livres personnels ;
-- recherche de recettes ;
-- création et modification des recettes depuis la bibliothèque uniquement ;
-- les idées de repas sont maintenant une sélection de recettes existantes, avec recherche rapide ;
-- cliquer sur une idée de repas ouvre la page du carnet de cette recette ;
-- import d’une recette par copier-coller (par exemple depuis Marmiton), avec pré-rangement automatique du titre, des portions, des ingrédients et des étapes avant validation manuelle.
-
-Les anciennes recettes/idées enregistrées avec les versions précédentes sont migrées automatiquement vers la bibliothèque « À classer » et restent sélectionnées comme idées de repas.
+Import de recettes :
+- le bouton devient « Importer une recette » ;
+- il accepte soit le texte copié, soit directement une URL http/https ;
+- pour une URL, L’Atelier cherche les données structurées Recipe de la page et préremplit le titre, les portions, les ingrédients, les étapes, la description et l’image quand elles sont disponibles ;
+- aucune recette importée n’est enregistrée sans passer par l’éditeur de vérification ;
+- si le site ne fournit pas de recette structurée ou bloque la lecture, le copier-coller manuel reste disponible.

@@ -346,3 +346,19 @@ button:disabled{opacity:.55;cursor:wait}
   .recipe-library-sidebar{position:static}
   .recipe-book-shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* 0.5.3 — scrollbars sombres, gestion des livres */
+*{scrollbar-width:thin;scrollbar-color:#6b5438 #171411}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:#171411}
+*::-webkit-scrollbar-thumb{background:#6b5438;border:2px solid #171411;border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:#8c704d}
+*::-webkit-scrollbar-corner{background:#171411}
+.recipe-book-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:stretch}
+.recipe-book-row .recipe-book-button{min-width:0}
+.recipe-book-actions{display:flex;gap:3px;align-items:center}
+.recipe-book-actions button{width:30px;padding:0;display:grid;place-items:center}
+.recipe-book-actions .delete:hover{border-color:#a65a52;color:#cf8177}
+.library-test-recipe{margin-top:12px}
+.recipe-library-actions .archive:hover{border-color:#a65a52;color:#cf8177}

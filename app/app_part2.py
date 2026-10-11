@@ -145,6 +145,14 @@ class Handler(BaseHTTPRequestHandler):
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
+        if p == '/api/recipe-import-url':
+            try:
+                return self._json(import_recipe_from_url(body.get('url','')))
+            except ValueError as exc:
+                return self._json({'error':str(exc)},400)
+            except Exception as exc:
+                print('[Atelier] Import recette URL:', exc)
+                return self._json({'error':"Impossible de lire cette page. Essaie le copier-coller du texte."},502)
         with conn() as c:
             if p == '/api/events':
                 vals = (
@@ -227,6 +235,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='recipe-books':
+                bid=int(parts[2]); book=c.execute('SELECT * FROM recipe_books WHERE id=?',(bid,)).fetchone()
+                if not book: return self._json({'error':'Livre introuvable.'},404)
+                if book['name'].lower()=='à classer':
+                    return self._json({'error':'Le livre « À classer » sert de rangement de secours et ne peut pas être renommé.'},400)
+                name=(body.get('name') or '').strip()
+                if not name: return self._json({'error':'Le nom du livre est requis.'},400)
+                try:
+                    c.execute('UPDATE recipe_books SET name=? WHERE id=?',(name,bid))
+                    c.commit(); return self._json({'ok':True})
+                except sqlite3.IntegrityError:
+                    return self._json({'error':'Un livre porte déjà ce nom.'},409)
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
                 if not instance_date: return self._json({'error':'instance_date required'},400)
@@ -473,4 +493,15 @@ class Handler(BaseHTTPRequestHandler):
                 iid=int(parts[2])
                 c.execute('DELETE FROM meal_idea_links WHERE id=?',(iid,))
                 c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='recipe-books':
+                bid=int(parts[2]); book=c.execute('SELECT * FROM recipe_books WHERE id=?',(bid,)).fetchone()
+                if not book: return self._json({'error':'Livre introuvable.'},404)
+                if book['name'].lower()=='à classer':
+                    return self._json({'error':'Le livre « À classer » ne peut pas être supprimé.'},400)
+                fallback=c.execute("SELECT id FROM recipe_books WHERE name='À classer'").fetchone()
+                if not fallback: return self._json({'error':'Livre de secours introuvable.'},500)
+                moved=c.execute('SELECT COUNT(*) AS n FROM recipes WHERE book_id=? AND archived=0',(bid,)).fetchone()['n']
+                c.execute('UPDATE recipes SET book_id=?,updated_at=? WHERE book_id=?',(fallback['id'],now_iso(),bid))
+                c.execute('DELETE FROM recipe_books WHERE id=?',(bid,))
+                c.commit(); return self._json({'ok':True,'moved_recipes':moved})
         return self._json({'error':'not found'},404)
