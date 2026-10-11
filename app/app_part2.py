@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.4.4'
+    server_version = 'AtelierLocal/0.5.0'
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -41,11 +41,11 @@ class Handler(BaseHTTPRequestHandler):
             version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
             return self._json({'version': version})
         if p == '/api/shutdown':
-            self._json({'ok':True,'version':'0.4.4'})
+            self._json({'ok':True,'version':'0.5.0'})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
         if p == '/api/runtime-version':
-            return self._json({'version':'0.4.4'})
+            return self._json({'version':'0.5.0'})
         with conn() as c:
             if p == '/api/events':
                 start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
