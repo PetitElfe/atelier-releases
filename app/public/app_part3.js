@@ -69,15 +69,26 @@ function openPostponeEventModal(e){
   openModal(`<h2>Reporter le rendez-vous</h2><form id="postponeEventForm" class="form-grid">
     <div class="field"><label>Nouvelle date</label><input id="postponeEventDate" type="date" required value="${esc(date)}"></div>
     <div class="field"><label>Nouvelle heure</label><input id="postponeEventTime" type="time" required value="${esc(time)}"></div>
-    <div class="form-actions field full"><button type="button" id="cancelPostponeEvent">Annuler</button><button class="primary">Reporter</button></div>
+    <div id="postponeEventError" class="form-error field full hidden"></div>
+    <div class="form-actions field full"><button type="button" id="cancelPostponeEvent">Annuler</button><button id="submitPostponeEvent" class="primary" type="submit">Reporter</button></div>
   </form>`);
   $('#cancelPostponeEvent').onclick=closeModal;
   $('#postponeEventForm').onsubmit=async ev=>{
     ev.preventDefault();
+    const submit=$('#submitPostponeEvent'), error=$('#postponeEventError');
     const new_date=$('#postponeEventDate').value, new_time=$('#postponeEventTime').value;
-    await api(`/api/events/${e.id}/instance-action`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date||e.event_date,action:'postponed',new_date,new_time})});
-    closeModal();
-    await refresh();
+    error.classList.add('hidden'); error.textContent='';
+    submit.disabled=true; submit.textContent='Report…';
+    try{
+      await api(`/api/events/${e.id}/postpone-instance`,{method:'PUT',body:JSON.stringify({instance_date:e.instance_date||e.event_date,new_date,new_time})});
+      closeModal();
+      await refresh();
+    }catch(err){
+      error.textContent=err?.message||'Le report a échoué.';
+      error.classList.remove('hidden');
+      submit.disabled=false; submit.textContent='Reporter';
+      showUiError(err,'Impossible de reporter le rendez-vous');
+    }
   };
 }
 
