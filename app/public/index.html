@@ -3,19 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.4.4</title>
+  <title>L’Atelier — Alpha 0.5.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.4.4</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.5.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
       <input id="jumpDate" class="top-date-input" type="date" title="Aller à une date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
+      <button id="globalLayoutEdit" class="secondary" type="button">Modifier</button>
+      <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="todayBtn">Aujourd’hui</button>
       <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
     </div>
@@ -141,11 +143,6 @@
 
     <section id="kitchenView" class="view">
       <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Courses, aliments & repas</h2></div></div>
-      <div class="home-layout-toolbar kitchen-layout-toolbar">
-        <button id="toggleKitchenLayoutEdit" class="secondary" type="button">✥ Modifier la disposition</button>
-        <button id="resetKitchenLayout" class="secondary hidden" type="button">Réinitialiser</button>
-        <span id="kitchenLayoutHint" class="layout-edit-hint hidden">Glisse un bloc pour le déplacer · ↘ pour le redimensionner</span>
-      </div>
       <div class="kitchen-grid">
         <section id="shoppingPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Prépare la liste, coche ce que tu prends, puis valide.</p></div><div class="kitchen-head-actions"><button id="addShopping">+ Article</button><button id="validateShopping" class="primary">✓ Valider les achats</button></div></div>
