@@ -1,5 +1,5 @@
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/0.5.0'
+    server_version = 'AtelierLocal/' + atelier_version()
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -30,6 +30,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', ctype + ('; charset=utf-8' if ctype.startswith('text/') or ctype.endswith('javascript') else ''))
         self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store, max-age=0')
+        self.send_header('Pragma', 'no-cache')
         self.end_headers(); self.wfile.write(data)
 
     def do_GET(self):
@@ -37,15 +39,13 @@ class Handler(BaseHTTPRequestHandler):
         if not p.startswith('/api/'):
             return self._serve_static(p)
         if p == '/api/version':
-            version_file = ROOT / 'VERSION'
-            version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
-            return self._json({'version': version})
+            return self._json({'version': atelier_version()})
         if p == '/api/shutdown':
-            self._json({'ok':True,'version':'0.5.0'})
+            self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
         if p == '/api/runtime-version':
-            return self._json({'version':'0.5.0'})
+            return self._json({'version':atelier_version()})
         with conn() as c:
             if p == '/api/events':
                 start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
@@ -121,9 +121,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
         if p == '/api/version':
-            version_file = ROOT / 'VERSION'
-            version = version_file.read_text(encoding='utf-8').strip() if version_file.exists() else '0.0.5'
-            return self._json({'version': version})
+            return self._json({'version': atelier_version()})
+        if p == '/api/shutdown':
+            self._json({'ok':True,'version':atelier_version()})
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
         with conn() as c:
             if p == '/api/events':
                 vals = (
