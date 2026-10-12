@@ -1,9 +1,12 @@
-# L’Atelier 0.6.2
+# L’Atelier 0.6.3
 
-Correctif immédiat de la 0.6.1 :
-- rétablit tous les clics de navigation et l’initialisation de l’interface ;
-- corrige une erreur JavaScript où le sélecteur d’un seul élément était utilisé comme une liste ;
-- l’accueil est maintenant contraint à la largeur disponible à droite du menu latéral, afin que le mini-calendrier et les objets du bureau ne partent plus hors écran ;
-- conserve les rappels indépendants et le menu latéral introduits en 0.6.1.
+Correction visuelle ciblée :
+- retour de l’accueil, de l’en-tête et de toutes les dimensions à la disposition 0.6.0 ;
+- seuls les six onglets de navigation quittent leur barre horizontale ;
+- ils sont placés dans un tiroir à droite qui se rabat complètement ;
+- lorsqu’il est masqué, seule la petite flèche reste visible ; la flèche se retourne pour le rouvrir ;
+- le tiroir se superpose à l’interface au lieu de la pousser ou de redimensionner l’accueil ;
+- les rappels indépendants restent disponibles depuis la page Rappels ;
+- les correctifs de fiabilité et d’enregistrement des rendez-vous sont conservés.
 
-Aucune donnée utilisateur n’est modifiée par ce correctif.
+Aucune donnée utilisateur n’est modifiée.
