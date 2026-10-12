@@ -128,7 +128,7 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"'):
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="objectivesView"', 'id="objectiveMap"', 'id="objectiveInspector"', 'id="addObjectiveNode"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
     if 'id="todayBtn"' in index:
@@ -153,6 +153,13 @@ def check_frontend_contract() -> None:
         fail("Le réglage du format de date est absent.")
     if "atelierNotificationPersistent" not in js:
         fail("Le réglage de persistance des notifications est absent.")
+    js2 = (APP / "public" / "app_part2.js").read_text(encoding="utf-8")
+    if "function renderObjectives()" not in js2 or "function openObjectiveNodeModal" not in js2:
+        fail("L’éditeur de carte des objectifs est absent.")
+    if "objectiveSelectOptions" not in js2 or "objective_node_id" not in js:
+        fail("La liaison des tâches aux objectifs est absente.")
+    if "openObjectiveLibrarySectionModal" not in js2 or "openObjectiveLibraryEntryModal" not in js2:
+        fail("L’éditeur de bibliothèque des objectifs est absent.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
     if binding not in js:
         fail("Branchement des onglets de navigation absent.")
@@ -206,6 +213,90 @@ def check_server(version: str) -> None:
             if status != 200 or not any(r.get("id") == reminder["id"] for r in due):
                 fail("Un rappel arrivé à échéance n'est pas renvoyé par /api/reminders/due.")
 
+            status, domain = request("POST", "/api/objective-nodes", {
+                "node_type": "domain",
+                "title": "Apprentissage",
+                "description": "Domaine racine",
+                "progress": 10,
+            })
+            if status != 201 or not domain.get("id"):
+                fail("Impossible de créer un domaine d’objectif.")
+
+            status, objective = request("POST", "/api/objective-nodes", {
+                "parent_id": domain["id"],
+                "node_type": "objective",
+                "title": "Anglais",
+                "description": "Objectif de test",
+                "progress": 25,
+            })
+            if status != 201 or not objective.get("id"):
+                fail("Impossible de créer un objectif enfant.")
+
+            status, step = request("POST", "/api/objective-nodes", {
+                "parent_id": objective["id"],
+                "node_type": "step",
+                "title": "Articles",
+                "progress": 50,
+            })
+            if status != 201 or not step.get("id"):
+                fail("Impossible de créer une sous-étape.")
+
+            status, nodes = request("GET", "/api/objective-nodes")
+            obj_row = next((x for x in nodes if x.get("id") == objective["id"]), None)
+            if status != 200 or not obj_row or obj_row.get("parent_id") != domain["id"]:
+                fail("La hiérarchie des objectifs n’est pas relue correctement.")
+
+            status, linked_task = request("POST", "/api/tasks", {
+                "title": "Réviser les articles",
+                "objective_node_id": objective["id"],
+                "due_date": "2027-03-16",
+            })
+            if status != 201 or not linked_task.get("id"):
+                fail("Impossible de créer une tâche liée à un objectif.")
+            status, tasks = request("GET", "/api/tasks")
+            task_row = next((x for x in tasks if x.get("id") == linked_task["id"]), None)
+            if not task_row or task_row.get("objective_node_id") != objective["id"] or task_row.get("objective_title") != "Anglais":
+                fail("La tâche n’est pas reliée correctement à l’objectif.")
+
+            status, section = request("POST", "/api/objective-library-sections", {
+                "node_id": objective["id"],
+                "title": "Grammaire",
+                "section_type": "courses",
+            })
+            if status != 201 or not section.get("id"):
+                fail("Impossible de créer une section de bibliothèque.")
+
+            status, entry = request("POST", "/api/objective-library-entries", {
+                "section_id": section["id"],
+                "title": "Articles anglais",
+                "url": "https://example.com/articles",
+                "notes": "Référence de test",
+            })
+            if status != 201 or not entry.get("id"):
+                fail("Impossible d’ajouter une ressource à la bibliothèque.")
+
+            status, library = request("GET", f"/api/objective-library?node_id={objective['id']}")
+            if status != 200 or not library.get("sections") or library["sections"][0].get("entries", [{}])[0].get("title") != "Articles anglais":
+                fail("La bibliothèque personnalisée n’est pas relue correctement.")
+
+            status, _ = request("PUT", f"/api/objective-nodes/{objective['id']}", {
+                "title": "Anglais avancé",
+                "progress": 60,
+            })
+            if status != 200:
+                fail("Impossible de modifier un objectif.")
+
+            status, _ = request("DELETE", f"/api/objective-nodes/{objective['id']}")
+            if status != 200:
+                fail("Impossible de supprimer un objectif et ses sous-éléments.")
+            status, nodes_after = request("GET", "/api/objective-nodes")
+            if any(x.get("id") in (objective["id"], step["id"]) for x in nodes_after):
+                fail("La suppression en cascade de la carte des objectifs a échoué.")
+            status, tasks_after_objective_delete = request("GET", "/api/tasks")
+            detached = next((x for x in tasks_after_objective_delete if x.get("id") == linked_task["id"]), None)
+            if not detached or detached.get("objective_node_id") is not None:
+                fail("Une tâche doit être détachée quand son objectif est supprimé.")
+
             status, linked_event = request("POST", "/api/events", {
                 "title": "RDV avec rappel",
                 "event_date": "2027-03-20",
@@ -243,7 +334,7 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 2:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 3:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             c.execute("PRAGMA user_version = 0")
             c.commit()
