@@ -120,6 +120,21 @@ def check_python_syntax() -> None:
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
 
 
+
+def check_frontend_contract() -> None:
+    index = (APP / "public" / "index.html").read_text(encoding="utf-8")
+    js = (APP / "public" / "app_part3.js").read_text(encoding="utf-8")
+    css = (APP / "public" / "styles.css").read_text(encoding="utf-8")
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="addStandaloneReminder"'):
+        if required not in index:
+            fail(f"Élément frontend obligatoire absent : {required}")
+    if "$('.tabs button[data-view]').forEach" in js:
+        fail("Sélecteur de navigation invalide détecté.")
+    if "$('.tabs button[data-view]').forEach" not in js:
+        fail("Branchement des onglets de navigation absent.")
+    if "main{margin-left:" in css or ".topbar{margin-left:" in css:
+        fail("Le tiroir de navigation ne doit pas déplacer l'accueil ou l'en-tête.")
+
 def check_server(version: str) -> None:
     with tempfile.TemporaryDirectory(prefix="atelier-ci-") as td:
         data = Path(td) / "data"
@@ -181,6 +196,7 @@ def check_server(version: str) -> None:
 
 if __name__ == "__main__":
     check_python_syntax()
+    check_frontend_contract()
     version = check_manifest()
     check_server(version)
     print(f"OK — L'Atelier {version} passe les contrôles de release.")
