@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.6.3</title>
+  <title>L’Atelier — Alpha 0.6.4</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.6.3</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.6.4</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
-      <input id="jumpDate" class="top-date-input" type="date" title="Aller à une date" aria-label="Aller à une date" />
+      <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
+      <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
-      <button id="todayBtn">Aujourd’hui</button>
+      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres — bientôt" aria-label="Paramètres">⚙</button>
       <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
@@ -24,6 +25,7 @@
   </header>
 
   <nav id="sideNav" class="tabs side-nav side-nav-right" aria-label="Navigation principale">
+    <div id="sideNavDragHandle" class="side-nav-drag-handle" title="Glisser pour déplacer le menu" aria-label="Glisser pour déplacer le menu">⋮⋮</div>
     <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Masquer le menu" title="Masquer le menu">
       <span class="side-nav-arrow">›</span>
     </button>
