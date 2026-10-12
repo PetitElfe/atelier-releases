@@ -13,7 +13,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -147,6 +147,41 @@ CREATE TABLE IF NOT EXISTS meal_idea_links (
   created_at TEXT NOT NULL,
   FOREIGN KEY(recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS objective_nodes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  parent_id INTEGER,
+  node_type TEXT NOT NULL CHECK(node_type IN ('domain','objective','milestone','step')),
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','paused','done')),
+  progress INTEGER NOT NULL DEFAULT 0,
+  order_index INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(parent_id) REFERENCES objective_nodes(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS objective_library_sections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  node_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  section_type TEXT NOT NULL DEFAULT 'resources',
+  order_index INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(node_id) REFERENCES objective_nodes(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS objective_library_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  section_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  done INTEGER NOT NULL DEFAULT 0,
+  order_index INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(section_id) REFERENCES objective_library_sections(id) ON DELETE CASCADE
+);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
@@ -156,6 +191,9 @@ CREATE INDEX IF NOT EXISTS idx_event_completions_date ON event_completions(insta
 CREATE INDEX IF NOT EXISTS idx_event_instance_actions_date ON event_instance_actions(instance_date);
 CREATE INDEX IF NOT EXISTS idx_recipes_book ON recipes(book_id, archived);
 CREATE INDEX IF NOT EXISTS idx_meal_idea_links_recipe ON meal_idea_links(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_objective_parent ON objective_nodes(parent_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_objective_library_node ON objective_library_sections(node_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_objective_library_section ON objective_library_entries(section_id, order_index);
 
 '''
 
@@ -222,6 +260,10 @@ with conn() as c:
         ALTER TABLE reminders__new RENAME TO reminders;
         CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
         """)
+    task_cols = {r['name'] for r in c.execute('PRAGMA table_info(tasks)').fetchall()}
+    if 'objective_node_id' not in task_cols:
+        c.execute("ALTER TABLE tasks ADD COLUMN objective_node_id INTEGER")
+
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
