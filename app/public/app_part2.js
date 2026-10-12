@@ -1027,7 +1027,7 @@ function renderLibrary(){
         </button>
         <button class="library-domain-configure" type="button" title="Configurer ${esc(domain.title)}">✎</button>`;
       card.querySelector('.library-domain-open').onclick=()=>openLibraryDomain(domain.id);
-      card.querySelector('.library-domain-configure').onclick=()=>openLibraryDomainConfigModal(domain);
+      card.querySelector('.library-domain-configure').onclick=()=>openLibraryDomainConfigFromHub(domain);
       shelf.appendChild(card);
     });
   }
@@ -1093,7 +1093,7 @@ function renderLibraryProgress(domain){
   const doneTasks=tasks.filter(t=>t.completed).length;
   const notebooks=libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections.length:0;
   const progress=libraryProgressForDomain(domain);
-  root.innerHTML=`<div class="library-progress-ring" style="--library-progress:${progress}"><div><strong>${progress}%</strong><span>global</span></div></div>
+  root.innerHTML=`<div class="library-progress-ring" style="--library-progress:${progress}%"><div><strong>${progress}%</strong><span>global</span></div></div>
     <div class="library-progress-stats">
       <div><strong>${doneObjectives}/${objectives.length}</strong><span>objectifs</span></div>
       <div><strong>${doneTasks}/${tasks.length}</strong><span>tâches</span></div>
@@ -1200,6 +1200,16 @@ function openLibraryDomainCreateModal(){
     }
     closeModal();await refresh();showView('library');openLibraryDomain(domainId);
   };
+}
+
+async function openLibraryDomainConfigFromHub(domain){
+  try{
+    const data=await api(`/api/objective-library?node_id=${encodeURIComponent(domain.id)}`);
+    libraryNotebookState={domainId:Number(domain.id),sections:data.sections||[],loading:false};
+  }catch(_){
+    libraryNotebookState={domainId:Number(domain.id),sections:[],loading:false};
+  }
+  openLibraryDomainConfigModal(domain);
 }
 
 function openLibraryDomainConfigModal(domain){
