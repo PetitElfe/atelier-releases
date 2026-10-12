@@ -605,3 +605,33 @@ button:disabled{opacity:.55;cursor:wait}
 .side-nav-drag-handle:hover{color:var(--gold)}
 .side-nav.is-dragging .side-nav-drag-handle{cursor:grabbing;color:var(--gold)}
 .side-nav.is-collapsed .side-nav-drag-handle{visibility:hidden}
+
+
+/* 0.7.0 — Paramètres */
+.settings-view{padding:8px 0 28px}
+.settings-shell{width:min(980px,100%);margin:0 auto}
+.settings-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:4px 0 18px}
+.settings-heading h2{font-size:30px;margin:3px 0 4px}
+.settings-heading p{margin:0}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.settings-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;display:flex;flex-direction:column;gap:13px;min-width:0}
+.settings-card-muted{opacity:.72}
+.settings-card-title{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start}
+.settings-card-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid #5a4c3d;border-radius:9px;color:var(--gold);background:#211c18}
+.settings-card h3{margin:0 0 3px;font-size:19px}
+.settings-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.45}
+.settings-field{display:flex;flex-direction:column;gap:6px}
+.settings-field>span,.settings-status-row>span{font-size:12px;color:var(--muted)}
+.settings-preview{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:1px solid #41382f;border-radius:9px;background:#171411}
+.settings-preview span{font-size:11px;color:var(--muted)}
+.settings-preview strong{font-weight:600}
+.settings-status-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.settings-status-row strong{color:var(--gold);font-size:12px}
+.settings-toggle{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:11px;border:1px solid #41382f;border-radius:9px;background:#191613}
+.settings-toggle input{width:18px;height:18px;margin-top:2px}
+.settings-toggle span{display:flex;flex-direction:column;gap:3px}
+.settings-toggle strong{font-size:13px}
+.settings-toggle small,.settings-future small{font-size:11px;color:var(--muted);line-height:1.4}
+.settings-future{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #3c332b;color:#aa9986}
+.settings-future span{font-size:13px}
+@media(max-width:760px){.settings-grid{grid-template-columns:1fr}.settings-heading{align-items:center}.settings-heading h2{font-size:24px}}
