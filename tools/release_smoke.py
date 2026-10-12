@@ -128,7 +128,7 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"'):
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"', 'id="libraryNotebookPageList"', 'id="addLibraryPageSmall"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
     if 'id="todayBtn"' in index:
@@ -162,6 +162,14 @@ def check_frontend_contract() -> None:
         fail("L’éditeur de carnets et de pages est absent.")
     if "libraryProgressForDomain" not in js2 or "libraryProgressPanel" not in index:
         fail("Le module d’avancée de la Bibliothèque est absent.")
+    if "libraryPageBody" not in js2 or "scheduleLibraryPageSave" not in js2 or "saveLibraryPageInline" not in js2:
+        fail("L’écriture directe et l’enregistrement automatique des pages sont absents.")
+    if "makeInternalLibraryToken" not in js2 or "openLibraryInternalLinkModal" not in js2 or "libraryBacklinks" not in js2:
+        fail("Les liens typés entre pages sont absents.")
+    if "makeExternalLibraryToken" not in js2 or "openLibraryWebLinkModal" not in js2:
+        fail("Les liens web avec texte personnalisé sont absents.")
+    if "Objectif principal" not in js2 or "Sous-objectifs / niveaux" not in js2:
+        fail("Le constructeur Domaine → objectif → niveaux est absent.")
     if 'data-view="library"' not in index or '>Bibliothèque<' not in index:
         fail("La navigation principale ne contient pas Bibliothèque.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
