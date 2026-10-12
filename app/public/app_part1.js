@@ -105,7 +105,7 @@ function renderHome(){
   if(!activeObjectives.length){
     const empty=document.createElement('button');
     empty.type='button';empty.className='objective-note objective-open';
-    empty.innerHTML='<div class="objective-name">Créer tes objectifs</div><div class="objective-context">Construis d’abord ta carte : domaines, objectifs, étapes et sous-étapes.</div><ul class="objective-actions"><li>Ouvrir la carte des objectifs →</li></ul>';
+    empty.innerHTML='<div class="objective-name">Créer ta bibliothèque</div><div class="objective-context">Crée un domaine puis organise ses carnets, ses sous-objectifs et ses tâches.</div><ul class="objective-actions"><li>Ouvrir la bibliothèque →</li></ul>';
     empty.addEventListener('click',()=>showView('library'));
     objectiveRoot.appendChild(empty);
   }else{
