@@ -1,15 +1,19 @@
-# L’Atelier 0.7.0
+# L’Atelier 0.8.0
 
-Bloc Paramètres & notifications :
-- l’icône ⚙ ouvre maintenant une vraie page Paramètres ;
-- le format de date dans l’en-tête est configurable entre « 12 octobre 2026 », « dimanche 12 octobre 2026 » et « 12/10/2026 » ;
-- le choix est enregistré localement et appliqué immédiatement ;
-- les notifications de rappel demandent désormais à Brave/Windows de rester affichées jusqu’à interaction grâce à `requireInteraction` ;
-- cliquer sur une notification ramène L’Atelier au premier plan et ouvre la page Rappels ;
-- les Paramètres affichent l’état de l’autorisation de notifications et permettent de la demander ;
-- la persistance des notifications peut être activée ou désactivée ;
-- la position du tiroir peut être réinitialisée depuis les Paramètres ;
-- les futurs réglages « son de rappel » et « badge sur l’icône » sont visibles comme fonctions à venir, sans être activés pour l’instant.
+Bloc Objectifs — carte complète et bibliothèques adaptables :
 
-Brave ou Windows peuvent malgré tout limiter eux-mêmes la durée d’affichage d’une notification système.
-Aucune donnée utilisateur n’est modifiée.
+- nouvel espace **Objectifs** dans le tiroir de navigation ;
+- construction libre d’une carte hiérarchique avant même l’objectif : **Domaine → Objectif → Étape → Sous-étape** ;
+- chaque élément peut être ajouté, modifié, déplacé sous un autre parent, mis en pause, terminé ou supprimé ;
+- avancement de 0 à 100 % visible directement dans la carte ;
+- suppression en cascade des sous-éléments, sans supprimer les tâches : elles sont simplement détachées ;
+- les tâches peuvent maintenant être reliées à n’importe quel élément de la carte ;
+- depuis la fiche d’un objectif/étape, création rapide d’une tâche liée ;
+- l’accueil « Que faire maintenant ? » n’utilise plus une liste fixe : il affiche les vrais objectifs actifs ;
+- chaque élément dispose de sa propre **bibliothèque personnalisable** ;
+- éditeur de sections de bibliothèque avec types : ressources, cours, exercices, références, inspirations, notes ou personnalisé ;
+- chaque section accepte des entrées avec titre, lien, notes et état traité/non traité ;
+- aucune structure de bibliothèque n’est imposée : Anglais, Art, JDR, LoL, etc. peuvent avoir des besoins totalement différents.
+
+La base de données passe au schéma 3 ; une sauvegarde automatique est créée avant migration.
+Aucune donnée existante n’est supprimée.

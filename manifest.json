@@ -1,15 +1,15 @@
 {
-  "version": "0.7.0",
+  "version": "0.8.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "5ab3a8b667568a59b8dff9c30584ded3f5e7e3262900665f41c4962ccdcc81d9"
+      "sha256": "fd064e01f2a6b58a88edf5aa8cfdc0935ab6b6abc04367d7833f8181cb68e785"
     },
     {
       "path": "VERSION",
-      "sha256": "967d9afb101346667166f2e76e81910bc190488d7d41d50ca0072e9d92f00e32"
+      "sha256": "a66780da23103beaf12432b418508966b31a2a3a787f9468a5b6cdaa8667c1ef"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "de3c3e4adc9211ecaaa47d2b2467e48890964067369be9325c0f6dddab862694"
+      "sha256": "12c3b97b89fcf34460c8b4f4cb447f34f92e198c15508e16c508ff0226b0041d"
     },
     {
       "path": "app_part2.py",
-      "sha256": "c85cb87ac5e51e29b8b5f60098245cdd516083ed7919d40d25436f5baff87f61"
+      "sha256": "51fd4ca4c0c92d96407683b0b165950feee95aaa72f5f26034e6a92e8ae5f189"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "507a27f25b488acc07a8c5004737bb394f82035655bf478d29cddbeac9e6b3dc"
+      "sha256": "cdbc2c686bcd4b2fa601b06f40ff6106467146ed74847b389d4faf6251567458"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "3512b45b403de50412d665699105d0528c90868a937094cd03543d0d7ba120df"
+      "sha256": "7885475ba6f6abfc6e97e7182f8a817917b3882f8798477f363aa9f47aa62df3"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "444445475620a5e5eb3f7333b29bece30268e5840fff08e26a421ecb3ccb54e1"
+      "sha256": "ce7f6105cf316aa094f1ae2dc7df1014f958015e543dc0e8fc72a60aa8387f5e"
     },
     {
       "path": "public/index.html",
-      "sha256": "1f5d2daa4874e5bd49be1065e7d9f862f03da41bc89c4473548d74cd10d9a343"
+      "sha256": "8d9421c75235feea754d2318f0971df3e8cd5c3ee88192900e588f53646ca6fa"
     },
     {
       "path": "public/styles.css",
-      "sha256": "93cec4e3272292b9e2b5a6ed98a989f3acf2d8bdad61b976c649e48a2d7f5115"
+      "sha256": "756120042eae22f0d5acad99a50c87d62fa37793c49f09e769dcb2f20f757e2d"
     }
   ],
-  "notes": "0.7.0 : première page Paramètres, formats de date configurables, notifications persistantes et cliquables vers L’Atelier, état des permissions et réinitialisation du tiroir."
+  "notes": "0.8.0 : grande carte hiérarchique des objectifs, étapes et sous-étapes, tâches liées et bibliothèques personnalisables par objectif."
 }

@@ -45,7 +45,7 @@ function renderTasks(){
   const sorted=[...state.tasks].sort((a,b)=>a.completed-b.completed || b.important-a.important || (a.order_index-b.order_index));
   sorted.forEach(t=>{
     const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'');
-    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(t.due_date):'Sans date'}${t.due_time?' · '+fmtTime(t.due_time):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
+    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(t.due_date):'Sans date'}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
     row.querySelector('input').addEventListener('change',async e=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({completed:e.target.checked})});await refresh()});
     row.querySelector('.edit').addEventListener('click',()=>openTaskModal(t));
     row.querySelector('.archive').addEventListener('click',async()=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
@@ -895,3 +895,297 @@ function openRecipePage(item){
   };
 }
 
+
+
+/* 0.8.0 — Objectifs : carte hiérarchique, étapes, tâches liées et bibliothèque configurable */
+const OBJECTIVE_TYPE_LABELS={domain:'Domaine',objective:'Objectif',milestone:'Étape',step:'Sous-étape'};
+const OBJECTIVE_TYPE_ICONS={domain:'◈',objective:'◎',milestone:'◇',step:'·'};
+const OBJECTIVE_STATUS_LABELS={active:'En cours',paused:'En pause',done:'Terminé'};
+const OBJECTIVE_LIBRARY_TYPES={
+  resources:'Ressources',
+  courses:'Cours',
+  exercises:'Exercices',
+  references:'Références',
+  inspiration:'Inspirations',
+  notes:'Notes',
+  custom:'Personnalisé'
+};
+let objectiveSelectedId=null;
+let objectiveLibraryState={nodeId:null,sections:[],loading:false};
+
+function objectiveNodeById(id){return state.objectiveNodes.find(x=>Number(x.id)===Number(id))||null}
+function objectiveChildren(parentId){
+  return state.objectiveNodes
+    .filter(x=>(x.parent_id==null?null:Number(x.parent_id))===(parentId==null?null:Number(parentId)))
+    .sort((a,b)=>(Number(a.order_index)||0)-(Number(b.order_index)||0)||Number(a.id)-Number(b.id));
+}
+function objectiveDescendantIds(id){
+  const out=new Set();
+  const walk=pid=>objectiveChildren(pid).forEach(ch=>{out.add(Number(ch.id));walk(ch.id)});
+  walk(id);return out;
+}
+function objectiveDepth(id){
+  let depth=0,node=objectiveNodeById(id),guard=0;
+  while(node?.parent_id&&guard++<50){depth++;node=objectiveNodeById(node.parent_id)}
+  return depth;
+}
+function objectiveTypeLabel(type){return OBJECTIVE_TYPE_LABELS[type]||'Élément'}
+function objectiveParentOptions(selectedId=null,excludeId=null){
+  const excluded=excludeId?objectiveDescendantIds(excludeId):new Set();
+  if(excludeId)excluded.add(Number(excludeId));
+  const rows=['<option value="">— Aucun parent / racine —</option>'];
+  const walk=(parentId,depth)=>{
+    objectiveChildren(parentId).forEach(node=>{
+      if(excluded.has(Number(node.id)))return;
+      const selected=String(node.id)===String(selectedId)?' selected':'';
+      rows.push(`<option value="${node.id}"${selected}>${esc('— '.repeat(depth)+objectiveTypeLabel(node.node_type)+' · '+node.title)}</option>`);
+      walk(node.id,depth+1);
+    });
+  };
+  walk(null,0);
+  return rows.join('');
+}
+function objectiveSelectOptions(selectedId=null){
+  const rows=['<option value="">— Aucune liaison —</option>'];
+  const walk=(parentId,depth)=>{
+    objectiveChildren(parentId).forEach(node=>{
+      const selected=String(node.id)===String(selectedId)?' selected':'';
+      rows.push(`<option value="${node.id}"${selected}>${esc('— '.repeat(depth)+objectiveTypeLabel(node.node_type)+' · '+node.title)}</option>`);
+      walk(node.id,depth+1);
+    });
+  };
+  walk(null,0);
+  return rows.join('');
+}
+
+function selectObjectiveNode(id){
+  objectiveSelectedId=id?Number(id):null;
+  objectiveLibraryState={nodeId:null,sections:[],loading:false};
+  if(state.view==='objectives')renderObjectives();
+}
+async function loadObjectiveLibrary(nodeId){
+  if(!nodeId)return;
+  objectiveLibraryState={nodeId:Number(nodeId),sections:[],loading:true};
+  renderObjectiveInspector();
+  try{
+    const data=await api(`/api/objective-library?node_id=${encodeURIComponent(nodeId)}`);
+    objectiveLibraryState={nodeId:Number(nodeId),sections:data.sections||[],loading:false};
+  }catch(err){
+    objectiveLibraryState={nodeId:Number(nodeId),sections:[],loading:false};
+    showUiError(err,'Impossible de charger la bibliothèque');
+  }
+  renderObjectiveInspector();
+}
+function objectiveNodeProgress(node){
+  const progress=Math.max(0,Math.min(100,Number(node?.progress)||0));
+  return node?.status==='done'?100:progress;
+}
+function renderObjectiveBranch(node){
+  const branch=document.createElement('div');
+  branch.className='objective-branch';
+  const card=document.createElement('button');
+  card.type='button';
+  card.className='objective-map-node objective-map-'+node.node_type+(Number(objectiveSelectedId)===Number(node.id)?' is-selected':'')+(node.status==='done'?' is-done':'');
+  const progress=objectiveNodeProgress(node);
+  card.innerHTML=`<span class="objective-map-type">${OBJECTIVE_TYPE_ICONS[node.node_type]||'·'} ${esc(objectiveTypeLabel(node.node_type))}</span>
+    <strong>${esc(node.title)}</strong>
+    <span class="objective-map-meta">${esc(OBJECTIVE_STATUS_LABELS[node.status]||'En cours')} · ${progress}%</span>
+    <span class="objective-map-progress"><i style="width:${progress}%"></i></span>`;
+  card.onclick=()=>selectObjectiveNode(node.id);
+  branch.appendChild(card);
+  const children=objectiveChildren(node.id);
+  if(children.length){
+    const childRoot=document.createElement('div');
+    childRoot.className='objective-map-children';
+    children.forEach(ch=>childRoot.appendChild(renderObjectiveBranch(ch)));
+    branch.appendChild(childRoot);
+  }
+  return branch;
+}
+
+function renderObjectives(){
+  const map=$('#objectiveMap');
+  if(!map)return;
+  const roots=objectiveChildren(null);
+  if(objectiveSelectedId&&!objectiveNodeById(objectiveSelectedId))objectiveSelectedId=null;
+  if(!objectiveSelectedId&&state.objectiveNodes.length)objectiveSelectedId=Number((roots[0]||state.objectiveNodes[0]).id);
+  map.innerHTML='';
+  if(!state.objectiveNodes.length){
+    map.innerHTML=`<div class="objective-map-empty"><strong>Ta carte est vide.</strong><span>Commence par un domaine, puis ajoute tes objectifs, étapes et sous-étapes comme tu veux.</span><button id="objectiveEmptyAdd" class="primary" type="button">+ Créer le premier élément</button></div>`;
+    $('#objectiveEmptyAdd').onclick=()=>openObjectiveNodeModal();
+  }else{
+    roots.forEach(root=>map.appendChild(renderObjectiveBranch(root)));
+    const orphans=state.objectiveNodes.filter(x=>x.parent_id!=null&&!objectiveNodeById(x.parent_id));
+    orphans.forEach(node=>map.appendChild(renderObjectiveBranch(node)));
+  }
+  renderObjectiveInspector();
+}
+function renderObjectiveInspector(){
+  const root=$('#objectiveInspector');
+  if(!root)return;
+  const node=objectiveNodeById(objectiveSelectedId);
+  if(!node){
+    root.innerHTML='<div class="objective-inspector-empty">Sélectionne un élément de la carte pour l’éditer, lui rattacher des tâches ou construire sa bibliothèque.</div>';
+    return;
+  }
+  const tasks=state.tasks.filter(t=>Number(t.objective_node_id)===Number(node.id));
+  const parent=objectiveNodeById(node.parent_id);
+  const progress=objectiveNodeProgress(node);
+  root.innerHTML=`<div class="objective-inspector-head">
+      <div><span class="objective-kicker">${esc(objectiveTypeLabel(node.node_type))}</span><h3>${esc(node.title)}</h3></div>
+      <div class="objective-inspector-actions"><button class="objective-add-child" title="Ajouter un sous-élément">＋</button><button class="objective-edit-node" title="Modifier">✎</button><button class="objective-delete-node danger-button" title="Supprimer">×</button></div>
+    </div>
+    ${parent?`<div class="objective-parent-line">Dans <button class="objective-parent-jump" type="button">${esc(parent.title)}</button></div>`:''}
+    <p class="objective-description">${esc(node.description||'Aucune description pour le moment.')}</p>
+    <div class="objective-progress-block"><div><span>Avancement</span><strong>${progress}%</strong></div><div class="objective-progress-track"><i style="width:${progress}%"></i></div></div>
+    <div class="objective-inspector-section">
+      <div class="objective-section-head"><div><span class="objective-section-kicker">TÂCHES LIÉES</span><strong>${tasks.length}</strong></div><button id="objectiveAddTask" type="button">+ Tâche</button></div>
+      <div id="objectiveTaskList" class="objective-task-list"></div>
+    </div>
+    <div class="objective-inspector-section objective-library-panel">
+      <div class="objective-section-head"><div><span class="objective-section-kicker">BIBLIOTHÈQUE</span><strong>personnalisable</strong></div><button id="objectiveAddLibrarySection" type="button">+ Section</button></div>
+      <p class="objective-library-help">Chaque objectif peut avoir une bibliothèque différente : cours, exercices, références, notes, inspirations ou tes propres sections.</p>
+      <div id="objectiveLibrarySections" class="objective-library-sections"></div>
+    </div>`;
+
+  root.querySelector('.objective-add-child').onclick=()=>openObjectiveNodeModal(null,node.id);
+  root.querySelector('.objective-edit-node').onclick=()=>openObjectiveNodeModal(node);
+  root.querySelector('.objective-delete-node').onclick=()=>deleteObjectiveNode(node);
+  root.querySelector('.objective-parent-jump')?.addEventListener('click',()=>selectObjectiveNode(parent.id));
+  $('#objectiveAddTask').onclick=()=>openTaskModal(null,node.id);
+  $('#objectiveAddLibrarySection').onclick=()=>openObjectiveLibrarySectionModal(node.id);
+
+  const taskRoot=$('#objectiveTaskList');
+  if(!tasks.length)taskRoot.innerHTML='<div class="objective-small-empty">Aucune tâche liée.</div>';
+  tasks.forEach(t=>{
+    const row=document.createElement('div');row.className='objective-task-row'+(t.completed?' is-done':'');
+    row.innerHTML=`<button class="objective-task-check" type="button" title="${t.completed?'Rouvrir':'Terminer'}">${t.completed?'✓':'○'}</button><button class="objective-task-open" type="button"><strong>${esc(t.title)}</strong><span>${t.due_date?esc(t.due_date)+(t.due_time?' · '+fmtTime(t.due_time):''):'Sans date'}</span></button>`;
+    row.querySelector('.objective-task-check').onclick=async()=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({completed:!t.completed})});await refresh()};
+    row.querySelector('.objective-task-open').onclick=()=>openTaskModal(t);
+    taskRoot.appendChild(row);
+  });
+
+  const libRoot=$('#objectiveLibrarySections');
+  if(objectiveLibraryState.nodeId!==Number(node.id)){
+    libRoot.innerHTML='<div class="objective-small-empty">Chargement de la bibliothèque…</div>';
+    if(!objectiveLibraryState.loading)loadObjectiveLibrary(node.id);
+    return;
+  }
+  if(objectiveLibraryState.loading){
+    libRoot.innerHTML='<div class="objective-small-empty">Chargement de la bibliothèque…</div>';return;
+  }
+  if(!objectiveLibraryState.sections.length){
+    libRoot.innerHTML='<div class="objective-small-empty">Aucune section. Crée seulement celles dont cet objectif a besoin.</div>';
+  }
+  objectiveLibraryState.sections.forEach(section=>{
+    const box=document.createElement('section');box.className='objective-library-section';
+    const label=OBJECTIVE_LIBRARY_TYPES[section.section_type]||section.section_type||'Section';
+    box.innerHTML=`<div class="objective-library-section-head"><div><span>${esc(label)}</span><h4>${esc(section.title)}</h4></div><div><button class="lib-section-edit" title="Modifier">✎</button><button class="lib-section-delete" title="Supprimer">×</button></div></div><div class="objective-library-entry-list"></div><button class="lib-entry-add" type="button">+ Ajouter dans cette section</button>`;
+    box.querySelector('.lib-section-edit').onclick=()=>openObjectiveLibrarySectionModal(node.id,section);
+    box.querySelector('.lib-section-delete').onclick=()=>deleteObjectiveLibrarySection(section);
+    box.querySelector('.lib-entry-add').onclick=()=>openObjectiveLibraryEntryModal(section);
+    const entries=box.querySelector('.objective-library-entry-list');
+    if(!(section.entries||[]).length)entries.innerHTML='<div class="objective-library-entry-empty">Vide pour le moment.</div>';
+    (section.entries||[]).forEach(entry=>{
+      const row=document.createElement('div');row.className='objective-library-entry'+(entry.done?' is-done':'');
+      const titleHtml=entry.url?`<a href="${esc(entry.url)}" target="_blank" rel="noopener noreferrer">${esc(entry.title)}</a>`:`<strong>${esc(entry.title)}</strong>`;
+      row.innerHTML=`<button class="lib-entry-done" type="button" title="${entry.done?'Marquer à faire':'Marquer fait'}">${entry.done?'✓':'○'}</button><div>${titleHtml}${entry.notes?`<small>${esc(entry.notes)}</small>`:''}</div><button class="lib-entry-edit" title="Modifier">✎</button><button class="lib-entry-delete" title="Supprimer">×</button>`;
+      row.querySelector('.lib-entry-done').onclick=async()=>{await api(`/api/objective-library-entries/${entry.id}`,{method:'PUT',body:JSON.stringify({done:!entry.done})});await loadObjectiveLibrary(node.id)};
+      row.querySelector('.lib-entry-edit').onclick=()=>openObjectiveLibraryEntryModal(section,entry);
+      row.querySelector('.lib-entry-delete').onclick=()=>deleteObjectiveLibraryEntry(entry,node.id);
+      entries.appendChild(row);
+    });
+    libRoot.appendChild(box);
+  });
+}
+
+function openObjectiveNodeModal(node=null,presetParentId=null){
+  const editing=!!node;
+  const parentId=editing?node.parent_id:presetParentId;
+  openModal(`<div class="objective-node-form"><div class="section-kicker">${editing?'MODIFIER':'AJOUTER À LA CARTE'}</div><h2>${editing?'Modifier cet élément':'Nouvel élément'}</h2>
+    <form id="objectiveNodeForm" class="form-grid">
+      <div class="field"><label>Type</label><select name="node_type">
+        <option value="domain" ${(node?.node_type||(!presetParentId?'domain':''))==='domain'?'selected':''}>Domaine</option>
+        <option value="objective" ${(node?.node_type||(presetParentId?'objective':''))==='objective'?'selected':''}>Objectif</option>
+        <option value="milestone" ${node?.node_type==='milestone'?'selected':''}>Étape</option>
+        <option value="step" ${node?.node_type==='step'?'selected':''}>Sous-étape</option>
+      </select></div>
+      <div class="field"><label>Parent</label><select name="parent_id">${objectiveParentOptions(parentId,node?.id)}</select></div>
+      <div class="field full"><label>Nom</label><input name="title" required value="${esc(node?.title||'')}" placeholder="ex. Apprendre l’anglais"></div>
+      <div class="field full"><label>Description / intention</label><textarea name="description" placeholder="Pourquoi cet élément existe, ce que tu veux obtenir…">${esc(node?.description||'')}</textarea></div>
+      <div class="field"><label>État</label><select name="status"><option value="active" ${(node?.status||'active')==='active'?'selected':''}>En cours</option><option value="paused" ${node?.status==='paused'?'selected':''}>En pause</option><option value="done" ${node?.status==='done'?'selected':''}>Terminé</option></select></div>
+      <div class="field"><label>Avancement (%)</label><input name="progress" type="number" min="0" max="100" value="${objectiveNodeProgress(node||{})}"></div>
+      <div class="field-help full">La hiérarchie reste libre : tu peux construire Domaine → Objectif → Étape → Sous-étape, ou une structure différente si un projet en a besoin.</div>
+      <div id="objectiveNodeError" class="form-error field full hidden"></div>
+      <div class="form-actions field full"><button id="cancelObjectiveNode" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Créer'}</button></div>
+    </form></div>`);
+  $('#cancelObjectiveNode').onclick=closeModal;
+  $('#objectiveNodeForm').onsubmit=async e=>{
+    e.preventDefault();
+    const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
+    payload.parent_id=payload.parent_id||null;
+    payload.progress=Number(payload.progress)||0;
+    const result=await runUiAction("Impossible d’enregistrer l’objectif",()=>api(editing?`/api/objective-nodes/${node.id}`:'/api/objective-nodes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok){
+      const error=$('#objectiveNodeError');error.textContent=result.error?.message||'Enregistrement impossible.';error.classList.remove('hidden');return;
+    }
+    if(!editing&&result.value?.id)objectiveSelectedId=Number(result.value.id);
+    closeModal();await refresh();
+    if(objectiveSelectedId)loadObjectiveLibrary(objectiveSelectedId);
+    showView('objectives');
+  };
+}
+async function deleteObjectiveNode(node){
+  const children=objectiveDescendantIds(node.id).size;
+  const ok=await askUiConfirm('Supprimer de la carte',children?`Supprimer « ${node.title} » et ses ${children} sous-élément${children>1?'s':''} ? Les tâches resteront mais seront détachées.`:`Supprimer « ${node.title} » ? Les tâches liées resteront mais seront détachées.`,'Supprimer',true);
+  if(!ok)return;
+  const result=await runUiAction("Impossible de supprimer l’objectif",()=>api(`/api/objective-nodes/${node.id}`,{method:'DELETE'}));
+  if(!result.ok)return;
+  objectiveSelectedId=node.parent_id?Number(node.parent_id):null;
+  objectiveLibraryState={nodeId:null,sections:[],loading:false};
+  await refresh();
+}
+
+function openObjectiveLibrarySectionModal(nodeId,section=null){
+  const editing=!!section;
+  openModal(`<h2>${editing?'Modifier la section':'Nouvelle section de bibliothèque'}</h2><form id="objectiveLibrarySectionForm" class="form-grid">
+    <div class="field"><label>Type de contenu</label><select name="section_type">${Object.entries(OBJECTIVE_LIBRARY_TYPES).map(([value,label])=>`<option value="${value}" ${section?.section_type===value?'selected':''}>${esc(label)}</option>`).join('')}</select></div>
+    <div class="field"><label>Nom affiché</label><input name="title" required value="${esc(section?.title||'')}" placeholder="ex. Grammaire, Références visuelles…"></div>
+    <div class="field-help full">Le type donne seulement une indication. Le nom reste entièrement libre pour adapter la bibliothèque à chaque besoin.</div>
+    <div class="form-actions field full"><button id="cancelObjectiveLibrarySection" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Créer'}</button></div>
+  </form>`);
+  $('#cancelObjectiveLibrarySection').onclick=closeModal;
+  $('#objectiveLibrarySectionForm').onsubmit=async e=>{
+    e.preventDefault();const payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.node_id=nodeId;
+    const result=await runUiAction("Impossible d’enregistrer la section",()=>api(editing?`/api/objective-library-sections/${section.id}`:'/api/objective-library-sections',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;closeModal();await loadObjectiveLibrary(nodeId);
+  };
+}
+async function deleteObjectiveLibrarySection(section){
+  const ok=await askUiConfirm('Supprimer la section',`Supprimer « ${section.title} » et tout ce qu’elle contient ?`,'Supprimer',true);
+  if(!ok)return;
+  const result=await runUiAction('Impossible de supprimer la section',()=>api(`/api/objective-library-sections/${section.id}`,{method:'DELETE'}));
+  if(result.ok)await loadObjectiveLibrary(objectiveSelectedId);
+}
+function openObjectiveLibraryEntryModal(section,entry=null){
+  const editing=!!entry;
+  openModal(`<h2>${editing?'Modifier':'Ajouter'} · ${esc(section.title)}</h2><form id="objectiveLibraryEntryForm" class="form-grid">
+    <div class="field full"><label>Titre</label><input name="title" required value="${esc(entry?.title||'')}" placeholder="Nom de la ressource, exercice, référence…"></div>
+    <div class="field full"><label>Lien <span class="muted">(facultatif)</span></label><input name="url" type="url" value="${esc(entry?.url||'')}" placeholder="https://…"></div>
+    <div class="field full"><label>Notes</label><textarea name="notes" placeholder="Ce que tu veux retenir, faire ou vérifier…">${esc(entry?.notes||'')}</textarea></div>
+    <div class="field full checkline"><input id="objectiveEntryDone" name="done" type="checkbox" ${entry?.done?'checked':''}><label for="objectiveEntryDone">Déjà traité / terminé</label></div>
+    <div class="form-actions field full"><button id="cancelObjectiveLibraryEntry" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Ajouter'}</button></div>
+  </form>`);
+  $('#cancelObjectiveLibraryEntry').onclick=closeModal;
+  $('#objectiveLibraryEntryForm').onsubmit=async e=>{
+    e.preventDefault();const fd=new FormData(e.currentTarget);const payload=Object.fromEntries(fd.entries());payload.section_id=section.id;payload.done=$('#objectiveEntryDone').checked;
+    const result=await runUiAction("Impossible d’enregistrer la ressource",()=>api(editing?`/api/objective-library-entries/${entry.id}`:'/api/objective-library-entries',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;closeModal();await loadObjectiveLibrary(objectiveSelectedId);
+  };
+}
+async function deleteObjectiveLibraryEntry(entry,nodeId){
+  const ok=await askUiConfirm('Supprimer de la bibliothèque',`Supprimer « ${entry.title} » ?`,'Supprimer',true);
+  if(!ok)return;
+  const result=await runUiAction('Impossible de supprimer la ressource',()=>api(`/api/objective-library-entries/${entry.id}`,{method:'DELETE'}));
+  if(result.ok)await loadObjectiveLibrary(nodeId);
+}
