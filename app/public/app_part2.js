@@ -1738,7 +1738,9 @@ function wireLibraryRichLinks(root,page){
         e.preventDefault();e.stopPropagation();
         root.querySelectorAll('.library-rich-link-selected').forEach(x=>x.classList.remove('library-rich-link-selected'));
         a.classList.add('library-rich-link-selected');librarySelectedRichLink=a;
-        const info=$('#libraryLinkSelectionInfo');if(info)info.textContent='Lien sélectionné — double-clic pour modifier';
+        const info=$('#libraryLinkSelectionInfo');if(info)info.textContent='Lien sélectionné';
+        $('#libraryOpenSelectedLink')?.classList.remove('hidden');
+        $('#libraryEditSelectedLink')?.classList.remove('hidden');
         return;
       }
       if(kind==='page'){e.preventDefault();const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)}
@@ -1950,7 +1952,9 @@ function renderLibraryPageEditor(notebook,page){
           <button id="libraryInsertImage" type="button">▧ Image</button>
           <input id="libraryImageInput" type="file" accept="image/*" class="hidden">
         </div>
-        <span id="libraryLinkSelectionInfo">Liens : clic pour sélectionner, double-clic pour modifier.</span>
+        <span id="libraryLinkSelectionInfo">Liens : clic pour sélectionner.</span>
+        <button id="libraryOpenSelectedLink" class="hidden" type="button">Ouvrir</button>
+        <button id="libraryEditSelectedLink" class="hidden" type="button">✎ Modifier</button>
       </div>
       <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
     </div>
@@ -1980,6 +1984,17 @@ function renderLibraryPageEditor(notebook,page){
   $('#libraryFontSize').onchange=e=>libraryExec('fontSize',e.target.value);
   $('#libraryTextColor').oninput=e=>libraryExec('foreColor',e.target.value);
   $('#libraryHighlightColor').oninput=e=>libraryExec('hiliteColor',e.target.value);
+
+  $('#libraryOpenSelectedLink').onclick=()=>{
+    const a=librarySelectedRichLink;if(!a)return;
+    if(a.dataset.libraryLinkKind==='page'){const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)}
+    else{const url=safeLibraryUrl(a.getAttribute('href'));if(url)window.open(url,'_blank','noopener')}
+  };
+  $('#libraryEditSelectedLink').onclick=()=>{
+    const a=librarySelectedRichLink;if(!a)return;
+    if(a.dataset.libraryLinkKind==='page')openLibraryInternalLinkModal(notebook,page,a);
+    else openLibraryWebLinkModal(notebook,page,a);
+  };
 
   $('#libraryInsertInternalLink').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
   $('#libraryInsertInternalLink').onclick=()=>openLibraryInternalLinkModal(notebook,page);
