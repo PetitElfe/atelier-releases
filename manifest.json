@@ -1,15 +1,15 @@
 {
-  "version": "0.10.0",
+  "version": "0.11.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "c89bac65e50ae37cce6fb8150c23216c2cf182f99b146dc0bdf10d5f70c6626b"
+      "sha256": "cec0e03c79d0fc1b74d00268d9df1b26b6b209daeece11a58e882b52a105a6b7"
     },
     {
       "path": "VERSION",
-      "sha256": "dc24feb5bd35084d8ae32a4eafbec12352707d4662401fcbcc9bbd696cde77a9"
+      "sha256": "795d6bc79574d2aec03ad9cfec404bb95083c9dd210e6521e0d4199772d28d44"
     },
     {
       "path": "app.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "0a2268954dcba4055f687f8eafd407902f371dcf451912fa80a0a3abbdb18765"
+      "sha256": "087a244282554a7c334ccec09b0dd018fd65d2886cd58301d23c4ddb08f4a2fe"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "8be6f002f6772cd3d4496c212ec4c83164fc078cc21d84e11fdff44a9af2ae18"
+      "sha256": "378264940a41fa4a57dcba0470062addf62c4d431a61c6985b052473e5d65ac9"
     },
     {
       "path": "public/index.html",
-      "sha256": "d320ba6f1b054c5f0aa654aa18258e61b0ca4b2e6f00f54722f6050879350ac0"
+      "sha256": "c9441f12fb5a0b8413694bb48de89724dd4f9a7def8ac4a7af803d66c258e22d"
     },
     {
       "path": "public/styles.css",
-      "sha256": "ca8aaa3f02e683d46d45bc888d9165fad49cf000e2feee6c65f9853491df65e4"
+      "sha256": "7c74c4bedf5ac04852021c88088c48007535f05244d44e7101c9c15d8f0e3eb6"
     }
   ],
-  "notes": "0.10.0 : modèle Domaine → objectif → niveaux, carnets éditables directement, autosauvegarde, liens typés entre pages et liens web affichés sous forme de mots."
+  "notes": "0.11.0 : éditeur de carnet riche à sauvegarde manuelle, gras/italique/surlignage/couleurs/polices/alignement, images déplaçables et redimensionnables, liens web et internes ouvrables/modifiables, progression automatique et tâches qui conservent leur contexte."
 }
