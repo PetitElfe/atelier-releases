@@ -1,13 +1,9 @@
-# L’Atelier 0.6.1
+# L’Atelier 0.6.2
 
-Navigation et rappels :
-- les onglets du haut deviennent un menu latéral gauche, dans l’esprit d’une barre de navigation d’application ;
-- une flèche permet de rabattre le menu ; elle se retourne pour indiquer qu’il peut être rouvert ;
-- l’état ouvert/rabattu est mémorisé ;
-- le menu propose des raccourcis permanents « + Rendez-vous » et « + Rappel » ;
-- la page Rappels permet maintenant de créer des rappels totalement indépendants du calendrier et des tâches ;
-- un rappel indépendant peut être modifié, reporté, terminé ou supprimé ;
-- la base est migrée automatiquement vers le schéma 2 pour accepter ces rappels ;
-- l’enregistrement d’un rendez-vous affiche désormais une erreur directement dans sa fenêtre si quelque chose échoue, au lieu de donner l’impression que le bouton ne fait rien.
+Correctif immédiat de la 0.6.1 :
+- rétablit tous les clics de navigation et l’initialisation de l’interface ;
+- corrige une erreur JavaScript où le sélecteur d’un seul élément était utilisé comme une liste ;
+- l’accueil est maintenant contraint à la largeur disponible à droite du menu latéral, afin que le mini-calendrier et les objets du bureau ne partent plus hors écran ;
+- conserve les rappels indépendants et le menu latéral introduits en 0.6.1.
 
-Les rendez-vous restent visibles dans le calendrier, mais leur création n’est plus dépendante du fait d’être déjà dans la vue Calendrier.
+Aucune donnée utilisateur n’est modifiée par ce correctif.
