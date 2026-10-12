@@ -897,11 +897,15 @@ function openRecipePage(item){
 
 
 
-/* 0.9.0 — Bibliothèque : domaines ludiques, carnets, sous-objectifs et progression */
-const LIBRARY_NODE_LABELS={domain:'Domaine',objective:'Objectif',milestone:'Étape',step:'Sous-étape'};
+/* 0.10.0 — Bibliothèque : domaines, objectif principal, niveaux, vrais carnets et liens typés */
+const LIBRARY_NODE_LABELS={domain:'Domaine',objective:'Objectif',milestone:'Sous-objectif / niveau',step:'Étape / compétence'};
 let librarySelectedDomainId=null;
 let librarySelectedNotebookId=null;
+let librarySelectedPageId=null;
 let libraryNotebookState={domainId:null,sections:[],loading:false};
+let libraryEditorMode='write';
+let libraryAutosaveTimer=null;
+let libraryAutosaveToken=0;
 
 function objectiveNodeById(id){return state.objectiveNodes.find(x=>Number(x.id)===Number(id))||null}
 function objectiveChildren(parentId){
@@ -951,16 +955,91 @@ function safeLibraryUrl(raw){
   const value=String(raw||'').trim();
   return /^https?:\/\//i.test(value)?value:'';
 }
+function libraryAllPages(){
+  return (libraryNotebookState.sections||[]).flatMap(section=>(section.entries||[]).map(entry=>({...entry,section_id:section.id,section_title:section.title})));
+}
+function libraryPageById(id){return libraryAllPages().find(x=>Number(x.id)===Number(id))||null}
+function libraryNotebookById(id){return (libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(id))||null}
+function libraryPageNotebook(pageId){
+  return (libraryNotebookState.sections||[]).find(section=>(section.entries||[]).some(entry=>Number(entry.id)===Number(pageId)))||null;
+}
+function libraryTokenClean(value){
+  return encodeURIComponent(String(value||'').replace(/\[\[/g,'').replace(/\]\]/g,'').trim());
+}
+function libraryDecode(value){try{return decodeURIComponent(value||'')}catch(_){return value||''}}
+function makeInternalLibraryToken(pageId,type,label){return `[[p:${Number(pageId)}:${libraryTokenClean(type||'Lien')}:${libraryTokenClean(label||'Lien')}]]`}
+function makeExternalLibraryToken(url,label){return `[[u:${libraryTokenClean(url)}:${libraryTokenClean(label||url)}]]`}
+function parseLibraryTokens(text){
+  const raw=String(text||'');
+  const tokenRe=/\[\[(p|u):([^\]]+)\]\]/g;
+  const parts=[];let last=0,m;
+  while((m=tokenRe.exec(raw))){
+    if(m.index>last)parts.push({type:'text',value:raw.slice(last,m.index)});
+    const kind=m[1],bits=m[2].split(':');
+    if(kind==='p'&&bits.length>=3){
+      parts.push({type:'page',pageId:Number(bits[0]),linkType:libraryDecode(bits[1]),label:libraryDecode(bits.slice(2).join(':'))});
+    }else if(kind==='u'&&bits.length>=2){
+      parts.push({type:'url',url:libraryDecode(bits[0]),label:libraryDecode(bits.slice(1).join(':'))});
+    }else parts.push({type:'text',value:m[0]});
+    last=tokenRe.lastIndex;
+  }
+  if(last<raw.length)parts.push({type:'text',value:raw.slice(last)});
+  return parts;
+}
+function renderLibraryRichText(text){
+  const root=document.createElement('div');root.className='library-rich-text';
+  parseLibraryTokens(text).forEach(part=>{
+    if(part.type==='text'){
+      const chunks=part.value.split('\n');
+      chunks.forEach((chunk,i)=>{if(i)root.appendChild(document.createElement('br'));root.appendChild(document.createTextNode(chunk))});
+      return;
+    }
+    if(part.type==='page'){
+      const target=libraryPageById(part.pageId);
+      const b=document.createElement('button');b.type='button';b.className='library-inline-link library-inline-internal';
+      b.innerHTML=`<span>${esc(part.label||target?.title||'Page')}</span><small>${esc(part.linkType||'Lien')}</small>`;
+      b.title=target?`Ouvrir « ${target.title} »`:'Cette page liée est introuvable';
+      b.disabled=!target;
+      if(target)b.onclick=()=>openLibraryPageTarget(target.id);
+      root.appendChild(b);
+      return;
+    }
+    if(part.type==='url'){
+      const url=safeLibraryUrl(part.url);
+      const a=document.createElement('a');a.className='library-inline-link library-inline-web';a.textContent=part.label||part.url;
+      a.target='_blank';a.rel='noopener noreferrer';a.href=url||'#';if(!url)a.classList.add('is-broken');
+      root.appendChild(a);
+    }
+  });
+  return root;
+}
+function libraryBacklinks(targetId){
+  const re=new RegExp('\\\\[\\\\[p:'+Number(targetId)+':','g');
+  return libraryAllPages().filter(page=>Number(page.id)!==Number(targetId)&&re.test(page.notes||''));
+}
+function replaceLibraryTextareaSelection(textarea,replacement){
+  const start=textarea.selectionStart??textarea.value.length,end=textarea.selectionEnd??start;
+  textarea.setRangeText(replacement,start,end,'end');
+  textarea.dispatchEvent(new Event('input',{bubbles:true}));
+  textarea.focus();
+}
+function selectedLibraryEditorText(){
+  const ta=$('#libraryPageBody');
+  if(!ta)return '';
+  return ta.value.slice(ta.selectionStart||0,ta.selectionEnd||0);
+}
 
-async function loadLibraryNotebooks(domainId,preferredNotebookId=null){
+async function loadLibraryNotebooks(domainId,preferredNotebookId=null,preferredPageId=null){
   if(!domainId)return;
   libraryNotebookState={domainId:Number(domainId),sections:[],loading:true};
   renderLibraryDomain();
   try{
     const data=await api(`/api/objective-library?node_id=${encodeURIComponent(domainId)}`);
     libraryNotebookState={domainId:Number(domainId),sections:data.sections||[],loading:false};
-    if(preferredNotebookId&&libraryNotebookState.sections.some(x=>Number(x.id)===Number(preferredNotebookId)))librarySelectedNotebookId=Number(preferredNotebookId);
-    else if(librarySelectedNotebookId&&!libraryNotebookState.sections.some(x=>Number(x.id)===Number(librarySelectedNotebookId)))librarySelectedNotebookId=null;
+    if(preferredNotebookId&&libraryNotebookById(preferredNotebookId))librarySelectedNotebookId=Number(preferredNotebookId);
+    else if(librarySelectedNotebookId&&!libraryNotebookById(librarySelectedNotebookId))librarySelectedNotebookId=null;
+    if(preferredPageId&&libraryPageById(preferredPageId))librarySelectedPageId=Number(preferredPageId);
+    else if(librarySelectedPageId&&!libraryPageById(librarySelectedPageId))librarySelectedPageId=null;
   }catch(err){
     libraryNotebookState={domainId:Number(domainId),sections:[],loading:false};
     showUiError(err,'Impossible de charger les carnets');
@@ -972,6 +1051,7 @@ function openLibraryDomain(domainId){
   if(!domain)return;
   librarySelectedDomainId=Number(domain.id);
   librarySelectedNotebookId=null;
+  librarySelectedPageId=null;
   $('#libraryHubPanel')?.classList.add('hidden');
   $('#libraryDomainPanel')?.classList.remove('hidden');
   renderLibraryDomain();
@@ -982,12 +1062,15 @@ function openLibraryForNode(nodeId){
   if(!domain)return;
   librarySelectedDomainId=Number(domain.id);
   librarySelectedNotebookId=null;
+  librarySelectedPageId=null;
   showView('library');
   openLibraryDomain(domain.id);
 }
 function closeLibraryDomain(){
+  clearTimeout(libraryAutosaveTimer);
   librarySelectedDomainId=null;
   librarySelectedNotebookId=null;
+  librarySelectedPageId=null;
   libraryNotebookState={domainId:null,sections:[],loading:false};
   $('#libraryDomainPanel')?.classList.add('hidden');
   $('#libraryHubPanel')?.classList.remove('hidden');
@@ -1003,27 +1086,25 @@ function renderLibrary(){
     shelf.innerHTML=`<div class="library-empty-state">
       <div class="library-empty-books"><i></i><i></i><i></i></div>
       <strong>Ta bibliothèque est encore vide.</strong>
-      <span>Crée un premier domaine, par exemple Anglais, Art, JDR ou League of Legends.</span>
+      <span>Crée un domaine comme Anglais, puis donne-lui son objectif principal, ses niveaux et ses carnets.</span>
       <button id="libraryEmptyCreate" class="primary" type="button">+ Créer mon premier domaine</button>
     </div>`;
     $('#libraryEmptyCreate').onclick=()=>openLibraryDomainCreateModal();
   }else{
     domains.forEach(domain=>{
       const descendants=objectiveDescendantIds(domain.id);
-      const subCount=[...descendants].map(objectiveNodeById).filter(Boolean).length;
       const ids=libraryDomainNodeIds(domain.id);
       const tasks=state.tasks.filter(t=>t.objective_node_id&&ids.has(Number(t.objective_node_id)));
-      const doneTasks=tasks.filter(t=>t.completed).length;
       const progress=libraryProgressForDomain(domain);
-      const card=document.createElement('article');
-      card.className='library-domain-card';
+      const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
+      const card=document.createElement('article');card.className='library-domain-card';
       card.innerHTML=`<button class="library-domain-open" type="button">
           <span class="library-domain-card-top"><span class="library-domain-symbol">⌂</span><span class="library-domain-open-label">ouvrir →</span></span>
           <strong>${esc(domain.title)}</strong>
-          <span class="library-domain-card-desc">${esc(domain.description||'Un espace à construire comme tu veux.')}</span>
+          <span class="library-domain-card-desc">${esc(mainGoal?'Objectif : '+mainGoal.title:(domain.description||'Un espace à construire comme tu veux.'))}</span>
           <span class="library-domain-spines" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <span class="library-domain-card-progress"><i style="width:${progress}%"></i></span>
-          <span class="library-domain-card-meta">${progress}% · ${subCount} élément${subCount>1?'s':''} · ${doneTasks}/${tasks.length} tâche${tasks.length>1?'s':''}</span>
+          <span class="library-domain-card-meta">${progress}% · ${descendants.size} étape${descendants.size>1?'s':''} · ${tasks.filter(t=>t.completed).length}/${tasks.length} tâches</span>
         </button>
         <button class="library-domain-configure" type="button" title="Configurer ${esc(domain.title)}">✎</button>`;
       card.querySelector('.library-domain-open').onclick=()=>openLibraryDomain(domain.id);
@@ -1035,35 +1116,25 @@ function renderLibrary(){
 }
 
 function renderLibraryDomain(){
-  const panel=$('#libraryDomainPanel');
-  if(!panel)return;
+  const panel=$('#libraryDomainPanel');if(!panel)return;
   const domain=objectiveNodeById(librarySelectedDomainId);
-  if(!domain){
-    panel.classList.add('hidden');
-    $('#libraryHubPanel')?.classList.remove('hidden');
-    return;
-  }
+  if(!domain){panel.classList.add('hidden');$('#libraryHubPanel')?.classList.remove('hidden');return}
   $('#libraryDomainTitle').textContent=domain.title;
-  $('#libraryDomainDescription').textContent=domain.description||'Cet espace est à toi : ajoute seulement ce dont tu as besoin.';
+  const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
+  $('#libraryDomainDescription').textContent=mainGoal?`Objectif principal : ${mainGoal.title}`:(domain.description||'Cet espace est à toi : ajoute seulement ce dont tu as besoin.');
   $('#libraryDomainKicker').textContent='DOMAINE · '+String(domain.status==='done'?'TERMINÉ':domain.status==='paused'?'EN PAUSE':'ACTIF');
-
   renderLibraryNotebookList(domain);
   renderLibraryProgress(domain);
   renderLibraryOverview(domain);
   renderLibraryNotebookContent(domain);
 }
-
 function renderLibraryNotebookList(domain){
-  const root=$('#libraryNotebookList');
-  if(!root)return;
-  root.innerHTML='';
+  const root=$('#libraryNotebookList');if(!root)return;root.innerHTML='';
   const overview=document.createElement('button');
-  overview.type='button';
-  overview.className='library-notebook-link library-overview-link'+(!librarySelectedNotebookId?' active':'');
-  overview.innerHTML='<span class="library-notebook-icon">⌂</span><span><strong>Vue d’ensemble</strong><small>Sous-objectifs & tâches</small></span>';
-  overview.onclick=()=>{librarySelectedNotebookId=null;renderLibraryDomain()};
+  overview.type='button';overview.className='library-notebook-link library-overview-link'+(!librarySelectedNotebookId?' active':'');
+  overview.innerHTML='<span class="library-notebook-icon">⌂</span><span><strong>Progression</strong><small>Objectif, niveaux & tâches</small></span>';
+  overview.onclick=()=>{librarySelectedNotebookId=null;librarySelectedPageId=null;renderLibraryDomain()};
   root.appendChild(overview);
-
   if(libraryNotebookState.domainId!==Number(domain.id)||libraryNotebookState.loading){
     const loading=document.createElement('div');loading.className='library-notebook-empty';loading.textContent='Chargement des carnets…';root.appendChild(loading);return;
   }
@@ -1076,48 +1147,47 @@ function renderLibraryNotebookList(domain){
       <span class="library-notebook-spine spine-${index%4}"></span>
       <span><strong>${esc(notebook.title)}</strong><small>${(notebook.entries||[]).length} page${(notebook.entries||[]).length>1?'s':''}</small></span>
     </button><button class="library-notebook-more" type="button" title="Modifier ce carnet">⋯</button>`;
-    row.querySelector('.library-notebook-link').onclick=()=>{librarySelectedNotebookId=Number(notebook.id);renderLibraryDomain()};
+    row.querySelector('.library-notebook-link').onclick=()=>{
+      librarySelectedNotebookId=Number(notebook.id);
+      librarySelectedPageId=(notebook.entries||[])[0]?.id||null;
+      libraryEditorMode='write';
+      renderLibraryDomain();
+    };
     row.querySelector('.library-notebook-more').onclick=()=>openLibraryNotebookModal(domain.id,notebook);
     root.appendChild(row);
   });
 }
-
 function renderLibraryProgress(domain){
-  const root=$('#libraryProgressPanel');
-  if(!root)return;
+  const root=$('#libraryProgressPanel');if(!root)return;
   const ids=libraryDomainNodeIds(domain.id);
   const descendants=[...ids].map(objectiveNodeById).filter(Boolean).filter(x=>Number(x.id)!==Number(domain.id));
-  const objectives=descendants.filter(x=>x.node_type==='objective');
-  const doneObjectives=objectives.filter(x=>x.status==='done').length;
+  const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
+  const levels=mainGoal?objectiveChildren(mainGoal.id):[];
+  const doneLevels=levels.filter(x=>x.status==='done').length;
   const tasks=state.tasks.filter(t=>t.objective_node_id&&ids.has(Number(t.objective_node_id)));
-  const doneTasks=tasks.filter(t=>t.completed).length;
-  const notebooks=libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections.length:0;
   const progress=libraryProgressForDomain(domain);
   root.innerHTML=`<div class="library-progress-ring" style="--library-progress:${progress}%"><div><strong>${progress}%</strong><span>global</span></div></div>
+    ${mainGoal?`<div class="library-current-goal"><span>Objectif</span><strong>${esc(mainGoal.title)}</strong></div>`:''}
     <div class="library-progress-stats">
-      <div><strong>${doneObjectives}/${objectives.length}</strong><span>objectifs</span></div>
-      <div><strong>${doneTasks}/${tasks.length}</strong><span>tâches</span></div>
-      <div><strong>${notebooks}</strong><span>carnets</span></div>
+      <div><strong>${doneLevels}/${levels.length}</strong><span>niveaux</span></div>
+      <div><strong>${tasks.filter(t=>t.completed).length}/${tasks.length}</strong><span>tâches</span></div>
+      <div><strong>${libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections.length:0}</strong><span>carnets</span></div>
     </div>`;
 }
-
 function renderLibraryOverview(domain){
-  const overview=$('#libraryOverviewPanel'), notebookPanel=$('#libraryNotebookPanel');
+  const overview=$('#libraryOverviewPanel'),notebookPanel=$('#libraryNotebookPanel');
   if(!overview||!notebookPanel)return;
   overview.classList.toggle('hidden',!!librarySelectedNotebookId);
   notebookPanel.classList.toggle('hidden',!librarySelectedNotebookId);
   if(librarySelectedNotebookId)return;
-
-  const tree=$('#librarySubgoalTree');
-  tree.innerHTML='';
-  const children=objectiveChildren(domain.id);
-  if(!children.length){
-    tree.innerHTML='<div class="library-overview-empty"><strong>Aucun sous-objectif.</strong><span>Ajoute un objectif, puis des étapes et sous-étapes si tu en as besoin. Tu n’es pas obligée d’utiliser tous les niveaux.</span><button id="libraryEmptySubgoal" type="button">+ Ajouter un sous-objectif</button></div>';
-    $('#libraryEmptySubgoal').onclick=()=>openLibrarySubgoalModal(domain.id);
+  const tree=$('#librarySubgoalTree');tree.innerHTML='';
+  const mainGoals=objectiveChildren(domain.id);
+  if(!mainGoals.length){
+    tree.innerHTML='<div class="library-overview-empty"><strong>Commence par ton objectif principal.</strong><span>Exemple : « Devenir bilingue ». Ensuite tu peux créer A1, A2, B1… puis les compétences nécessaires sous chaque niveau.</span><button id="libraryEmptySubgoal" type="button">+ Créer l’objectif principal</button></div>';
+    $('#libraryEmptySubgoal').onclick=()=>openLibrarySubgoalModal(domain.id,domain.id,null,'objective');
   }else{
-    children.forEach(node=>tree.appendChild(renderLibrarySubgoalBranch(node,0)));
+    mainGoals.forEach(node=>tree.appendChild(renderLibrarySubgoalBranch(node,0)));
   }
-
   const ids=libraryDomainNodeIds(domain.id);
   const tasks=state.tasks.filter(t=>t.objective_node_id&&ids.has(Number(t.objective_node_id))).sort((a,b)=>a.completed-b.completed||(a.due_date||'9999').localeCompare(b.due_date||'9999'));
   const taskRoot=$('#libraryDomainTasks');taskRoot.innerHTML='';
@@ -1140,7 +1210,7 @@ function renderLibrarySubgoalBranch(node,depth){
     <button class="library-goal-edit" type="button" title="Modifier">✎</button>
   </div><div class="library-goal-children"></div>`;
   wrap.querySelector('.library-goal-main').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.parent_id,node);
-  wrap.querySelector('.library-goal-add').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.id);
+  wrap.querySelector('.library-goal-add').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.id,null,node.node_type==='objective'?'milestone':'step');
   wrap.querySelector('.library-goal-edit').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.parent_id,node);
   const childRoot=wrap.querySelector('.library-goal-children');
   objectiveChildren(node.id).forEach(child=>childRoot.appendChild(renderLibrarySubgoalBranch(child,depth+1)));
@@ -1148,102 +1218,229 @@ function renderLibrarySubgoalBranch(node,depth){
 }
 
 function renderLibraryNotebookContent(domain){
-  if(!librarySelectedNotebookId)return;
-  const notebook=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));
-  if(!notebook){
-    librarySelectedNotebookId=null;renderLibraryDomain();return;
-  }
+  const pageList=$('#libraryNotebookPageList'),pages=$('#libraryNotebookPages');
+  if(!librarySelectedNotebookId||!pageList||!pages)return;
+  const notebook=libraryNotebookById(librarySelectedNotebookId);
+  if(!notebook){librarySelectedNotebookId=null;librarySelectedPageId=null;renderLibraryDomain();return}
   $('#libraryNotebookTitle').textContent=notebook.title;
-  const pages=$('#libraryNotebookPages');pages.innerHTML='';
+  pageList.innerHTML='';
+  (notebook.entries||[]).forEach(entry=>{
+    const b=document.createElement('button');b.type='button';b.className='library-page-list-item'+(Number(entry.id)===Number(librarySelectedPageId)?' active':'')+(entry.done?' is-done':'');
+    b.innerHTML=`<span>${entry.done?'✓':'•'}</span><strong>${esc(entry.title)}</strong>`;
+    b.onclick=()=>{librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain)};
+    pageList.appendChild(b);
+  });
   if(!(notebook.entries||[]).length){
-    pages.innerHTML=`<div class="library-pages-empty"><div class="library-page-stack"><i></i><i></i><i></i></div><strong>Ce carnet est vide.</strong><span>Ajoute une première page : note, ressource, exercice, lien, idée…</span><button id="libraryFirstPage" class="primary" type="button">+ Première page</button></div>`;
-    $('#libraryFirstPage').onclick=()=>openLibraryPageModal(notebook);
-  }else{
-    notebook.entries.forEach(entry=>{
-      const page=document.createElement('article');page.className='library-page-card'+(entry.done?' is-done':'');
-      const url=safeLibraryUrl(entry.url);
-      page.innerHTML=`<div class="library-page-card-head"><button class="library-page-done" type="button" title="${entry.done?'Rouvrir':'Marquer terminé'}">${entry.done?'✓':'○'}</button><div><strong>${esc(entry.title)}</strong>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">ouvrir le lien ↗</a>`:''}</div><button class="library-page-edit" type="button" title="Modifier">✎</button><button class="library-page-delete" type="button" title="Supprimer">×</button></div>${entry.notes?`<div class="library-page-notes">${esc(entry.notes)}</div>`:''}`;
-      page.querySelector('.library-page-done').onclick=async()=>{await api(`/api/objective-library-entries/${entry.id}`,{method:'PUT',body:JSON.stringify({done:!entry.done})});await loadLibraryNotebooks(domain.id,notebook.id)};
-      page.querySelector('.library-page-edit').onclick=()=>openLibraryPageModal(notebook,entry);
-      page.querySelector('.library-page-delete').onclick=()=>deleteLibraryPage(notebook,entry);
-      pages.appendChild(page);
-    });
+    pageList.innerHTML='<div class="library-page-list-empty">Aucune page</div>';
+    pages.innerHTML=`<div class="library-pages-empty"><div class="library-page-stack"><i></i><i></i><i></i></div><strong>Ce carnet est vide.</strong><span>Crée une page puis écris directement dedans.</span><button id="libraryFirstPage" class="primary" type="button">+ Première page</button></div>`;
+    $('#libraryFirstPage').onclick=()=>createLibraryPage(notebook);
+    return;
   }
+  if(!librarySelectedPageId||!libraryPageById(librarySelectedPageId))librarySelectedPageId=Number(notebook.entries[0].id);
+  const page=libraryPageById(librarySelectedPageId);
+  renderLibraryPageEditor(notebook,page);
+}
+function renderLibraryPageEditor(notebook,page){
+  const root=$('#libraryNotebookPages');if(!root||!page)return;
+  const backlinks=libraryBacklinks(page.id);
+  root.innerHTML=`<article class="library-writing-page${page.done?' is-done':''}">
+    <div class="library-writing-topbar">
+      <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
+      <div class="library-writing-actions">
+        <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="libraryPageModeWrite" type="button" class="${libraryEditorMode==='write'?'active':''}">Écrire</button>
+        <button id="libraryPageModeRead" type="button" class="${libraryEditorMode==='read'?'active':''}">Lire</button>
+        <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
+        <button id="libraryPageDelete" class="danger-button" type="button">×</button>
+      </div>
+    </div>
+    <div id="libraryWritingEditor" class="library-writing-editor ${libraryEditorMode==='write'?'':'hidden'}">
+      <div class="library-writing-toolbar">
+        <button id="libraryInsertInternalLink" type="button">↗ Lien vers une page</button>
+        <button id="libraryInsertWebLink" type="button">🔗 Lien web</button>
+        <span>Sélectionne un mot avant de créer un lien pour l’utiliser comme texte cliquable.</span>
+      </div>
+      <textarea id="libraryPageBody" class="library-page-body" spellcheck="true" placeholder="Écris directement dans cette page…">${esc(page.notes||'')}</textarea>
+    </div>
+    <div id="libraryReadingView" class="library-reading-view ${libraryEditorMode==='read'?'':'hidden'}"></div>
+    <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
+  </article>`;
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  const reading=$('#libraryReadingView');reading.innerHTML='';reading.appendChild(renderLibraryRichText(page.notes||''));
+  const backlinksRoot=$('#libraryBacklinks>div');
+  backlinks.forEach(source=>{
+    const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);backlinksRoot.appendChild(b);
+  });
+  $('#libraryPageModeWrite').onclick=()=>{libraryEditorMode='write';renderLibraryPageEditor(notebook,page);setTimeout(()=>$('#libraryPageBody')?.focus(),0)};
+  $('#libraryPageModeRead').onclick=async()=>{await flushLibraryPageSave(notebook,page);libraryEditorMode='read';renderLibraryPageEditor(notebook,page)};
+  $('#libraryPageDoneToggle').onclick=async()=>{
+    const next=!page.done;
+    const result=await runUiAction('Impossible de modifier la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({done:next})}));
+    if(!result.ok)return;
+    page.done=next;
+    renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+  };
+  $('#libraryPageDelete').onclick=()=>deleteLibraryPage(notebook,page);
+  $('#libraryInsertInternalLink').onclick=()=>openLibraryInternalLinkModal(notebook,page);
+  $('#libraryInsertWebLink').onclick=()=>openLibraryWebLinkModal(notebook,page);
+  const schedule=()=>scheduleLibraryPageSave(notebook,page);
+  body.addEventListener('input',schedule);
+  title.addEventListener('input',schedule);
+}
+function scheduleLibraryPageSave(notebook,page){
+  clearTimeout(libraryAutosaveTimer);
+  const stateEl=$('#librarySaveState');if(stateEl)stateEl.textContent='Modification…';
+  const token=++libraryAutosaveToken;
+  libraryAutosaveTimer=setTimeout(()=>saveLibraryPageInline(notebook,page,token),700);
+}
+async function saveLibraryPageInline(notebook,page,token=++libraryAutosaveToken){
+  const title=$('#libraryPageTitleInput')?.value.trim()||page.title||'Sans titre';
+  const notes=$('#libraryPageBody')?.value??page.notes??'';
+  const stateEl=$('#librarySaveState');if(stateEl)stateEl.textContent='Enregistrement…';
+  const result=await runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({title,notes})}));
+  if(!result.ok){if(stateEl)stateEl.textContent='Erreur';return false}
+  if(token<libraryAutosaveToken)return true;
+  page.title=title;page.notes=notes;
+  if(stateEl)stateEl.textContent='Enregistré';
+  const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>x.classList.contains('active'));
+  if(listItem)listItem.querySelector('strong').textContent=title;
+  return true;
+}
+async function flushLibraryPageSave(notebook,page){
+  clearTimeout(libraryAutosaveTimer);
+  return saveLibraryPageInline(notebook,page,++libraryAutosaveToken);
+}
+async function createLibraryPage(notebook){
+  const result=await runUiAction('Impossible de créer la page',()=>api('/api/objective-library-entries',{method:'POST',body:JSON.stringify({section_id:notebook.id,title:'Nouvelle page',notes:'',url:'',done:false})}));
+  if(!result.ok)return;
+  libraryEditorMode='write';
+  await loadLibraryNotebooks(librarySelectedDomainId,notebook.id,result.value.id);
+  setTimeout(()=>{$('#libraryPageTitleInput')?.select();$('#libraryPageBody')?.focus()},20);
+}
+function openLibraryPageTarget(pageId){
+  const target=libraryPageById(pageId),notebook=libraryPageNotebook(pageId);
+  if(!target||!notebook)return;
+  librarySelectedNotebookId=Number(notebook.id);
+  librarySelectedPageId=Number(target.id);
+  libraryEditorMode='read';
+  renderLibraryDomain();
+}
+
+function openLibraryInternalLinkModal(notebook,page){
+  const selected=selectedLibraryEditorText();
+  const targets=libraryAllPages().filter(x=>Number(x.id)!==Number(page.id));
+  if(!targets.length){showUiMessage('Aucune autre page','Crée d’abord une autre page dans un carnet pour pouvoir faire un lien interne.');return}
+  const options=targets.map(x=>`<option value="${x.id}">${esc(x.section_title+' · '+x.title)}</option>`).join('');
+  openModal(`<h2>Lien vers une page</h2><form id="libraryInternalLinkForm" class="form-grid">
+    <div class="field full"><label>Mot ou texte cliquable</label><input name="label" required value="${esc(selected)}" placeholder="ex. know"></div>
+    <div class="field"><label>Type de lien</label><input name="link_type" required value="Vocabulaire" placeholder="Vocabulaire, Exemple, Prérequis…"></div>
+    <div class="field"><label>Page cible</label><select name="page_id">${options}</select></div>
+    <div class="field-help full">Le type reste visible à côté du mot. Si tu renommes la page cible plus tard, le lien continue de fonctionner.</div>
+    <div class="form-actions field full"><button id="cancelLibraryInternalLink" type="button">Annuler</button><button class="primary" type="submit">Créer le lien</button></div>
+  </form>`);
+  $('#cancelLibraryInternalLink').onclick=closeModal;
+  $('#libraryInternalLinkForm').onsubmit=e=>{
+    e.preventDefault();const fd=new FormData(e.currentTarget);
+    const token=makeInternalLibraryToken(Number(fd.get('page_id')),String(fd.get('link_type')||'Lien'),String(fd.get('label')||'Lien'));
+    closeModal();replaceLibraryTextareaSelection($('#libraryPageBody'),token);
+  };
+}
+function openLibraryWebLinkModal(notebook,page){
+  const selected=selectedLibraryEditorText();
+  openModal(`<h2>Lien web</h2><form id="libraryWebLinkForm" class="form-grid">
+    <div class="field full"><label>Mot ou texte affiché</label><input name="label" required value="${esc(selected)}" placeholder="ex. Cambridge Dictionary"></div>
+    <div class="field full"><label>Adresse du lien</label><input name="url" type="url" required placeholder="https://…"></div>
+    <div class="field-help full">Dans la page, l’adresse sera remplacée visuellement par le mot que tu choisis.</div>
+    <div class="form-actions field full"><button id="cancelLibraryWebLink" type="button">Annuler</button><button class="primary" type="submit">Créer le lien</button></div>
+  </form>`);
+  $('#cancelLibraryWebLink').onclick=closeModal;
+  $('#libraryWebLinkForm').onsubmit=e=>{
+    e.preventDefault();const fd=new FormData(e.currentTarget),url=safeLibraryUrl(fd.get('url'));
+    if(!url)return;
+    const token=makeExternalLibraryToken(url,String(fd.get('label')||url));
+    closeModal();replaceLibraryTextareaSelection($('#libraryPageBody'),token);
+  };
 }
 
 function openLibraryDomainCreateModal(){
-  openModal(`<div class="library-builder"><div class="section-kicker">NOUVEAU DOMAINE</div><h2>Construire un espace</h2><p class="field-help">Tu peux préparer les carnets et les premiers sous-objectifs dès maintenant. Tout restera modifiable ensuite.</p>
+  openModal(`<div class="library-builder"><div class="section-kicker">NOUVEAU DOMAINE</div><h2>Construire une bibliothèque</h2><p class="field-help">Exemple : Domaine « Anglais » → objectif « Devenir bilingue » → niveaux A1, A2, B1… → compétences sous chaque niveau. Les carnets vivent à côté de cette progression.</p>
     <form id="libraryDomainCreateForm" class="form-grid">
-      <div class="field full"><label>Nom du domaine</label><input name="title" required placeholder="ex. Anglais, Art, JDR…"></div>
-      <div class="field full"><label>À quoi sert cet espace ?</label><textarea name="description" placeholder="Une phrase pour te rappeler ce que tu veux construire ici."></textarea></div>
-      <div class="field full library-builder-block"><label>Carnets de départ <span class="muted">(un par ligne, facultatif)</span></label><textarea name="notebooks" placeholder="Grammaire&#10;Vocabulaire&#10;Journal en anglais"></textarea></div>
-      <div class="field full library-builder-block"><label>Premiers sous-objectifs <span class="muted">(un par ligne, facultatif)</span></label><textarea name="subgoals" placeholder="Comprendre les articles&#10;Lire un livre simple&#10;Écrire 10 minutes par jour"></textarea></div>
+      <div class="field full"><label>Domaine</label><input name="title" required placeholder="ex. Anglais"></div>
+      <div class="field full"><label>Description <span class="muted">(facultatif)</span></label><textarea name="description" placeholder="À quoi sert cet espace ?"></textarea></div>
+      <div class="field full library-builder-block"><label>Objectif principal</label><input name="main_goal" placeholder="ex. Devenir bilingue"></div>
+      <div class="field full library-builder-block"><label>Sous-objectifs / niveaux <span class="muted">(un par ligne)</span></label><textarea name="levels" placeholder="A1&#10;A2&#10;B1&#10;B2&#10;C1&#10;C2"></textarea></div>
+      <div class="field full library-builder-block"><label>Carnets de départ <span class="muted">(un par ligne)</span></label><textarea name="notebooks" placeholder="Grammaire&#10;Vocabulaire&#10;Cours&#10;Journal"></textarea></div>
       <div id="libraryDomainCreateError" class="form-error field full hidden"></div>
       <div class="form-actions field full"><button id="cancelLibraryDomainCreate" type="button">Annuler</button><button class="primary" type="submit">Créer la bibliothèque</button></div>
     </form></div>`);
   $('#cancelLibraryDomainCreate').onclick=closeModal;
   $('#libraryDomainCreateForm').onsubmit=async e=>{
-    e.preventDefault();
-    const fd=new FormData(e.currentTarget);
+    e.preventDefault();const fd=new FormData(e.currentTarget);
     const title=String(fd.get('title')||'').trim(),description=String(fd.get('description')||'').trim();
+    const mainGoal=String(fd.get('main_goal')||'').trim();
+    const levels=String(fd.get('levels')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     const notebooks=String(fd.get('notebooks')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-    const subgoals=String(fd.get('subgoals')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     const error=$('#libraryDomainCreateError');error.classList.add('hidden');error.textContent='';
     const result=await runUiAction('Impossible de créer le domaine',()=>api('/api/objective-nodes',{method:'POST',body:JSON.stringify({node_type:'domain',title,description,progress:0,status:'active'})}));
     if(!result.ok){error.textContent=result.error?.message||'Création impossible.';error.classList.remove('hidden');return}
     const domainId=Number(result.value.id);
+    let mainGoalId=null;
+    if(mainGoal){
+      const goal=await runUiAction('Impossible de créer l’objectif principal',()=>api('/api/objective-nodes',{method:'POST',body:JSON.stringify({parent_id:domainId,node_type:'objective',title:mainGoal,progress:0,status:'active'})}));
+      if(goal.ok)mainGoalId=Number(goal.value.id);
+    }
+    for(const level of levels){
+      await runUiAction('Impossible de créer un niveau',()=>api('/api/objective-nodes',{method:'POST',body:JSON.stringify({parent_id:mainGoalId||domainId,node_type:mainGoalId?'milestone':'objective',title:level,progress:0,status:'active'})}));
+    }
     for(const notebook of notebooks){
       await runUiAction('Impossible de créer un carnet',()=>api('/api/objective-library-sections',{method:'POST',body:JSON.stringify({node_id:domainId,title:notebook,section_type:'notes'})}));
-    }
-    for(const subgoal of subgoals){
-      await runUiAction('Impossible de créer un sous-objectif',()=>api('/api/objective-nodes',{method:'POST',body:JSON.stringify({parent_id:domainId,node_type:'objective',title:subgoal,progress:0,status:'active'})}));
     }
     closeModal();await refresh();showView('library');openLibraryDomain(domainId);
   };
 }
-
 async function openLibraryDomainConfigFromHub(domain){
   try{
     const data=await api(`/api/objective-library?node_id=${encodeURIComponent(domain.id)}`);
     libraryNotebookState={domainId:Number(domain.id),sections:data.sections||[],loading:false};
-  }catch(_){
-    libraryNotebookState={domainId:Number(domain.id),sections:[],loading:false};
-  }
+  }catch(_){libraryNotebookState={domainId:Number(domain.id),sections:[],loading:false}}
   openLibraryDomainConfigModal(domain);
 }
-
 function openLibraryDomainConfigModal(domain){
-  const direct=objectiveChildren(domain.id);
+  const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
   const notebookCount=libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections.length:0;
   openModal(`<div class="library-builder"><div class="section-kicker">CONFIGURER LE DOMAINE</div><h2>${esc(domain.title)}</h2>
     <form id="libraryDomainConfigForm" class="form-grid">
-      <div class="field full"><label>Nom</label><input name="title" required value="${esc(domain.title)}"></div>
+      <div class="field full"><label>Nom du domaine</label><input name="title" required value="${esc(domain.title)}"></div>
       <div class="field full"><label>Description</label><textarea name="description">${esc(domain.description||'')}</textarea></div>
+      <div class="field full"><label>Objectif principal</label><input id="libraryMainGoalTitle" value="${esc(mainGoal?.title||'')}" placeholder="ex. Devenir bilingue"></div>
       <div class="field"><label>État</label><select name="status"><option value="active" ${domain.status==='active'?'selected':''}>Actif</option><option value="paused" ${domain.status==='paused'?'selected':''}>En pause</option><option value="done" ${domain.status==='done'?'selected':''}>Terminé</option></select></div>
-      <div class="field"><label>Avancée manuelle du domaine</label><input name="progress" type="number" min="0" max="100" value="${Math.max(0,Math.min(100,Number(domain.progress)||0))}"></div>
+      <div class="field"><label>Avancée manuelle si vide</label><input name="progress" type="number" min="0" max="100" value="${Math.max(0,Math.min(100,Number(domain.progress)||0))}"></div>
       <div class="field full library-builder-summary">
-        <button id="configAddNotebook" type="button"><strong>${notebookCount}</strong><span>Carnet${notebookCount>1?'s':''}<small>+ ajouter</small></span></button>
-        <button id="configAddSubgoal" type="button"><strong>${direct.length}</strong><span>Sous-objectif${direct.length>1?'s':''}<small>+ ajouter</small></span></button>
-        <button id="configAddTask" type="button"><strong>${state.tasks.filter(t=>Number(t.objective_node_id)===Number(domain.id)).length}</strong><span>Tâches directes<small>+ ajouter</small></span></button>
+        <button id="configAddNotebook" type="button"><strong>${notebookCount}</strong><span>Carnets<small>+ ajouter</small></span></button>
+        <button id="configAddSubgoal" type="button"><strong>${objectiveDescendantIds(domain.id).size}</strong><span>Progression<small>+ ajouter</small></span></button>
+        <button id="configAddTask" type="button"><strong>${state.tasks.filter(t=>libraryDomainNodeIds(domain.id).has(Number(t.objective_node_id))).length}</strong><span>Tâches<small>+ ajouter</small></span></button>
       </div>
       <div class="form-actions field full"><button id="cancelLibraryDomainConfig" type="button">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
     </form></div>`);
   $('#cancelLibraryDomainConfig').onclick=closeModal;
   $('#configAddNotebook').onclick=()=>openLibraryNotebookModal(domain.id);
-  $('#configAddSubgoal').onclick=()=>openLibrarySubgoalModal(domain.id);
-  $('#configAddTask').onclick=()=>openTaskModal(null,domain.id);
+  $('#configAddSubgoal').onclick=()=>openLibrarySubgoalModal(domain.id,mainGoal?.id||domain.id,null,mainGoal?'milestone':'objective');
+  $('#configAddTask').onclick=()=>openTaskModal(null,mainGoal?.id||domain.id);
   $('#libraryDomainConfigForm').onsubmit=async e=>{
     e.preventDefault();const payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.progress=Number(payload.progress)||0;
     const result=await runUiAction('Impossible de modifier le domaine',()=>api(`/api/objective-nodes/${domain.id}`,{method:'PUT',body:JSON.stringify(payload)}));
-    if(!result.ok)return;closeModal();await refresh();openLibraryDomain(domain.id);
+    if(!result.ok)return;
+    const goalTitle=$('#libraryMainGoalTitle').value.trim();
+    if(mainGoal&&goalTitle&&goalTitle!==mainGoal.title)await api(`/api/objective-nodes/${mainGoal.id}`,{method:'PUT',body:JSON.stringify({title:goalTitle})});
+    else if(!mainGoal&&goalTitle)await api('/api/objective-nodes',{method:'POST',body:JSON.stringify({parent_id:domain.id,node_type:'objective',title:goalTitle,progress:0,status:'active'})});
+    closeModal();await refresh();openLibraryDomain(domain.id);
   };
 }
-
 function openLibraryNotebookModal(domainId,notebook=null){
   const editing=!!notebook;
   openModal(`<h2>${editing?'Modifier le carnet':'Nouveau carnet'}</h2><form id="libraryNotebookForm" class="form-grid">
-    <div class="field full"><label>Nom du carnet</label><input name="title" required value="${esc(notebook?.title||'')}" placeholder="ex. Grammaire, Vocabulaire, Inspirations…"></div>
-    <div class="field-help full">Un carnet peut contenir autant de pages que tu veux : notes, liens, exercices, références ou idées.</div>
+    <div class="field full"><label>Nom du carnet</label><input name="title" required value="${esc(notebook?.title||'')}" placeholder="ex. Grammaire, Vocabulaire, Journal…"></div>
+    <div class="field-help full">Les pages du carnet sont écrites directement dans L’Atelier. Tu peux ajouter des liens entre elles et des liens web affichés sous forme de mots.</div>
     <div class="form-actions field full"><button id="cancelLibraryNotebook" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Créer le carnet'}</button></div>
   </form>`);
   $('#cancelLibraryNotebook').onclick=closeModal;
@@ -1257,39 +1454,27 @@ async function deleteLibraryNotebook(domainId,notebook){
   const ok=await askUiConfirm('Supprimer le carnet',`Supprimer « ${notebook.title} » et toutes ses pages ?`,'Supprimer',true);
   if(!ok)return;
   const result=await runUiAction('Impossible de supprimer le carnet',()=>api(`/api/objective-library-sections/${notebook.id}`,{method:'DELETE'}));
-  if(!result.ok)return;librarySelectedNotebookId=null;await loadLibraryNotebooks(domainId);
+  if(!result.ok)return;librarySelectedNotebookId=null;librarySelectedPageId=null;await loadLibraryNotebooks(domainId);
 }
-
-function openLibraryPageModal(notebook,entry=null){
-  const editing=!!entry;
-  openModal(`<h2>${editing?'Modifier la page':'Nouvelle page'} · ${esc(notebook.title)}</h2><form id="libraryPageForm" class="form-grid">
-    <div class="field full"><label>Titre</label><input name="title" required value="${esc(entry?.title||'')}" placeholder="ex. Articles définis / indéfinis"></div>
-    <div class="field full"><label>Lien <span class="muted">(facultatif)</span></label><input name="url" type="url" value="${esc(entry?.url||'')}" placeholder="https://…"></div>
-    <div class="field full"><label>Contenu / notes</label><textarea name="notes" class="library-page-textarea" placeholder="Écris ce que tu veux garder dans ce carnet…">${esc(entry?.notes||'')}</textarea></div>
-    <div class="field full checkline"><input id="libraryPageDone" type="checkbox" ${entry?.done?'checked':''}><label for="libraryPageDone">Page / exercice traité</label></div>
-    <div class="form-actions field full"><button id="cancelLibraryPage" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Ajouter la page'}</button></div>
-  </form>`);
-  $('#cancelLibraryPage').onclick=closeModal;
-  $('#libraryPageForm').onsubmit=async e=>{
-    e.preventDefault();const fd=new FormData(e.currentTarget);const payload=Object.fromEntries(fd.entries());payload.section_id=notebook.id;payload.done=$('#libraryPageDone').checked;
-    const result=await runUiAction("Impossible d’enregistrer la page",()=>api(editing?`/api/objective-library-entries/${entry.id}`:'/api/objective-library-entries',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
-    if(!result.ok)return;closeModal();await loadLibraryNotebooks(librarySelectedDomainId,notebook.id);
-  };
-}
-async function deleteLibraryPage(notebook,entry){
-  const ok=await askUiConfirm('Supprimer la page',`Supprimer « ${entry.title} » ?`,'Supprimer',true);
+async function deleteLibraryPage(notebook,page){
+  const ok=await askUiConfirm('Supprimer la page',`Supprimer « ${page.title} » ?`,'Supprimer',true);
   if(!ok)return;
-  const result=await runUiAction('Impossible de supprimer la page',()=>api(`/api/objective-library-entries/${entry.id}`,{method:'DELETE'}));
-  if(result.ok)await loadLibraryNotebooks(librarySelectedDomainId,notebook.id);
+  const result=await runUiAction('Impossible de supprimer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'DELETE'}));
+  if(!result.ok)return;
+  const idx=(notebook.entries||[]).findIndex(x=>Number(x.id)===Number(page.id));
+  notebook.entries=(notebook.entries||[]).filter(x=>Number(x.id)!==Number(page.id));
+  librarySelectedPageId=notebook.entries[Math.max(0,idx-1)]?.id||notebook.entries[0]?.id||null;
+  renderLibraryDomain();
 }
 
-function openLibrarySubgoalModal(domainId,parentId=null,node=null){
+function openLibrarySubgoalModal(domainId,parentId=null,node=null,presetType=null){
   const editing=!!node;
   const actualParent=editing?node.parent_id:(parentId||domainId);
-  openModal(`<h2>${editing?'Modifier':'Ajouter'} un élément de progression</h2><form id="librarySubgoalForm" class="form-grid">
-    <div class="field"><label>Type</label><select name="node_type"><option value="objective" ${(node?.node_type||'objective')==='objective'?'selected':''}>Objectif</option><option value="milestone" ${node?.node_type==='milestone'?'selected':''}>Étape</option><option value="step" ${node?.node_type==='step'?'selected':''}>Sous-étape</option></select></div>
+  const defaultType=presetType||node?.node_type||'objective';
+  openModal(`<h2>${editing?'Modifier':'Ajouter'} dans la progression</h2><form id="librarySubgoalForm" class="form-grid">
+    <div class="field"><label>Type</label><select name="node_type"><option value="objective" ${defaultType==='objective'?'selected':''}>Objectif</option><option value="milestone" ${defaultType==='milestone'?'selected':''}>Sous-objectif / niveau</option><option value="step" ${defaultType==='step'?'selected':''}>Étape / compétence</option></select></div>
     <div class="field"><label>Dans</label><select name="parent_id">${librarySubgoalParentOptions(domainId,actualParent,node?.id)}</select></div>
-    <div class="field full"><label>Nom</label><input name="title" required value="${esc(node?.title||'')}" placeholder="ex. Comprendre les articles"></div>
+    <div class="field full"><label>Nom</label><input name="title" required value="${esc(node?.title||'')}" placeholder="ex. B1 ou Compréhension orale"></div>
     <div class="field full"><label>Description</label><textarea name="description">${esc(node?.description||'')}</textarea></div>
     <div class="field"><label>État</label><select name="status"><option value="active" ${(node?.status||'active')==='active'?'selected':''}>En cours</option><option value="paused" ${node?.status==='paused'?'selected':''}>En pause</option><option value="done" ${node?.status==='done'?'selected':''}>Terminé</option></select></div>
     <div class="field"><label>Avancée (%)</label><input name="progress" type="number" min="0" max="100" value="${node?.status==='done'?100:Math.max(0,Math.min(100,Number(node?.progress)||0))}"></div>
@@ -1306,7 +1491,7 @@ function openLibrarySubgoalModal(domainId,parentId=null,node=null){
 function librarySubgoalParentOptions(domainId,selectedParentId,excludeId=null){
   const excluded=excludeId?objectiveDescendantIds(excludeId):new Set();if(excludeId)excluded.add(Number(excludeId));
   const domain=objectiveNodeById(domainId);
-  const rows=[`<option value="${domain.id}" ${String(domain.id)===String(selectedParentId)?'selected':''}>${esc(domain.title)} · racine</option>`];
+  const rows=[`<option value="${domain.id}" ${String(domain.id)===String(selectedParentId)?'selected':''}>${esc(domain.title)} · domaine</option>`];
   const walk=(pid,depth)=>objectiveChildren(pid).forEach(node=>{
     if(excluded.has(Number(node.id)))return;
     rows.push(`<option value="${node.id}" ${String(node.id)===String(selectedParentId)?'selected':''}>${esc('— '.repeat(depth)+(LIBRARY_NODE_LABELS[node.node_type]||'Élément')+' · '+node.title)}</option>`);
@@ -1323,7 +1508,7 @@ async function deleteLibrarySubgoal(node){
   if(!result.ok)return;closeModal();await refresh();if(domain)openLibraryDomain(domain.id);
 }
 async function deleteLibraryDomain(domain){
-  const ok=await askUiConfirm('Supprimer le domaine',`Supprimer toute la bibliothèque « ${domain.title} » : carnets, pages et sous-objectifs ? Les tâches existantes seront conservées mais détachées.`,'Supprimer',true);
+  const ok=await askUiConfirm('Supprimer le domaine',`Supprimer toute la bibliothèque « ${domain.title} » : carnets, pages et progression ? Les tâches existantes seront conservées mais détachées.`,'Supprimer',true);
   if(!ok)return;
   const result=await runUiAction('Impossible de supprimer le domaine',()=>api(`/api/objective-nodes/${domain.id}`,{method:'DELETE'}));
   if(!result.ok)return;closeLibraryDomain();await refresh();
