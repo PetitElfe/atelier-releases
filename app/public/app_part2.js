@@ -2164,3 +2164,292 @@ function closeLibraryDomain(){
   libraryNotebookState={domainId:null,sections:[],loading:false};
   $('#libraryDomainPanel')?.classList.add('hidden');$('#libraryHubPanel')?.classList.remove('hidden');renderLibrary();
 }
+
+
+/* 0.12.0 — écriture fluide, autosauvegarde, vraie barre d’édition et lecture paginée */
+let libraryPageExpanded=false;
+let libraryReaderTocOpen=false;
+let libraryAutosaveTimerV12=null;
+let libraryAutosaveSerial=0;
+let libraryLastSavePromise=Promise.resolve();
+
+function libraryEditorData(page){
+  return {
+    title:$('#libraryPageTitleInput')?.value.trim()||page?.title||'Sans titre',
+    notes:serializeLibraryRichEditor($('#libraryPageBody'))
+  };
+}
+function libraryApplySavedData(page,data){
+  if(!page||!data)return;
+  page.title=data.title||'Sans titre';page.notes=data.notes||LIBRARY_RICH_PREFIX;
+  librarySavedSnapshot=JSON.stringify(data);libraryPageDirty=false;
+  const stateEl=$('#librarySaveState');if(stateEl){stateEl.textContent='Enregistré';stateEl.classList.remove('is-dirty','is-saving')}
+  const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+  if(listItem)listItem.querySelector('strong').textContent=page.title;
+}
+function saveLibraryPageData(page,data,{silent=false}={}){
+  if(!page||!data)return Promise.resolve(false);
+  const serial=++libraryAutosaveSerial;
+  const stateEl=$('#librarySaveState');if(stateEl&&!silent){stateEl.textContent='Enregistrement…';stateEl.classList.add('is-saving')}
+  const work=runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify(data)}))
+    .then(result=>{
+      if(!result.ok){if(stateEl&&!silent){stateEl.textContent='Erreur';stateEl.classList.remove('is-saving')}return false}
+      if(serial===libraryAutosaveSerial||Number(librarySelectedPageId)!==Number(page.id))libraryApplySavedData(page,data);
+      return true;
+    });
+  libraryLastSavePromise=work.catch(()=>false);
+  return work;
+}
+function scheduleLibraryAutosave(page,{immediate=false}={}){
+  if(!page)return;
+  clearTimeout(libraryAutosaveTimerV12);
+  const data=libraryEditorData(page);
+  libraryPageDirty=JSON.stringify(data)!==librarySavedSnapshot;
+  const stateEl=$('#librarySaveState');
+  if(stateEl){
+    stateEl.textContent=libraryPageDirty?'Sauvegarde…':'Enregistré';
+    stateEl.classList.toggle('is-dirty',libraryPageDirty);
+  }
+  if(!libraryPageDirty)return;
+  libraryAutosaveTimerV12=setTimeout(()=>saveLibraryPageData(page,data),immediate?0:650);
+}
+function flushLibraryAutosave(page=null){
+  clearTimeout(libraryAutosaveTimerV12);
+  const current=page||libraryPageById(librarySelectedPageId);
+  if(!current||!$('#libraryPageBody'))return libraryLastSavePromise;
+  const data=libraryEditorData(current);
+  if(JSON.stringify(data)===librarySavedSnapshot)return libraryLastSavePromise;
+  return saveLibraryPageData(current,data);
+}
+function markLibraryPageDirty(page){scheduleLibraryAutosave(page)}
+function libraryCanLeaveCurrentPage(){
+  const page=libraryPageById(librarySelectedPageId);
+  if(page&&$('#libraryPageBody'))flushLibraryAutosave(page);
+  return true;
+}
+function libraryPersistOnExit(){
+  const page=libraryPageById(librarySelectedPageId),body=$('#libraryPageBody');
+  if(!page||!body)return;
+  const data=libraryEditorData(page);
+  if(JSON.stringify(data)===librarySavedSnapshot)return;
+  try{
+    fetch(`/api/objective-library-entries/${page.id}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data),
+      keepalive:true
+    });
+  }catch(_){}
+}
+if(!window.__atelierLibraryExitSave){
+  window.__atelierLibraryExitSave=true;
+  window.addEventListener('pagehide',libraryPersistOnExit);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')libraryPersistOnExit()});
+}
+
+function libraryCommand(command,value=null){
+  const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
+  editor.focus();restoreLibraryTextSelection();
+  try{document.execCommand('styleWithCSS',false,true)}catch(_){}
+  let ok=false;
+  try{ok=document.execCommand(command,false,value)}catch(_){}
+  if(!ok&&command==='hiliteColor'){
+    try{ok=document.execCommand('backColor',false,value)}catch(_){}
+  }
+  rememberLibraryTextSelection();
+  scheduleLibraryAutosave(page);
+}
+function libraryBlockFormat(tag){
+  const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
+  editor.focus();restoreLibraryTextSelection();
+  try{document.execCommand('formatBlock',false,tag)}catch(_){}
+  rememberLibraryTextSelection();scheduleLibraryAutosave(page);
+}
+function libraryToggleExpanded(){
+  libraryPageExpanded=!libraryPageExpanded;
+  $('#libraryNotebookPanel')?.classList.toggle('library-notebook-expanded',libraryPageExpanded);
+  document.body.classList.toggle('library-page-expanded',libraryPageExpanded);
+  const btn=$('#libraryPageExpand');if(btn){btn.textContent=libraryPageExpanded?'🗗':'⛶';btn.title=libraryPageExpanded?'Réduire la page':'Agrandir la page'}
+}
+function libraryLeaveExpanded(){
+  libraryPageExpanded=false;document.body.classList.remove('library-page-expanded');
+  $('#libraryNotebookPanel')?.classList.remove('library-notebook-expanded');
+}
+function libraryNotebookPageIndex(notebook,pageId){
+  return Math.max(0,(notebook?.entries||[]).findIndex(x=>Number(x.id)===Number(pageId)));
+}
+function goLibraryReaderPage(notebook,index,direction=0){
+  const pages=notebook?.entries||[];if(!pages.length)return;
+  const next=Math.max(0,Math.min(pages.length-1,Number(index)||0));
+  librarySelectedPageId=Number(pages[next].id);libraryEditorMode='read';
+  renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+  const sheet=$('#libraryReaderSheet');
+  if(sheet&&direction){sheet.classList.add(direction>0?'turn-next':'turn-prev');setTimeout(()=>sheet.classList.remove('turn-next','turn-prev'),260)}
+}
+function renderLibraryReader(notebook,page,root){
+  const pages=notebook.entries||[],index=libraryNotebookPageIndex(notebook,page.id);
+  root.innerHTML=`<article class="library-reader">
+    <div class="library-reader-bar">
+      <button id="libraryReaderBack" type="button" title="Retour à l’écriture">✎</button>
+      <button id="libraryReaderToc" type="button" title="Sommaire">☰</button>
+      <div class="library-reader-title"><strong>${esc(notebook.title)}</strong><span>${esc(page.title)}</span></div>
+      <div class="library-reader-pagination">
+        <button id="libraryReaderPrev" type="button" title="Page précédente" ${index<=0?'disabled':''}>←</button>
+        <label>Page <input id="libraryReaderPageNumber" type="number" min="1" max="${pages.length}" value="${index+1}"> / ${pages.length}</label>
+        <button id="libraryReaderNext" type="button" title="Page suivante" ${index>=pages.length-1?'disabled':''}>→</button>
+      </div>
+      <button id="libraryReaderExpand" type="button" title="${libraryPageExpanded?'Réduire':'Agrandir'}">${libraryPageExpanded?'🗗':'⛶'}</button>
+    </div>
+    <div class="library-reader-layout">
+      <aside id="libraryReaderTocPanel" class="library-reader-toc ${libraryReaderTocOpen?'':'hidden'}">
+        <div><strong>Sommaire</strong><button id="libraryReaderTocClose" type="button">×</button></div>
+        <nav id="libraryReaderTocList"></nav>
+      </aside>
+      <section id="libraryReaderSheet" class="library-reader-sheet">
+        <div class="library-reader-page-number">${index+1}</div>
+        <h1>${esc(page.title)}</h1>
+        <div id="libraryReadingView" class="library-reading-view"></div>
+        <div id="libraryBacklinks" class="library-backlinks"></div>
+      </section>
+    </div>
+  </article>`;
+  const reading=$('#libraryReadingView');reading.appendChild(renderLibraryReadHtml(page));
+  const backlinks=libraryBacklinks(page.id),back=$('#libraryBacklinks');
+  if(backlinks.length){
+    back.innerHTML='<span>LIENS VERS CETTE PAGE</span><div></div>';
+    backlinks.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);back.querySelector('div').appendChild(b)});
+  }else back.classList.add('hidden');
+  const toc=$('#libraryReaderTocList');
+  pages.forEach((entry,i)=>{
+    const b=document.createElement('button');b.type='button';b.className=Number(entry.id)===Number(page.id)?'active':'';b.innerHTML=`<span>${i+1}</span><strong>${esc(entry.title)}</strong>`;
+    b.onclick=()=>goLibraryReaderPage(notebook,i,i>index?1:-1);toc.appendChild(b);
+  });
+  $('#libraryReaderBack').onclick=()=>{libraryEditorMode='write';renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#libraryReaderToc').onclick=()=>{libraryReaderTocOpen=!libraryReaderTocOpen;$('#libraryReaderTocPanel').classList.toggle('hidden',!libraryReaderTocOpen)};
+  $('#libraryReaderTocClose')?.addEventListener('click',()=>{libraryReaderTocOpen=false;$('#libraryReaderTocPanel').classList.add('hidden')});
+  $('#libraryReaderPrev').onclick=()=>goLibraryReaderPage(notebook,index-1,-1);
+  $('#libraryReaderNext').onclick=()=>goLibraryReaderPage(notebook,index+1,1);
+  $('#libraryReaderPageNumber').onchange=e=>goLibraryReaderPage(notebook,Number(e.target.value)-1,Number(e.target.value)-1>index?1:-1);
+  $('#libraryReaderExpand').onclick=libraryToggleExpanded;
+}
+function renderLibraryPageEditor(notebook,page){
+  const root=$('#libraryNotebookPages');if(!root||!page)return;
+  if(libraryEditorMode==='read'){renderLibraryReader(notebook,page,root);return}
+  const backlinks=libraryBacklinks(page.id);
+  root.innerHTML=`<article class="library-writing-page${page.done?' is-done':''}">
+    <div class="library-writing-topbar">
+      <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
+      <div class="library-writing-actions">
+        <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="libraryPageReader" type="button" title="Lecture tranquille">📖</button>
+        <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
+        <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
+        <button id="libraryPageDelete" class="danger-button" type="button">×</button>
+      </div>
+    </div>
+    <div class="library-writing-editor">
+      <div class="library-writing-toolbar library-writing-toolbar-rich">
+        <div class="library-toolbar-group">
+          <button type="button" class="library-format-btn" data-command="undo" title="Annuler">↶</button>
+          <button type="button" class="library-format-btn" data-command="redo" title="Rétablir">↷</button>
+        </div>
+        <div class="library-toolbar-group">
+          <select id="libraryBlockFormat" title="Style de paragraphe"><option value="div">Normal</option><option value="h1">Titre 1</option><option value="h2">Titre 2</option><option value="h3">Titre 3</option><option value="blockquote">Citation</option></select>
+          <select id="libraryFontFamily" title="Police"><option value="Georgia">Georgia</option><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Trebuchet MS">Trebuchet</option><option value="Courier New">Courier</option><option value="Times New Roman">Times</option></select>
+          <select id="libraryFontSize" title="Taille"><option value="1">Très petit</option><option value="2">Petit</option><option value="3" selected>Normal</option><option value="4">Grand</option><option value="5">Très grand</option><option value="6">Titre</option><option value="7">Très grand titre</option></select>
+        </div>
+        <div class="library-toolbar-group">
+          <button type="button" class="library-format-btn" data-command="bold" title="Gras"><b>G</b></button>
+          <button type="button" class="library-format-btn" data-command="italic" title="Italique"><i>I</i></button>
+          <button type="button" class="library-format-btn" data-command="underline" title="Souligner"><u>S</u></button>
+          <button type="button" class="library-format-btn" data-command="strikeThrough" title="Barré"><s>abc</s></button>
+          <button type="button" class="library-format-btn" data-command="superscript" title="Exposant">x²</button>
+          <button type="button" class="library-format-btn" data-command="subscript" title="Indice">x₂</button>
+        </div>
+        <div class="library-toolbar-group library-colour-tools">
+          <label title="Couleur du texte">A <input id="libraryTextColor" type="color" value="#392c22"></label>
+          <label title="Surligner">▰ <input id="libraryHighlightColor" type="color" value="#f2d77a"></label>
+        </div>
+        <div class="library-toolbar-group">
+          <button type="button" class="library-format-btn" data-command="justifyLeft" title="Aligner à gauche">≡←</button>
+          <button type="button" class="library-format-btn" data-command="justifyCenter" title="Centrer">≡</button>
+          <button type="button" class="library-format-btn" data-command="justifyRight" title="Aligner à droite">→≡</button>
+          <button type="button" class="library-format-btn" data-command="justifyFull" title="Justifier">☰</button>
+        </div>
+        <div class="library-toolbar-group">
+          <button type="button" class="library-format-btn" data-command="insertUnorderedList" title="Liste à puces">• Liste</button>
+          <button type="button" class="library-format-btn" data-command="insertOrderedList" title="Liste numérotée">1. Liste</button>
+          <button type="button" class="library-format-btn" data-command="outdent" title="Réduire le retrait">⇤</button>
+          <button type="button" class="library-format-btn" data-command="indent" title="Augmenter le retrait">⇥</button>
+          <button type="button" class="library-format-btn" data-command="removeFormat" title="Effacer la mise en forme">Tx</button>
+        </div>
+        <div class="library-toolbar-group">
+          <button id="libraryInsertInternalLink" type="button">↗ Page</button>
+          <button id="libraryInsertWebLink" type="button">🔗 Web</button>
+          <button id="libraryInsertImage" type="button">▧ Image</button>
+          <input id="libraryImageInput" type="file" accept="image/*" class="hidden">
+        </div>
+        <span id="libraryLinkSelectionInfo">Liens : clic pour sélectionner.</span>
+        <button id="libraryOpenSelectedLink" class="hidden" type="button">Ouvrir</button>
+        <button id="libraryEditSelectedLink" class="hidden" type="button">✎ Modifier</button>
+      </div>
+      <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
+    </div>
+    <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
+  </article>`;
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
+  librarySavedSnapshot=JSON.stringify({title:page.title||'Sans titre',notes:libraryNotesAreRich(page.notes)?page.notes:LIBRARY_RICH_PREFIX+libraryPageHtml(page)});
+  libraryPageDirty=false;librarySelectedRichLink=null;
+  const notebookPanel=$('#libraryNotebookPanel');notebookPanel?.classList.toggle('library-notebook-expanded',libraryPageExpanded);
+
+  const backlinksRoot=$('#libraryBacklinks>div');
+  backlinks.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);backlinksRoot.appendChild(b)});
+
+  const changed=()=>scheduleLibraryAutosave(page);
+  body.addEventListener('input',changed);title.addEventListener('input',changed);
+  body.addEventListener('keyup',rememberLibraryTextSelection);body.addEventListener('mouseup',rememberLibraryTextSelection);
+  body.addEventListener('blur',()=>scheduleLibraryAutosave(page,{immediate:true}));
+
+  $$('.library-format-btn').forEach(btn=>{
+    btn.onmousedown=e=>{e.preventDefault();rememberLibraryTextSelection()};
+    btn.onclick=()=>libraryCommand(btn.dataset.command,btn.dataset.value||null);
+  });
+  ['libraryBlockFormat','libraryFontFamily','libraryFontSize','libraryTextColor','libraryHighlightColor'].forEach(id=>{const el=$('#'+id);if(el)el.onmousedown=rememberLibraryTextSelection});
+  $('#libraryBlockFormat').onchange=e=>libraryBlockFormat(e.target.value);
+  $('#libraryFontFamily').onchange=e=>libraryCommand('fontName',e.target.value);
+  $('#libraryFontSize').onchange=e=>libraryCommand('fontSize',e.target.value);
+  $('#libraryTextColor').oninput=e=>libraryCommand('foreColor',e.target.value);
+  $('#libraryHighlightColor').oninput=e=>libraryCommand('hiliteColor',e.target.value);
+
+  $('#libraryOpenSelectedLink').onclick=()=>{
+    const a=librarySelectedRichLink;if(!a)return;
+    if(a.dataset.libraryLinkKind==='page'){const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)}
+    else{const url=safeLibraryUrl(a.getAttribute('href'));if(url)window.open(url,'_blank','noopener')}
+  };
+  $('#libraryEditSelectedLink').onclick=()=>{
+    const a=librarySelectedRichLink;if(!a)return;
+    if(a.dataset.libraryLinkKind==='page')openLibraryInternalLinkModal(notebook,page,a);else openLibraryWebLinkModal(notebook,page,a);
+  };
+  $('#libraryInsertInternalLink').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertInternalLink').onclick=()=>openLibraryInternalLinkModal(notebook,page);
+  $('#libraryInsertWebLink').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertWebLink').onclick=()=>openLibraryWebLinkModal(notebook,page);
+  $('#libraryInsertImage').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertImage').onclick=()=>$('#libraryImageInput').click();
+  $('#libraryImageInput').onchange=async e=>{await insertLibraryImage(e.target.files?.[0],page);scheduleLibraryAutosave(page,{immediate:true});e.target.value=''};
+
+  $('#libraryPageReader').onclick=async()=>{await flushLibraryAutosave(page);libraryEditorMode='read';libraryReaderTocOpen=false;renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#libraryPageExpand').onclick=libraryToggleExpanded;
+  $('#libraryPageDoneToggle').onclick=async()=>{
+    await flushLibraryAutosave(page);
+    const next=!page.done;
+    const result=await runUiAction('Impossible de modifier la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({done:next})}));
+    if(!result.ok)return;
+    page.done=next;root.querySelector('.library-writing-page')?.classList.toggle('is-done',next);
+    const toggle=$('#libraryPageDoneToggle');if(toggle)toggle.textContent=next?'✓ Traité':'○ Marquer traité';
+    const listButton=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+    if(listButton){listButton.classList.toggle('is-done',next);const mark=listButton.querySelector('span');if(mark)mark.textContent=next?'✓':'•'}
+  };
+  $('#libraryPageDelete').onclick=async()=>{await flushLibraryAutosave(page);deleteLibraryPage(notebook,page)};
+}
