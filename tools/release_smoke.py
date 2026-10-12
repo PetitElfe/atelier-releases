@@ -128,12 +128,8 @@ def check_frontend_contract() -> None:
     for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="addStandaloneReminder"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
-    bad_selector = "$" + "('.tabs button[data-view]').forEach"
-    good_selector = "$$" + "('.tabs button[data-view]').forEach"
-    without_good = js.replace(good_selector, "")
-    if bad_selector in without_good:
-        fail("Sélecteur de navigation invalide détecté.")
-    if good_selector not in js:
+    binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
+    if binding not in js:
         fail("Branchement des onglets de navigation absent.")
     if "main{margin-left:" in css or ".topbar{margin-left:" in css:
         fail("Le tiroir de navigation ne doit pas déplacer l'accueil ou l'en-tête.")
