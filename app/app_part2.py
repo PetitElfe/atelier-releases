@@ -160,6 +160,14 @@ class Handler(BaseHTTPRequestHandler):
                 print('[Atelier] Import recette URL:', exc)
                 return self._json({'error':"Impossible de lire cette page. Vérifie le lien ou essaie une autre recette."},502)
         with conn() as c:
+            if p == '/api/reminders':
+                title=(body.get('title') or '').strip()
+                remind_at=(body.get('remind_at') or '').strip()
+                if not title: return self._json({'error':'Le titre du rappel est requis.'},400)
+                if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
+                cur=c.execute('''INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,snoozed_until,created_at)
+                                 VALUES('standalone',0,?,?,'pending',NULL,?)''',(title,remind_at,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/events':
                 vals = (
                     body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
