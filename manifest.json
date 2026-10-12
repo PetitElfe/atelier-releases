@@ -1,15 +1,15 @@
 {
-  "version": "0.6.5",
+  "version": "0.6.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "e16ee993d165b5ec276e79fe8dfc224f6e1977dbcdcf81935a6798be56626fa3"
+      "sha256": "97eed31f435b03e02b162f6cb1518046bae38c2547aa1a0c82d2e7799bacac4e"
     },
     {
       "path": "VERSION",
-      "sha256": "34bf52562bae401de106933a7565c9d3a5c8dc83c04b0b29492dd3f6f3983b7a"
+      "sha256": "986d95a92d1538ad7a755e6776e7bf62e90e6deb9c26c5aecc40e3a0346daee6"
     },
     {
       "path": "app.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "019672ee7f387dc72d77e13e09b0602ad59b808e4487130de2cfb5f1d0b1ccda"
+      "sha256": "32a6a2f3fb380012aa546b9765800a15bf4c8346b08a4af29445bed3e3e8e111"
     },
     {
       "path": "public/styles.css",
       "sha256": "406bce7174dca66572e0ff8b6d3501534186e95ac1e4e13d4503fbec21e18cbe"
     }
   ],
-  "notes": "0.6.5 : fiabilité des rappels renforcée et flèche du tiroir adaptative selon le côté de l’écran ; le format de date configurable est conservé pour les futurs paramètres."
+  "notes": "0.6.6 : corrige la version affichée de l’interface et ajoute un test empêchant toute nouvelle incohérence entre l’interface et le serveur."
 }
