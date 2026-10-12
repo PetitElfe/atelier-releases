@@ -1,15 +1,15 @@
 {
-  "version": "0.5.9",
+  "version": "0.6.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "fd4b19b7a2de2e73657e080a1339440f5bc7426df2ae45a261f3e7b3ff9c8195"
+      "sha256": "988affa1959d6781c35cdde17c1abcb48e3aa6661587bd65e383e746da9e5ad1"
     },
     {
       "path": "VERSION",
-      "sha256": "dcdecbc7866cc9413935ee7a76b92beba1e4494f63aa0df5d8b5afe979d16260"
+      "sha256": "97a5d6e540a6120d09c39ddb667e0e8e2bac7fcc2ffef813b82e08fd60365bce"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "35500420740f322a5dc88d4f4661d53d521a69a8e51d349accd1eebc63566e98"
+      "sha256": "8d78f6e3ea23c7cb3679e9555e3ba3dc4b06a05126c5c02b42c5cb23be17ef61"
     },
     {
       "path": "app_part2.py",
-      "sha256": "fd5462f0f95ae0700398329aa1436430f20b3f34497377fe5257a7e07d9c1886"
+      "sha256": "bb7344c8c4e8ec46f8b93ba0087f31b04d128f402bc8317c5a7a6609e8309e19"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "7a82cd42f2e317464cc0a96053fb1a52c6e8b3e22aa79dfc4e2b2e363981f9c2"
+      "sha256": "ddded350ecda464ef8d32975fc9b0ad2973cf3929b0208990890c97dc369d9e7"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "5d9dff3e87e6e5f6ab095a65414f58996ba9e6cdbf86347e939e7553be9fab63"
+      "sha256": "ae26560aa1b9c62d6bd2a7b8bb3214657503314ea371e1cefa4a9f50173cbb54"
     },
     {
       "path": "public/index.html",
-      "sha256": "9be37de40c7aad5cc242521b936124204fc58a15cec114d3994778c1a0eac0a2"
+      "sha256": "1b8ab7518dbaeac2718787ed43e8307873ffd32a9d3f66c68e6530ee6d027dd3"
     },
     {
       "path": "public/styles.css",
       "sha256": "bda1b242a77660cea2a17d98e960b549c50bede95d8e20fc28b49fe2a442e746"
     }
   ],
-  "notes": "0.5.9 : ajoute le glisser-déposer d’images directement dans la zone photo de l’éditeur de recette, avec surbrillance de la zone et conservation des contrôles Ajouter/Changer/Retirer."
+  "notes": "0.6.0 : bloc Fondations/fiabilité après audit — sauvegarde SQLite avant migration, WAL/busy_timeout, rappels en heure locale et renotification après report, récurrence mensuelle corrigée, import URL renforcé, arrêt serveur POST uniquement, port de test configurable et contrôles automatiques de release GitHub."
 }

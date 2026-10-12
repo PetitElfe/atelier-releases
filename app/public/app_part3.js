@@ -114,11 +114,15 @@ function openSnooze(r){
       submit.disabled=false; submit.textContent='Reporter';
       return;
     }
+    shown.delete(r.id);
     closeModal();await refresh();
   };
 }
 
-async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(new Date().toISOString().slice(0,19))}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
+function localIsoSeconds(d=new Date()){
+  return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
 const shown=new Set();
 function notifyReminder(r){
   if(shown.has(r.id))return; shown.add(r.id); const title=r.title||r.entity_title||`Rappel #${r.id}`;
