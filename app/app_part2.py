@@ -43,27 +43,90 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         with conn() as c:
+            if p == '/api/events':
+                start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
+                rows = c.execute('SELECT * FROM events WHERE event_date <= ? ORDER BY event_date,start_time,id', (end,)).fetchall()
+                expanded = expand_events(rows, start, end)
+                done_rows = c.execute('SELECT event_id,instance_date,completed_at FROM event_completions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
+                done_map = {(r['event_id'],r['instance_date']): r['completed_at'] for r in done_rows}
+                action_rows = c.execute('SELECT event_id,instance_date,action,moved_event_id,action_at FROM event_instance_actions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
+                action_map = {(r['event_id'],r['instance_date']): dict(r) for r in action_rows}
+                for e in expanded:
+                    key = (e['id'], e.get('instance_date') or e['event_date'])
+                    completed_at = done_map.get(key)
+                    action = action_map.get(key)
+                    e['instance_done'] = bool(completed_at)
+                    e['instance_completed_at'] = completed_at or ''
+                    e['instance_action'] = action['action'] if action else ''
+                    e['moved_event_id'] = action['moved_event_id'] if action else None
+                    e['instance_action_at'] = action['action_at'] if action else ''
+                return self._json(expanded)
+            if p == '/api/event-template':
+                title = (q.get('title', [''])[0] or '').strip()
+                if not title:
+                    return self._json({'found': False})
+                row = c.execute(
+                    '''SELECT category,contact,travel_time
+                       FROM events
+                       WHERE lower(trim(title)) = lower(trim(?))
+                       ORDER BY event_date DESC, updated_at DESC, id DESC
+                       LIMIT 1''',
+                    (title,)
+                ).fetchone()
+                if not row:
+                    return self._json({'found': False})
+                data = dict(row); data['found'] = True
+                return self._json(data)
+            if p == '/api/tasks':
+                rows = c.execute('SELECT * FROM tasks WHERE archived=0 ORDER BY completed, important DESC, COALESCE(due_date,\'9999-12-31\'), order_index, id').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/shopping':
+                rows = c.execute('SELECT * FROM shopping_items WHERE archived=0 ORDER BY checked, id').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/foods':
+                rows = c.execute("""SELECT * FROM food_items WHERE status='active'
+                                    ORDER BY CASE WHEN expiry_date IS NULL OR expiry_date='' THEN 1 ELSE 0 END,
+                                             expiry_date, id""").fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/recipe-books':
+                rows = c.execute('''SELECT b.id,b.name,COUNT(r.id) AS recipe_count
+                                    FROM recipe_books b
+                                    LEFT JOIN recipes r ON r.book_id=b.id AND r.archived=0
+                                    GROUP BY b.id,b.name
+                                    ORDER BY b.id''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p in ('/api/recipes','/api/meals'):
+                rows = c.execute('''SELECT r.*,b.name AS book_name
+                                    FROM recipes r
+                                    LEFT JOIN recipe_books b ON b.id=r.book_id
+                                    WHERE r.archived=0
+                                    ORDER BY lower(r.title),r.id''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/meal-ideas':
+                rows = c.execute('''SELECT m.id AS idea_id,r.*,b.name AS book_name
+                                    FROM meal_idea_links m
+                                    JOIN recipes r ON r.id=m.recipe_id
+                                    LEFT JOIN recipe_books b ON b.id=r.book_id
+                                    WHERE r.archived=0
+                                    ORDER BY m.created_at DESC,m.id DESC''').fetchall()
+                return self._json([dict(r) for r in rows])
             if p == '/api/reminders':
-                try:
-                    rows = c.execute('''
-                        SELECT * FROM reminders
-                        WHERE status != 'done'
-                        ORDER BY COALESCE(snoozed_until,remind_at),id
-                    ''').fetchall()
-                    data=[]
-                    for row in rows:
-                        item=dict(row); item['entity_title']=''
-                        if item['entity_type']=='event':
-                            linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
-                            item['entity_title']=linked['title'] if linked else ''
-                        elif item['entity_type']=='task':
-                            linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
-                            item['entity_title']=linked['title'] if linked else ''
-                        data.append(item)
-                    return self._json(data)
-                except Exception as exc:
-                    print('[Atelier] Lecture rappels:', repr(exc))
-                    return self._json({'error':'Lecture des rappels impossible : '+str(exc)},500)
+                rows = c.execute('''
+                    SELECT * FROM reminders
+                    WHERE status != 'done'
+                    ORDER BY COALESCE(snoozed_until,remind_at),id
+                ''').fetchall()
+                data=[]
+                for row in rows:
+                    item=dict(row); item['entity_title']=''
+                    if item['entity_type']=='event':
+                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    elif item['entity_type']=='task':
+                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    data.append(item)
+                return self._json(data)
             if p == '/api/reminders/due':
                 now = q.get('now', [now_iso()])[0]
                 rows = c.execute('''
