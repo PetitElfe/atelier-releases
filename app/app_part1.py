@@ -1,8 +1,9 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
-from urllib.request import Request, urlopen
+from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from pathlib import Path
-import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress
+from calendar import monthrange
+import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
 from datetime import datetime, date, timedelta
 
 ROOT = Path(__file__).resolve().parent
@@ -11,7 +12,8 @@ PUBLIC = ROOT / 'public'
 DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
-PORT = 8765
+PORT = int(os.environ.get('ATELIER_PORT', '8765'))
+SCHEMA_VERSION = 1
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -158,12 +160,39 @@ CREATE INDEX IF NOT EXISTS idx_meal_idea_links_recipe ON meal_idea_links(recipe_
 '''
 
 def conn():
-    c = sqlite3.connect(DB_PATH)
+    c = sqlite3.connect(DB_PATH, timeout=5)
     c.row_factory = sqlite3.Row
     c.execute('PRAGMA foreign_keys = ON')
+    c.execute('PRAGMA busy_timeout = 5000')
     return c
 
+def _backup_db_before_migration():
+    if not DB_PATH.exists() or DB_PATH.stat().st_size == 0:
+        return
+    try:
+        probe = sqlite3.connect(DB_PATH, timeout=2)
+        current = int(probe.execute('PRAGMA user_version').fetchone()[0] or 0)
+        probe.close()
+    except Exception:
+        current = 0
+    if current >= SCHEMA_VERSION:
+        return
+    backup_dir = DATA / 'backups'
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+    target = backup_dir / f'atelier-before-schema-{SCHEMA_VERSION}-{stamp}.db'
+    shutil.copy2(DB_PATH, target)
+    backups = sorted(backup_dir.glob('atelier-before-schema-*.db'), key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in backups[5:]:
+        try:
+            old.unlink()
+        except Exception:
+            pass
+
+_backup_db_before_migration()
+
 with conn() as c:
+    c.execute('PRAGMA journal_mode = WAL')
     c.executescript(SCHEMA)
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
@@ -245,6 +274,7 @@ with conn() as c:
             cleaned=(notes[:match.start()]+notes[match.end():]).strip()
             c.execute('UPDATE recipes SET source_url=?,notes=?,updated_at=? WHERE id=?',
                       (source_url,cleaned,migration_ts,row['id']))
+    c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
 
 
@@ -351,14 +381,21 @@ def _validate_recipe_url(raw_url):
         raise ValueError('Impossible de résoudre cette adresse.')
     return raw
 
+class _SafeRecipeRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _validate_recipe_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
 def import_recipe_from_url(raw_url):
     url=_validate_recipe_url(raw_url)
     req=Request(url, headers={
         'User-Agent':'Mozilla/5.0 (LAtelier recipe importer)',
         'Accept':'text/html,application/xhtml+xml'
     })
-    with urlopen(req, timeout=10) as response:
+    opener=build_opener(_SafeRecipeRedirectHandler())
+    with opener.open(req, timeout=10) as response:
         final_url=response.geturl()
+        _validate_recipe_url(final_url)
         length=response.headers.get('Content-Length')
         if length and int(length)>3_000_000:
             raise ValueError('La page est trop volumineuse pour être importée.')
@@ -377,7 +414,7 @@ def import_recipe_from_url(raw_url):
         recipe=_find_recipe_schema(data)
         if recipe: break
     if not recipe:
-        raise ValueError("Je n’ai pas trouvé de recette structurée sur cette page. Essaie le copier-coller du texte.")
+        raise ValueError("Je n’ai pas trouvé de recette structurée sur cette page. Essaie une autre recette ou ajoute-la manuellement.")
     title=str(recipe.get('name') or '').strip()
     if not title:
         raise ValueError("La page contient une recette, mais son titre n’a pas pu être lu.")
@@ -398,6 +435,17 @@ def import_recipe_from_url(raw_url):
         'image_data': _recipe_image_url(recipe.get('image'))
     }
 
+def _next_recurrence_date(current, recurrence, anchor_day):
+    if recurrence == 'daily':
+        return current + timedelta(days=1)
+    if recurrence == 'weekly':
+        return current + timedelta(days=7)
+    if recurrence == 'monthly':
+        year = current.year + (1 if current.month == 12 else 0)
+        month = 1 if current.month == 12 else current.month + 1
+        return date(year, month, min(anchor_day, monthrange(year, month)[1]))
+    return None
+
 def expand_events(rows, start_s, end_s):
     try:
         start = date.fromisoformat(start_s)
@@ -417,28 +465,19 @@ def expand_events(rows, start_s, end_s):
             continue
         d = base
         # advance quickly enough for normal local use
+        anchor_day = base.day
         while d < start:
-            if recur == 'daily': d += timedelta(days=1)
-            elif recur == 'weekly': d += timedelta(days=7)
-            elif recur == 'monthly':
-                y = d.year + (1 if d.month == 12 else 0)
-                m = 1 if d.month == 12 else d.month + 1
-                day = min(d.day, [31,29 if y%4==0 and (y%100!=0 or y%400==0) else 28,31,30,31,30,31,31,30,31,30,31][m-1])
-                d = date(y,m,day)
-            else: break
+            nxt = _next_recurrence_date(d, recur, anchor_day)
+            if not nxt: break
+            d = nxt
         guard = 0
         while d <= end and guard < 500:
             ee = dict(e)
             ee['instance_date'] = d.isoformat()
             ee['series_id'] = e['id']
             out.append(ee)
-            if recur == 'daily': d += timedelta(days=1)
-            elif recur == 'weekly': d += timedelta(days=7)
-            elif recur == 'monthly':
-                y = d.year + (1 if d.month == 12 else 0)
-                m = 1 if d.month == 12 else d.month + 1
-                day = min(d.day, [31,29 if y%4==0 and (y%100!=0 or y%400==0) else 28,31,30,31,30,31,31,30,31,30,31][m-1])
-                d = date(y,m,day)
-            else: break
+            nxt = _next_recurrence_date(d, recur, anchor_day)
+            if not nxt: break
+            d = nxt
             guard += 1
     return out
