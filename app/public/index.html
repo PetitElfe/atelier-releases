@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.8.0</title>
+  <title>L’Atelier — Alpha 0.9.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.8.0</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.9.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -33,7 +33,7 @@
       <button data-view="home" class="active">Accueil</button>
       <button data-view="calendar">Calendrier</button>
       <button data-view="tasks">Tâches</button>
-      <button data-view="objectives">Objectifs</button>
+      <button data-view="library">Bibliothèque</button>
       <button data-view="reminders">Rappels</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -144,28 +144,82 @@
       <div id="taskList" class="task-list"></div>
     </section>
 
-    <section id="objectivesView" class="view objectives-view">
-      <div class="objectives-head">
-        <div>
-          <div class="section-kicker">CARTE DE PROGRESSION</div>
-          <h2>Objectifs</h2>
-          <p class="muted">Construis la structure avant même les objectifs : domaines, objectifs, étapes, sous-étapes, tâches et bibliothèques adaptées à chaque besoin.</p>
+    <section id="libraryView" class="view library-view">
+      <div id="libraryHubPanel" class="library-hub-panel">
+        <div class="library-head">
+          <div>
+            <div class="section-kicker">TES ESPACES</div>
+            <h2>Bibliothèque</h2>
+            <p class="muted">Un domaine est un espace complet : Anglais, Art, JDR, LoL… avec ses carnets, ses sous-objectifs, ses tâches et son avancée.</p>
+          </div>
+          <button id="addLibraryDomain" class="primary" type="button">+ Nouveau domaine</button>
         </div>
-        <button id="addObjectiveNode" class="primary" type="button">+ Ajouter à la carte</button>
+        <div id="libraryDomainShelf" class="library-domain-shelf"></div>
       </div>
 
-      <div class="objectives-workspace">
-        <section class="objective-map-panel">
-          <div class="objective-map-toolbar">
-            <div><strong>Carte</strong><span>Ta hiérarchie complète</span></div>
-            <button id="objectiveAddRoot" type="button">+ Domaine racine</button>
+      <div id="libraryDomainPanel" class="library-domain-panel hidden">
+        <div class="library-domain-head">
+          <div class="library-domain-head-left">
+            <button id="libraryBack" type="button">← Bibliothèque</button>
+            <div>
+              <div id="libraryDomainKicker" class="section-kicker">DOMAINE</div>
+              <h2 id="libraryDomainTitle">Domaine</h2>
+              <p id="libraryDomainDescription" class="muted"></p>
+            </div>
           </div>
-          <div id="objectiveMap" class="objective-map" aria-label="Carte des objectifs"></div>
-        </section>
+          <div class="library-domain-head-actions">
+            <button id="libraryDomainConfigure" type="button">Configurer</button>
+            <button id="libraryDomainDelete" class="danger-button" type="button">Supprimer</button>
+          </div>
+        </div>
 
-        <aside id="objectiveInspector" class="objective-inspector">
-          <div class="objective-inspector-empty">Sélectionne un élément de la carte.</div>
-        </aside>
+        <div class="library-domain-layout">
+          <aside class="library-domain-sidebar">
+            <section class="library-side-module library-notebooks-module">
+              <div class="library-module-head">
+                <div><span class="library-module-kicker">CARNETS</span><strong>Mes carnets</strong></div>
+                <button id="addLibraryNotebook" type="button" title="Ajouter un carnet">＋</button>
+              </div>
+              <div id="libraryNotebookList" class="library-notebook-list"></div>
+            </section>
+
+            <section class="library-side-module library-progress-module">
+              <div class="library-module-head">
+                <div><span class="library-module-kicker">AVANCÉE</span><strong>Progression</strong></div>
+              </div>
+              <div id="libraryProgressPanel" class="library-progress-panel"></div>
+            </section>
+          </aside>
+
+          <section id="libraryDomainMain" class="library-domain-main">
+            <div id="libraryOverviewPanel" class="library-overview-panel">
+              <div class="library-main-head">
+                <div><div class="section-kicker">VUE D’ENSEMBLE</div><h3>Ce que tu construis ici</h3></div>
+                <div class="library-main-actions">
+                  <button id="addLibrarySubgoal" type="button">+ Sous-objectif</button>
+                  <button id="addLibraryTask" type="button">+ Tâche</button>
+                </div>
+              </div>
+              <div id="librarySubgoalTree" class="library-subgoal-tree"></div>
+              <section class="library-tasks-module">
+                <div class="library-module-head"><div><span class="library-module-kicker">À FAIRE</span><strong>Tâches du domaine</strong></div></div>
+                <div id="libraryDomainTasks" class="library-domain-tasks"></div>
+              </section>
+            </div>
+
+            <div id="libraryNotebookPanel" class="library-notebook-panel hidden">
+              <div class="library-main-head">
+                <div><div class="section-kicker">CARNET</div><h3 id="libraryNotebookTitle">Carnet</h3></div>
+                <div class="library-main-actions">
+                  <button id="libraryNotebookEdit" type="button">✎ Renommer</button>
+                  <button id="libraryNotebookDelete" class="danger-button" type="button">× Supprimer</button>
+                  <button id="addLibraryPage" class="primary" type="button">+ Ajouter une page</button>
+                </div>
+              </div>
+              <div id="libraryNotebookPages" class="library-notebook-pages"></div>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 
