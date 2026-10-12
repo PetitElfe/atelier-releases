@@ -1,15 +1,15 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "fd064e01f2a6b58a88edf5aa8cfdc0935ab6b6abc04367d7833f8181cb68e785"
+      "sha256": "6f21dc622235958522987475792f3ea56b38d593587daedb6070a76bc6c8075e"
     },
     {
       "path": "VERSION",
-      "sha256": "a66780da23103beaf12432b418508966b31a2a3a787f9468a5b6cdaa8667c1ef"
+      "sha256": "9d8c94f1ad3ea96b1e2ac4914fda4cb93c76b4a3e0d8cc6dd8976d6c0b227d15"
     },
     {
       "path": "app.py",
@@ -29,24 +29,24 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "cdbc2c686bcd4b2fa601b06f40ff6106467146ed74847b389d4faf6251567458"
+      "sha256": "95b029a05d1748cba9072364267b171998dbd4e7614e0b83926ebe428fc0bc22"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "7885475ba6f6abfc6e97e7182f8a817917b3882f8798477f363aa9f47aa62df3"
+      "sha256": "6baa161618a1dc0db9c8186036489343c91329cbccafdd1888d22096ea4c3d19"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "ce7f6105cf316aa094f1ae2dc7df1014f958015e543dc0e8fc72a60aa8387f5e"
+      "sha256": "817c0c40a3550af563d252622d866b28857f058c3c8fc2940ac658c78d0fef48"
     },
     {
       "path": "public/index.html",
-      "sha256": "8d9421c75235feea754d2318f0971df3e8cd5c3ee88192900e588f53646ca6fa"
+      "sha256": "9091ff22baaf98e7409b366c7c24ba4162eef53aadfc688562528607c3035120"
     },
     {
       "path": "public/styles.css",
-      "sha256": "756120042eae22f0d5acad99a50c87d62fa37793c49f09e769dcb2f20f757e2d"
+      "sha256": "98ce1c7587475d747a22b6c3183a746383db00a7b69dc5e3e82e0f03ae5a69a1"
     }
   ],
-  "notes": "0.8.0 : grande carte hiérarchique des objectifs, étapes et sous-étapes, tâches liées et bibliothèques personnalisables par objectif."
+  "notes": "0.9.0 : refonte Objectifs en Bibliothèque avec domaines, constructeur initial, carnets à gauche, module d’avancée et sous-objectifs/tâches dans chaque domaine."
 }
