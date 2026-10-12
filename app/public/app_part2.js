@@ -1580,3 +1580,517 @@ async function deleteLibraryDomain(domain){
   const result=await runUiAction('Impossible de supprimer le domaine',()=>api(`/api/objective-nodes/${domain.id}`,{method:'DELETE'}));
   if(!result.ok)return;closeLibraryDomain();await refresh();
 }
+
+
+/* 0.11.0 — éditeur de carnet riche, sauvegarde manuelle, images et progression assistée */
+const LIBRARY_RICH_PREFIX='@@ATELIER_RICH_V1@@';
+let libraryPageDirty=false;
+let librarySavedSnapshot='';
+let librarySelectedRichLink=null;
+let libraryDraggedFigure=null;
+
+function libraryNodeProgress(node){
+  if(!node)return 0;
+  if(node.status==='done')return 100;
+  const children=objectiveChildren(node.id);
+  if(children.length){
+    return Math.round(children.reduce((sum,child)=>sum+libraryNodeProgress(child),0)/children.length);
+  }
+  return Math.max(0,Math.min(100,Number(node.progress)||0));
+}
+function libraryProgressForDomain(domain){
+  if(!domain)return 0;
+  const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
+  if(mainGoal)return libraryNodeProgress(mainGoal);
+  const children=objectiveChildren(domain.id);
+  if(children.length)return Math.round(children.reduce((sum,node)=>sum+libraryNodeProgress(node),0)/children.length);
+  return Math.max(0,Math.min(100,Number(domain.progress)||0));
+}
+function libraryNotesAreRich(raw){return String(raw||'').startsWith(LIBRARY_RICH_PREFIX)}
+function libraryRichPayload(raw){return libraryNotesAreRich(raw)?String(raw).slice(LIBRARY_RICH_PREFIX.length):''}
+
+function librarySanitizeStyle(raw){
+  const allowed=new Set(['color','background-color','font-family','font-size','text-align','font-weight','font-style','text-decoration','width','max-width','margin-left','margin-right','display']);
+  const out=[];
+  String(raw||'').split(';').forEach(rule=>{
+    const idx=rule.indexOf(':');if(idx<1)return;
+    const key=rule.slice(0,idx).trim().toLowerCase(),value=rule.slice(idx+1).trim();
+    if(!allowed.has(key)||!value)return;
+    if(/url\s*\(|expression\s*\(|javascript:/i.test(value))return;
+    out.push(key+':'+value);
+  });
+  return out.join(';');
+}
+function librarySanitizeHtml(raw){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString('<div id="atelier-rich-root">'+String(raw||'')+'</div>','text/html');
+  const root=doc.querySelector('#atelier-rich-root');
+  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','FIGURE','IMG']);
+  [...root.querySelectorAll('*')].forEach(el=>{
+    if(!allowed.has(el.tagName)){
+      el.replaceWith(...el.childNodes);return;
+    }
+    [...el.attributes].forEach(attr=>{
+      const name=attr.name.toLowerCase();
+      const dataAllowed=['data-library-link-kind','data-page-id','data-link-type','data-atelier-image','data-image-align'].includes(name);
+      if(name==='style'){const safe=librarySanitizeStyle(attr.value);if(safe)el.setAttribute('style',safe);else el.removeAttribute('style');return}
+      if(dataAllowed)return;
+      if(el.tagName==='A'&&['href','target','rel','title'].includes(name)){
+        if(name==='href'&&!safeLibraryUrl(attr.value)&&attr.value!=='#')el.setAttribute('href','#');
+        return;
+      }
+      if(el.tagName==='IMG'&&['src','alt'].includes(name)){
+        if(name==='src'&&!/^data:image\/(?:png|jpeg|jpg|webp|gif);base64,/i.test(attr.value))el.removeAttribute('src');
+        return;
+      }
+      if(el.tagName==='FONT'&&['color','face','size'].includes(name))return;
+      el.removeAttribute(attr.name);
+    });
+    if(el.tagName==='A'){
+      el.setAttribute('rel','noopener noreferrer');
+      if(el.dataset.libraryLinkKind==='web')el.setAttribute('target','_blank');
+      else el.removeAttribute('target');
+    }
+  });
+  return root.innerHTML;
+}
+function libraryLegacyHtml(raw){
+  const root=document.createElement('div');
+  parseLibraryTokens(raw).forEach(part=>{
+    if(part.type==='text'){
+      part.value.split('\n').forEach((chunk,i)=>{if(i)root.appendChild(document.createElement('br'));root.appendChild(document.createTextNode(chunk))});
+    }else if(part.type==='page'){
+      const a=document.createElement('a');
+      a.href='#';a.dataset.libraryLinkKind='page';a.dataset.pageId=String(part.pageId);a.dataset.linkType=part.linkType||'Lien';
+      a.textContent=part.label||libraryPageById(part.pageId)?.title||'Page';
+      root.appendChild(a);
+    }else if(part.type==='url'){
+      const url=safeLibraryUrl(part.url);
+      const a=document.createElement('a');a.href=url||'#';a.target='_blank';a.rel='noopener noreferrer';a.dataset.libraryLinkKind='web';a.textContent=part.label||part.url;
+      root.appendChild(a);
+    }
+  });
+  return root.innerHTML;
+}
+function libraryPageHtml(page){
+  return librarySanitizeHtml(libraryNotesAreRich(page?.notes)?libraryRichPayload(page.notes):libraryLegacyHtml(page?.notes||''));
+}
+function libraryEditorCleanClone(root){
+  const clone=root.cloneNode(true);
+  clone.querySelectorAll('.library-image-controls,.library-image-resize-handle').forEach(x=>x.remove());
+  clone.querySelectorAll('.library-rich-link-selected').forEach(x=>x.classList.remove('library-rich-link-selected'));
+  clone.querySelectorAll('[contenteditable],[draggable]').forEach(x=>{x.removeAttribute('contenteditable');x.removeAttribute('draggable')});
+  return clone;
+}
+function serializeLibraryRichEditor(root){
+  if(!root)return LIBRARY_RICH_PREFIX;
+  const clone=libraryEditorCleanClone(root);
+  return LIBRARY_RICH_PREFIX+librarySanitizeHtml(clone.innerHTML);
+}
+function libraryBacklinks(targetId){
+  const id=String(Number(targetId));
+  return libraryAllPages().filter(page=>{
+    if(Number(page.id)===Number(targetId))return false;
+    const raw=String(page.notes||'');
+    if(libraryNotesAreRich(raw)){
+      const doc=new DOMParser().parseFromString('<div>'+libraryRichPayload(raw)+'</div>','text/html');
+      return [...doc.querySelectorAll('[data-library-link-kind="page"][data-page-id]')].some(a=>a.dataset.pageId===id);
+    }
+    return raw.includes('[[p:'+id+':');
+  });
+}
+function libraryCurrentSnapshot(page){
+  return JSON.stringify({
+    title:$('#libraryPageTitleInput')?.value.trim()||page?.title||'Sans titre',
+    notes:serializeLibraryRichEditor($('#libraryPageBody'))
+  });
+}
+function markLibraryPageDirty(page){
+  libraryPageDirty=libraryCurrentSnapshot(page)!==librarySavedSnapshot;
+  const stateEl=$('#librarySaveState');
+  if(stateEl){stateEl.textContent=libraryPageDirty?'Modifications non enregistrées':'Enregistré';stateEl.classList.toggle('is-dirty',libraryPageDirty)}
+  const save=$('#libraryPageSave');if(save)save.disabled=!libraryPageDirty;
+  const revert=$('#libraryPageRevert');if(revert)revert.disabled=!libraryPageDirty;
+}
+function libraryExec(command,value=null){
+  const editor=$('#libraryPageBody');if(!editor)return;
+  editor.focus();
+  document.execCommand(command,false,value);
+  const page=libraryPageById(librarySelectedPageId);if(page)markLibraryPageDirty(page);
+}
+function libraryToolbarButton(label,title,command,value=null){
+  return `<button type="button" class="library-format-btn" data-command="${command}" data-value="${value??''}" title="${title}">${label}</button>`;
+}
+
+function wireLibraryRichLinks(root,page){
+  root.querySelectorAll('a[data-library-link-kind]').forEach(a=>{
+    a.contentEditable='false';
+    a.classList.add('library-rich-link');
+    const kind=a.dataset.libraryLinkKind;
+    if(kind==='page'){
+      const target=libraryPageById(a.dataset.pageId);
+      a.href='#';a.title=(target?`Lien vers « ${target.title} »`:'Page liée introuvable')+' · double-clic pour modifier';
+    }else{
+      const url=safeLibraryUrl(a.getAttribute('href'));a.href=url||'#';a.target='_blank';a.rel='noopener noreferrer';a.title='Ouvrir le site · double-clic pour modifier';
+    }
+    a.onclick=e=>{
+      if(libraryEditorMode==='write'){
+        e.preventDefault();e.stopPropagation();
+        root.querySelectorAll('.library-rich-link-selected').forEach(x=>x.classList.remove('library-rich-link-selected'));
+        a.classList.add('library-rich-link-selected');librarySelectedRichLink=a;
+        const info=$('#libraryLinkSelectionInfo');if(info)info.textContent='Lien sélectionné — double-clic pour modifier';
+        return;
+      }
+      if(kind==='page'){e.preventDefault();const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)}
+    };
+    a.ondblclick=e=>{
+      if(libraryEditorMode!=='write')return;
+      e.preventDefault();e.stopPropagation();
+      if(kind==='page')openLibraryInternalLinkModal(libraryNotebookById(librarySelectedNotebookId),page,a);
+      else openLibraryWebLinkModal(libraryNotebookById(librarySelectedNotebookId),page,a);
+    };
+  });
+}
+function wireLibraryImageFigure(fig,page){
+  if(!fig||fig.dataset.wired==='1')return;
+  fig.dataset.wired='1';fig.contentEditable='false';fig.draggable=true;fig.classList.add('library-editor-image');
+  if(!fig.dataset.imageAlign)fig.dataset.imageAlign='center';
+  const controls=document.createElement('div');controls.className='library-image-controls';
+  controls.innerHTML='<button type="button" data-img-action="left" title="Aligner à gauche">←</button><button type="button" data-img-action="center" title="Centrer">↔</button><button type="button" data-img-action="right" title="Aligner à droite">→</button><button type="button" data-img-action="smaller" title="Réduire">−</button><button type="button" data-img-action="larger" title="Agrandir">＋</button><button type="button" data-img-action="delete" title="Supprimer">×</button>';
+  const handle=document.createElement('span');handle.className='library-image-resize-handle';handle.title='Tirer pour redimensionner';
+  fig.append(controls,handle);
+  const setAlign=align=>{
+    fig.dataset.imageAlign=align;fig.style.display='block';
+    fig.style.marginLeft=align==='right'?'auto':align==='center'?'auto':'0';
+    fig.style.marginRight=align==='left'?'auto':align==='center'?'auto':'0';
+  };
+  setAlign(fig.dataset.imageAlign);
+  controls.onclick=e=>{
+    const action=e.target.closest('button')?.dataset.imgAction;if(!action)return;
+    e.preventDefault();e.stopPropagation();
+    const editor=$('#libraryPageBody'),current=fig.getBoundingClientRect().width,max=Math.max(180,editor?.clientWidth||700);
+    if(action==='delete')fig.remove();
+    else if(['left','center','right'].includes(action))setAlign(action);
+    else{
+      const next=Math.max(120,Math.min(max,current+(action==='larger'?60:-60)));
+      fig.style.width=Math.round(next)+'px';fig.style.maxWidth='100%';
+    }
+    markLibraryPageDirty(page);
+  };
+  handle.onpointerdown=e=>{
+    e.preventDefault();e.stopPropagation();
+    const editor=$('#libraryPageBody'),startX=e.clientX,startW=fig.getBoundingClientRect().width,max=Math.max(180,editor?.clientWidth||700);
+    const move=ev=>{fig.style.width=Math.round(Math.max(120,Math.min(max,startW+(ev.clientX-startX))))+'px';fig.style.maxWidth='100%'};
+    const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);markLibraryPageDirty(page)};
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+  };
+  fig.ondragstart=e=>{libraryDraggedFigure=fig;e.dataTransfer.effectAllowed='move'};
+  fig.ondragend=()=>{libraryDraggedFigure=null};
+}
+function wireLibraryImageDrop(editor,page){
+  editor.ondragover=e=>{if(libraryDraggedFigure){e.preventDefault();e.dataTransfer.dropEffect='move'}};
+  editor.ondrop=e=>{
+    if(!libraryDraggedFigure)return;
+    e.preventDefault();
+    let range=null;
+    if(document.caretRangeFromPoint)range=document.caretRangeFromPoint(e.clientX,e.clientY);
+    else if(document.caretPositionFromPoint){
+      const p=document.caretPositionFromPoint(e.clientX,e.clientY);if(p){range=document.createRange();range.setStart(p.offsetNode,p.offset);range.collapse(true)}
+    }
+    if(range&&editor.contains(range.startContainer)){range.insertNode(libraryDraggedFigure)}
+    else editor.appendChild(libraryDraggedFigure);
+    libraryDraggedFigure=null;markLibraryPageDirty(page);
+  };
+}
+function wireLibraryEditorContents(editor,page){
+  wireLibraryRichLinks(editor,page);
+  editor.querySelectorAll('figure[data-atelier-image="1"]').forEach(fig=>wireLibraryImageFigure(fig,page));
+  wireLibraryImageDrop(editor,page);
+}
+function libraryInsertNodeAtSelection(node){
+  const editor=$('#libraryPageBody');if(!editor)return;
+  let range=libraryPendingRange;
+  const rangeContainer=range&&(range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement);
+  if(!range||!rangeContainer||!editor.contains(rangeContainer)){range=document.createRange();range.selectNodeContents(editor);range.collapse(false)}
+  range.deleteContents();range.insertNode(node);
+  const br=document.createElement('br');node.after(br);
+  const sel=window.getSelection(),next=document.createRange();next.setStartAfter(br);next.collapse(true);sel.removeAllRanges();sel.addRange(next);
+  libraryPendingRange=null;
+}
+function selectedLibraryRichText(){
+  const editor=$('#libraryPageBody'),sel=window.getSelection();libraryPendingRange=null;
+  if(!editor||!sel||!sel.rangeCount)return '';
+  const range=sel.getRangeAt(0),container=range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;
+  if(!container||!editor.contains(container))return '';
+  libraryPendingRange=range.cloneRange();return sel.toString();
+}
+function wireNoEnterSubmit(form){
+  form?.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey&&!e.target.matches('textarea,[contenteditable="true"]'))e.preventDefault();
+  });
+}
+async function readLibraryImage(file){
+  if(!file)return null;
+  if(!String(file.type||'').startsWith('image/')){showUiMessage('Fichier incompatible','Choisis une image JPG, PNG, WEBP ou GIF.');return null}
+  if(file.size>4*1024*1024){showUiMessage('Image trop lourde','Choisis une image de moins de 4 Mo.');return null}
+  return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error("Impossible de lire l’image."));reader.readAsDataURL(file)});
+}
+async function insertLibraryImage(file,page){
+  try{
+    const data=await readLibraryImage(file);if(!data)return;
+    const fig=document.createElement('figure');fig.dataset.atelierImage='1';fig.dataset.imageAlign='center';fig.style.width='55%';fig.style.maxWidth='100%';
+    const img=document.createElement('img');img.src=data;img.alt='Image du carnet';fig.appendChild(img);
+    libraryInsertNodeAtSelection(fig);wireLibraryImageFigure(fig,page);markLibraryPageDirty(page);
+  }catch(err){showUiError(err,"Impossible d’ajouter l’image")}
+}
+function openLibraryInternalLinkModal(notebook,page,existing=null){
+  const selected=existing?existing.textContent.trim():selectedLibraryRichText();
+  const targets=libraryAllPages().filter(x=>Number(x.id)!==Number(page.id));
+  if(!targets.length){showUiMessage('Aucune autre page','Crée d’abord une autre page dans un carnet.');return}
+  const existingTarget=existing?Number(existing.dataset.pageId):null;
+  const existingType=existing?.dataset.linkType||'Vocabulaire';
+  const options=targets.map(x=>`<option value="${x.id}" ${Number(x.id)===existingTarget?'selected':''}>${esc(x.section_title+' · '+x.title)}</option>`).join('');
+  openModal(`<h2>${existing?'Modifier le lien':'Lien vers une page'}</h2><form id="libraryInternalLinkForm" class="form-grid">
+    <div class="field full"><label>Mot ou texte cliquable</label><input name="label" required value="${esc(selected)}" placeholder="ex. know"></div>
+    <div class="field"><label>Type de lien</label><input name="link_type" required value="${esc(existingType)}" placeholder="Vocabulaire, Exemple, Prérequis…"></div>
+    <div class="field"><label>Page cible</label><select name="page_id">${options}</select></div>
+    <div class="field-help full">Le type reste discret à côté du mot. Le lien survit si la page cible est renommée.</div>
+    <div class="form-actions field full"><button id="cancelLibraryInternalLink" type="button">Annuler</button>${existing?'<button id="removeLibraryInternalLink" class="danger-button" type="button">Retirer le lien</button>':''}<button id="saveLibraryInternalLink" class="primary" type="button">Enregistrer</button></div>
+  </form>`);
+  const form=$('#libraryInternalLinkForm');wireNoEnterSubmit(form);
+  $('#cancelLibraryInternalLink').onclick=closeModal;
+  $('#removeLibraryInternalLink')?.addEventListener('click',()=>{existing.replaceWith(document.createTextNode(existing.textContent.trim()));closeModal();markLibraryPageDirty(page)});
+  $('#saveLibraryInternalLink').onclick=()=>{
+    if(!form.reportValidity())return;
+    const fd=new FormData(form),label=String(fd.get('label')||'Lien'),type=String(fd.get('link_type')||'Lien'),target=Number(fd.get('page_id'));
+    if(existing){existing.textContent=label;existing.dataset.pageId=String(target);existing.dataset.linkType=type}
+    else{
+      const a=document.createElement('a');a.href='#';a.dataset.libraryLinkKind='page';a.dataset.pageId=String(target);a.dataset.linkType=type;a.textContent=label;
+      a.contentEditable='false';libraryInsertNodeAtSelection(a);
+    }
+    closeModal();wireLibraryEditorContents($('#libraryPageBody'),page);markLibraryPageDirty(page);
+  };
+}
+function openLibraryWebLinkModal(notebook,page,existing=null){
+  const selected=existing?existing.textContent.trim():selectedLibraryRichText();
+  const existingUrl=existing?.getAttribute('href')||'';
+  openModal(`<h2>${existing?'Modifier le lien web':'Lien web'}</h2><form id="libraryWebLinkForm" class="form-grid">
+    <div class="field full"><label>Mot ou texte affiché</label><input name="label" required value="${esc(selected)}" placeholder="ex. Cambridge Dictionary"></div>
+    <div class="field full"><label>Adresse du lien</label><input name="url" type="url" required value="${esc(existingUrl)}" placeholder="https://…"></div>
+    <div class="field-help full">Le site s’ouvre dans un nouvel onglet en mode Lire. L’adresse reste cachée derrière le mot.</div>
+    <div class="form-actions field full"><button id="cancelLibraryWebLink" type="button">Annuler</button>${existing?'<button id="removeLibraryWebLink" class="danger-button" type="button">Retirer le lien</button>':''}<button id="saveLibraryWebLink" class="primary" type="button">Enregistrer</button></div>
+  </form>`);
+  const form=$('#libraryWebLinkForm');wireNoEnterSubmit(form);
+  $('#cancelLibraryWebLink').onclick=closeModal;
+  $('#removeLibraryWebLink')?.addEventListener('click',()=>{existing.replaceWith(document.createTextNode(existing.textContent.trim()));closeModal();markLibraryPageDirty(page)});
+  $('#saveLibraryWebLink').onclick=()=>{
+    if(!form.reportValidity())return;
+    const fd=new FormData(form),label=String(fd.get('label')||'Lien'),url=safeLibraryUrl(fd.get('url'));
+    if(!url){showUiMessage('Lien invalide','Utilise une adresse commençant par http:// ou https://.');return}
+    if(existing){existing.textContent=label;existing.href=url}
+    else{
+      const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.dataset.libraryLinkKind='web';a.textContent=label;a.contentEditable='false';libraryInsertNodeAtSelection(a);
+    }
+    closeModal();wireLibraryEditorContents($('#libraryPageBody'),page);markLibraryPageDirty(page);
+  };
+}
+function renderLibraryReadHtml(page){
+  const root=document.createElement('div');root.className='library-rich-text library-rich-document';
+  root.innerHTML=libraryPageHtml(page);
+  root.querySelectorAll('a[data-library-link-kind]').forEach(a=>{
+    const kind=a.dataset.libraryLinkKind;
+    if(kind==='page'){
+      a.href='#';a.onclick=e=>{e.preventDefault();const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)};
+    }else{
+      const url=safeLibraryUrl(a.getAttribute('href'));a.href=url||'#';a.target='_blank';a.rel='noopener noreferrer';
+    }
+  });
+  return root;
+}
+function renderLibraryPageEditor(notebook,page){
+  const root=$('#libraryNotebookPages');if(!root||!page)return;
+  const backlinks=libraryBacklinks(page.id);
+  root.innerHTML=`<article class="library-writing-page${page.done?' is-done':''}">
+    <div class="library-writing-topbar">
+      <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
+      <div class="library-writing-actions">
+        <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="libraryPageModeWrite" type="button" class="${libraryEditorMode==='write'?'active':''}">Écrire</button>
+        <button id="libraryPageModeRead" type="button" class="${libraryEditorMode==='read'?'active':''}">Lire</button>
+        <button id="libraryPageRevert" type="button" disabled>Annuler modifs</button>
+        <button id="libraryPageSave" class="primary" type="button" disabled>Enregistrer</button>
+        <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
+        <button id="libraryPageDelete" class="danger-button" type="button">×</button>
+      </div>
+    </div>
+    <div id="libraryWritingEditor" class="library-writing-editor ${libraryEditorMode==='write'?'':'hidden'}">
+      <div class="library-writing-toolbar library-writing-toolbar-rich">
+        <div class="library-toolbar-group">
+          ${libraryToolbarButton('<b>G</b>','Gras','bold')}
+          ${libraryToolbarButton('<i>I</i>','Italique','italic')}
+          ${libraryToolbarButton('<u>S</u>','Souligner','underline')}
+        </div>
+        <div class="library-toolbar-group">
+          <select id="libraryFontFamily" title="Police"><option value="Georgia">Georgia</option><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Trebuchet MS">Trebuchet</option><option value="Courier New">Courier</option></select>
+          <select id="libraryFontSize" title="Taille"><option value="2">Petit</option><option value="3" selected>Normal</option><option value="4">Grand</option><option value="5">Très grand</option><option value="6">Titre</option></select>
+        </div>
+        <div class="library-toolbar-group library-colour-tools">
+          <label title="Couleur du texte">A <input id="libraryTextColor" type="color" value="#392c22"></label>
+          <label title="Surlignage">▰ <input id="libraryHighlightColor" type="color" value="#f2d77a"></label>
+        </div>
+        <div class="library-toolbar-group">
+          ${libraryToolbarButton('≡←','Aligner à gauche','justifyLeft')}
+          ${libraryToolbarButton('≡','Centrer','justifyCenter')}
+          ${libraryToolbarButton('→≡','Aligner à droite','justifyRight')}
+          ${libraryToolbarButton('☰','Justifier','justifyFull')}
+        </div>
+        <div class="library-toolbar-group">
+          <button id="libraryInsertInternalLink" type="button">↗ Page</button>
+          <button id="libraryInsertWebLink" type="button">🔗 Web</button>
+          <button id="libraryInsertImage" type="button">▧ Image</button>
+          <input id="libraryImageInput" type="file" accept="image/*" class="hidden">
+        </div>
+        <span id="libraryLinkSelectionInfo">Liens : clic pour sélectionner, double-clic pour modifier.</span>
+      </div>
+      <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
+    </div>
+    <div id="libraryReadingView" class="library-reading-view ${libraryEditorMode==='read'?'':'hidden'}"></div>
+    <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
+  </article>`;
+
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput'),reading=$('#libraryReadingView');
+  body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
+  reading.innerHTML='';reading.appendChild(renderLibraryReadHtml(page));
+  librarySavedSnapshot=libraryCurrentSnapshot(page);libraryPageDirty=false;librarySelectedRichLink=null;
+  markLibraryPageDirty(page);
+
+  const backlinksRoot=$('#libraryBacklinks>div');
+  backlinks.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);backlinksRoot.appendChild(b)});
+
+  body.addEventListener('input',()=>markLibraryPageDirty(page));
+  title.addEventListener('input',()=>markLibraryPageDirty(page));
+  body.addEventListener('keydown',e=>{if(e.key==='Enter'){setTimeout(()=>markLibraryPageDirty(page),0)}});
+  body.addEventListener('mousedown',()=>{const sel=window.getSelection();if(sel?.rangeCount)libraryPendingRange=sel.getRangeAt(0).cloneRange()});
+
+  $$('.library-format-btn').forEach(btn=>{
+    btn.onmousedown=e=>e.preventDefault();
+    btn.onclick=()=>libraryExec(btn.dataset.command,btn.dataset.value||null);
+  });
+  $('#libraryFontFamily').onchange=e=>libraryExec('fontName',e.target.value);
+  $('#libraryFontSize').onchange=e=>libraryExec('fontSize',e.target.value);
+  $('#libraryTextColor').oninput=e=>libraryExec('foreColor',e.target.value);
+  $('#libraryHighlightColor').oninput=e=>libraryExec('hiliteColor',e.target.value);
+
+  $('#libraryInsertInternalLink').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertInternalLink').onclick=()=>openLibraryInternalLinkModal(notebook,page);
+  $('#libraryInsertWebLink').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertWebLink').onclick=()=>openLibraryWebLinkModal(notebook,page);
+  $('#libraryInsertImage').onmousedown=e=>{e.preventDefault();selectedLibraryRichText()};
+  $('#libraryInsertImage').onclick=()=>$('#libraryImageInput').click();
+  $('#libraryImageInput').onchange=async e=>{await insertLibraryImage(e.target.files?.[0],page);e.target.value=''};
+
+  $('#libraryPageSave').onclick=async()=>{
+    const data={title:title.value.trim()||'Sans titre',notes:serializeLibraryRichEditor(body)};
+    const stateEl=$('#librarySaveState');stateEl.textContent='Enregistrement…';
+    const result=await runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify(data)}));
+    if(!result.ok){stateEl.textContent='Erreur';return}
+    page.title=data.title;page.notes=data.notes;librarySavedSnapshot=libraryCurrentSnapshot(page);libraryPageDirty=false;markLibraryPageDirty(page);
+    const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));if(listItem)listItem.querySelector('strong').textContent=data.title;
+    reading.innerHTML='';reading.appendChild(renderLibraryReadHtml(page));
+  };
+  $('#libraryPageRevert').onclick=()=>{body.innerHTML=libraryPageHtml(page);title.value=page.title;wireLibraryEditorContents(body,page);librarySavedSnapshot=libraryCurrentSnapshot(page);markLibraryPageDirty(page)};
+  $('#libraryPageModeWrite').onclick=()=>{libraryEditorMode='write';renderLibraryPageEditor(notebook,page);setTimeout(()=>$('#libraryPageBody')?.focus(),0)};
+  $('#libraryPageModeRead').onclick=()=>{
+    if(libraryPageDirty){showUiMessage('Page non enregistrée','Clique sur « Enregistrer » avant de passer en lecture.');return}
+    libraryEditorMode='read';renderLibraryPageEditor(notebook,page);
+  };
+  $('#libraryPageDoneToggle').onclick=async()=>{
+    const next=!page.done;
+    const result=await runUiAction('Impossible de modifier la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({done:next})}));
+    if(!result.ok)return;
+    page.done=next;root.querySelector('.library-writing-page')?.classList.toggle('is-done',next);
+    const toggle=$('#libraryPageDoneToggle');if(toggle)toggle.textContent=next?'✓ Traité':'○ Marquer traité';
+    const listButton=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+    if(listButton){listButton.classList.toggle('is-done',next);const mark=listButton.querySelector('span');if(mark)mark.textContent=next?'✓':'•'}
+  };
+  $('#libraryPageDelete').onclick=()=>deleteLibraryPage(notebook,page);
+}
+function libraryCanLeaveCurrentPage(){
+  if(!libraryPageDirty)return true;
+  showUiMessage('Modifications non enregistrées','Enregistre ou annule les modifications de la page avant de la quitter.');
+  return false;
+}
+function renderLibraryNotebookContent(domain){
+  const pageList=$('#libraryNotebookPageList'),pages=$('#libraryNotebookPages');
+  if(!librarySelectedNotebookId||!pageList||!pages)return;
+  const notebook=libraryNotebookById(librarySelectedNotebookId);
+  if(!notebook){librarySelectedNotebookId=null;librarySelectedPageId=null;renderLibraryDomain();return}
+  $('#libraryNotebookTitle').textContent=notebook.title;pageList.innerHTML='';
+  (notebook.entries||[]).forEach(entry=>{
+    const b=document.createElement('button');b.type='button';b.className='library-page-list-item'+(Number(entry.id)===Number(librarySelectedPageId)?' active':'')+(entry.done?' is-done':'');
+    b.dataset.pageId=String(entry.id);b.innerHTML=`<span>${entry.done?'✓':'•'}</span><strong>${esc(entry.title)}</strong>`;
+    b.onclick=()=>{if(Number(entry.id)!==Number(librarySelectedPageId)&&!libraryCanLeaveCurrentPage())return;librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain)};
+    pageList.appendChild(b);
+  });
+  if(!(notebook.entries||[]).length){
+    pageList.innerHTML='<div class="library-page-list-empty">Aucune page</div>';
+    pages.innerHTML='<div class="library-pages-empty"><div class="library-page-stack"><i></i><i></i><i></i></div><strong>Ce carnet est vide.</strong><span>Crée une page puis écris directement dedans.</span><button id="libraryFirstPage" class="primary" type="button">+ Première page</button></div>';
+    $('#libraryFirstPage').onclick=()=>createLibraryPage(notebook);return;
+  }
+  if(!librarySelectedPageId||!libraryPageById(librarySelectedPageId))librarySelectedPageId=Number(notebook.entries[0].id);
+  renderLibraryPageEditor(notebook,libraryPageById(librarySelectedPageId));
+}
+async function createLibraryPage(notebook){
+  if(!libraryCanLeaveCurrentPage())return;
+  const result=await runUiAction('Impossible de créer la page',()=>api('/api/objective-library-entries',{method:'POST',body:JSON.stringify({section_id:notebook.id,title:'Nouvelle page',notes:LIBRARY_RICH_PREFIX,url:'',done:false})}));
+  if(!result.ok)return;
+  libraryEditorMode='write';libraryPageDirty=false;
+  await loadLibraryNotebooks(librarySelectedDomainId,notebook.id,result.value.id);
+  setTimeout(()=>{$('#libraryPageTitleInput')?.select();$('#libraryPageBody')?.focus()},20);
+}
+function openLibraryPageTarget(pageId){
+  if(!libraryCanLeaveCurrentPage())return;
+  const target=libraryPageById(pageId),notebook=libraryPageNotebook(pageId);if(!target||!notebook)return;
+  librarySelectedNotebookId=Number(notebook.id);librarySelectedPageId=Number(target.id);libraryEditorMode='read';renderLibraryDomain();
+}
+
+function renderLibrarySubgoalBranch(node,depth){
+  const wrap=document.createElement('div');wrap.className='library-goal-branch';wrap.style.setProperty('--goal-depth',String(depth));
+  const progress=libraryNodeProgress(node),auto=objectiveChildren(node.id).length>0;
+  wrap.innerHTML=`<div class="library-goal-row">
+    <button class="library-goal-main" type="button"><span class="library-goal-mark">${node.node_type==='objective'?'◎':node.node_type==='milestone'?'◇':'·'}</span><span><small>${esc(LIBRARY_NODE_LABELS[node.node_type]||'Élément')}</small><strong>${esc(node.title)}</strong></span></button>
+    <div class="library-goal-progress" title="${auto?'Calculé automatiquement depuis les éléments dessous':'Avancement de cet élément'}"><i style="width:${progress}%"></i><span>${progress}%${auto?' auto':''}</span></div>
+    <button class="library-goal-add" type="button" title="Ajouter dessous">＋</button>
+    <button class="library-goal-edit" type="button" title="Modifier">✎</button>
+  </div><div class="library-goal-children"></div>`;
+  wrap.querySelector('.library-goal-main').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.parent_id,node);
+  wrap.querySelector('.library-goal-add').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.id,null,node.node_type==='objective'?'milestone':'step');
+  wrap.querySelector('.library-goal-edit').onclick=()=>openLibrarySubgoalModal(librarySelectedDomainId,node.parent_id,node);
+  const childRoot=wrap.querySelector('.library-goal-children');objectiveChildren(node.id).forEach(child=>childRoot.appendChild(renderLibrarySubgoalBranch(child,depth+1)));return wrap;
+}
+function openLibrarySubgoalModal(domainId,parentId=null,node=null,presetType=null){
+  const editing=!!node,actualParent=editing?node.parent_id:(parentId||domainId),defaultType=presetType||node?.node_type||'objective';
+  const children=editing?objectiveChildren(node.id):[],progress=editing?libraryNodeProgress(node):0,automatic=children.length>0;
+  openModal(`<h2>${editing?'Modifier':'Ajouter'} dans la progression</h2><form id="librarySubgoalForm" class="form-grid">
+    <div class="field"><label>Type</label><select name="node_type"><option value="objective" ${defaultType==='objective'?'selected':''}>Objectif</option><option value="milestone" ${defaultType==='milestone'?'selected':''}>Sous-objectif / niveau</option><option value="step" ${defaultType==='step'?'selected':''}>Étape / compétence</option></select></div>
+    <div class="field"><label>Dans</label><select name="parent_id">${librarySubgoalParentOptions(domainId,actualParent,node?.id)}</select></div>
+    <div class="field full"><label>Nom</label><input name="title" required value="${esc(node?.title||'')}" placeholder="ex. B1 ou Compréhension orale"></div>
+    <div class="field full"><label>Description</label><textarea name="description">${esc(node?.description||'')}</textarea></div>
+    <div class="field"><label>État</label><select id="libraryProgressStatus" name="status"><option value="active" ${(node?.status||'active')==='active'?'selected':''}>En cours</option><option value="paused" ${node?.status==='paused'?'selected':''}>En pause</option><option value="done" ${node?.status==='done'?'selected':''}>Terminé</option></select></div>
+    <div class="field library-progress-easy"><label>Avancée</label>
+      ${automatic?`<div class="library-auto-progress"><strong>${progress}%</strong><span>calculé automatiquement depuis ${children.length} sous-élément${children.length>1?'s':''}</span></div><input name="progress" type="hidden" value="${Number(node?.progress)||0}">`:
+      `<div class="library-progress-presets"><button type="button" data-progress="0">0%</button><button type="button" data-progress="25">25%</button><button type="button" data-progress="50">50%</button><button type="button" data-progress="75">75%</button><button type="button" data-progress="100">100%</button></div><div class="library-progress-slider"><input id="libraryProgressRange" name="progress" type="range" min="0" max="100" step="5" value="${progress}"><output id="libraryProgressOutput">${progress}%</output></div>`}
+    </div>
+    <div class="form-actions field full">${editing?'<button id="deleteLibrarySubgoal" class="danger-button" type="button">Supprimer</button>':''}<button id="cancelLibrarySubgoal" type="button">Annuler</button><button id="saveLibrarySubgoal" class="primary" type="button">${editing?'Enregistrer':'Ajouter'}</button></div>
+  </form>`);
+  const form=$('#librarySubgoalForm');wireNoEnterSubmit(form);$('#cancelLibrarySubgoal').onclick=closeModal;if(editing)$('#deleteLibrarySubgoal').onclick=()=>deleteLibrarySubgoal(node);
+  const range=$('#libraryProgressRange'),output=$('#libraryProgressOutput'),status=$('#libraryProgressStatus');
+  $$('.library-progress-presets button').forEach(btn=>btn.onclick=()=>{range.value=btn.dataset.progress;output.value=btn.dataset.progress+'%';if(Number(btn.dataset.progress)===100)status.value='done';else if(status.value==='done')status.value='active'});
+  range?.addEventListener('input',()=>{output.value=range.value+'%';if(Number(range.value)===100)status.value='done';else if(status.value==='done')status.value='active'});
+  $('#saveLibrarySubgoal').onclick=async()=>{
+    if(!form.reportValidity())return;
+    const payload=Object.fromEntries(new FormData(form).entries());payload.parent_id=payload.parent_id||domainId;payload.progress=Number(payload.progress)||0;if(payload.status==='done')payload.progress=100;
+    const result=await runUiAction("Impossible d’enregistrer l’élément",()=>api(editing?`/api/objective-nodes/${node.id}`:'/api/objective-nodes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;closeModal();await refresh();openLibraryDomain(domainId);
+  };
+}
