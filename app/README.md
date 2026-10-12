@@ -1,52 +1,64 @@
-# L’Atelier 0.9.0
+# L’Atelier 0.10.0
 
-Refonte complète du bloc Objectifs en **Bibliothèque**.
+Refonte du cœur de la Bibliothèque pour correspondre au modèle :
 
-## Nouvelle logique
+**Domaine → objectif principal → sous-objectifs / niveaux → étapes / compétences**, avec les carnets à côté de la progression.
 
-L’espace n’est plus présenté comme une carte technique d’objectifs. La Bibliothèque est maintenant organisée en **domaines** : Anglais, Art, JDR, League of Legends, etc.
+## Exemple Anglais
 
-Chaque domaine est un espace vivant avec :
-- ses **carnets** ;
-- ses **sous-objectifs, étapes et sous-étapes** ;
-- ses **tâches liées** ;
-- son **avancée globale**.
+- Domaine : Anglais
+- Objectif principal : Devenir bilingue
+- Sous-objectifs / niveaux : A1, A2, B1, B2, C1, C2
+- Sous chaque niveau : les compétences et étapes concrètes nécessaires pour l’atteindre
+- Carnets indépendants : Grammaire, Vocabulaire, Cours, Journal, etc.
 
-## Création d’un domaine
+## Constructeur de domaine
 
-Lors de la création d’un domaine, L’Atelier propose un petit constructeur :
-- nom et description ;
-- carnets de départ, un par ligne ;
-- premiers sous-objectifs, un par ligne.
+À la création d’un domaine, on peut maintenant préparer en une seule fois :
+- le nom du domaine ;
+- sa description ;
+- son objectif principal ;
+- ses niveaux / sous-objectifs, un par ligne ;
+- ses carnets de départ, un par ligne.
 
-Tout reste modifiable ensuite.
+Le constructeur crée la hiérarchie automatiquement.
 
-## Dans un domaine
+## Vrais carnets éditables
 
-La colonne de gauche contient :
-- le module **Carnets**, avec ajout de carnets à tout moment ;
-- juste dessous, le module **Avancée**, avec progression globale, objectifs, tâches et nombre de carnets.
+Un carnet n’est plus une grille de petites fiches à modifier avec des fenêtres.
 
-La grande zone de droite contient :
-- une **Vue d’ensemble** des sous-objectifs et tâches ;
-- ou le contenu du **carnet sélectionné**.
+Quand un carnet est ouvert :
+- les pages sont listées sur le côté ;
+- une page s’ouvre comme une vraie feuille ;
+- le titre s’écrit directement ;
+- le texte s’écrit directement dans la page ;
+- les modifications sont enregistrées automatiquement ;
+- un mode **Écrire** et un mode **Lire** permettent de travailler puis de consulter le rendu ;
+- ajouter une page l’ouvre immédiatement pour écrire.
 
-Un carnet contient des pages libres avec :
-- titre ;
-- notes ;
-- lien facultatif ;
-- état traité / non traité.
+## Liens entre pages
 
-Les pages sont présentées comme de petites feuilles de carnet pour rendre l’ensemble plus visuel et moins technique.
+Dans une page, on peut sélectionner un mot ou un groupe de mots puis créer un **lien vers une autre page** du domaine.
 
-## Configuration
+Le lien possède :
+- le mot affiché ;
+- la page cible ;
+- un **type de lien personnalisable**, par exemple Vocabulaire, Exemple, Prérequis, À revoir, Référence…
 
-Chaque domaine possède un bouton **Configurer** permettant de modifier son identité, son état et sa progression, et d’accéder rapidement à l’ajout d’un carnet, d’un sous-objectif ou d’une tâche.
+En mode Lire, le mot devient cliquable et le type du lien reste visible. Cliquer dessus ouvre directement la page cible.
 
-Les tâches générales peuvent toujours être rattachées à un domaine ou à un sous-objectif.
+Une page affiche aussi les pages qui pointent vers elle dans **Liens vers cette page**.
 
-## Compatibilité
+Les liens internes utilisent l’identifiant de la page cible : renommer cette page ne casse pas le lien.
 
-La structure de données de la 0.8.0 est conservée : cette version est principalement une refonte d’interface et d’ergonomie. Les domaines et sous-objectifs déjà créés restent disponibles.
+## Liens web sous forme de mots
+
+On peut aussi sélectionner un mot, choisir **Lien web**, coller une URL et conserver seulement le mot choisi dans le rendu.
+
+Exemple : au lieu d’afficher une longue URL, la page peut simplement afficher **Cambridge Dictionary** comme lien cliquable.
+
+## Page traitée sans saut
+
+Marquer une page comme traitée ne recharge plus le carnet et ne fait plus sauter l’interface. L’état est mis à jour sur place.
 
 Aucune donnée existante n’est supprimée.

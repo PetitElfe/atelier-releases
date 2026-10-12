@@ -1,15 +1,15 @@
 {
-  "version": "0.9.0",
+  "version": "0.10.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "6f21dc622235958522987475792f3ea56b38d593587daedb6070a76bc6c8075e"
+      "sha256": "c89bac65e50ae37cce6fb8150c23216c2cf182f99b146dc0bdf10d5f70c6626b"
     },
     {
       "path": "VERSION",
-      "sha256": "9d8c94f1ad3ea96b1e2ac4914fda4cb93c76b4a3e0d8cc6dd8976d6c0b227d15"
+      "sha256": "dc24feb5bd35084d8ae32a4eafbec12352707d4662401fcbcc9bbd696cde77a9"
     },
     {
       "path": "app.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "6baa161618a1dc0db9c8186036489343c91329cbccafdd1888d22096ea4c3d19"
+      "sha256": "0a2268954dcba4055f687f8eafd407902f371dcf451912fa80a0a3abbdb18765"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "817c0c40a3550af563d252622d866b28857f058c3c8fc2940ac658c78d0fef48"
+      "sha256": "8be6f002f6772cd3d4496c212ec4c83164fc078cc21d84e11fdff44a9af2ae18"
     },
     {
       "path": "public/index.html",
-      "sha256": "9091ff22baaf98e7409b366c7c24ba4162eef53aadfc688562528607c3035120"
+      "sha256": "d320ba6f1b054c5f0aa654aa18258e61b0ca4b2e6f00f54722f6050879350ac0"
     },
     {
       "path": "public/styles.css",
-      "sha256": "98ce1c7587475d747a22b6c3183a746383db00a7b69dc5e3e82e0f03ae5a69a1"
+      "sha256": "ca8aaa3f02e683d46d45bc888d9165fad49cf000e2feee6c65f9853491df65e4"
     }
   ],
-  "notes": "0.9.0 : refonte Objectifs en Bibliothèque avec domaines, constructeur initial, carnets à gauche, module d’avancée et sous-objectifs/tâches dans chaque domaine."
+  "notes": "0.10.0 : modèle Domaine → objectif → niveaux, carnets éditables directement, autosauvegarde, liens typés entre pages et liens web affichés sous forme de mots."
 }

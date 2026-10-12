@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.9.0</title>
+  <title>L’Atelier — Alpha 0.10.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.9.0</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.10.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -194,9 +194,9 @@
           <section id="libraryDomainMain" class="library-domain-main">
             <div id="libraryOverviewPanel" class="library-overview-panel">
               <div class="library-main-head">
-                <div><div class="section-kicker">VUE D’ENSEMBLE</div><h3>Ce que tu construis ici</h3></div>
+                <div><div class="section-kicker">PROGRESSION</div><h3>Objectif & parcours</h3></div>
                 <div class="library-main-actions">
-                  <button id="addLibrarySubgoal" type="button">+ Sous-objectif</button>
+                  <button id="addLibrarySubgoal" type="button">+ Élément de progression</button>
                   <button id="addLibraryTask" type="button">+ Tâche</button>
                 </div>
               </div>
@@ -216,7 +216,15 @@
                   <button id="addLibraryPage" class="primary" type="button">+ Ajouter une page</button>
                 </div>
               </div>
-              <div id="libraryNotebookPages" class="library-notebook-pages"></div>
+              <div class="library-notebook-workspace">
+                <aside class="library-page-sidebar">
+                  <div class="library-page-sidebar-head"><span>PAGES</span><button id="addLibraryPageSmall" type="button" title="Ajouter une page">＋</button></div>
+                  <div id="libraryNotebookPageList" class="library-notebook-page-list"></div>
+                </aside>
+                <section id="libraryNotebookPages" class="library-notebook-pages">
+                  <div class="library-pages-empty"><strong>Choisis une page ou crée-en une.</strong></div>
+                </section>
+              </div>
             </div>
           </section>
         </div>
