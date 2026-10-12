@@ -1,15 +1,15 @@
 {
-  "version": "0.6.6",
+  "version": "0.7.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "97eed31f435b03e02b162f6cb1518046bae38c2547aa1a0c82d2e7799bacac4e"
+      "sha256": "5ab3a8b667568a59b8dff9c30584ded3f5e7e3262900665f41c4962ccdcc81d9"
     },
     {
       "path": "VERSION",
-      "sha256": "986d95a92d1538ad7a755e6776e7bf62e90e6deb9c26c5aecc40e3a0346daee6"
+      "sha256": "967d9afb101346667166f2e76e81910bc190488d7d41d50ca0072e9d92f00e32"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "51a4e7bb6111ca26cfbc67bfe78820e9ec2be65ba07ab392619be91e25f3ece9"
+      "sha256": "444445475620a5e5eb3f7333b29bece30268e5840fff08e26a421ecb3ccb54e1"
     },
     {
       "path": "public/index.html",
-      "sha256": "32a6a2f3fb380012aa546b9765800a15bf4c8346b08a4af29445bed3e3e8e111"
+      "sha256": "1f5d2daa4874e5bd49be1065e7d9f862f03da41bc89c4473548d74cd10d9a343"
     },
     {
       "path": "public/styles.css",
-      "sha256": "406bce7174dca66572e0ff8b6d3501534186e95ac1e4e13d4503fbec21e18cbe"
+      "sha256": "93cec4e3272292b9e2b5a6ed98a989f3acf2d8bdad61b976c649e48a2d7f5115"
     }
   ],
-  "notes": "0.6.6 : corrige la version affichée de l’interface et ajoute un test empêchant toute nouvelle incohérence entre l’interface et le serveur."
+  "notes": "0.7.0 : première page Paramètres, formats de date configurables, notifications persistantes et cliquables vers L’Atelier, état des permissions et réinitialisation du tiroir."
 }
