@@ -2094,3 +2094,41 @@ function openLibrarySubgoalModal(domainId,parentId=null,node=null,presetType=nul
     if(!result.ok)return;closeModal();await refresh();openLibraryDomain(domainId);
   };
 }
+
+
+/* 0.11.0 — protège les modifications manuelles lors de la navigation entre carnets */
+function renderLibraryNotebookList(domain){
+  const root=$('#libraryNotebookList');if(!root)return;root.innerHTML='';
+  const overview=document.createElement('button');
+  overview.type='button';overview.className='library-notebook-link library-overview-link'+(!librarySelectedNotebookId?' active':'');
+  overview.innerHTML='<span class="library-notebook-icon">⌂</span><span><strong>Progression</strong><small>Objectif, niveaux & tâches</small></span>';
+  overview.onclick=()=>{if(librarySelectedNotebookId&&!libraryCanLeaveCurrentPage())return;librarySelectedNotebookId=null;librarySelectedPageId=null;libraryPageDirty=false;renderLibraryDomain()};
+  root.appendChild(overview);
+  if(libraryNotebookState.domainId!==Number(domain.id)||libraryNotebookState.loading){
+    const loading=document.createElement('div');loading.className='library-notebook-empty';loading.textContent='Chargement des carnets…';root.appendChild(loading);return;
+  }
+  if(!libraryNotebookState.sections.length){
+    const empty=document.createElement('div');empty.className='library-notebook-empty';empty.textContent='Aucun carnet pour le moment.';root.appendChild(empty);
+  }
+  libraryNotebookState.sections.forEach((notebook,index)=>{
+    const row=document.createElement('div');row.className='library-notebook-row';
+    row.innerHTML=`<button class="library-notebook-link${Number(librarySelectedNotebookId)===Number(notebook.id)?' active':''}" type="button">
+      <span class="library-notebook-spine spine-${index%4}"></span>
+      <span><strong>${esc(notebook.title)}</strong><small>${(notebook.entries||[]).length} page${(notebook.entries||[]).length>1?'s':''}</small></span>
+    </button><button class="library-notebook-more" type="button" title="Modifier ce carnet">⋯</button>`;
+    row.querySelector('.library-notebook-link').onclick=()=>{
+      if(Number(notebook.id)!==Number(librarySelectedNotebookId)&&librarySelectedNotebookId&&!libraryCanLeaveCurrentPage())return;
+      librarySelectedNotebookId=Number(notebook.id);
+      librarySelectedPageId=(notebook.entries||[])[0]?.id||null;
+      libraryEditorMode='write';libraryPageDirty=false;renderLibraryDomain();
+    };
+    row.querySelector('.library-notebook-more').onclick=()=>openLibraryNotebookModal(domain.id,notebook);
+    root.appendChild(row);
+  });
+}
+function closeLibraryDomain(){
+  if(librarySelectedNotebookId&&!libraryCanLeaveCurrentPage())return;
+  librarySelectedDomainId=null;librarySelectedNotebookId=null;librarySelectedPageId=null;libraryPageDirty=false;
+  libraryNotebookState={domainId:null,sections:[],loading:false};
+  $('#libraryDomainPanel')?.classList.add('hidden');$('#libraryHubPanel')?.classList.remove('hidden');renderLibrary();
+}
