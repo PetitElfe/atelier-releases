@@ -147,11 +147,20 @@ function localIsoSeconds(d=new Date()){
 async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
 const shown=new Set();
 function notifyReminder(r){
-  if(shown.has(r.id))return; shown.add(r.id); const title=r.title||r.entity_title||`Rappel #${r.id}`;
-  if(Notification.permission==='granted') new Notification('L’Atelier',{body:title});
-  const t=document.createElement('div');t.className='toast';t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">Rappel à traiter</div><div class="task-actions"><button class="finish">Fini</button><button class="later">Reporter</button></div>`;
-  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/finish`,{method:'PUT',body:'{}'});t.remove();await refresh()};
-  t.querySelector('.later').onclick=()=>{t.remove();openSnooze(r)}; $('#toastArea').appendChild(t);
+  if(shown.has(r.id))return;
+  shown.add(r.id);
+  const title=r.title||r.entity_title||`Rappel #${r.id}`;
+  const kind=reminderKindLabel(r);
+  const when=formatReminderMoment(r.snoozed_until||r.remind_at);
+  if(Notification.permission==='granted'){
+    new Notification(`🔔 Rappel : ${title}`,{body:`${when} · ${kind}\nOuvre L’Atelier pour le traiter.`});
+  }
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div><div class="task-actions"><button class="finish reminder-icon-action" title="Fini" aria-label="Fini">✓</button><button class="later reminder-icon-action" title="Reporter" aria-label="Reporter">↪</button></div>`;
+  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(r.id);t.remove();await refresh()};
+  t.querySelector('.later').onclick=()=>{t.remove();openSnooze(r)};
+  $('#toastArea').appendChild(t);
 }
 
 async function checkRuntimeCompatibility(){
@@ -205,18 +214,92 @@ function setSideNavCollapsed(collapsed){
     toggle.title=collapsed?'Afficher le menu':'Masquer le menu';
   }
 }
+
+function clampSideNavPosition(left,top){
+  const nav=$('#sideNav');
+  const width=nav?.offsetWidth||220;
+  const height=nav?.offsetHeight||260;
+  const minLeft=44;
+  const maxLeft=Math.max(minLeft,window.innerWidth-width);
+  const minTop=8;
+  const maxTop=Math.max(minTop,window.innerHeight-height-8);
+  return {left:Math.min(maxLeft,Math.max(minLeft,left)),top:Math.min(maxTop,Math.max(minTop,top))};
+}
+
+function applySideNavPosition(pos=null){
+  const nav=$('#sideNav');
+  if(!nav)return;
+  let saved=pos;
+  if(!saved){
+    try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
+  }
+  const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
+  const next=clampSideNavPosition(Number(saved?.left) || fallback.left,Number(saved?.top) || fallback.top);
+  nav.style.left=next.left+'px';
+  nav.style.right='auto';
+  nav.style.top=next.top+'px';
+  return next;
+}
+
+function initSideNavDrag(){
+  const nav=$('#sideNav'), handle=$('#sideNavDragHandle');
+  if(!nav||!handle)return;
+  let active=false,startX=0,startY=0,startLeft=0,startTop=0;
+  handle.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    e.preventDefault();
+    const rect=nav.getBoundingClientRect();
+    active=true;startX=e.clientX;startY=e.clientY;startLeft=rect.left;startTop=rect.top;
+    handle.setPointerCapture?.(e.pointerId);
+    nav.classList.add('is-dragging');
+  });
+  handle.addEventListener('pointermove',e=>{
+    if(!active)return;
+    const next=applySideNavPosition({left:startLeft+(e.clientX-startX),top:startTop+(e.clientY-startY)});
+    if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
+  });
+  const stop=e=>{
+    if(!active)return;
+    active=false;
+    nav.classList.remove('is-dragging');
+    try{handle.releasePointerCapture?.(e.pointerId)}catch(_){}
+  };
+  handle.addEventListener('pointerup',stop);
+  handle.addEventListener('pointercancel',stop);
+}
+
+applySideNavPosition();
 const sideNavInitiallyCollapsed=localStorage.getItem('atelierSideNavCollapsed')==='1';
 setSideNavCollapsed(sideNavInitiallyCollapsed);
+initSideNavDrag();
+window.addEventListener('resize',()=>applySideNavPosition());
 $('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
-$('#addStandaloneReminder').onclick=()=>openStandaloneReminderModal();
+$('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>showView('calendar');
 $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
-$('#todayBtn').onclick=()=>{state.cursor=new Date();$('#jumpDate').value=ymd(state.cursor);if(state.view!=='home')showView('calendar');else refresh()};
-$('#jumpDate').value=ymd(new Date()); $('#jumpDate').onchange=e=>{if(e.target.value){state.cursor=parseYMD(e.target.value);showView('calendar');refresh()}};
+function formatTopDate(value){
+  if(!value)return '';
+  return parseYMD(value).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+}
+function syncTopDate(){
+  const input=$('#jumpDate'), label=$('#jumpDateLabel');
+  if(input&&label)label.textContent=formatTopDate(input.value);
+}
+const jumpDateInput=$('#jumpDate');
+jumpDateInput.value=ymd(new Date());
+syncTopDate();
+$('#jumpDateLabel').onclick=()=>{
+  if(typeof jumpDateInput.showPicker==='function')jumpDateInput.showPicker();
+  else jumpDateInput.click();
+};
+jumpDateInput.onchange=e=>{
+  syncTopDate();
+  if(e.target.value){state.cursor=parseYMD(e.target.value);showView('calendar');refresh()}
+};
 $('#addTask').onclick=()=>openTaskModal(); $('#addEventWeek').onclick=()=>openEventModal(null,ymd(state.cursor)); $('#modalClose').onclick=closeModal;
 $('#addShopping').onclick=()=>openShoppingModal(); $('#addFood').onclick=()=>openFoodModal(); $('#chooseMealIdea').onclick=()=>openMealIdeaPicker(); $('#validateShopping').onclick=()=>validateShoppingPurchases();
 $('#homeMealIdeaPicker').onclick=()=>openMealIdeaPicker();
