@@ -78,8 +78,33 @@ class Handler(BaseHTTPRequestHandler):
                 data = dict(row); data['found'] = True
                 return self._json(data)
             if p == '/api/tasks':
-                rows = c.execute('SELECT * FROM tasks WHERE archived=0 ORDER BY completed, important DESC, COALESCE(due_date,\'9999-12-31\'), order_index, id').fetchall()
+                rows = c.execute('''SELECT t.*,o.title AS objective_title,o.node_type AS objective_node_type
+                                    FROM tasks t
+                                    LEFT JOIN objective_nodes o ON o.id=t.objective_node_id
+                                    WHERE t.archived=0
+                                    ORDER BY t.completed,t.important DESC,COALESCE(t.due_date,'9999-12-31'),t.order_index,t.id''').fetchall()
                 return self._json([dict(r) for r in rows])
+            if p == '/api/objective-nodes':
+                rows=c.execute('''SELECT o.*,
+                                         (SELECT COUNT(*) FROM objective_nodes ch WHERE ch.parent_id=o.id) AS child_count,
+                                         (SELECT COUNT(*) FROM tasks t WHERE t.objective_node_id=o.id AND t.archived=0) AS task_count
+                                  FROM objective_nodes o
+                                  ORDER BY COALESCE(o.parent_id,0),o.order_index,o.id''').fetchall()
+                return self._json([dict(r) for r in rows])
+            if p == '/api/objective-library':
+                node_id=int_or_none(q.get('node_id',[None])[0])
+                if not node_id:
+                    return self._json({'sections':[]})
+                sections=c.execute('''SELECT * FROM objective_library_sections
+                                      WHERE node_id=? ORDER BY order_index,id''',(node_id,)).fetchall()
+                data=[]
+                for section in sections:
+                    item=dict(section)
+                    entries=c.execute('''SELECT * FROM objective_library_entries
+                                         WHERE section_id=? ORDER BY order_index,id''',(section['id'],)).fetchall()
+                    item['entries']=[dict(x) for x in entries]
+                    data.append(item)
+                return self._json({'sections':data})
             if p == '/api/shopping':
                 rows = c.execute('SELECT * FROM shopping_items WHERE archived=0 ORDER BY checked, id').fetchall()
                 return self._json([dict(r) for r in rows])
@@ -187,12 +212,55 @@ class Handler(BaseHTTPRequestHandler):
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
                 c.commit(); return self._json({'id':eid},201)
+            if p == '/api/objective-nodes':
+                title=(body.get('title') or '').strip()
+                node_type=(body.get('node_type') or 'objective').strip()
+                parent_id=int_or_none(body.get('parent_id'))
+                if not title: return self._json({'error':'Le nom est requis.'},400)
+                if node_type not in ('domain','objective','milestone','step'):
+                    return self._json({'error':'Type de nœud invalide.'},400)
+                if parent_id and not c.execute('SELECT id FROM objective_nodes WHERE id=?',(parent_id,)).fetchone():
+                    return self._json({'error':'Parent introuvable.'},404)
+                oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM objective_nodes WHERE parent_id IS ?',(parent_id,)).fetchone()['n']
+                progress=max(0,min(100,int_or_none(body.get('progress')) or 0))
+                status=(body.get('status') or 'active').strip()
+                if status not in ('active','paused','done'): status='active'
+                if status=='done': progress=100
+                cur=c.execute('''INSERT INTO objective_nodes(parent_id,node_type,title,description,status,progress,order_index,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,?)''',
+                              (parent_id,node_type,title,body.get('description',''),status,progress,oi,ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
+            if p == '/api/objective-library-sections':
+                node_id=int_or_none(body.get('node_id'))
+                title=(body.get('title') or '').strip()
+                section_type=(body.get('section_type') or 'resources').strip()
+                if not node_id or not c.execute('SELECT id FROM objective_nodes WHERE id=?',(node_id,)).fetchone():
+                    return self._json({'error':'Objectif introuvable.'},404)
+                if not title: return self._json({'error':'Le nom de la section est requis.'},400)
+                oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM objective_library_sections WHERE node_id=?',(node_id,)).fetchone()['n']
+                cur=c.execute('''INSERT INTO objective_library_sections(node_id,title,section_type,order_index,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?)''',(node_id,title,section_type,oi,ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
+            if p == '/api/objective-library-entries':
+                section_id=int_or_none(body.get('section_id'))
+                title=(body.get('title') or '').strip()
+                if not section_id or not c.execute('SELECT id FROM objective_library_sections WHERE id=?',(section_id,)).fetchone():
+                    return self._json({'error':'Section introuvable.'},404)
+                if not title: return self._json({'error':'Le titre est requis.'},400)
+                oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM objective_library_entries WHERE section_id=?',(section_id,)).fetchone()['n']
+                cur=c.execute('''INSERT INTO objective_library_entries(section_id,title,url,notes,done,order_index,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?)''',
+                              (section_id,title,body.get('url',''),body.get('notes',''),1 if body.get('done') else 0,oi,ts,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/tasks':
                 title=body.get('title','').strip()
                 if not title: return self._json({'error':'title required'},400)
                 oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM tasks').fetchone()['n']
-                cur=c.execute('''INSERT INTO tasks(title,due_date,due_time,notes,completed,archived,important,order_index,created_at,updated_at)
-                                 VALUES(?,?,?,?,0,0,?,?,?,?)''',(title,body.get('due_date') or None,body.get('due_time') or None,body.get('notes',''),1 if body.get('important') else 0,oi,ts,ts))
+                objective_node_id=int_or_none(body.get('objective_node_id'))
+                if objective_node_id and not c.execute('SELECT id FROM objective_nodes WHERE id=?',(objective_node_id,)).fetchone():
+                    objective_node_id=None
+                cur=c.execute('''INSERT INTO tasks(title,due_date,due_time,notes,completed,archived,important,objective_node_id,order_index,created_at,updated_at)
+                                 VALUES(?,?,?,?,0,0,?,?,?,?,?)''',(title,body.get('due_date') or None,body.get('due_time') or None,body.get('notes',''),1 if body.get('important') else 0,objective_node_id,oi,ts,ts))
                 tid=cur.lastrowid
                 for ra in body.get('reminders',[]) or []:
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
@@ -265,6 +333,52 @@ class Handler(BaseHTTPRequestHandler):
                     c.commit(); return self._json({'ok':True})
                 except sqlite3.IntegrityError:
                     return self._json({'error':'Un livre porte déjà ce nom.'},409)
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-nodes':
+                oid=int(parts[2]); old=c.execute('SELECT * FROM objective_nodes WHERE id=?',(oid,)).fetchone()
+                if not old: return self._json({'error':'Objectif introuvable.'},404)
+                d=dict(old); d.update(body)
+                title=(d.get('title') or '').strip()
+                node_type=(d.get('node_type') or 'objective').strip()
+                parent_id=int_or_none(d.get('parent_id'))
+                if not title: return self._json({'error':'Le nom est requis.'},400)
+                if node_type not in ('domain','objective','milestone','step'):
+                    return self._json({'error':'Type de nœud invalide.'},400)
+                if parent_id==oid: return self._json({'error':'Un élément ne peut pas être son propre parent.'},400)
+                if parent_id:
+                    parent=c.execute('SELECT id FROM objective_nodes WHERE id=?',(parent_id,)).fetchone()
+                    if not parent: return self._json({'error':'Parent introuvable.'},404)
+                    descendant=c.execute('''WITH RECURSIVE tree(id) AS (
+                                              SELECT id FROM objective_nodes WHERE parent_id=?
+                                              UNION ALL
+                                              SELECT n.id FROM objective_nodes n JOIN tree t ON n.parent_id=t.id
+                                            ) SELECT 1 FROM tree WHERE id=? LIMIT 1''',(oid,parent_id)).fetchone()
+                    if descendant: return self._json({'error':'Impossible de déplacer un élément dans un de ses sous-éléments.'},400)
+                progress=max(0,min(100,int_or_none(d.get('progress')) or 0))
+                status=(d.get('status') or 'active').strip()
+                if status not in ('active','paused','done'): status='active'
+                if status=='done': progress=100
+                c.execute('''UPDATE objective_nodes SET parent_id=?,node_type=?,title=?,description=?,status=?,progress=?,order_index=?,updated_at=?
+                             WHERE id=?''',
+                          (parent_id,node_type,title,d.get('description',''),status,progress,int_or_none(d.get('order_index')) or 0,ts,oid))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-sections':
+                sid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_sections WHERE id=?',(sid,)).fetchone()
+                if not old: return self._json({'error':'Section introuvable.'},404)
+                d=dict(old); d.update(body)
+                title=(d.get('title') or '').strip()
+                if not title: return self._json({'error':'Le nom de la section est requis.'},400)
+                c.execute('''UPDATE objective_library_sections SET title=?,section_type=?,order_index=?,updated_at=? WHERE id=?''',
+                          (title,d.get('section_type','resources'),int_or_none(d.get('order_index')) or 0,ts,sid))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-entries':
+                eid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_entries WHERE id=?',(eid,)).fetchone()
+                if not old: return self._json({'error':'Ressource introuvable.'},404)
+                d=dict(old); d.update(body)
+                title=(d.get('title') or '').strip()
+                if not title: return self._json({'error':'Le titre est requis.'},400)
+                c.execute('''UPDATE objective_library_entries SET title=?,url=?,notes=?,done=?,order_index=?,updated_at=? WHERE id=?''',
+                          (title,d.get('url',''),d.get('notes',''),1 if d.get('done') else 0,int_or_none(d.get('order_index')) or 0,ts,eid))
+                c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
                 if not instance_date: return self._json({'error':'instance_date required'},400)
@@ -432,8 +546,11 @@ class Handler(BaseHTTPRequestHandler):
                 tid=int(parts[2]); old=c.execute('SELECT * FROM tasks WHERE id=?',(tid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
-                c.execute('''UPDATE tasks SET title=?,due_date=?,due_time=?,notes=?,completed=?,archived=?,important=?,order_index=?,updated_at=? WHERE id=?''',
-                          (d['title'],d.get('due_date') or None,d.get('due_time') or None,d.get('notes',''),1 if d.get('completed') else 0,1 if d.get('archived') else 0,1 if d.get('important') else 0,int(d.get('order_index') or 0),ts,tid))
+                objective_node_id=int_or_none(d.get('objective_node_id'))
+                if objective_node_id and not c.execute('SELECT id FROM objective_nodes WHERE id=?',(objective_node_id,)).fetchone():
+                    objective_node_id=None
+                c.execute('''UPDATE tasks SET title=?,due_date=?,due_time=?,notes=?,completed=?,archived=?,important=?,objective_node_id=?,order_index=?,updated_at=? WHERE id=?''',
+                          (d['title'],d.get('due_date') or None,d.get('due_time') or None,d.get('notes',''),1 if d.get('completed') else 0,1 if d.get('archived') else 0,1 if d.get('important') else 0,objective_node_id,int(d.get('order_index') or 0),ts,tid))
                 if 'reminders' in body:
                     c.execute("DELETE FROM reminders WHERE entity_type='task' AND entity_id=? AND status!='done'",(tid,))
                     for ra in body.get('reminders',[]) or []:
@@ -518,6 +635,25 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-nodes':
+                oid=int(parts[2]); node=c.execute('SELECT id FROM objective_nodes WHERE id=?',(oid,)).fetchone()
+                if not node: return self._json({'error':'Objectif introuvable.'},404)
+                ids=[r['id'] for r in c.execute('''WITH RECURSIVE tree(id) AS (
+                                                     SELECT id FROM objective_nodes WHERE id=?
+                                                     UNION ALL
+                                                     SELECT n.id FROM objective_nodes n JOIN tree t ON n.parent_id=t.id
+                                                   ) SELECT id FROM tree''',(oid,)).fetchall()]
+                if ids:
+                    marks=','.join('?' for _ in ids)
+                    c.execute(f'UPDATE tasks SET objective_node_id=NULL WHERE objective_node_id IN ({marks})',ids)
+                c.execute('DELETE FROM objective_nodes WHERE id=?',(oid,))
+                c.commit(); return self._json({'ok':True,'deleted_nodes':len(ids)})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-sections':
+                sid=int(parts[2]); c.execute('DELETE FROM objective_library_sections WHERE id=?',(sid,))
+                c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-entries':
+                eid=int(parts[2]); c.execute('DELETE FROM objective_library_entries WHERE id=?',(eid,))
+                c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2])
                 rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
