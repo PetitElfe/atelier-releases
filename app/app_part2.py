@@ -40,10 +40,6 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static(p)
         if p == '/api/version':
             return self._json({'version': atelier_version()})
-        if p == '/api/shutdown':
-            self._json({'ok':True,'version':atelier_version()})
-            threading.Thread(target=self.server.shutdown, daemon=True).start()
-            return
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         with conn() as c:
