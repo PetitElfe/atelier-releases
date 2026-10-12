@@ -825,3 +825,89 @@ button:disabled{opacity:.55;cursor:wait}
 .library-editor-link{display:inline-flex;align-items:baseline;gap:4px;margin:0 2px;padding:1px 4px;border-radius:4px;background:#d9c3a3;color:#65482f;border-bottom:1px solid #8f6d4c;cursor:default}
 .library-editor-link small{font-family:system-ui,sans-serif;font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#80664f}
 .library-editor-link-web{background:#d6cdb7;color:#4f5a46;border-bottom-color:#788467}
+
+
+/* 0.11.0 — éditeur de carnet riche */
+.library-writing-toolbar-rich{align-items:center;gap:7px;background:#e7d7c0;border:1px solid #c8b18f;border-radius:8px;padding:7px;margin:9px 0 0}
+.library-toolbar-group{display:flex;align-items:center;gap:4px;padding-right:7px;border-right:1px solid #c6af8d}
+.library-toolbar-group:last-of-type{border-right:0}
+.library-writing-toolbar-rich button,.library-writing-toolbar-rich select,.library-writing-toolbar-rich label{font-family:system-ui,sans-serif;font-size:9px}
+.library-writing-toolbar-rich select{height:30px;padding:4px 6px;border:1px solid #bda585;border-radius:6px;background:#f1e5d3;color:#473629}
+.library-format-btn{min-width:30px;height:30px;padding:4px 7px!important}
+.library-colour-tools label{display:flex;align-items:center;gap:4px;height:30px;padding:3px 6px;border:1px solid #bda585;border-radius:6px;background:#f1e5d3;color:#473629}
+.library-colour-tools input[type="color"]{width:22px;height:20px;padding:0;border:0;background:transparent}
+.library-save-state.is-dirty{color:#9a5a3c;font-weight:600}
+#libraryPageSave:disabled,#libraryPageRevert:disabled{opacity:.45;cursor:default}
+
+.library-rich-editor{min-height:430px;padding:18px 10px!important;background:#f4ead9!important;border:1px solid #d4c1a5!important;border-radius:7px!important;overflow:auto;line-height:1.75;white-space:normal}
+.library-rich-editor:focus{border-color:#aa8b63!important;box-shadow:0 0 0 2px #aa8b6322!important}
+.library-rich-editor:empty::before{content:attr(data-placeholder);color:#9d8871;font-style:italic;pointer-events:none}
+.library-rich-editor p,.library-rich-editor div,.library-rich-document p,.library-rich-document div{margin:.35em 0}
+.library-rich-editor h1,.library-rich-document h1{font-size:2em;margin:.5em 0 .3em}
+.library-rich-editor h2,.library-rich-document h2{font-size:1.55em;margin:.5em 0 .3em}
+.library-rich-editor h3,.library-rich-document h3{font-size:1.25em;margin:.45em 0 .25em}
+
+/* Les liens restent proches du texte au lieu de ressembler à des boutons. */
+.library-rich-editor a[data-library-link-kind],.library-rich-document a[data-library-link-kind]{
+  display:inline;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  font:inherit!important;
+  text-decoration-line:underline!important;
+  text-decoration-thickness:1px!important;
+  text-underline-offset:2px!important;
+  cursor:pointer;
+}
+.library-rich-editor a[data-library-link-kind="page"]::after,.library-rich-document a[data-library-link-kind="page"]::after{
+  content:" " attr(data-link-type);
+  font-family:system-ui,sans-serif;
+  font-size:.52em;
+  font-weight:500;
+  opacity:.52;
+  vertical-align:super;
+  text-decoration:none;
+}
+.library-rich-editor a[data-library-link-kind="web"]::after,.library-rich-document a[data-library-link-kind="web"]::after{
+  content:" ↗";
+  font-family:system-ui,sans-serif;
+  font-size:.62em;
+  opacity:.55;
+  text-decoration:none;
+}
+.library-rich-editor a.library-rich-link-selected{outline:1px dashed #8d6b47;outline-offset:2px}
+#libraryLinkSelectionInfo{margin-left:auto!important;max-width:250px}
+
+/* Images : déplacement dans la page + redimensionnement manuel. */
+.library-editor-image{position:relative;min-width:120px;max-width:100%;margin:14px auto;padding:0;border:1px dashed transparent;border-radius:7px;clear:both}
+.library-editor-image:hover{border-color:#b89c77}
+.library-editor-image img{display:block;width:100%;height:auto;border-radius:5px;user-select:none;pointer-events:none}
+.library-image-controls{position:absolute;left:50%;top:7px;transform:translateX(-50%);display:flex;gap:3px;padding:4px;background:#2a231ee8;border:1px solid #6d5943;border-radius:7px;opacity:0;transition:opacity .12s ease;z-index:3}
+.library-editor-image:hover .library-image-controls{opacity:1}
+.library-image-controls button{width:25px;height:24px;padding:0;border:1px solid #7a654e;background:#3a3028;color:#f0e2cd;font-size:10px}
+.library-image-resize-handle{position:absolute;right:-5px;bottom:-5px;width:15px;height:15px;border:2px solid #8b6f50;background:#efe3cf;border-radius:50%;cursor:nwse-resize;opacity:0}
+.library-editor-image:hover .library-image-resize-handle{opacity:1}
+.library-rich-document figure[data-atelier-image="1"]{max-width:100%;margin:14px auto}
+.library-rich-document figure[data-atelier-image="1"] img{display:block;width:100%;height:auto;border-radius:5px}
+
+/* Avancement : choix rapides plutôt qu’un pourcentage à deviner. */
+.library-progress-easy{min-width:0}
+.library-progress-presets{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px}
+.library-progress-presets button{padding:6px 3px;font-size:9px}
+.library-progress-slider{display:grid;grid-template-columns:minmax(0,1fr) 45px;gap:8px;align-items:center}
+.library-progress-slider input{width:100%}.library-progress-slider output{text-align:right;font-size:11px;color:var(--gold)}
+.library-auto-progress{min-height:52px;border:1px solid #4b4036;border-radius:8px;background:#191613;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.library-auto-progress strong{font-size:18px;color:var(--gold)}.library-auto-progress span{font-size:9px;color:var(--muted);line-height:1.35}
+
+@media(max-width:920px){
+  .library-writing-toolbar-rich{align-items:flex-start}
+  .library-toolbar-group{border-right:0;padding-right:0}
+  #libraryLinkSelectionInfo{width:100%;max-width:none;margin-left:0!important}
+}
+@media(max-width:680px){
+  .library-progress-presets{grid-template-columns:repeat(3,1fr)}
+  .library-writing-toolbar-rich{gap:5px}
+}
