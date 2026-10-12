@@ -1014,8 +1014,8 @@ function renderLibraryRichText(text){
   return root;
 }
 function libraryBacklinks(targetId){
-  const re=new RegExp('\\\\[\\\\[p:'+Number(targetId)+':','g');
-  return libraryAllPages().filter(page=>Number(page.id)!==Number(targetId)&&re.test(page.notes||''));
+  const marker='[[p:'+Number(targetId)+':';
+  return libraryAllPages().filter(page=>Number(page.id)!==Number(targetId)&&String(page.notes||'').includes(marker));
 }
 function replaceLibraryTextareaSelection(textarea,replacement){
   const start=textarea.selectionStart??textarea.value.length,end=textarea.selectionEnd??start;
@@ -1226,6 +1226,7 @@ function renderLibraryNotebookContent(domain){
   pageList.innerHTML='';
   (notebook.entries||[]).forEach(entry=>{
     const b=document.createElement('button');b.type='button';b.className='library-page-list-item'+(Number(entry.id)===Number(librarySelectedPageId)?' active':'')+(entry.done?' is-done':'');
+    b.dataset.pageId=String(entry.id);
     b.innerHTML=`<span>${entry.done?'✓':'•'}</span><strong>${esc(entry.title)}</strong>`;
     b.onclick=()=>{librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain)};
     pageList.appendChild(b);
@@ -1278,7 +1279,10 @@ function renderLibraryPageEditor(notebook,page){
     const result=await runUiAction('Impossible de modifier la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({done:next})}));
     if(!result.ok)return;
     page.done=next;
-    renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+    root.querySelector('.library-writing-page')?.classList.toggle('is-done',next);
+    const toggle=$('#libraryPageDoneToggle');if(toggle)toggle.textContent=next?'✓ Traité':'○ Marquer traité';
+    const listButton=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+    if(listButton){listButton.classList.toggle('is-done',next);const mark=listButton.querySelector('span');if(mark)mark.textContent=next?'✓':'•'}
   };
   $('#libraryPageDelete').onclick=()=>deleteLibraryPage(notebook,page);
   $('#libraryInsertInternalLink').onclick=()=>openLibraryInternalLinkModal(notebook,page);
