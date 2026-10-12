@@ -1712,10 +1712,24 @@ function markLibraryPageDirty(page){
   const save=$('#libraryPageSave');if(save)save.disabled=!libraryPageDirty;
   const revert=$('#libraryPageRevert');if(revert)revert.disabled=!libraryPageDirty;
 }
+function rememberLibraryTextSelection(){
+  const editor=$('#libraryPageBody'),sel=window.getSelection();
+  if(!editor||!sel||!sel.rangeCount)return;
+  const range=sel.getRangeAt(0),container=range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;
+  if(container&&editor.contains(container))libraryPendingRange=range.cloneRange();
+}
+function restoreLibraryTextSelection(){
+  const editor=$('#libraryPageBody'),range=libraryPendingRange;
+  if(!editor||!range)return false;
+  const container=range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;
+  if(!container||!editor.contains(container))return false;
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);return true;
+}
 function libraryExec(command,value=null){
   const editor=$('#libraryPageBody');if(!editor)return;
-  editor.focus();
+  editor.focus();restoreLibraryTextSelection();
   document.execCommand(command,false,value);
+  rememberLibraryTextSelection();
   const page=libraryPageById(librarySelectedPageId);if(page)markLibraryPageDirty(page);
 }
 function libraryToolbarButton(label,title,command,value=null){
@@ -1976,9 +1990,12 @@ function renderLibraryPageEditor(notebook,page){
   body.addEventListener('keydown',e=>{if(e.key==='Enter'){setTimeout(()=>markLibraryPageDirty(page),0)}});
   body.addEventListener('mousedown',()=>{const sel=window.getSelection();if(sel?.rangeCount)libraryPendingRange=sel.getRangeAt(0).cloneRange()});
 
-  $$('.library-format-btn').forEach(btn=>{
-    btn.onmousedown=e=>e.preventDefault();
+  $('.library-format-btn').forEach(btn=>{
+    btn.onmousedown=e=>{e.preventDefault();rememberLibraryTextSelection()};
     btn.onclick=()=>libraryExec(btn.dataset.command,btn.dataset.value||null);
+  });
+  ['libraryFontFamily','libraryFontSize','libraryTextColor','libraryHighlightColor'].forEach(id=>{
+    const el=$('#'+id);if(el)el.onmousedown=()=>rememberLibraryTextSelection();
   });
   $('#libraryFontFamily').onchange=e=>libraryExec('fontName',e.target.value);
   $('#libraryFontSize').onchange=e=>libraryExec('fontSize',e.target.value);
