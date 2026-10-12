@@ -591,7 +591,7 @@ function openRecipeModal(item=null,prefill=null){
         <input id="mealImageInput" class="meal-image-input" type="file" accept="image/*">
         <div class="recipe-avatar-row">
           <button id="mealImagePicker" class="meal-image-picker recipe-avatar-picker ${mealImageData?'has-image':''}" type="button" aria-label="Choisir ou changer l’image de la recette">
-            <img id="mealImagePreview" src="${mealImageData}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
+            <img id="mealImagePreview" src="${esc(mealImageData)}" alt="${mealImageData?'Aperçu de la recette':''}" class="${mealImageData?'':'hidden'}">
             <span id="mealImagePlaceholder" class="meal-image-placeholder ${mealImageData?'hidden':''}"><strong>Photo</strong><small>Aucune image</small></span>
           </button>
           <div class="recipe-avatar-actions">
