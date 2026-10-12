@@ -74,16 +74,38 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   });
 }
 
-function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
+function openTaskModal(t=null,presetObjectiveNodeId=null){
+  const editing=!!t?.id;
+  const linkedObjectiveId=editing?t.objective_node_id:presetObjectiveNodeId;
+  const reminders=editing
+    ? state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)}))
+    : [];
   openModal(`<h2>${editing?'Modifier la tâche':'Nouvelle tâche'}</h2><form id="taskForm" class="form-grid">
     <div class="field full"><label>Tâche</label><input name="title" required value="${esc(t?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="due_date" type="date" value="${esc(t?.due_date||ymd(new Date()))}"></div>
     <div class="field"><label>Heure</label><input name="due_time" type="time" value="${esc(t?.due_time||'')}"></div>
+    <div class="field full"><label>Objectif / étape liée</label><select name="objective_node_id">${objectiveSelectOptions(linkedObjectiveId)}</select><div class="field-help">Facultatif : la tâche apparaîtra aussi dans la fiche de cet élément de la carte.</div></div>
     <div class="field full checkline"><input id="important" name="important" type="checkbox" ${t?.important?'checked':''}><label for="important">Important 👺</label></div>
     <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'de la tâche',t?.due_date||ymd(new Date()))}
     <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
-  </form>`); const f=$('#taskForm'); wireReminderEditor(); $('#cancelTask').onclick=closeModal; f.addEventListener('submit',async ev=>{ev.preventDefault(); const fd=new FormData(f);const payload=Object.fromEntries(fd.entries());payload.important=f.important.checked;payload.reminders=collectReminders();const result=await runUiAction("Impossible d’enregistrer la tâche",()=>api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));if(!result.ok)return;closeModal();await refresh()}); }
+  </form>`);
+  const f=$('#taskForm');
+  wireReminderEditor();
+  $('#cancelTask').onclick=closeModal;
+  f.addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    const fd=new FormData(f);
+    const payload=Object.fromEntries(fd.entries());
+    payload.objective_node_id=payload.objective_node_id||null;
+    payload.important=f.important.checked;
+    payload.reminders=collectReminders();
+    const result=await runUiAction("Impossible d’enregistrer la tâche",()=>api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok)return;
+    closeModal();
+    await refresh();
+  });
+}
 
 function openPostponeEventModal(e){
   const date=e?.instance_date||e?.event_date||ymd(new Date());
@@ -211,7 +233,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',objectives:'Objectifs',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
@@ -320,6 +342,8 @@ $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalend
 $('#openCalendarCard').onclick=()=>showView('calendar');
 $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
 $('#openTasksFromHome').onclick=()=>showView('tasks');
+$('#addObjectiveNode').onclick=()=>openObjectiveNodeModal();
+$('#objectiveAddRoot').onclick=()=>openObjectiveNodeModal();
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 const DATE_FORMAT_OPTIONS={
@@ -618,7 +642,7 @@ function initGlobalLayoutEditor(){
 
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
-refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
+refresh().then(()=>{if(['home','calendar','tasks','objectives','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
