@@ -2459,3 +2459,33 @@ function renderLibraryPageEditor(notebook,page){
   };
   $('#libraryPageDelete').onclick=async()=>{await flushLibraryAutosave(page);deleteLibraryPage(notebook,page)};
 }
+
+
+/* 0.12.0 — pages numérotées dans le carnet */
+function renderLibraryNotebookContent(domain){
+  const pageList=$('#libraryNotebookPageList'),pages=$('#libraryNotebookPages');
+  if(!librarySelectedNotebookId||!pageList||!pages)return;
+  const notebook=libraryNotebookById(librarySelectedNotebookId);
+  if(!notebook){librarySelectedNotebookId=null;librarySelectedPageId=null;libraryLeaveExpanded();renderLibraryDomain();return}
+  $('#libraryNotebookTitle').textContent=notebook.title;pageList.innerHTML='';
+  (notebook.entries||[]).forEach((entry,index)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='library-page-list-item'+(Number(entry.id)===Number(librarySelectedPageId)?' active':'')+(entry.done?' is-done':'');
+    b.dataset.pageId=String(entry.id);
+    b.innerHTML=`<span class="library-page-list-number">${index+1}</span><strong>${esc(entry.title)}</strong>`;
+    b.onclick=async()=>{
+      if(Number(entry.id)===Number(librarySelectedPageId))return;
+      await flushLibraryAutosave();
+      librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain);
+    };
+    pageList.appendChild(b);
+  });
+  if(!(notebook.entries||[]).length){
+    pageList.innerHTML='<div class="library-page-list-empty">Aucune page</div>';
+    pages.innerHTML='<div class="library-pages-empty"><div class="library-page-stack"><i></i><i></i><i></i></div><strong>Ce carnet est vide.</strong><span>Crée une page puis écris directement dedans.</span><button id="libraryFirstPage" class="primary" type="button">+ Première page</button></div>';
+    $('#libraryFirstPage').onclick=()=>createLibraryPage(notebook);return;
+  }
+  if(!librarySelectedPageId||!libraryPageById(librarySelectedPageId))librarySelectedPageId=Number(notebook.entries[0].id);
+  renderLibraryPageEditor(notebook,libraryPageById(librarySelectedPageId));
+}
