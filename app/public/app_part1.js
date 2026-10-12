@@ -66,7 +66,7 @@ async function refresh(){
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderObjectives==='function')renderObjectives(); updateClock(); }
+function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function')renderLibrary(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
@@ -106,7 +106,7 @@ function renderHome(){
     const empty=document.createElement('button');
     empty.type='button';empty.className='objective-note objective-open';
     empty.innerHTML='<div class="objective-name">Créer tes objectifs</div><div class="objective-context">Construis d’abord ta carte : domaines, objectifs, étapes et sous-étapes.</div><ul class="objective-actions"><li>Ouvrir la carte des objectifs →</li></ul>';
-    empty.addEventListener('click',()=>showView('objectives'));
+    empty.addEventListener('click',()=>showView('library'));
     objectiveRoot.appendChild(empty);
   }else{
     activeObjectives.forEach(obj=>{
@@ -114,10 +114,7 @@ function renderHome(){
       el.type='button';el.className='objective-note objective-open';
       const context=(obj.description||'').trim()||`${Number(obj.progress)||0}% d’avancement`;
       el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${Number(obj.progress)||0}% · ouvrir →</li></ul>`;
-      el.addEventListener('click',()=>{
-        if(typeof selectObjectiveNode==='function')selectObjectiveNode(obj.id);
-        showView('objectives');
-      });
+      el.addEventListener('click',()=>openLibraryForNode(obj.id));
       objectiveRoot.appendChild(el);
     });
   }
