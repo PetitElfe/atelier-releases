@@ -1438,11 +1438,13 @@ function openLibraryDomainCreateModal(){
       <div class="field full library-builder-block"><label>Sous-objectifs / niveaux <span class="muted">(un par ligne)</span></label><textarea name="levels" placeholder="A1&#10;A2&#10;B1&#10;B2&#10;C1&#10;C2"></textarea></div>
       <div class="field full library-builder-block"><label>Carnets de départ <span class="muted">(un par ligne)</span></label><textarea name="notebooks" placeholder="Grammaire&#10;Vocabulaire&#10;Cours&#10;Journal"></textarea></div>
       <div id="libraryDomainCreateError" class="form-error field full hidden"></div>
-      <div class="form-actions field full"><button id="cancelLibraryDomainCreate" type="button">Annuler</button><button class="primary" type="submit">Créer la bibliothèque</button></div>
+      <div class="form-actions field full"><button id="cancelLibraryDomainCreate" type="button">Annuler</button><button id="saveLibraryDomainCreate" class="primary" type="button">Créer la bibliothèque</button></div>
     </form></div>`);
   $('#cancelLibraryDomainCreate').onclick=closeModal;
-  $('#libraryDomainCreateForm').onsubmit=async e=>{
-    e.preventDefault();const fd=new FormData(e.currentTarget);
+  const domainCreateForm=$('#libraryDomainCreateForm');wireNoEnterSubmit(domainCreateForm);
+  $('#saveLibraryDomainCreate').onclick=async()=>{
+    if(!domainCreateForm.reportValidity())return;
+    const fd=new FormData(domainCreateForm);
     const title=String(fd.get('title')||'').trim(),description=String(fd.get('description')||'').trim();
     const mainGoal=String(fd.get('main_goal')||'').trim();
     const levels=String(fd.get('levels')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
@@ -1487,14 +1489,16 @@ function openLibraryDomainConfigModal(domain){
         <button id="configAddSubgoal" type="button"><strong>${objectiveDescendantIds(domain.id).size}</strong><span>Progression<small>+ ajouter</small></span></button>
         <button id="configAddTask" type="button"><strong>${state.tasks.filter(t=>libraryDomainNodeIds(domain.id).has(Number(t.objective_node_id))).length}</strong><span>Tâches<small>+ ajouter</small></span></button>
       </div>
-      <div class="form-actions field full"><button id="cancelLibraryDomainConfig" type="button">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
+      <div class="form-actions field full"><button id="cancelLibraryDomainConfig" type="button">Annuler</button><button id="saveLibraryDomainConfig" class="primary" type="button">Enregistrer</button></div>
     </form></div>`);
   $('#cancelLibraryDomainConfig').onclick=closeModal;
   $('#configAddNotebook').onclick=()=>openLibraryNotebookModal(domain.id);
   $('#configAddSubgoal').onclick=()=>openLibrarySubgoalModal(domain.id,mainGoal?.id||domain.id,null,mainGoal?'milestone':'objective');
   $('#configAddTask').onclick=()=>openTaskModal(null,mainGoal?.id||domain.id);
-  $('#libraryDomainConfigForm').onsubmit=async e=>{
-    e.preventDefault();const payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.progress=Number(payload.progress)||0;
+  const domainConfigForm=$('#libraryDomainConfigForm');wireNoEnterSubmit(domainConfigForm);
+  $('#saveLibraryDomainConfig').onclick=async()=>{
+    if(!domainConfigForm.reportValidity())return;
+    const payload=Object.fromEntries(new FormData(domainConfigForm).entries());payload.progress=Number(payload.progress)||0;
     const result=await runUiAction('Impossible de modifier le domaine',()=>api(`/api/objective-nodes/${domain.id}`,{method:'PUT',body:JSON.stringify(payload)}));
     if(!result.ok)return;
     const goalTitle=$('#libraryMainGoalTitle').value.trim();
@@ -1508,11 +1512,13 @@ function openLibraryNotebookModal(domainId,notebook=null){
   openModal(`<h2>${editing?'Modifier le carnet':'Nouveau carnet'}</h2><form id="libraryNotebookForm" class="form-grid">
     <div class="field full"><label>Nom du carnet</label><input name="title" required value="${esc(notebook?.title||'')}" placeholder="ex. Grammaire, Vocabulaire, Journal…"></div>
     <div class="field-help full">Les pages du carnet sont écrites directement dans L’Atelier. Tu peux ajouter des liens entre elles et des liens web affichés sous forme de mots.</div>
-    <div class="form-actions field full"><button id="cancelLibraryNotebook" type="button">Annuler</button><button class="primary" type="submit">${editing?'Enregistrer':'Créer le carnet'}</button></div>
+    <div class="form-actions field full"><button id="cancelLibraryNotebook" type="button">Annuler</button><button id="saveLibraryNotebook" class="primary" type="button">${editing?'Enregistrer':'Créer le carnet'}</button></div>
   </form>`);
   $('#cancelLibraryNotebook').onclick=closeModal;
-  $('#libraryNotebookForm').onsubmit=async e=>{
-    e.preventDefault();const payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.node_id=domainId;payload.section_type='notes';
+  const notebookForm=$('#libraryNotebookForm');wireNoEnterSubmit(notebookForm);
+  $('#saveLibraryNotebook').onclick=async()=>{
+    if(!notebookForm.reportValidity())return;
+    const payload=Object.fromEntries(new FormData(notebookForm).entries());payload.node_id=domainId;payload.section_type='notes';
     const result=await runUiAction("Impossible d’enregistrer le carnet",()=>api(editing?`/api/objective-library-sections/${notebook.id}`:'/api/objective-library-sections',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;const preferred=editing?notebook.id:result.value?.id;closeModal();await loadLibraryNotebooks(domainId,preferred);
   };
@@ -1625,7 +1631,7 @@ function librarySanitizeHtml(raw){
   const parser=new DOMParser();
   const doc=parser.parseFromString('<div id="atelier-rich-root">'+String(raw||'')+'</div>','text/html');
   const root=doc.querySelector('#atelier-rich-root');
-  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','FIGURE','IMG']);
+  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','SUP','SUB','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','HR','FIGURE','IMG']);
   [...root.querySelectorAll('*')].forEach(el=>{
     if(!allowed.has(el.tagName)){
       el.replaceWith(...el.childNodes);return;
