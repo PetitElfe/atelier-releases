@@ -161,7 +161,17 @@ function notifyReminder(r){
 
   try{
     if('Notification' in window && Notification.permission==='granted'){
-      new Notification(`🔔 Rappel : ${title}`,{body:`${when} · ${kind}\nOuvre L’Atelier pour le traiter.`});
+      const systemNotification=new Notification(`🔔 Rappel : ${title}`,{
+        body:`${when} · ${kind}\nClique pour ouvrir L’Atelier.`,
+        requireInteraction:notificationPersistentPreference(),
+        tag:`atelier-reminder-${r.id}`,
+        renotify:true
+      });
+      systemNotification.onclick=()=>{
+        try{window.focus()}catch(_){}
+        showView('reminders');
+        systemNotification.close();
+      };
     }
   }catch(e){
     console.warn('[Atelier] Notification système impossible',e);
@@ -197,11 +207,12 @@ async function checkRuntimeCompatibility(){
 
 function showView(view){
   state.view=view;
-  if(view!=='recipe') localStorage.setItem('atelierLastView',view);
+  if(view!=='recipe' && view!=='settings') localStorage.setItem('atelierLastView',view);
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  if(view==='settings')renderSettings();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   syncGlobalLayoutEditing();
@@ -311,9 +322,21 @@ $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
-function formatTopDate(value){
+const DATE_FORMAT_OPTIONS={
+  long:{day:'numeric',month:'long',year:'numeric'},
+  weekday:{weekday:'long',day:'numeric',month:'long',year:'numeric'},
+  numeric:{day:'2-digit',month:'2-digit',year:'numeric'}
+};
+function dateFormatPreference(){
+  const value=localStorage.getItem('atelierDateFormat')||'long';
+  return DATE_FORMAT_OPTIONS[value]?value:'long';
+}
+function notificationPersistentPreference(){
+  return localStorage.getItem('atelierNotificationPersistent')!=='0';
+}
+function formatTopDate(value,format=dateFormatPreference()){
   if(!value)return '';
-  return parseYMD(value).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  return parseYMD(value).toLocaleDateString('fr-FR',DATE_FORMAT_OPTIONS[format]||DATE_FORMAT_OPTIONS.long);
 }
 function syncTopDate(){
   const input=$('#jumpDate'), label=$('#jumpDateLabel');
@@ -344,7 +367,62 @@ function syncNotifyButton(){
   b.title=granted?'Notifications activées':'Activer les notifications';
   b.setAttribute('aria-label',b.title);
 }
-$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){showUiMessage('Notifications indisponibles','Cette version du moteur d’affichage ne prend pas en charge les notifications système.');return} await Notification.requestPermission(); syncNotifyButton(); };
+$('#notifyBtn').onclick=async()=>{ if(!('Notification' in window)){showUiMessage('Notifications indisponibles','Cette version du moteur d’affichage ne prend pas en charge les notifications système.');return} await Notification.requestPermission(); syncNotifyButton(); renderSettings(); };
+
+let settingsReturnView='home';
+function notificationPermissionLabel(){
+  if(!('Notification' in window))return 'Indisponibles';
+  if(Notification.permission==='granted')return 'Autorisées';
+  if(Notification.permission==='denied')return 'Bloquées';
+  return 'Non autorisées';
+}
+function renderSettings(){
+  const dateSelect=$('#settingsDateFormat');
+  const preview=$('#settingsDatePreview');
+  const persistent=$('#settingsNotificationPersistent');
+  const status=$('#settingsNotificationStatus');
+  const permission=$('#settingsNotificationPermission');
+  if(dateSelect){
+    dateSelect.value=dateFormatPreference();
+    if(preview)preview.textContent=formatTopDate(ymd(new Date()),dateSelect.value);
+  }
+  if(persistent)persistent.checked=notificationPersistentPreference();
+  if(status)status.textContent=notificationPermissionLabel();
+  if(permission){
+    const granted=('Notification' in window)&&Notification.permission==='granted';
+    permission.textContent=granted?'Notifications autorisées':'Autoriser les notifications';
+    permission.disabled=granted||!('Notification' in window);
+  }
+}
+function openSettings(){
+  if(state.view!=='settings'&&state.view!=='recipe')settingsReturnView=state.view;
+  showView('settings');
+}
+$('#settingsBtn').onclick=openSettings;
+$('#settingsBack').onclick=()=>showView(settingsReturnView||localStorage.getItem('atelierLastView')||'home');
+$('#settingsDateFormat').onchange=e=>{
+  localStorage.setItem('atelierDateFormat',e.target.value);
+  syncTopDate();
+  renderSettings();
+};
+$('#settingsNotificationPersistent').onchange=e=>{
+  localStorage.setItem('atelierNotificationPersistent',e.target.checked?'1':'0');
+};
+$('#settingsNotificationPermission').onclick=async()=>{
+  if(!('Notification' in window)){renderSettings();return}
+  await Notification.requestPermission();
+  syncNotifyButton();
+  renderSettings();
+};
+$('#settingsNavReset').onclick=()=>{
+  localStorage.removeItem('atelierSideNavPosition');
+  setSideNavCollapsed(false);
+  const nav=$('#sideNav');
+  if(nav){
+    const next=applySideNavPosition({left:window.innerWidth-(nav.offsetWidth||220),top:84});
+    if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
+  }
+};
 
 function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
   if(!view||!toggle||!reset)return;
