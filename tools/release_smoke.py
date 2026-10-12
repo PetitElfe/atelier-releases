@@ -136,6 +136,12 @@ def check_frontend_contract() -> None:
         fail("Les actions de rappel par icônes sont absentes.")
     if "initSideNavDrag()" not in js:
         fail("Le glisser-déposer du tiroir n’est pas initialisé.")
+    if "syncSideNavEdge(" not in js or "side-nav-on-left" not in js:
+        fail("La flèche du tiroir ne s’adapte pas au côté de l’écran.")
+    if "setInterval(checkDue,10000)" not in js:
+        fail("La fréquence de vérification des rappels n’est pas celle attendue.")
+    if "Notification système impossible" not in js:
+        fail("Les erreurs de notification système ne sont pas isolées.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
     if binding not in js:
         fail("Branchement des onglets de navigation absent.")
@@ -184,6 +190,10 @@ def check_server(version: str) -> None:
             status, reminders = request("GET", "/api/reminders")
             if status != 200 or not any(r.get("entity_type") == "standalone" and r.get("title") == "Test rappel indépendant" for r in reminders):
                 fail("Le rappel indépendant n'est pas relu correctement.")
+
+            status, due = request("GET", "/api/reminders/due?now=2027-03-15T09:31:00")
+            if status != 200 or not any(r.get("id") == reminder["id"] for r in due):
+                fail("Un rappel arrivé à échéance n'est pas renvoyé par /api/reminders/due.")
 
             status, linked_event = request("POST", "/api/events", {
                 "title": "RDV avec rappel",
