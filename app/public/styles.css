@@ -552,7 +552,7 @@ button:disabled{opacity:.55;cursor:wait}
   transform:translateX(0);
   transition:transform .18s ease;
 }
-.side-nav.is-collapsed{transform:translateX(100%)}
+.side-nav.is-collapsed{transform:translateX(var(--side-nav-collapse-x,100%))}
 .side-nav-links{display:flex;flex-direction:column;gap:6px}
 .side-nav-links button{width:100%;text-align:left;padding:9px 12px}
 .side-nav-toggle{
@@ -569,7 +569,10 @@ button:disabled{opacity:.55;cursor:wait}
   box-shadow:-4px 4px 14px #0005;
 }
 .side-nav-arrow{display:block;font-size:25px;line-height:1;transition:transform .18s ease}
-.side-nav.is-collapsed .side-nav-arrow{transform:rotate(180deg)}
+.side-nav.side-nav-on-left .side-nav-toggle{left:auto;right:-43px;border-radius:0 9px 9px 0;box-shadow:4px 4px 14px #0005}
+.side-nav.side-nav-on-left .side-nav-arrow{transform:rotate(180deg)}
+.side-nav.is-collapsed:not(.side-nav-on-left) .side-nav-arrow{transform:rotate(180deg)}
+.side-nav.is-collapsed.side-nav-on-left .side-nav-arrow{transform:rotate(0deg)}
 .reminder-standalone{border-left:2px solid var(--gold)}
 .reminder-actions .delete{border-color:#744b45;color:#c98a80}
 .reminder-actions .delete:hover{border-color:#a65a52;color:#e5a49a}
