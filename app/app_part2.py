@@ -120,27 +120,39 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json([dict(r) for r in rows])
             if p == '/api/reminders':
                 rows = c.execute('''
-                    SELECT r.*,
-                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
-                           WHEN r.entity_type='task' THEN (SELECT title FROM tasks WHERE id=r.entity_id)
-                           ELSE '' END AS entity_title
-                    FROM reminders r
-                    WHERE r.status != 'done'
-                    ORDER BY COALESCE(r.snoozed_until,r.remind_at),r.id
+                    SELECT * FROM reminders
+                    WHERE status != 'done'
+                    ORDER BY COALESCE(snoozed_until,remind_at),id
                 ''').fetchall()
-                return self._json([dict(r) for r in rows])
+                data=[]
+                for row in rows:
+                    item=dict(row); item['entity_title']=''
+                    if item['entity_type']=='event':
+                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    elif item['entity_type']=='task':
+                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    data.append(item)
+                return self._json(data)
             if p == '/api/reminders/due':
                 now = q.get('now', [now_iso()])[0]
                 rows = c.execute('''
-                    SELECT r.*, 
-                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
-                           WHEN r.entity_type='task' THEN (SELECT title FROM tasks WHERE id=r.entity_id)
-                           ELSE '' END AS entity_title
-                    FROM reminders r
-                    WHERE r.status='pending' AND COALESCE(r.snoozed_until,r.remind_at) <= ?
-                    ORDER BY COALESCE(r.snoozed_until,r.remind_at), r.id
+                    SELECT * FROM reminders
+                    WHERE status='pending' AND COALESCE(snoozed_until,remind_at) <= ?
+                    ORDER BY COALESCE(snoozed_until,remind_at), id
                 ''', (now,)).fetchall()
-                return self._json([dict(r) for r in rows])
+                data=[]
+                for row in rows:
+                    item=dict(row); item['entity_title']=''
+                    if item['entity_type']=='event':
+                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    elif item['entity_type']=='task':
+                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    data.append(item)
+                return self._json(data)
         return self._json({'error':'not found'},404)
 
     def do_POST(self):
