@@ -54,6 +54,18 @@ function renderTasks(){
 }
 async function moveTask(t,dir){ const active=state.tasks.filter(x=>!x.completed).sort((a,b)=>a.order_index-b.order_index); const i=active.findIndex(x=>x.id===t.id), j=i+dir;if(i<0||j<0||j>=active.length)return; const a=active[i],b=active[j]; await Promise.all([api(`/api/tasks/${a.id}`,{method:'PUT',body:JSON.stringify({order_index:b.order_index})}),api(`/api/tasks/${b.id}`,{method:'PUT',body:JSON.stringify({order_index:a.order_index})})]); await refresh(); }
 
+function reminderKindLabel(r){
+  return r.entity_type==='standalone'?'Rappel indépendant':r.entity_type==='event'?'Lié à un rendez-vous':'Lié à une tâche';
+}
+
+function formatReminderMoment(raw){
+  if(!raw)return '';
+  const datePart=raw.slice(0,10), timePart=raw.length>=16?raw.slice(11,16):'';
+  const d=parseYMD(datePart);
+  const dateLabel=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  return timePart?`${dateLabel} à ${timePart.replace(':','h')}`:dateLabel;
+}
+
 function renderReminders(){
   const root=$('#reminderList');
   root.innerHTML='';
@@ -65,16 +77,22 @@ function renderReminders(){
     const row=document.createElement('div');
     row.className='reminder-row'+(r.entity_type==='standalone'?' reminder-standalone':'');
     const title=r.title||r.entity_title||`${r.entity_type==='event'?'Rendez-vous':r.entity_type==='task'?'Tâche':'Rappel'} #${r.id}`;
-    const kind=r.entity_type==='standalone'?'Rappel indépendant':r.entity_type==='event'?'Lié à un rendez-vous':'Lié à une tâche';
-    row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc((r.snoozed_until||r.remind_at).replace('T',' '))} · ${esc(kind)}</div></div><div class="reminder-actions"><button class="done">Fini</button><button class="snooze">Reporter</button>${r.entity_type==='standalone'?'<button class="edit">Modifier</button><button class="delete">Supprimer</button>':''}</div>`;
+    const kind=reminderKindLabel(r);
+    const when=formatReminderMoment(r.snoozed_until||r.remind_at);
+    row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div></div><div class="reminder-actions">
+      <button class="done reminder-icon-action" type="button" title="Fini" aria-label="Fini">✓</button>
+      <button class="snooze reminder-icon-action" type="button" title="Reporter" aria-label="Reporter">↪</button>
+      <button class="edit reminder-icon-action" type="button" title="Modifier" aria-label="Modifier">✎</button>
+      <button class="delete reminder-icon-action" type="button" title="Supprimer" aria-label="Supprimer">×</button>
+    </div>`;
     row.querySelector('.done').addEventListener('click',async()=>{
-      await api(`/api/reminders/${r.id}/finish`,{method:'PUT',body:'{}'});
+      await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});
       shown.delete(r.id);
       await refresh();
     });
     row.querySelector('.snooze').addEventListener('click',()=>openSnooze(r));
-    row.querySelector('.edit')?.addEventListener('click',()=>openStandaloneReminderModal(r));
-    row.querySelector('.delete')?.addEventListener('click',async()=>{
+    row.querySelector('.edit').addEventListener('click',()=>openReminderModal(r));
+    row.querySelector('.delete').addEventListener('click',async()=>{
       const ok=await askUiConfirm('Supprimer le rappel',`Supprimer « ${title} » ?`,'Supprimer',true);
       if(!ok)return;
       const result=await runUiAction('Impossible de supprimer le rappel',()=>api(`/api/reminders/${r.id}`,{method:'DELETE'}));
@@ -84,13 +102,14 @@ function renderReminders(){
   });
 }
 
-function openStandaloneReminderModal(reminder=null){
+function openReminderModal(reminder=null){
   const editing=!!reminder?.id;
   const raw=(reminder?.snoozed_until||reminder?.remind_at||'').slice(0,16);
   const dateValue=raw.slice(0,10)||ymd(new Date());
   const timeValue=raw.length>=16?raw.slice(11,16):'';
+  const effectiveTitle=reminder?.title||reminder?.entity_title||'';
   openModal(`<h2>${editing?'Modifier le rappel':'Nouveau rappel'}</h2><form id="standaloneReminderForm" class="form-grid">
-    <div class="field full"><label>Rappel</label><input name="title" required value="${esc(reminder?.title||'')}" placeholder="ex. Appeler la mission locale"></div>
+    <div class="field full"><label>Rappel</label><input name="title" required value="${esc(effectiveTitle)}" placeholder="ex. Appeler la mission locale"></div>
     <div class="field"><label>Date</label><input name="date" type="date" required value="${esc(dateValue)}"></div>
     <div class="field"><label>Heure</label><input name="time" type="time" required value="${esc(timeValue)}"></div>
     <div id="standaloneReminderError" class="form-error field full hidden"></div>
