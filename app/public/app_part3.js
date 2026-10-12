@@ -33,7 +33,8 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
     <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
-    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="duplicateEvent">Dupliquer</button><button type="button" id="openUrl">Ouvrir le lien</button>':''}<button class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
+    <div id="eventSaveError" class="form-error field full hidden"></div>
+    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="duplicateEvent">Dupliquer</button><button type="button" id="openUrl">Ouvrir le lien</button>':''}<button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal; $('#openUrl')?.addEventListener('click',()=>{if(e?.url)window.open(e.url,'_blank')});
   $('#duplicateEvent')?.addEventListener('click',()=>{
@@ -49,7 +50,28 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     f.travel_time.addEventListener('input',()=>touched.travel_time=true);
     f.title.addEventListener('input',()=>{clearTimeout(templateTimer);templateTimer=setTimeout(()=>applyEventTemplate(f,touched),300)});
   }
-  f.addEventListener('submit',async ev=>{ev.preventDefault(); if(!editing) await applyEventTemplate(f,touched); const fd=new FormData(f); const payload=Object.fromEntries(fd.entries()); payload.show_in_month=f.show_in_month.checked; payload.all_day=!payload.start_time; payload.reminders=collectReminders(); const result=await runUiAction("Impossible d’enregistrer le rendez-vous",()=>api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)})); if(!result.ok)return; closeModal(); state.cursor=parseYMD(payload.event_date); await refresh();});
+  f.addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    const submit=$('#saveEvent'), error=$('#eventSaveError');
+    error.classList.add('hidden'); error.textContent='';
+    submit.disabled=true; submit.textContent='Enregistrement…';
+    if(!editing) await applyEventTemplate(f,touched);
+    const fd=new FormData(f);
+    const payload=Object.fromEntries(fd.entries());
+    payload.show_in_month=f.show_in_month.checked;
+    payload.all_day=!payload.start_time;
+    payload.reminders=collectReminders();
+    const result=await runUiAction("Impossible d’enregistrer le rendez-vous",()=>api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    if(!result.ok){
+      error.textContent=result.error?.message||'Le rendez-vous n’a pas pu être enregistré.';
+      error.classList.remove('hidden');
+      submit.disabled=false; submit.textContent=duplicate?'Créer la copie':'Enregistrer';
+      return;
+    }
+    closeModal();
+    state.cursor=parseYMD(payload.event_date);
+    await refresh();
+  });
 }
 
 function openTaskModal(t=null){ const editing=!!t; const reminders=editing?state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)})):[];
@@ -170,7 +192,23 @@ function applyCalendarMode(){
   $(`#${state.calendarMode}Panel`).classList.add('active-calendar-panel');
 }
 
-$$('.tabs button').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+$('.tabs button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+
+function setSideNavCollapsed(collapsed){
+  document.body.classList.toggle('side-nav-collapsed',collapsed);
+  localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
+  const toggle=$('#sideNavToggle');
+  if(toggle){
+    toggle.setAttribute('aria-label',collapsed?'Ouvrir le menu':'Rabattre le menu');
+    toggle.title=collapsed?'Ouvrir le menu':'Rabattre le menu';
+  }
+}
+const sideNavInitiallyCollapsed=localStorage.getItem('atelierSideNavCollapsed')==='1';
+setSideNavCollapsed(sideNavInitiallyCollapsed);
+$('#sideNavToggle').onclick=()=>setSideNavCollapsed(!document.body.classList.contains('side-nav-collapsed'));
+$('#quickAddEvent').onclick=()=>openEventModal(null,ymd(new Date()));
+$('#quickAddReminder').onclick=()=>openStandaloneReminderModal();
+$('#addStandaloneReminder').onclick=()=>openStandaloneReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>showView('calendar');
 $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
