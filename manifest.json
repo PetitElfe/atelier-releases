@@ -1,15 +1,15 @@
 {
-  "version": "0.11.0",
+  "version": "0.12.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "cec0e03c79d0fc1b74d00268d9df1b26b6b209daeece11a58e882b52a105a6b7"
+      "sha256": "c99bc3e899b6c3e2fb36ae612788912ccace24e7df333d6dea5486a6145c9274"
     },
     {
       "path": "VERSION",
-      "sha256": "795d6bc79574d2aec03ad9cfec404bb95083c9dd210e6521e0d4199772d28d44"
+      "sha256": "8a932413d42f95082f8323447652379a4885e328329efca3a67ec9c793c09940"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "087a244282554a7c334ccec09b0dd018fd65d2886cd58301d23c4ddb08f4a2fe"
+      "sha256": "59c69e4093086d19785233c2e008c39b3e7fcfba22f7f10f6e08e50b3aac8a6c"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "c9441f12fb5a0b8413694bb48de89724dd4f9a7def8ac4a7af803d66c258e22d"
+      "sha256": "db41c2c24bb73c758a017d0d2ff6fba8eaf6a18ecaa94585186181d7a070f559"
     },
     {
       "path": "public/styles.css",
-      "sha256": "7c74c4bedf5ac04852021c88088c48007535f05244d44e7101c9c15d8f0e3eb6"
+      "sha256": "3115ecc65cb6a2dbae59166f5ad510b2854121d76d86e2019470f1ff3d6cad83"
     }
   ],
-  "notes": "0.11.0 : éditeur de carnet riche à sauvegarde manuelle, gras/italique/surlignage/couleurs/polices/alignement, images déplaçables et redimensionnables, liens web et internes ouvrables/modifiables, progression automatique et tâches qui conservent leur contexte."
+  "notes": "0.12.0 : autosauvegarde des pages, page agrandissable, barre d’édition type Word/OpenOffice, lecture paginée avec flèches, numéro de page et sommaire cliquable."
 }
