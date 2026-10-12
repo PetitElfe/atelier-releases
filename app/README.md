@@ -1,64 +1,73 @@
-# L’Atelier 0.10.0
+# L’Atelier 0.11.0
 
-Refonte du cœur de la Bibliothèque pour correspondre au modèle :
+Grand correctif de la Bibliothèque et nouvel éditeur de carnets.
 
-**Domaine → objectif principal → sous-objectifs / niveaux → étapes / compétences**, avec les carnets à côté de la progression.
+## Éditeur de page
 
-## Exemple Anglais
+Les pages fonctionnent maintenant davantage comme un petit traitement de texte :
+- **sauvegarde manuelle** avec un vrai bouton « Enregistrer » ;
+- Entrée crée une nouvelle ligne et ne valide pas la page ;
+- indicateur clair « Enregistré » / « Modifications non enregistrées » ;
+- bouton pour annuler les modifications non enregistrées ;
+- changement de page ou de carnet bloqué tant que la page courante n’est pas enregistrée ou annulée, afin d’éviter une perte de texte.
 
-- Domaine : Anglais
-- Objectif principal : Devenir bilingue
-- Sous-objectifs / niveaux : A1, A2, B1, B2, C1, C2
-- Sous chaque niveau : les compétences et étapes concrètes nécessaires pour l’atteindre
-- Carnets indépendants : Grammaire, Vocabulaire, Cours, Journal, etc.
+## Mise en forme
 
-## Constructeur de domaine
+Le texte peut maintenant recevoir :
+- gras ;
+- italique ;
+- soulignement ;
+- plusieurs polices : Georgia, Arial, Verdana, Trebuchet et Courier ;
+- taille de texte ;
+- couleur de texte libre ;
+- couleur de surlignage libre ;
+- alignement gauche, centré, droite ou justifié.
 
-À la création d’un domaine, on peut maintenant préparer en une seule fois :
-- le nom du domaine ;
-- sa description ;
-- son objectif principal ;
-- ses niveaux / sous-objectifs, un par ligne ;
-- ses carnets de départ, un par ligne.
+La mise en forme est enregistrée avec la page.
 
-Le constructeur crée la hiérarchie automatiquement.
+## Liens
 
-## Vrais carnets éditables
+Les liens ont été rapprochés visuellement du texte : plus de gros encadré différent du reste de la page.
 
-Un carnet n’est plus une grille de petites fiches à modifier avec des fenêtres.
+Pour les liens internes :
+- mot / texte libre ;
+- type de lien libre : Vocabulaire, Exemple, Prérequis, Référence, etc. ;
+- cible modifiable ;
+- clic en mode Lire ouvre la page cible ;
+- en mode Écrire, cliquer sélectionne le lien puis les boutons « Ouvrir » et « Modifier » deviennent disponibles ;
+- double-clic permet aussi de modifier le lien ;
+- le lien peut être retiré sans supprimer le mot ;
+- les backlinks « Liens vers cette page » restent disponibles.
 
-Quand un carnet est ouvert :
-- les pages sont listées sur le côté ;
-- une page s’ouvre comme une vraie feuille ;
-- le titre s’écrit directement ;
-- le texte s’écrit directement dans la page ;
-- les modifications sont enregistrées automatiquement ;
-- un mode **Écrire** et un mode **Lire** permettent de travailler puis de consulter le rendu ;
-- ajouter une page l’ouvre immédiatement pour écrire.
+Pour les liens web :
+- l’URL peut être remplacée par n’importe quel mot ou groupe de mots ;
+- le lien ouvre réellement le site dans un nouvel onglet en mode Lire ;
+- en mode Écrire, il peut être sélectionné, ouvert ou modifié ;
+- l’adresse et le texte affiché sont modifiables.
 
-## Liens entre pages
+## Images dans les carnets
 
-Dans une page, on peut sélectionner un mot ou un groupe de mots puis créer un **lien vers une autre page** du domaine.
+Une image peut être ajoutée directement dans la page :
+- fichier local jusqu’à 4 Mo ;
+- déplacement dans la page par glisser-déposer ;
+- redimensionnement avec les boutons − / + ou avec la poignée dans le coin ;
+- alignement gauche, centre ou droite ;
+- suppression ;
+- conservation de la taille et de la position après enregistrement.
 
-Le lien possède :
-- le mot affiché ;
-- la page cible ;
-- un **type de lien personnalisable**, par exemple Vocabulaire, Exemple, Prérequis, À revoir, Référence…
+## Progression simplifiée
 
-En mode Lire, le mot devient cliquable et le type du lien reste visible. Cliquer dessus ouvre directement la page cible.
+Le pourcentage n’a plus besoin d’être deviné partout :
+- un élément qui possède des sous-éléments calcule désormais son avancement automatiquement à partir d’eux ;
+- les niveaux parents affichent « auto » ;
+- pour une feuille sans sous-élément, des raccourcis 0 %, 25 %, 50 %, 75 % et 100 % sont proposés ;
+- un curseur permet toujours un réglage plus précis par pas de 5 % si nécessaire ;
+- 100 % passe automatiquement l’élément à « Terminé ».
 
-Une page affiche aussi les pages qui pointent vers elle dans **Liens vers cette page**.
+L’avancée globale du domaine suit cette progression hiérarchique.
 
-Les liens internes utilisent l’identifiant de la page cible : renommer cette page ne casse pas le lien.
+## Tâches depuis la Bibliothèque
 
-## Liens web sous forme de mots
+Après l’enregistrement d’une tâche ouverte depuis un domaine, L’Atelier restaure maintenant précisément le contexte d’origine : même domaine, même carnet et même page au lieu de revenir ailleurs dans la Bibliothèque.
 
-On peut aussi sélectionner un mot, choisir **Lien web**, coller une URL et conserver seulement le mot choisi dans le rendu.
-
-Exemple : au lieu d’afficher une longue URL, la page peut simplement afficher **Cambridge Dictionary** comme lien cliquable.
-
-## Page traitée sans saut
-
-Marquer une page comme traitée ne recharge plus le carnet et ne fait plus sauter l’interface. L’état est mis à jour sur place.
-
-Aucune donnée existante n’est supprimée.
+Aucune donnée existante n’est supprimée. Les anciennes pages texte et les anciens liens sont convertis à l’affichage vers le nouvel éditeur riche puis enregistrés dans le nouveau format lors de la prochaine sauvegarde.
