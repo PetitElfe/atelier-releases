@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -59,13 +59,14 @@ async function refresh(){
     ['foods',api('/api/foods')],
     ['recipeBooks',api('/api/recipe-books')],
     ['recipes',api('/api/recipes')],
-    ['mealIdeas',api('/api/meal-ideas')]
+    ['mealIdeas',api('/api/meal-ideas')],
+    ['objectiveNodes',api('/api/objective-nodes')]
   ];
   const results=await Promise.allSettled(reqs.map(x=>x[1]));
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); updateClock(); }
+function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderObjectives==='function')renderObjectives(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
@@ -97,21 +98,29 @@ function renderHome(){
   });
 
   const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
-  const objectiveSeeds=[
-    ['Anglais','Reprendre là où tu t’es arrêtée.'],
-    ['League of Legends','Une petite action vaut mieux qu’un énorme bloc.'],
-    ['Art','Garder une trace de l’idée du moment.'],
-    ['JDR','Avancer sur un détail concret.'],
-    ['Cuisine','Préparer, classer ou tester une recette.']
-  ];
-  objectiveSeeds.forEach(([name,context])=>{
-    const el=document.createElement(name==='Cuisine'?'button':'div');
-    el.className='objective-note'+(name==='Cuisine'?' objective-open':'');
-    if(name==='Cuisine')el.type='button';
-    el.innerHTML=`<div class="objective-name">${esc(name)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${name==='Cuisine'?'Ouvrir la bibliothèque de recettes':'Ajouter une petite action…'}</li></ul>`;
-    if(name==='Cuisine')el.addEventListener('click',()=>showView('cuisine'));
-    objectiveRoot.appendChild(el);
-  });
+  const activeObjectives=state.objectiveNodes
+    .filter(x=>x.node_type==='objective'&&x.status!=='done')
+    .sort((a,b)=>(a.order_index-b.order_index)||a.id-b.id)
+    .slice(0,5);
+  if(!activeObjectives.length){
+    const empty=document.createElement('button');
+    empty.type='button';empty.className='objective-note objective-open';
+    empty.innerHTML='<div class="objective-name">Créer tes objectifs</div><div class="objective-context">Construis d’abord ta carte : domaines, objectifs, étapes et sous-étapes.</div><ul class="objective-actions"><li>Ouvrir la carte des objectifs →</li></ul>';
+    empty.addEventListener('click',()=>showView('objectives'));
+    objectiveRoot.appendChild(empty);
+  }else{
+    activeObjectives.forEach(obj=>{
+      const el=document.createElement('button');
+      el.type='button';el.className='objective-note objective-open';
+      const context=(obj.description||'').trim()||`${Number(obj.progress)||0}% d’avancement`;
+      el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${Number(obj.progress)||0}% · ouvrir →</li></ul>`;
+      el.addEventListener('click',()=>{
+        if(typeof selectObjectiveNode==='function')selectObjectiveNode(obj.id);
+        showView('objectives');
+      });
+      objectiveRoot.appendChild(el);
+    });
+  }
 
   const mealRoot=$('#homeMealIdeas'); mealRoot.innerHTML='';
   const meals=state.mealIdeas.slice(0,3);
