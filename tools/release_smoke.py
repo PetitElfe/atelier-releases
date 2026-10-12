@@ -158,7 +158,7 @@ def check_frontend_contract() -> None:
         fail("La Bibliothèque et son constructeur de domaines sont absents.")
     if "objectiveSelectOptions" not in js2 or "objective_node_id" not in js:
         fail("La liaison des tâches à la Bibliothèque est absente.")
-    if "openLibraryNotebookModal" not in js2 or "openLibraryPageModal" not in js2:
+    if "openLibraryNotebookModal" not in js2 or "createLibraryPage" not in js2 or "renderLibraryPageEditor" not in js2:
         fail("L’éditeur de carnets et de pages est absent.")
     if "libraryProgressForDomain" not in js2 or "libraryProgressPanel" not in index:
         fail("Le module d’avancée de la Bibliothèque est absent.")
