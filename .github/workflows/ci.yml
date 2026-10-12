@@ -1,0 +1,32 @@
+name: L'Atelier — validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Vérifier la syntaxe JavaScript
+        run: |
+          node --check app/public/app_part1.js
+          node --check app/public/app_part2.js
+          node --check app/public/app_part3.js
+
+      - name: Vérifier la release et démarrer L'Atelier
+        run: python tools/release_smoke.py
