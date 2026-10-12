@@ -577,3 +577,9 @@ main{margin-left:var(--side-nav-width);transition:margin-left .18s ease}
   .side-nav-title{display:none}
   body.side-nav-collapsed .side-nav-label{display:none}
 }
+
+
+/* 0.6.2 — accueil dans la largeur réellement disponible à côté du menu */
+.desk-top-row{width:100%;max-width:100%}
+.home-layout-toolbar{width:100%;max-width:100%}
+.layout-edit-hint{width:min(900px,100%)}

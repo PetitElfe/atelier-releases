@@ -1,15 +1,15 @@
 {
-  "version": "0.6.1",
+  "version": "0.6.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "9a084ace63c7476871a8960d2ed54e2b9cf315093db7b30ead542a12a413cf09"
+      "sha256": "9a9ebce933370ae9b414158b88cdb55e58e9e8643aae0fa46321cc426d2009eb"
     },
     {
       "path": "VERSION",
-      "sha256": "87b241b275c591694846560e9879f50c9da3150f854efdabd782c539772f3033"
+      "sha256": "a466ef209f5c3aee5ff0c702e2e9d5cced4783d2a655e8ab66330f21a5557b3f"
     },
     {
       "path": "app.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "5bb85a396699f74ad05bb5eb7a0f3e18a61fcb18db3ceede48bd60c138a02ca5"
+      "sha256": "cb789fa65ec9c3024fdc24375bf6c0f1b89c83d00d2ee395e81ff7a4dd960d23"
     },
     {
       "path": "public/styles.css",
-      "sha256": "b0c2e40f76ddfd8b3d9bc13012f767a2f3100ebb039a715d983a3be634733f56"
+      "sha256": "7d01dfa4bb84b8c1f235a3525ffbccf0d5831dffd18f74c583031d8b43df9fba"
     }
   ],
-  "notes": "0.6.1 : menu latéral gauche rabattable avec flèche, raccourcis permanents Rendez-vous/Rappel, rappels indépendants du calendrier et des tâches, et retour d’erreur visible lors de l’enregistrement d’un rendez-vous."
+  "notes": "0.6.2 : correctif immédiat de la 0.6.1 — rétablit tous les clics, corrige l’initialisation JavaScript du menu latéral et remet l’accueil dans la largeur disponible à droite du menu."
 }
