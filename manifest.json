@@ -1,15 +1,15 @@
 {
-  "version": "0.6.3",
+  "version": "0.6.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "e666adcd08ebe1b83de4c5ac83d9486342a0dabc6426544141c6dcdfb2a10b3b"
+      "sha256": "2921301c9064fcffb3186240f90205d1a6da94cf0b9993f3db75843a34dcb5f5"
     },
     {
       "path": "VERSION",
-      "sha256": "c9f56eb9348cbc8345bdaea7ca24c9f960e1598af05472794760a2682ff07a8c"
+      "sha256": "20c121886eb4f762044c6507745f6494525432ac22b41f5a73a8e5bf15b8b90e"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "faa5bafe9d4b239133a4d138f1afbcae09fe4fe9ae36f1231ea2c868bdde6cab"
+      "sha256": "c85cb87ac5e51e29b8b5f60098245cdd516083ed7919d40d25436f5baff87f61"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "98d24c49932e03f4e03e0f4c1526bd64c5f3b6c7b85ab2ee66fc557f39a844db"
+      "sha256": "2749ee9193da0bfe0becdf12b999aebb7bf7eba4c6a05d760e015329c098ec4e"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c4a3078bc3b6011f7b8ac4f0e1bf445bacb4d34dd0467225786e05f81d833718"
+      "sha256": "86fc17c5ffb8d2d15aaa37de49c4d51e4e1c24d5eca2ee4c2866456f91a53d19"
     },
     {
       "path": "public/index.html",
-      "sha256": "e6d5ce7e8e1575e18c5d57d4f19cae92a38861d9da5a27b5124613ac7c688daf"
+      "sha256": "019672ee7f387dc72d77e13e09b0602ad59b808e4487130de2cfb5f1d0b1ccda"
     },
     {
       "path": "public/styles.css",
-      "sha256": "9152f54dffa026e8892fdb5d752b5284aaa2986ab1b9209d1877c2b7f840f006"
+      "sha256": "e3a352c027e9d6055235113801c9601b428b89106de40fec54dd683872e58c42"
     }
   ],
-  "notes": "0.6.3 : retour complet de la disposition 0.6.0 ; seuls les onglets deviennent un tiroir superposé à droite, rabattable et mémorisé. Les rappels indépendants et correctifs de fiabilité sont conservés."
+  "notes": "0.6.4 : rappels harmonisés avec quatre actions par icônes, notifications plus claires, tiroir d’onglets déplaçable, date en toutes lettres et bouton Paramètres réservé pour plus tard."
 }
