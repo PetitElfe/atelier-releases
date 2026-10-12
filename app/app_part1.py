@@ -181,7 +181,13 @@ def _backup_db_before_migration():
     backup_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     target = backup_dir / f'atelier-before-schema-{SCHEMA_VERSION}-{stamp}.db'
-    shutil.copy2(DB_PATH, target)
+    source = sqlite3.connect(DB_PATH, timeout=5)
+    destination = sqlite3.connect(target)
+    try:
+        source.backup(destination)
+    finally:
+        destination.close()
+        source.close()
     backups = sorted(backup_dir.glob('atelier-before-schema-*.db'), key=lambda p: p.stat().st_mtime, reverse=True)
     for old in backups[5:]:
         try:
