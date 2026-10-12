@@ -128,7 +128,7 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="objectivesView"', 'id="objectiveMap"', 'id="objectiveInspector"', 'id="addObjectiveNode"'):
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
     if 'id="todayBtn"' in index:
@@ -154,12 +154,16 @@ def check_frontend_contract() -> None:
     if "atelierNotificationPersistent" not in js:
         fail("Le réglage de persistance des notifications est absent.")
     js2 = (APP / "public" / "app_part2.js").read_text(encoding="utf-8")
-    if "function renderObjectives()" not in js2 or "function openObjectiveNodeModal" not in js2:
-        fail("L’éditeur de carte des objectifs est absent.")
+    if "function renderLibrary()" not in js2 or "function openLibraryDomainCreateModal" not in js2:
+        fail("La Bibliothèque et son constructeur de domaines sont absents.")
     if "objectiveSelectOptions" not in js2 or "objective_node_id" not in js:
-        fail("La liaison des tâches aux objectifs est absente.")
-    if "openObjectiveLibrarySectionModal" not in js2 or "openObjectiveLibraryEntryModal" not in js2:
-        fail("L’éditeur de bibliothèque des objectifs est absent.")
+        fail("La liaison des tâches à la Bibliothèque est absente.")
+    if "openLibraryNotebookModal" not in js2 or "openLibraryPageModal" not in js2:
+        fail("L’éditeur de carnets et de pages est absent.")
+    if "libraryProgressForDomain" not in js2 or "libraryProgressPanel" not in index:
+        fail("Le module d’avancée de la Bibliothèque est absent.")
+    if 'data-view="library"' not in index or '>Bibliothèque<' not in index:
+        fail("La navigation principale ne contient pas Bibliothèque.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
     if binding not in js:
         fail("Branchement des onglets de navigation absent.")
