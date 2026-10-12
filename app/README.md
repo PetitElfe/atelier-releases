@@ -1,13 +1,11 @@
-# L’Atelier 0.6.4
+# L’Atelier 0.6.5
 
-Rappels et finition de l’interface :
-- tous les rappels, qu’ils soient indépendants ou liés à un rendez-vous / une tâche, proposent désormais les mêmes quatre actions ;
-- les actions deviennent des icônes compactes : ✓ fini, ↪ reporter, ✎ modifier et × supprimer ; la suppression reste rouge ;
-- « Fini » traite seulement le rappel et ne termine plus le rendez-vous ou la tâche liée ;
-- les rappels liés peuvent être modifiés ou supprimés sans supprimer leur rendez-vous / leur tâche ;
-- les notifications système indiquent clairement le nom, la date/heure et le type du rappel ;
-- le tiroir des onglets peut être déplacé librement par glisser-déposer avec sa petite poignée, sans activer le mode Modifier ; sa position est mémorisée ;
-- la date de l’en-tête est affichée en toutes lettres, par exemple « 12 septembre 2024 », tout en restant cliquable pour choisir une date ;
-- le bouton « Aujourd’hui » disparaît et laisse la place à une icône ⚙ de paramètres, volontairement vide pour l’instant.
+Correctif rappels et tiroir :
+- la flèche du tiroir passe automatiquement du côté extérieur quand le tiroir traverse la moitié gauche / droite de l’écran ;
+- le tiroir se replie désormais vers le bord d’écran le plus proche, même après avoir été déplacé ;
+- les rappels sont vérifiés toutes les 10 secondes, au retour sur la fenêtre et immédiatement après leur création ou modification ;
+- une erreur de notification système ne bloque plus le rappel dans L’Atelier : le rappel intégré à l’application s’affiche quand même ;
+- un échec de vérification des rappels est maintenant visible dans la console au lieu d’être ignoré silencieusement ;
+- l’idée de choisir le format d’affichage de la date a été ajoutée à la liste des futurs paramètres.
 
-Aucune donnée utilisateur n’est supprimée par cette mise à jour.
+Aucune donnée utilisateur n’est modifiée.
