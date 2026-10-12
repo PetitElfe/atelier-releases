@@ -488,11 +488,10 @@ class Handler(BaseHTTPRequestHandler):
                 rid=int(parts[2])
                 rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
                 if not rem: return self._json({'error':'Rappel introuvable.'},404)
-                if rem['entity_type']!='standalone':
-                    return self._json({'error':'Seuls les rappels indépendants peuvent être modifiés ici.'},400)
                 title=(body.get('title') or '').strip()
                 remind_at=(body.get('remind_at') or '').strip()
-                if not title: return self._json({'error':'Le titre du rappel est requis.'},400)
+                if rem['entity_type']=='standalone' and not title:
+                    return self._json({'error':'Le titre du rappel est requis.'},400)
                 if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
                 c.execute("UPDATE reminders SET title=?,remind_at=?,snoozed_until=NULL,status='pending' WHERE id=?",(title,remind_at,rid))
                 c.commit(); return self._json({'ok':True})
@@ -523,8 +522,6 @@ class Handler(BaseHTTPRequestHandler):
                 rid=int(parts[2])
                 rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
                 if not rem: return self._json({'error':'Rappel introuvable.'},404)
-                if rem['entity_type']!='standalone':
-                    return self._json({'error':'Ce rappel est lié à un rendez-vous ou une tâche.'},400)
                 c.execute('DELETE FROM reminders WHERE id=?',(rid,))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='meal-ideas':

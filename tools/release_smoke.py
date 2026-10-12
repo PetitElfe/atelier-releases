@@ -125,9 +125,17 @@ def check_frontend_contract() -> None:
     index = (APP / "public" / "index.html").read_text(encoding="utf-8")
     js = (APP / "public" / "app_part3.js").read_text(encoding="utf-8")
     css = (APP / "public" / "styles.css").read_text(encoding="utf-8")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="addStandaloneReminder"'):
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="jumpDateLabel"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
+    if 'id="todayBtn"' in index:
+        fail("Le bouton Aujourd’hui ne doit plus être présent.")
+    if "Rappel :" not in js or "Ouvre L’Atelier pour le traiter." not in js:
+        fail("Le nouveau format clair des notifications est absent.")
+    if "reminder-icon-action" not in (APP / "public" / "app_part2.js").read_text(encoding="utf-8"):
+        fail("Les actions de rappel par icônes sont absentes.")
+    if "initSideNavDrag()" not in js:
+        fail("Le glisser-déposer du tiroir n’est pas initialisé.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
     if binding not in js:
         fail("Branchement des onglets de navigation absent.")
@@ -176,6 +184,39 @@ def check_server(version: str) -> None:
             status, reminders = request("GET", "/api/reminders")
             if status != 200 or not any(r.get("entity_type") == "standalone" and r.get("title") == "Test rappel indépendant" for r in reminders):
                 fail("Le rappel indépendant n'est pas relu correctement.")
+
+            status, linked_event = request("POST", "/api/events", {
+                "title": "RDV avec rappel",
+                "event_date": "2027-03-20",
+                "start_time": "14:00",
+                "end_time": "15:00",
+                "category": "general",
+                "recurrence": "none",
+                "show_in_month": True,
+                "reminders": [{"title": "", "remind_at": "2027-03-19T09:00"}],
+            })
+            if status != 201 or not linked_event.get("id"):
+                fail("Impossible de créer le rendez-vous avec rappel lié.")
+            status, reminders = request("GET", "/api/reminders")
+            linked = next((r for r in reminders if r.get("entity_type") == "event" and r.get("entity_id") == linked_event["id"]), None)
+            if not linked:
+                fail("Le rappel lié au rendez-vous est introuvable.")
+            status, _ = request("PUT", f"/api/reminders/{linked['id']}", {
+                "title": "Rappel modifié",
+                "remind_at": "2027-03-19T10:15",
+            })
+            if status != 200:
+                fail("Un rappel lié ne peut pas être modifié.")
+            status, reminders = request("GET", "/api/reminders")
+            edited = next((r for r in reminders if r.get("id") == linked["id"]), None)
+            if not edited or edited.get("title") != "Rappel modifié" or edited.get("remind_at") != "2027-03-19T10:15":
+                fail("La modification du rappel lié n'est pas conservée.")
+            status, _ = request("DELETE", f"/api/reminders/{linked['id']}")
+            if status != 200:
+                fail("Un rappel lié ne peut pas être supprimé.")
+            status, events_after = request("GET", "/api/events?start=2027-03-20&end=2027-03-20")
+            if not any(e.get("id") == linked_event["id"] for e in events_after):
+                fail("Supprimer un rappel lié ne doit pas supprimer son rendez-vous.")
         finally:
             stop_server(proc)
 
