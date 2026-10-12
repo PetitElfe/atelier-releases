@@ -1,73 +1,64 @@
-# L’Atelier 0.11.0
+# L’Atelier 0.12.0
 
-Grand correctif de la Bibliothèque et nouvel éditeur de carnets.
+Refonte de l’expérience d’écriture et de lecture des carnets.
 
-## Éditeur de page
+## Écriture sans bouton Enregistrer
 
-Les pages fonctionnent maintenant davantage comme un petit traitement de texte :
-- **sauvegarde manuelle** avec un vrai bouton « Enregistrer » ;
-- Entrée crée une nouvelle ligne et ne valide pas la page ;
-- indicateur clair « Enregistré » / « Modifications non enregistrées » ;
-- bouton pour annuler les modifications non enregistrées ;
-- changement de page ou de carnet bloqué tant que la page courante n’est pas enregistrée ou annulée, afin d’éviter une perte de texte.
+Les pages de carnet reviennent à une logique naturelle :
+- le texte, le titre, la mise en forme, les liens et les images sont **sauvegardés automatiquement** ;
+- une sauvegarde est déclenchée après une courte pause d’écriture ;
+- quitter une page ou un carnet déclenche aussi une sauvegarde ;
+- quand l’application passe en arrière-plan ou se ferme, L’Atelier tente une dernière sauvegarde ;
+- le haut de la page indique simplement « Sauvegarde… » puis « Enregistré ».
 
-## Mise en forme
+Les boutons **Enregistrer** restent volontairement dans les éditeurs de structure : création/configuration d’un domaine, d’un carnet, d’un objectif, etc. Dans ces fenêtres, Entrée ne valide plus à la place du bouton.
 
-Le texte peut maintenant recevoir :
-- gras ;
-- italique ;
-- soulignement ;
-- plusieurs polices : Georgia, Arial, Verdana, Trebuchet et Courier ;
-- taille de texte ;
-- couleur de texte libre ;
-- couleur de surlignage libre ;
-- alignement gauche, centré, droite ou justifié.
+## Page agrandie
 
-La mise en forme est enregistrée avec la page.
+Une icône **⛶** permet d’agrandir la page courante pour écrire avec beaucoup plus d’espace. La liste des pages et les modules latéraux sont masqués pendant ce mode. La même icône permet de revenir à la taille normale.
 
-## Liens
+## Barre d’édition type traitement de texte
 
-Les liens ont été rapprochés visuellement du texte : plus de gros encadré différent du reste de la page.
+La barre d’écriture rassemble maintenant les fonctions classiques :
+- annuler / rétablir ;
+- styles Normal, Titre 1, Titre 2, Titre 3 et Citation ;
+- polices Georgia, Arial, Verdana, Trebuchet, Courier et Times ;
+- plusieurs tailles de texte ;
+- gras, italique, souligné, barré ;
+- exposant et indice ;
+- couleur du texte ;
+- surlignage ;
+- alignement gauche, centré, droite et justifié ;
+- listes à puces et listes numérotées ;
+- retrait / diminution du retrait ;
+- effacement de la mise en forme ;
+- liens internes, liens web et images.
 
-Pour les liens internes :
-- mot / texte libre ;
-- type de lien libre : Vocabulaire, Exemple, Prérequis, Référence, etc. ;
-- cible modifiable ;
-- clic en mode Lire ouvre la page cible ;
-- en mode Écrire, cliquer sélectionne le lien puis les boutons « Ouvrir » et « Modifier » deviennent disponibles ;
-- double-clic permet aussi de modifier le lien ;
-- le lien peut être retiré sans supprimer le mot ;
-- les backlinks « Liens vers cette page » restent disponibles.
+La sélection de texte est conservée lorsqu’on clique sur la barre d’outils afin que les commandes agissent réellement sur le passage sélectionné.
 
-Pour les liens web :
-- l’URL peut être remplacée par n’importe quel mot ou groupe de mots ;
-- le lien ouvre réellement le site dans un nouvel onglet en mode Lire ;
-- en mode Écrire, il peut être sélectionné, ouvert ou modifié ;
-- l’adresse et le texte affiché sont modifiables.
+## Lecture tranquille
 
-## Images dans les carnets
+Le mode Lire n’est plus présenté comme un second éditeur. Une icône **📖** ouvre une véritable vue de lecture :
+- une feuille centrée et épurée ;
+- flèche gauche / droite pour tourner les pages ;
+- petite animation lors du changement de page ;
+- numérotation des pages ;
+- champ dans lequel on peut saisir directement le numéro de la page à atteindre ;
+- bouton **☰ Sommaire** ;
+- le sommaire affiche toutes les pages du carnet et un clic ouvre immédiatement la page choisie ;
+- l’icône ⛶ fonctionne également en lecture ;
+- le crayon ✎ revient à l’écriture.
 
-Une image peut être ajoutée directement dans la page :
-- fichier local jusqu’à 4 Mo ;
-- déplacement dans la page par glisser-déposer ;
-- redimensionnement avec les boutons − / + ou avec la poignée dans le coin ;
-- alignement gauche, centre ou droite ;
-- suppression ;
-- conservation de la taille et de la position après enregistrement.
+Les pages sont aussi numérotées dans la liste du carnet.
 
-## Progression simplifiée
+## Liens et images
 
-Le pourcentage n’a plus besoin d’être deviné partout :
-- un élément qui possède des sous-éléments calcule désormais son avancement automatiquement à partir d’eux ;
-- les niveaux parents affichent « auto » ;
-- pour une feuille sans sous-élément, des raccourcis 0 %, 25 %, 50 %, 75 % et 100 % sont proposés ;
-- un curseur permet toujours un réglage plus précis par pas de 5 % si nécessaire ;
-- 100 % passe automatiquement l’élément à « Terminé ».
+Les liens restent proches visuellement du texte, sont modifiables, et les liens web s’ouvrent dans un nouvel onglet. Les liens internes conduisent à leur page cible et les backlinks restent disponibles.
 
-L’avancée globale du domaine suit cette progression hiérarchique.
+Les images restent insérables, déplaçables, alignables et redimensionnables.
 
-## Tâches depuis la Bibliothèque
+## Progression
 
-Après l’enregistrement d’une tâche ouverte depuis un domaine, L’Atelier restaure maintenant précisément le contexte d’origine : même domaine, même carnet et même page au lieu de revenir ailleurs dans la Bibliothèque.
+Les pourcentages parents restent calculés automatiquement depuis les sous-éléments. Les éléments terminaux conservent les raccourcis 0 / 25 / 50 / 75 / 100 % et le curseur par pas de 5 %.
 
-Aucune donnée existante n’est supprimée. Les anciennes pages texte et les anciens liens sont convertis à l’affichage vers le nouvel éditeur riche puis enregistrés dans le nouveau format lors de la prochaine sauvegarde.
+Aucune donnée existante n’est supprimée.

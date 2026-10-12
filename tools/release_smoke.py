@@ -162,10 +162,20 @@ def check_frontend_contract() -> None:
         fail("L’éditeur de carnets et de pages est absent.")
     if "libraryProgressForDomain" not in js2 or "libraryProgressPanel" not in index:
         fail("Le module d’avancée de la Bibliothèque est absent.")
-    if "libraryPageBody" not in js2 or "libraryPageSave" not in js2 or "libraryPageDirty" not in js2:
-        fail("L’écriture directe avec sauvegarde manuelle est absente.")
-    if "libraryExec" not in js2 or "libraryTextColor" not in js2 or "libraryHighlightColor" not in js2 or "libraryFontFamily" not in js2:
+    if "libraryPageBody" not in js2 or "scheduleLibraryAutosave" not in js2 or "libraryPersistOnExit" not in js2:
+        fail("L’écriture directe avec autosauvegarde persistante est absente.")
+    if "libraryCommand" not in js2 or "libraryTextColor" not in js2 or "libraryHighlightColor" not in js2 or "libraryFontFamily" not in js2:
         fail("La barre de mise en forme riche est absente.")
+    if "$('.library-format-btn').forEach" not in js2 or "insertUnorderedList" not in js2 or "insertOrderedList" not in js2 or "strikeThrough" not in js2:
+        fail("Les commandes classiques de traitement de texte ne sont pas correctement branchées.")
+    if "libraryPageExpand" not in js2 or "library-notebook-expanded" not in js2:
+        fail("L’agrandissement de la page est absent.")
+    if "renderLibraryReader" not in js2 or "libraryReaderPrev" not in js2 or "libraryReaderNext" not in js2 or "libraryReaderPageNumber" not in js2:
+        fail("La lecture paginée est absente.")
+    if "libraryReaderTocList" not in js2 or "Sommaire" not in js2:
+        fail("Le sommaire cliquable du carnet est absent.")
+    if "saveLibraryDomainConfig" not in js2 or "saveLibraryDomainCreate" not in js2 or "saveLibraryNotebook" not in js2:
+        fail("Les éditeurs de structure n’utilisent pas de boutons d’enregistrement explicites.")
     if "insertLibraryImage" not in js2 or "library-image-resize-handle" not in js2 or "ondragstart" not in js2:
         fail("L’ajout, le déplacement ou le redimensionnement des images est absent.")
     if "makeInternalLibraryToken" not in js2 or "openLibraryInternalLinkModal" not in js2 or "libraryBacklinks" not in js2:
