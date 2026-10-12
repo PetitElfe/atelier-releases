@@ -195,19 +195,19 @@ function applyCalendarMode(){
 $('.tabs button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 
 function setSideNavCollapsed(collapsed){
-  document.body.classList.toggle('side-nav-collapsed',collapsed);
+  const nav=$('#sideNav');
+  if(!nav)return;
+  nav.classList.toggle('is-collapsed',collapsed);
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
   const toggle=$('#sideNavToggle');
   if(toggle){
-    toggle.setAttribute('aria-label',collapsed?'Ouvrir le menu':'Rabattre le menu');
-    toggle.title=collapsed?'Ouvrir le menu':'Rabattre le menu';
+    toggle.setAttribute('aria-label',collapsed?'Afficher le menu':'Masquer le menu');
+    toggle.title=collapsed?'Afficher le menu':'Masquer le menu';
   }
 }
 const sideNavInitiallyCollapsed=localStorage.getItem('atelierSideNavCollapsed')==='1';
 setSideNavCollapsed(sideNavInitiallyCollapsed);
-$('#sideNavToggle').onclick=()=>setSideNavCollapsed(!document.body.classList.contains('side-nav-collapsed'));
-$('#quickAddEvent').onclick=()=>openEventModal(null,ymd(new Date()));
-$('#quickAddReminder').onclick=()=>openStandaloneReminderModal();
+$('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
 $('#addStandaloneReminder').onclick=()=>openStandaloneReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>showView('calendar');
