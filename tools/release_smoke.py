@@ -125,6 +125,9 @@ def check_frontend_contract() -> None:
     index = (APP / "public" / "index.html").read_text(encoding="utf-8")
     js = (APP / "public" / "app_part3.js").read_text(encoding="utf-8")
     css = (APP / "public" / "styles.css").read_text(encoding="utf-8")
+    version = (APP / "VERSION").read_text(encoding="utf-8").strip()
+    if f"ALPHA {version}" not in index.upper():
+        fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
     for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="jumpDateLabel"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
