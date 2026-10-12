@@ -76,6 +76,10 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
 
 function openTaskModal(t=null,presetObjectiveNodeId=null){
   const editing=!!t?.id;
+  const originView=state.view;
+  const libraryContext=originView==='library'&&typeof librarySelectedDomainId!=='undefined'
+    ? {domainId:librarySelectedDomainId,notebookId:librarySelectedNotebookId,pageId:librarySelectedPageId,editorMode:typeof libraryEditorMode!=='undefined'?libraryEditorMode:'write'}
+    : null;
   const linkedObjectiveId=editing?t.objective_node_id:presetObjectiveNodeId;
   const reminders=editing
     ? state.reminders.filter(r=>r.entity_type==='task'&&r.entity_id===t.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)}))
@@ -88,23 +92,33 @@ function openTaskModal(t=null,presetObjectiveNodeId=null){
     <div class="field full checkline"><input id="important" name="important" type="checkbox" ${t?.important?'checked':''}><label for="important">Important 👺</label></div>
     <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'de la tâche',t?.due_date||ymd(new Date()))}
-    <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button class="primary" type="submit">Enregistrer</button></div>
+    <div class="form-actions field full"><button type="button" id="cancelTask">Annuler</button><button id="saveTask" class="primary" type="button">Enregistrer</button></div>
   </form>`);
-  const f=$('#taskForm');
-  wireReminderEditor();
+  const f=$('#taskForm');wireReminderEditor();if(typeof wireNoEnterSubmit==='function')wireNoEnterSubmit(f);
   $('#cancelTask').onclick=closeModal;
-  f.addEventListener('submit',async ev=>{
-    ev.preventDefault();
-    const fd=new FormData(f);
-    const payload=Object.fromEntries(fd.entries());
+  $('#saveTask').onclick=async()=>{
+    if(!f.reportValidity())return;
+    const submit=$('#saveTask');submit.disabled=true;submit.textContent='Enregistrement…';
+    const fd=new FormData(f),payload=Object.fromEntries(fd.entries());
     payload.objective_node_id=payload.objective_node_id||null;
     payload.important=f.important.checked;
     payload.reminders=collectReminders();
     const result=await runUiAction("Impossible d’enregistrer la tâche",()=>api(editing?`/api/tasks/${t.id}`:'/api/tasks',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
-    if(!result.ok)return;
-    closeModal();
-    await refresh();
-  });
+    if(!result.ok){submit.disabled=false;submit.textContent='Enregistrer';return}
+    closeModal();await refresh();
+    if(originView==='library'&&libraryContext?.domainId&&typeof loadLibraryNotebooks==='function'){
+      librarySelectedDomainId=libraryContext.domainId;
+      librarySelectedNotebookId=libraryContext.notebookId;
+      librarySelectedPageId=libraryContext.pageId;
+      libraryEditorMode=libraryContext.editorMode;
+      showView('library');
+      $('#libraryHubPanel')?.classList.add('hidden');
+      $('#libraryDomainPanel')?.classList.remove('hidden');
+      await loadLibraryNotebooks(libraryContext.domainId,libraryContext.notebookId,libraryContext.pageId);
+    }else if(originView&&originView!==state.view){
+      showView(originView);
+    }
+  };
 }
 
 function openPostponeEventModal(e){

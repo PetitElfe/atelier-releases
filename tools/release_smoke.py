@@ -162,12 +162,20 @@ def check_frontend_contract() -> None:
         fail("L’éditeur de carnets et de pages est absent.")
     if "libraryProgressForDomain" not in js2 or "libraryProgressPanel" not in index:
         fail("Le module d’avancée de la Bibliothèque est absent.")
-    if "libraryPageBody" not in js2 or "scheduleLibraryPageSave" not in js2 or "saveLibraryPageInline" not in js2:
-        fail("L’écriture directe et l’enregistrement automatique des pages sont absents.")
+    if "libraryPageBody" not in js2 or "libraryPageSave" not in js2 or "libraryPageDirty" not in js2:
+        fail("L’écriture directe avec sauvegarde manuelle est absente.")
+    if "libraryExec" not in js2 or "libraryTextColor" not in js2 or "libraryHighlightColor" not in js2 or "libraryFontFamily" not in js2:
+        fail("La barre de mise en forme riche est absente.")
+    if "insertLibraryImage" not in js2 or "library-image-resize-handle" not in js2 or "ondragstart" not in js2:
+        fail("L’ajout, le déplacement ou le redimensionnement des images est absent.")
     if "makeInternalLibraryToken" not in js2 or "openLibraryInternalLinkModal" not in js2 or "libraryBacklinks" not in js2:
         fail("Les liens typés entre pages sont absents.")
-    if "makeExternalLibraryToken" not in js2 or "openLibraryWebLinkModal" not in js2:
-        fail("Les liens web avec texte personnalisé sont absents.")
+    if "openLibraryWebLinkModal" not in js2 or "libraryOpenSelectedLink" not in js2 or "libraryEditSelectedLink" not in js2:
+        fail("Les liens web ouvrables et modifiables sont absents.")
+    if "openLibraryInternalLinkModal" not in js2 or "libraryBacklinks" not in js2 or "removeLibraryInternalLink" not in js2:
+        fail("Les liens internes typés et modifiables sont absents.")
+    if "libraryNodeProgress" not in js2 or "library-progress-presets" not in js2 or "calculé automatiquement" not in js2:
+        fail("La progression assistée / automatique est absente.")
     if "Objectif principal" not in js2 or "Sous-objectifs / niveaux" not in js2:
         fail("Le constructeur Domaine → objectif → niveaux est absent.")
     if 'data-view="library"' not in index or '>Bibliothèque<' not in index:
@@ -290,6 +298,17 @@ def check_server(version: str) -> None:
             status, library = request("GET", f"/api/objective-library?node_id={objective['id']}")
             if status != 200 or not library.get("sections") or library["sections"][0].get("entries", [{}])[0].get("title") != "Articles anglais":
                 fail("La bibliothèque personnalisée n’est pas relue correctement.")
+
+            rich_notes = '@@ATELIER_RICH_V1@@<p><strong>Texte riche</strong> avec <a href="https://example.com" data-library-link-kind="web">un lien</a>.</p>'
+            status, _ = request("PUT", f"/api/objective-library-entries/{entry['id']}", {
+                "notes": rich_notes,
+            })
+            if status != 200:
+                fail("Impossible d’enregistrer une page riche.")
+            status, library_rich = request("GET", f"/api/objective-library?node_id={objective['id']}")
+            rich_entry = library_rich.get("sections", [{}])[0].get("entries", [{}])[0]
+            if rich_entry.get("notes") != rich_notes:
+                fail("Le contenu riche d’une page n’est pas conservé à l’identique.")
 
             status, _ = request("PUT", f"/api/objective-nodes/{objective['id']}", {
                 "title": "Anglais avancé",
