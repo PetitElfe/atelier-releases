@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.6.6</title>
+  <title>L’Atelier — Alpha 0.7.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.6.6</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.7.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -17,7 +17,7 @@
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
-      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres — bientôt" aria-label="Paramètres">⚙</button>
+      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙</button>
       <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
@@ -192,6 +192,80 @@
         <section class="recipe-library-content">
           <div id="recipeLibraryList" class="recipe-library-list"></div>
         </section>
+      </div>
+    </section>
+
+
+    <section id="settingsView" class="view settings-view">
+      <div class="settings-shell">
+        <div class="settings-heading">
+          <div>
+            <div class="section-kicker">L’ATELIER</div>
+            <h2>Paramètres</h2>
+            <p class="muted">Les réglages sont enregistrés sur cet ordinateur.</p>
+          </div>
+          <button id="settingsBack" type="button">← Retour</button>
+        </div>
+
+        <div class="settings-grid">
+          <section class="settings-card">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">◷</span>
+              <div><h3>Date & heure</h3><p>Choisis la façon dont la date apparaît dans l’en-tête.</p></div>
+            </div>
+            <label class="settings-field" for="settingsDateFormat">
+              <span>Format de la date</span>
+              <select id="settingsDateFormat">
+                <option value="long">12 octobre 2026</option>
+                <option value="weekday">dimanche 12 octobre 2026</option>
+                <option value="numeric">12/10/2026</option>
+              </select>
+            </label>
+            <div class="settings-preview">
+              <span>Aperçu</span>
+              <strong id="settingsDatePreview"></strong>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">🔔</span>
+              <div><h3>Notifications</h3><p>Règle le comportement des rappels système.</p></div>
+            </div>
+            <div class="settings-status-row">
+              <span>Notifications Brave / Windows</span>
+              <strong id="settingsNotificationStatus">—</strong>
+            </div>
+            <button id="settingsNotificationPermission" type="button">Autoriser les notifications</button>
+            <label class="settings-toggle">
+              <input id="settingsNotificationPersistent" type="checkbox">
+              <span><strong>Notification persistante</strong><small>Demande à Brave/Windows de la garder affichée jusqu’à interaction. Le système peut malgré tout décider de la masquer.</small></span>
+            </label>
+            <div class="settings-future">
+              <span>♪ Son de rappel</span>
+              <small>Prévu pour un prochain bloc.</small>
+            </div>
+            <div class="settings-future">
+              <span>● Badge sur l’icône</span>
+              <small>Prévu plus tard, surtout pour la future application bureau.</small>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">↔</span>
+              <div><h3>Navigation</h3><p>Le tiroir garde sa position automatiquement.</p></div>
+            </div>
+            <button id="settingsNavReset" type="button">Remettre le tiroir à droite</button>
+          </section>
+
+          <section class="settings-card settings-card-muted">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">✦</span>
+              <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 

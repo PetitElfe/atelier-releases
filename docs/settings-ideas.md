@@ -1,12 +1,18 @@
-# Idées de paramètres — à garder pour plus tard
+# Paramètres de L’Atelier
 
-Aucune de ces options n’est implémentée en 0.6.5.
+## Implémenté en 0.7.0
 
-- Notifications : activation, comportement, rappels par défaut, éventuellement sons.
+- Date et heure : choix du format de la date dans l’en-tête.
+- Notifications : état de l’autorisation, demande d’autorisation et préférence de notification persistante.
+- Navigation : réinitialisation de la position du tiroir.
+
+## À garder pour plus tard
+
+- Notifications : petit son de rappel, choix du son et volume.
+- Badge de notification sur l’icône, surtout avec la future application bureau.
 - Apparence : thème, taille du texte, accent visuel.
-- Navigation : position par défaut du tiroir, réinitialisation de sa position, vue ouverte au lancement.
+- Navigation : vue ouverte au lancement et autres préférences si elles deviennent utiles.
 - Calendrier : vue mois/semaine par défaut, plage horaire du semainier.
-- Date et heure : choix du format de date affiché dans l’en-tête (par exemple « 12 octobre 2026 », « dimanche 12 octobre 2026 », « 12/10/2026 »), et autres préférences d’affichage si besoin.
 - Interface : animations / réduction des mouvements et autres options d’accessibilité.
 - Données : export, import, sauvegardes et restauration.
 - Comptes et confidentialité : options par utilisateur lorsque le système multi-utilisateur sera construit.

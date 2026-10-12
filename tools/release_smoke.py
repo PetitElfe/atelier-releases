@@ -128,12 +128,12 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="jumpDateLabel"'):
+    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
     if 'id="todayBtn"' in index:
         fail("Le bouton Aujourd’hui ne doit plus être présent.")
-    if "Rappel :" not in js or "Ouvre L’Atelier pour le traiter." not in js:
+    if "Rappel :" not in js or "Clique pour ouvrir L’Atelier." not in js:
         fail("Le nouveau format clair des notifications est absent.")
     if "reminder-icon-action" not in (APP / "public" / "app_part2.js").read_text(encoding="utf-8"):
         fail("Les actions de rappel par icônes sont absentes.")
@@ -145,6 +145,14 @@ def check_frontend_contract() -> None:
         fail("La fréquence de vérification des rappels n’est pas celle attendue.")
     if "Notification système impossible" not in js:
         fail("Les erreurs de notification système ne sont pas isolées.")
+    if "requireInteraction:notificationPersistentPreference()" not in js:
+        fail("Les notifications persistantes ne sont pas activées via le réglage.")
+    if "systemNotification.onclick" not in js or "window.focus()" not in js or "showView('reminders')" not in js:
+        fail("Le clic sur une notification ne ramène pas correctement vers L’Atelier.")
+    if "atelierDateFormat" not in js or "DATE_FORMAT_OPTIONS" not in js:
+        fail("Le réglage du format de date est absent.")
+    if "atelierNotificationPersistent" not in js:
+        fail("Le réglage de persistance des notifications est absent.")
     binding = "document.querySelectorAll('.tabs button[data-view]').forEach"
     if binding not in js:
         fail("Branchement des onglets de navigation absent.")
