@@ -5,47 +5,47 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "9a084ace63c7476871a8960d2ed54e2b9cf315093db7b30ead542a12a413cf09"
+      "sha256": "6f2cdcdeb7338f75c73ff237634925e99f14fc783b88ed9af0ad9a2d6df73ff7"
     },
     {
       "path": "VERSION",
-      "sha256": "87b241b275c591694846560e9879f50c9da3150f854efdabd782c539772f3033"
+      "sha256": "2f96405c47d32ece5b57e5e471e6cc0e8a6857c92d7c0e2c4151a88179f0b319"
     },
     {
       "path": "app.py",
-      "sha256": "b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"
+      "sha256": "9e52c697022aef4f799d1e5ecd3e7fc96ac9d7b3df2883f2e1951f7387930bdd"
     },
     {
       "path": "app_part1.py",
-      "sha256": "de3c3e4adc9211ecaaa47d2b2467e48890964067369be9325c0f6dddab862694"
+      "sha256": "12ed67a5a657478a93f4627d6a74f762e7805c41b4b079f99a715aff1b8e2570"
     },
     {
       "path": "app_part2.py",
-      "sha256": "5e655ef6b4b3938f920a9833ad611ad78af8df261ee15db875d570bfd6c49b3e"
+      "sha256": "6f6c175fc1ef486c7f4a487a26335304186e5a95be1103a114441c898cd08184"
     },
     {
       "path": "app_part3.py",
-      "sha256": "70c98367ff1ddb986c1d3693e23e55a4fc1ed92687fc1b2eacd8853161adfe75"
+      "sha256": "3fbe9872a3e2844fdad1823df77801c16fd8ef4008b7c0aab3ab13d098847d1f"
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "507a27f25b488acc07a8c5004737bb394f82035655bf478d29cddbeac9e6b3dc"
+      "sha256": "4c2dee800564615895585ae6b7537e5521703f77f1412ed00da5c5b9db51ab29"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "98d24c49932e03f4e03e0f4c1526bd64c5f3b6c7b85ab2ee66fc557f39a844db"
+      "sha256": "0c99c1bbf90eafa3b156a634d9c9e9d1b2c4b4e6b0f45f175f9dfe35638f22cb"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "ad35fc19682a755d8a7e826fb18a3d5b533bb11d92f24b4a24406cb31349dede"
+      "sha256": "1ed919887fcd0bc86de6b7b2156cd15996299c4250ff2c292a87a93558040447"
     },
     {
       "path": "public/index.html",
-      "sha256": "5bb85a396699f74ad05bb5eb7a0f3e18a61fcb18db3ceede48bd60c138a02ca5"
+      "sha256": "3bb7fed10d6e35b0ac61b2e06868bede039257a9eff75e5a148f538112290231"
     },
     {
       "path": "public/styles.css",
-      "sha256": "b0c2e40f76ddfd8b3d9bc13012f767a2f3100ebb039a715d983a3be634733f56"
+      "sha256": "d91d0eb5326ce4827a594659b7b1c2584a0c155a8359acf5fcf97dd6fb29c0d3"
     }
   ],
   "notes": "0.6.1 : menu latéral gauche rabattable avec flèche, raccourcis permanents Rendez-vous/Rappel, rappels indépendants du calendrier et des tâches, et retour d’erreur visible lors de l’enregistrement d’un rendez-vous."
