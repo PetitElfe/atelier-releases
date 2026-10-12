@@ -1,15 +1,15 @@
 {
-  "version": "0.6.4",
+  "version": "0.6.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "2921301c9064fcffb3186240f90205d1a6da94cf0b9993f3db75843a34dcb5f5"
+      "sha256": "e16ee993d165b5ec276e79fe8dfc224f6e1977dbcdcf81935a6798be56626fa3"
     },
     {
       "path": "VERSION",
-      "sha256": "20c121886eb4f762044c6507745f6494525432ac22b41f5a73a8e5bf15b8b90e"
+      "sha256": "34bf52562bae401de106933a7565c9d3a5c8dc83c04b0b29492dd3f6f3983b7a"
     },
     {
       "path": "app.py",
@@ -33,11 +33,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "2749ee9193da0bfe0becdf12b999aebb7bf7eba4c6a05d760e015329c098ec4e"
+      "sha256": "3512b45b403de50412d665699105d0528c90868a937094cd03543d0d7ba120df"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "86fc17c5ffb8d2d15aaa37de49c4d51e4e1c24d5eca2ee4c2866456f91a53d19"
+      "sha256": "51a4e7bb6111ca26cfbc67bfe78820e9ec2be65ba07ab392619be91e25f3ece9"
     },
     {
       "path": "public/index.html",
@@ -45,8 +45,8 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "e3a352c027e9d6055235113801c9601b428b89106de40fec54dd683872e58c42"
+      "sha256": "406bce7174dca66572e0ff8b6d3501534186e95ac1e4e13d4503fbec21e18cbe"
     }
   ],
-  "notes": "0.6.4 : rappels harmonisés avec quatre actions par icônes, notifications plus claires, tiroir d’onglets déplaçable, date en toutes lettres et bouton Paramètres réservé pour plus tard."
+  "notes": "0.6.5 : fiabilité des rappels renforcée et flèche du tiroir adaptative selon le côté de l’écran ; le format de date configurable est conservé pour les futurs paramètres."
 }
