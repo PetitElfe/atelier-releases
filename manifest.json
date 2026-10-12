@@ -1,15 +1,15 @@
 {
-  "version": "0.6.0",
+  "version": "0.6.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "988affa1959d6781c35cdde17c1abcb48e3aa6661587bd65e383e746da9e5ad1"
+      "sha256": "9a084ace63c7476871a8960d2ed54e2b9cf315093db7b30ead542a12a413cf09"
     },
     {
       "path": "VERSION",
-      "sha256": "97a5d6e540a6120d09c39ddb667e0e8e2bac7fcc2ffef813b82e08fd60365bce"
+      "sha256": "87b241b275c591694846560e9879f50c9da3150f854efdabd782c539772f3033"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "8d78f6e3ea23c7cb3679e9555e3ba3dc4b06a05126c5c02b42c5cb23be17ef61"
+      "sha256": "de3c3e4adc9211ecaaa47d2b2467e48890964067369be9325c0f6dddab862694"
     },
     {
       "path": "app_part2.py",
-      "sha256": "bb7344c8c4e8ec46f8b93ba0087f31b04d128f402bc8317c5a7a6609e8309e19"
+      "sha256": "faa5bafe9d4b239133a4d138f1afbcae09fe4fe9ae36f1231ea2c868bdde6cab"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "ddded350ecda464ef8d32975fc9b0ad2973cf3929b0208990890c97dc369d9e7"
+      "sha256": "98d24c49932e03f4e03e0f4c1526bd64c5f3b6c7b85ab2ee66fc557f39a844db"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "ae26560aa1b9c62d6bd2a7b8bb3214657503314ea371e1cefa4a9f50173cbb54"
+      "sha256": "ad35fc19682a755d8a7e826fb18a3d5b533bb11d92f24b4a24406cb31349dede"
     },
     {
       "path": "public/index.html",
-      "sha256": "1b8ab7518dbaeac2718787ed43e8307873ffd32a9d3f66c68e6530ee6d027dd3"
+      "sha256": "5bb85a396699f74ad05bb5eb7a0f3e18a61fcb18db3ceede48bd60c138a02ca5"
     },
     {
       "path": "public/styles.css",
-      "sha256": "bda1b242a77660cea2a17d98e960b549c50bede95d8e20fc28b49fe2a442e746"
+      "sha256": "b0c2e40f76ddfd8b3d9bc13012f767a2f3100ebb039a715d983a3be634733f56"
     }
   ],
-  "notes": "0.6.0 : bloc Fondations/fiabilité après audit — sauvegarde SQLite avant migration, WAL/busy_timeout, rappels en heure locale et renotification après report, récurrence mensuelle corrigée, import URL renforcé, arrêt serveur POST uniquement, port de test configurable et contrôles automatiques de release GitHub."
+  "notes": "0.6.1 : menu latéral gauche rabattable avec flèche, raccourcis permanents Rendez-vous/Rappel, rappels indépendants du calendrier et des tâches, et retour d’erreur visible lors de l’enregistrement d’un rendez-vous."
 }

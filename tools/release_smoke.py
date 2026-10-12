@@ -152,12 +152,22 @@ def check_server(version: str) -> None:
             expected = ["2027-01-31", "2027-02-28", "2027-03-31"]
             if dates != expected:
                 fail(f"Récurrence mensuelle incorrecte : {dates!r}")
+
+            status, reminder = request("POST", "/api/reminders", {
+                "title": "Test rappel indépendant",
+                "remind_at": "2027-03-15T09:30",
+            })
+            if status != 201 or not reminder.get("id"):
+                fail("Impossible de créer un rappel indépendant.")
+            status, reminders = request("GET", "/api/reminders")
+            if status != 200 or not any(r.get("entity_type") == "standalone" and r.get("title") == "Test rappel indépendant" for r in reminders):
+                fail("Le rappel indépendant n'est pas relu correctement.")
         finally:
             stop_server(proc)
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 1:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 2:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             c.execute("PRAGMA user_version = 0")
             c.commit()

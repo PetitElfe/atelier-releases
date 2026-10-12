@@ -13,7 +13,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 CREATE TABLE IF NOT EXISTS reminders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entity_type TEXT NOT NULL CHECK(entity_type IN ('event','task')),
+  entity_type TEXT NOT NULL CHECK(entity_type IN ('event','task','standalone')),
   entity_id INTEGER NOT NULL,
   title TEXT DEFAULT '',
   remind_at TEXT NOT NULL,
@@ -203,6 +203,25 @@ with conn() as c:
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
+    reminder_sql = (c.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='reminders'").fetchone() or [''])[0] or ''
+    if "'standalone'" not in reminder_sql:
+        c.executescript("""
+        CREATE TABLE reminders__new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          entity_type TEXT NOT NULL CHECK(entity_type IN ('event','task','standalone')),
+          entity_id INTEGER NOT NULL,
+          title TEXT DEFAULT '',
+          remind_at TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          snoozed_until TEXT,
+          created_at TEXT NOT NULL
+        );
+        INSERT INTO reminders__new(id,entity_type,entity_id,title,remind_at,status,snoozed_until,created_at)
+          SELECT id,entity_type,entity_id,title,remind_at,status,snoozed_until,created_at FROM reminders;
+        DROP TABLE reminders;
+        ALTER TABLE reminders__new RENAME TO reminders;
+        CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
+        """)
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")

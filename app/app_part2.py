@@ -112,25 +112,39 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json([dict(r) for r in rows])
             if p == '/api/reminders':
                 rows = c.execute('''
-                    SELECT r.*,
-                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
-                           ELSE (SELECT title FROM tasks WHERE id=r.entity_id) END AS entity_title
-                    FROM reminders r
-                    WHERE r.status != 'done'
-                    ORDER BY COALESCE(r.snoozed_until,r.remind_at),r.id
+                    SELECT * FROM reminders
+                    WHERE status != 'done'
+                    ORDER BY COALESCE(snoozed_until,remind_at),id
                 ''').fetchall()
-                return self._json([dict(r) for r in rows])
+                data=[]
+                for row in rows:
+                    item=dict(row); item['entity_title']=''
+                    if item['entity_type']=='event':
+                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    elif item['entity_type']=='task':
+                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    data.append(item)
+                return self._json(data)
             if p == '/api/reminders/due':
                 now = q.get('now', [now_iso()])[0]
                 rows = c.execute('''
-                    SELECT r.*, 
-                      CASE WHEN r.entity_type='event' THEN (SELECT title FROM events WHERE id=r.entity_id)
-                           ELSE (SELECT title FROM tasks WHERE id=r.entity_id) END AS entity_title
-                    FROM reminders r
-                    WHERE r.status='pending' AND COALESCE(r.snoozed_until,r.remind_at) <= ?
-                    ORDER BY COALESCE(r.snoozed_until,r.remind_at), r.id
+                    SELECT * FROM reminders
+                    WHERE status='pending' AND COALESCE(snoozed_until,remind_at) <= ?
+                    ORDER BY COALESCE(snoozed_until,remind_at), id
                 ''', (now,)).fetchall()
-                return self._json([dict(r) for r in rows])
+                data=[]
+                for row in rows:
+                    item=dict(row); item['entity_title']=''
+                    if item['entity_type']=='event':
+                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    elif item['entity_type']=='task':
+                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
+                        item['entity_title']=linked['title'] if linked else ''
+                    data.append(item)
+                return self._json(data)
         return self._json({'error':'not found'},404)
 
     def do_POST(self):
@@ -150,6 +164,14 @@ class Handler(BaseHTTPRequestHandler):
                 print('[Atelier] Import recette URL:', exc)
                 return self._json({'error':"Impossible de lire cette page. Vérifie le lien ou essaie une autre recette."},502)
         with conn() as c:
+            if p == '/api/reminders':
+                title=(body.get('title') or '').strip()
+                remind_at=(body.get('remind_at') or '').strip()
+                if not title: return self._json({'error':'Le titre du rappel est requis.'},400)
+                if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
+                cur=c.execute('''INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,snoozed_until,created_at)
+                                 VALUES('standalone',0,?,?,'pending',NULL,?)''',(title,remind_at,ts))
+                c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/events':
                 vals = (
                     body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
@@ -462,6 +484,18 @@ class Handler(BaseHTTPRequestHandler):
                           (d['title'],book_id,d.get('notes',''),d.get('recipe',''),max(1,int_or_none(d.get('base_servings')) or 1),
                            d.get('ingredients_json','[]'),d.get('image_data',''),d.get('source_url',''),1 if d.get('archived') else 0,ts,iid))
                 c.commit(); return self._json({'ok':True})
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
+                rid=int(parts[2])
+                rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
+                if not rem: return self._json({'error':'Rappel introuvable.'},404)
+                if rem['entity_type']!='standalone':
+                    return self._json({'error':'Seuls les rappels indépendants peuvent être modifiés ici.'},400)
+                title=(body.get('title') or '').strip()
+                remind_at=(body.get('remind_at') or '').strip()
+                if not title: return self._json({'error':'Le titre du rappel est requis.'},400)
+                if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
+                c.execute("UPDATE reminders SET title=?,remind_at=?,snoozed_until=NULL,status='pending' WHERE id=?",(title,remind_at,rid))
+                c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2]); action=parts[3]
                 if action=='done':
@@ -485,6 +519,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
+                rid=int(parts[2])
+                rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
+                if not rem: return self._json({'error':'Rappel introuvable.'},404)
+                if rem['entity_type']!='standalone':
+                    return self._json({'error':'Ce rappel est lié à un rendez-vous ou une tâche.'},400)
+                c.execute('DELETE FROM reminders WHERE id=?',(rid,))
+                c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='meal-ideas':
                 iid=int(parts[2])
                 c.execute('DELETE FROM meal_idea_links WHERE id=?',(iid,))
