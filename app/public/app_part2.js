@@ -148,6 +148,7 @@ function openReminderModal(reminder=null){
     closeModal();
     await refresh();
     showView('reminders');
+    setTimeout(checkDue,250);
   };
 }
 
