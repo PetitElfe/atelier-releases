@@ -906,6 +906,7 @@ let libraryNotebookState={domainId:null,sections:[],loading:false};
 let libraryEditorMode='write';
 let libraryAutosaveTimer=null;
 let libraryAutosaveToken=0;
+let libraryPendingRange=null;
 
 function objectiveNodeById(id){return state.objectiveNodes.find(x=>Number(x.id)===Number(id))||null}
 function objectiveChildren(parentId){
@@ -977,9 +978,9 @@ function parseLibraryTokens(text){
     if(m.index>last)parts.push({type:'text',value:raw.slice(last,m.index)});
     const kind=m[1],bits=m[2].split(':');
     if(kind==='p'&&bits.length>=3){
-      parts.push({type:'page',pageId:Number(bits[0]),linkType:libraryDecode(bits[1]),label:libraryDecode(bits.slice(2).join(':'))});
+      parts.push({type:'page',raw:m[0],pageId:Number(bits[0]),linkType:libraryDecode(bits[1]),label:libraryDecode(bits.slice(2).join(':'))});
     }else if(kind==='u'&&bits.length>=2){
-      parts.push({type:'url',url:libraryDecode(bits[0]),label:libraryDecode(bits.slice(1).join(':'))});
+      parts.push({type:'url',raw:m[0],url:libraryDecode(bits[0]),label:libraryDecode(bits.slice(1).join(':'))});
     }else parts.push({type:'text',value:m[0]});
     last=tokenRe.lastIndex;
   }
@@ -1017,16 +1018,68 @@ function libraryBacklinks(targetId){
   const marker='[[p:'+Number(targetId)+':';
   return libraryAllPages().filter(page=>Number(page.id)!==Number(targetId)&&String(page.notes||'').includes(marker));
 }
-function replaceLibraryTextareaSelection(textarea,replacement){
-  const start=textarea.selectionStart??textarea.value.length,end=textarea.selectionEnd??start;
-  textarea.setRangeText(replacement,start,end,'end');
-  textarea.dispatchEvent(new Event('input',{bubbles:true}));
-  textarea.focus();
+function makeLibraryEditableLink(part){
+  const span=document.createElement('span');
+  span.className='library-editor-link '+(part.type==='page'?'library-editor-link-internal':'library-editor-link-web');
+  span.contentEditable='false';
+  span.dataset.token=part.raw||'';
+  const label=document.createElement('span');label.textContent=part.label||(part.type==='page'?'Page':part.url||'Lien');
+  const type=document.createElement('small');type.textContent=part.type==='page'?(part.linkType||'Lien'):'Web';
+  span.append(label,type);
+  return span;
+}
+function renderLibraryEditableText(text){
+  const frag=document.createDocumentFragment();
+  parseLibraryTokens(text).forEach(part=>{
+    if(part.type==='text'){
+      const chunks=part.value.split('\n');
+      chunks.forEach((chunk,i)=>{if(i)frag.appendChild(document.createElement('br'));frag.appendChild(document.createTextNode(chunk))});
+    }else frag.appendChild(makeLibraryEditableLink(part));
+  });
+  return frag;
+}
+function serializeLibraryEditor(root){
+  if(!root)return '';
+  let out='';
+  const walk=node=>{
+    if(node.nodeType===Node.TEXT_NODE){out+=node.nodeValue||'';return}
+    if(node.nodeType!==Node.ELEMENT_NODE)return;
+    if(node.dataset?.token){out+=node.dataset.token;return}
+    if(node.tagName==='BR'){out+='\n';return}
+    const block=node.tagName==='DIV'||node.tagName==='P';
+    const before=out.length;
+    [...node.childNodes].forEach(walk);
+    if(block&&out.length>before&&!out.endsWith('\n'))out+='\n';
+  };
+  [...root.childNodes].forEach(walk);
+  return out.replace(/\n{3,}/g,'\n\n').replace(/\n$/,'');
 }
 function selectedLibraryEditorText(){
-  const ta=$('#libraryPageBody');
-  if(!ta)return '';
-  return ta.value.slice(ta.selectionStart||0,ta.selectionEnd||0);
+  const editor=$('#libraryPageBody'),sel=window.getSelection();
+  libraryPendingRange=null;
+  if(!editor||!sel||!sel.rangeCount)return '';
+  const range=sel.getRangeAt(0);
+  const container=range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;
+  if(!container||!editor.contains(container))return '';
+  libraryPendingRange=range.cloneRange();
+  return sel.toString();
+}
+function insertLibraryEditorToken(token,part){
+  const editor=$('#libraryPageBody');if(!editor)return;
+  let range=libraryPendingRange;
+  if(!range||!editor.contains(range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement)){
+    range=document.createRange();range.selectNodeContents(editor);range.collapse(false);
+  }
+  range.deleteContents();
+  const node=makeLibraryEditableLink({...part,raw:token});
+  range.insertNode(node);
+  const spacer=document.createTextNode(' ');
+  node.after(spacer);
+  const sel=window.getSelection();sel.removeAllRanges();
+  const next=document.createRange();next.setStart(spacer,1);next.collapse(true);sel.addRange(next);
+  libraryPendingRange=null;
+  editor.dispatchEvent(new Event('input',{bubbles:true}));
+  editor.focus();
 }
 
 async function loadLibraryNotebooks(domainId,preferredNotebookId=null,preferredPageId=null){
@@ -1261,12 +1314,13 @@ function renderLibraryPageEditor(notebook,page){
         <button id="libraryInsertWebLink" type="button">🔗 Lien web</button>
         <span>Sélectionne un mot avant de créer un lien pour l’utiliser comme texte cliquable.</span>
       </div>
-      <textarea id="libraryPageBody" class="library-page-body" spellcheck="true" placeholder="Écris directement dans cette page…">${esc(page.notes||'')}</textarea>
+      <div id="libraryPageBody" class="library-page-body" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
     </div>
     <div id="libraryReadingView" class="library-reading-view ${libraryEditorMode==='read'?'':'hidden'}"></div>
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
   </article>`;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.innerHTML='';body.appendChild(renderLibraryEditableText(page.notes||''));
   const reading=$('#libraryReadingView');reading.innerHTML='';reading.appendChild(renderLibraryRichText(page.notes||''));
   const backlinksRoot=$('#libraryBacklinks>div');
   backlinks.forEach(source=>{
@@ -1291,28 +1345,37 @@ function renderLibraryPageEditor(notebook,page){
   body.addEventListener('input',schedule);
   title.addEventListener('input',schedule);
 }
+function libraryEditorSnapshot(page){
+  return {
+    title:$('#libraryPageTitleInput')?.value.trim()||page.title||'Sans titre',
+    notes:serializeLibraryEditor($('#libraryPageBody'))
+  };
+}
 function scheduleLibraryPageSave(notebook,page){
   clearTimeout(libraryAutosaveTimer);
   const stateEl=$('#librarySaveState');if(stateEl)stateEl.textContent='Modification…';
   const token=++libraryAutosaveToken;
-  libraryAutosaveTimer=setTimeout(()=>saveLibraryPageInline(notebook,page,token),700);
+  const snapshot=libraryEditorSnapshot(page);
+  libraryAutosaveTimer=setTimeout(()=>saveLibraryPageInline(notebook,page,token,snapshot),700);
 }
-async function saveLibraryPageInline(notebook,page,token=++libraryAutosaveToken){
-  const title=$('#libraryPageTitleInput')?.value.trim()||page.title||'Sans titre';
-  const notes=$('#libraryPageBody')?.value??page.notes??'';
-  const stateEl=$('#librarySaveState');if(stateEl)stateEl.textContent='Enregistrement…';
-  const result=await runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify({title,notes})}));
+async function saveLibraryPageInline(notebook,page,token=++libraryAutosaveToken,snapshot=null){
+  const data=snapshot||libraryEditorSnapshot(page);
+  const current=Number(librarySelectedPageId)===Number(page.id);
+  const stateEl=current?$('#librarySaveState'):null;if(stateEl)stateEl.textContent='Enregistrement…';
+  const result=await runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify(data)}));
   if(!result.ok){if(stateEl)stateEl.textContent='Erreur';return false}
-  if(token<libraryAutosaveToken)return true;
-  page.title=title;page.notes=notes;
-  if(stateEl)stateEl.textContent='Enregistré';
-  const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>x.classList.contains('active'));
-  if(listItem)listItem.querySelector('strong').textContent=title;
+  page.title=data.title;page.notes=data.notes;
+  if(current&&token===libraryAutosaveToken){
+    if(stateEl)stateEl.textContent='Enregistré';
+    const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+    if(listItem)listItem.querySelector('strong').textContent=data.title;
+  }
   return true;
 }
 async function flushLibraryPageSave(notebook,page){
   clearTimeout(libraryAutosaveTimer);
-  return saveLibraryPageInline(notebook,page,++libraryAutosaveToken);
+  const snapshot=libraryEditorSnapshot(page);
+  return saveLibraryPageInline(notebook,page,++libraryAutosaveToken,snapshot);
 }
 async function createLibraryPage(notebook){
   const result=await runUiAction('Impossible de créer la page',()=>api('/api/objective-library-entries',{method:'POST',body:JSON.stringify({section_id:notebook.id,title:'Nouvelle page',notes:'',url:'',done:false})}));
@@ -1346,7 +1409,7 @@ function openLibraryInternalLinkModal(notebook,page){
   $('#libraryInternalLinkForm').onsubmit=e=>{
     e.preventDefault();const fd=new FormData(e.currentTarget);
     const token=makeInternalLibraryToken(Number(fd.get('page_id')),String(fd.get('link_type')||'Lien'),String(fd.get('label')||'Lien'));
-    closeModal();replaceLibraryTextareaSelection($('#libraryPageBody'),token);
+    closeModal();insertLibraryEditorToken(token,{type:'page',pageId:Number(fd.get('page_id')),linkType:String(fd.get('link_type')||'Lien'),label:String(fd.get('label')||'Lien')});
   };
 }
 function openLibraryWebLinkModal(notebook,page){
@@ -1362,7 +1425,7 @@ function openLibraryWebLinkModal(notebook,page){
     e.preventDefault();const fd=new FormData(e.currentTarget),url=safeLibraryUrl(fd.get('url'));
     if(!url)return;
     const token=makeExternalLibraryToken(url,String(fd.get('label')||url));
-    closeModal();replaceLibraryTextareaSelection($('#libraryPageBody'),token);
+    closeModal();insertLibraryEditorToken(token,{type:'url',url,label:String(fd.get('label')||url)});
   };
 }
 
