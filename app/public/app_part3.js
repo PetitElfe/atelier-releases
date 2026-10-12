@@ -192,7 +192,7 @@ function applyCalendarMode(){
   $(`#${state.calendarMode}Panel`).classList.add('active-calendar-panel');
 }
 
-$('.tabs button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+document.querySelectorAll('.tabs button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 
 function setSideNavCollapsed(collapsed){
   const nav=$('#sideNav');
