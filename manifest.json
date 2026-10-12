@@ -1,15 +1,15 @@
 {
-  "version": "0.6.2",
+  "version": "0.6.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "9a9ebce933370ae9b414158b88cdb55e58e9e8643aae0fa46321cc426d2009eb"
+      "sha256": "e666adcd08ebe1b83de4c5ac83d9486342a0dabc6426544141c6dcdfb2a10b3b"
     },
     {
       "path": "VERSION",
-      "sha256": "a466ef209f5c3aee5ff0c702e2e9d5cced4783d2a655e8ab66330f21a5557b3f"
+      "sha256": "c9f56eb9348cbc8345bdaea7ca24c9f960e1598af05472794760a2682ff07a8c"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "ad35fc19682a755d8a7e826fb18a3d5b533bb11d92f24b4a24406cb31349dede"
+      "sha256": "c4a3078bc3b6011f7b8ac4f0e1bf445bacb4d34dd0467225786e05f81d833718"
     },
     {
       "path": "public/index.html",
-      "sha256": "cb789fa65ec9c3024fdc24375bf6c0f1b89c83d00d2ee395e81ff7a4dd960d23"
+      "sha256": "e6d5ce7e8e1575e18c5d57d4f19cae92a38861d9da5a27b5124613ac7c688daf"
     },
     {
       "path": "public/styles.css",
-      "sha256": "7d01dfa4bb84b8c1f235a3525ffbccf0d5831dffd18f74c583031d8b43df9fba"
+      "sha256": "9152f54dffa026e8892fdb5d752b5284aaa2986ab1b9209d1877c2b7f840f006"
     }
   ],
-  "notes": "0.6.2 : correctif immédiat de la 0.6.1 — rétablit tous les clics, corrige l’initialisation JavaScript du menu latéral et remet l’accueil dans la largeur disponible à droite du menu."
+  "notes": "0.6.3 : retour complet de la disposition 0.6.0 ; seuls les onglets deviennent un tiroir superposé à droite, rabattable et mémorisé. Les rappels indépendants et correctifs de fiabilité sont conservés."
 }

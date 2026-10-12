@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.6.2</title>
+  <title>L’Atelier — Alpha 0.6.3</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.6.2</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.6.3</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -23,27 +23,17 @@
     </div>
   </header>
 
-  <nav id="sideNav" class="tabs side-nav" aria-label="Navigation principale">
-    <div class="side-nav-head">
-      <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Rabattre le menu" title="Rabattre le menu">
-        <span class="side-nav-arrow">‹</span>
-      </button>
-      <span class="side-nav-title">Navigation</span>
-    </div>
-
+  <nav id="sideNav" class="tabs side-nav side-nav-right" aria-label="Navigation principale">
+    <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Masquer le menu" title="Masquer le menu">
+      <span class="side-nav-arrow">›</span>
+    </button>
     <div class="side-nav-links">
-      <button data-view="home" class="active"><span class="side-nav-icon">⌂</span><span class="side-nav-label">Accueil</span></button>
-      <button data-view="calendar"><span class="side-nav-icon">▦</span><span class="side-nav-label">Calendrier</span></button>
-      <button data-view="tasks"><span class="side-nav-icon">✓</span><span class="side-nav-label">Tâches</span></button>
-      <button data-view="reminders"><span class="side-nav-icon">◷</span><span class="side-nav-label">Rappels</span></button>
-      <button data-view="kitchen"><span class="side-nav-icon">⌑</span><span class="side-nav-label">Courses & repas</span></button>
-      <button data-view="cuisine"><span class="side-nav-icon">♨</span><span class="side-nav-label">Cuisine</span></button>
-    </div>
-
-    <div class="side-nav-divider"></div>
-    <div class="side-nav-quick">
-      <button id="quickAddEvent" type="button"><span class="side-nav-icon">＋</span><span class="side-nav-label">Rendez-vous</span></button>
-      <button id="quickAddReminder" type="button"><span class="side-nav-icon">＋</span><span class="side-nav-label">Rappel</span></button>
+      <button data-view="home" class="active">Accueil</button>
+      <button data-view="calendar">Calendrier</button>
+      <button data-view="tasks">Tâches</button>
+      <button data-view="reminders">Rappels</button>
+      <button data-view="kitchen">Courses & repas</button>
+      <button data-view="cuisine">Cuisine</button>
     </div>
   </nav>
 
