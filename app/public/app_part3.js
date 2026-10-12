@@ -84,7 +84,7 @@ function openTaskModal(t=null,presetObjectiveNodeId=null){
     <div class="field full"><label>Tâche</label><input name="title" required value="${esc(t?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="due_date" type="date" value="${esc(t?.due_date||ymd(new Date()))}"></div>
     <div class="field"><label>Heure</label><input name="due_time" type="time" value="${esc(t?.due_time||'')}"></div>
-    <div class="field full"><label>Objectif / étape liée</label><select name="objective_node_id">${objectiveSelectOptions(linkedObjectiveId)}</select><div class="field-help">Facultatif : la tâche apparaîtra aussi dans la fiche de cet élément de la carte.</div></div>
+    <div class="field full"><label>Bibliothèque / sous-objectif lié</label><select name="objective_node_id">${objectiveSelectOptions(linkedObjectiveId)}</select><div class="field-help">Facultatif : la tâche apparaîtra aussi dans le domaine ou le sous-objectif choisi.</div></div>
     <div class="field full checkline"><input id="important" name="important" type="checkbox" ${t?.important?'checked':''}><label for="important">Important 👺</label></div>
     <div class="field full"><label>Notes</label><textarea name="notes">${esc(t?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'de la tâche',t?.due_date||ymd(new Date()))}
