@@ -233,7 +233,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',objectives:'Objectifs',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
@@ -342,8 +342,16 @@ $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalend
 $('#openCalendarCard').onclick=()=>showView('calendar');
 $('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
 $('#openTasksFromHome').onclick=()=>showView('tasks');
-$('#addObjectiveNode').onclick=()=>openObjectiveNodeModal();
-$('#objectiveAddRoot').onclick=()=>openObjectiveNodeModal();
+$('#addLibraryDomain').onclick=()=>openLibraryDomainCreateModal();
+$('#libraryBack').onclick=()=>closeLibraryDomain();
+$('#addLibraryNotebook').onclick=()=>{if(librarySelectedDomainId)openLibraryNotebookModal(librarySelectedDomainId)};
+$('#addLibrarySubgoal').onclick=()=>{if(librarySelectedDomainId)openLibrarySubgoalModal(librarySelectedDomainId)};
+$('#addLibraryTask').onclick=()=>{if(librarySelectedDomainId)openTaskModal(null,librarySelectedDomainId)};
+$('#libraryDomainConfigure').onclick=()=>{const d=objectiveNodeById(librarySelectedDomainId);if(d)openLibraryDomainConfigModal(d)};
+$('#libraryDomainDelete').onclick=()=>{const d=objectiveNodeById(librarySelectedDomainId);if(d)deleteLibraryDomain(d)};
+$('#libraryNotebookEdit').onclick=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)openLibraryNotebookModal(librarySelectedDomainId,n)};
+$('#libraryNotebookDelete').onclick=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)deleteLibraryNotebook(librarySelectedDomainId,n)};
+$('#addLibraryPage').onclick=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)openLibraryPageModal(n)};
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 const DATE_FORMAT_OPTIONS={
@@ -642,7 +650,7 @@ function initGlobalLayoutEditor(){
 
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
-refresh().then(()=>{if(['home','calendar','tasks','objectives','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
+refresh().then(()=>{if(['home','calendar','tasks','library','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
