@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.7.0</title>
+  <title>L’Atelier — Alpha 0.8.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand">
-      <div class="eyebrow">L’ATELIER · ALPHA 0.7.0</div>
+      <div class="eyebrow">L’ATELIER · ALPHA 0.8.0</div>
       <h1 id="pageTitle">Accueil</h1>
     </div>
     <div class="top-date-wrap">
@@ -33,6 +33,7 @@
       <button data-view="home" class="active">Accueil</button>
       <button data-view="calendar">Calendrier</button>
       <button data-view="tasks">Tâches</button>
+      <button data-view="objectives">Objectifs</button>
       <button data-view="reminders">Rappels</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -141,6 +142,31 @@
     <section id="tasksView" class="view">
       <div class="panel-head"><h2>Tâches</h2><button id="addTask" class="primary">+ Ajouter une tâche</button></div>
       <div id="taskList" class="task-list"></div>
+    </section>
+
+    <section id="objectivesView" class="view objectives-view">
+      <div class="objectives-head">
+        <div>
+          <div class="section-kicker">CARTE DE PROGRESSION</div>
+          <h2>Objectifs</h2>
+          <p class="muted">Construis la structure avant même les objectifs : domaines, objectifs, étapes, sous-étapes, tâches et bibliothèques adaptées à chaque besoin.</p>
+        </div>
+        <button id="addObjectiveNode" class="primary" type="button">+ Ajouter à la carte</button>
+      </div>
+
+      <div class="objectives-workspace">
+        <section class="objective-map-panel">
+          <div class="objective-map-toolbar">
+            <div><strong>Carte</strong><span>Ta hiérarchie complète</span></div>
+            <button id="objectiveAddRoot" type="button">+ Domaine racine</button>
+          </div>
+          <div id="objectiveMap" class="objective-map" aria-label="Carte des objectifs"></div>
+        </section>
+
+        <aside id="objectiveInspector" class="objective-inspector">
+          <div class="objective-inspector-empty">Sélectionne un élément de la carte.</div>
+        </aside>
+      </div>
     </section>
 
     <section id="remindersView" class="view">
