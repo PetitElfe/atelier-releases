@@ -144,23 +144,36 @@ function openSnooze(r){
 function localIsoSeconds(d=new Date()){
   return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
-async function checkDue(){ try{ const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`); due.forEach(r=>notifyReminder(r)); }catch(e){} }
+async function checkDue(){
+  try{
+    const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`);
+    due.forEach(r=>notifyReminder(r));
+  }catch(e){
+    console.warn('[Atelier] Vérification des rappels impossible',e);
+  }
+}
 const shown=new Set();
 function notifyReminder(r){
   if(shown.has(r.id))return;
-  shown.add(r.id);
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
   const when=formatReminderMoment(r.snoozed_until||r.remind_at);
-  if(Notification.permission==='granted'){
-    new Notification(`🔔 Rappel : ${title}`,{body:`${when} · ${kind}\nOuvre L’Atelier pour le traiter.`});
+
+  try{
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification(`🔔 Rappel : ${title}`,{body:`${when} · ${kind}\nOuvre L’Atelier pour le traiter.`});
+    }
+  }catch(e){
+    console.warn('[Atelier] Notification système impossible',e);
   }
+
   const t=document.createElement('div');
   t.className='toast';
   t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div><div class="task-actions"><button class="finish reminder-icon-action" title="Fini" aria-label="Fini">✓</button><button class="later reminder-icon-action" title="Reporter" aria-label="Reporter">↪</button></div>`;
   t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(r.id);t.remove();await refresh()};
-  t.querySelector('.later').onclick=()=>{t.remove();openSnooze(r)};
+  t.querySelector('.later').onclick=()=>{shown.delete(r.id);t.remove();openSnooze(r)};
   $('#toastArea').appendChild(t);
+  shown.add(r.id);
 }
 
 async function checkRuntimeCompatibility(){
@@ -203,9 +216,22 @@ function applyCalendarMode(){
 
 document.querySelectorAll('.tabs button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 
+function syncSideNavEdge(left){
+  const nav=$('#sideNav');
+  if(!nav)return;
+  const width=nav.offsetWidth||220;
+  const onLeft=left+(width/2)<window.innerWidth/2;
+  nav.classList.toggle('side-nav-on-left',onLeft);
+  const collapseX=onLeft?-(left+width):(window.innerWidth-left);
+  nav.style.setProperty('--side-nav-collapse-x',collapseX+'px');
+}
+
 function setSideNavCollapsed(collapsed){
   const nav=$('#sideNav');
   if(!nav)return;
+  const storedLeft=parseFloat(nav.style.left);
+  const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left;
+  syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
   const toggle=$('#sideNavToggle');
@@ -219,7 +245,7 @@ function clampSideNavPosition(left,top){
   const nav=$('#sideNav');
   const width=nav?.offsetWidth||220;
   const height=nav?.offsetHeight||260;
-  const minLeft=44;
+  const minLeft=0;
   const maxLeft=Math.max(minLeft,window.innerWidth-width);
   const minTop=8;
   const maxTop=Math.max(minTop,window.innerHeight-height-8);
@@ -234,10 +260,11 @@ function applySideNavPosition(pos=null){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
   const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
-  const next=clampSideNavPosition(Number(saved?.left) || fallback.left,Number(saved?.top) || fallback.top);
+  const next=clampSideNavPosition(Number.isFinite(Number(saved?.left))?Number(saved.left):fallback.left,Number.isFinite(Number(saved?.top))?Number(saved.top):fallback.top);
   nav.style.left=next.left+'px';
   nav.style.right='auto';
   nav.style.top=next.top+'px';
+  syncSideNavEdge(next.left);
   return next;
 }
 
@@ -249,7 +276,7 @@ function initSideNavDrag(){
     if(e.button!==0)return;
     e.preventDefault();
     const rect=nav.getBoundingClientRect();
-    active=true;startX=e.clientX;startY=e.clientY;startLeft=rect.left;startTop=rect.top;
+    active=true;startX=e.clientX;startY=e.clientY;startLeft=parseFloat(nav.style.left)||rect.left;startTop=parseFloat(nav.style.top)||rect.top;
     handle.setPointerCapture?.(e.pointerId);
     nav.classList.add('is-dragging');
   });
@@ -272,7 +299,10 @@ applySideNavPosition();
 const sideNavInitiallyCollapsed=localStorage.getItem('atelierSideNavCollapsed')==='1';
 setSideNavCollapsed(sideNavInitiallyCollapsed);
 initSideNavDrag();
-window.addEventListener('resize',()=>applySideNavPosition());
+window.addEventListener('resize',()=>{
+  const next=applySideNavPosition();
+  if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
+});
 $('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
@@ -511,6 +541,8 @@ function initGlobalLayoutEditor(){
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 const savedView=localStorage.getItem('atelierLastView');
 refresh().then(()=>{if(['home','calendar','tasks','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
-setInterval(checkDue,30000); setInterval(updateClock,30000); setTimeout(checkDue,1500);
+setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
+window.addEventListener('focus',checkDue);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
