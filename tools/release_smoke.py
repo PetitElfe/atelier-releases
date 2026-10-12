@@ -133,7 +133,7 @@ def check_frontend_contract() -> None:
             fail(f"Élément frontend obligatoire absent : {required}")
     if 'id="todayBtn"' in index:
         fail("Le bouton Aujourd’hui ne doit plus être présent.")
-    if "Rappel :" not in js or "Ouvre L’Atelier pour le traiter." not in js:
+    if "Rappel :" not in js or "Clique pour ouvrir L’Atelier." not in js:
         fail("Le nouveau format clair des notifications est absent.")
     if "reminder-icon-action" not in (APP / "public" / "app_part2.js").read_text(encoding="utf-8"):
         fail("Les actions de rappel par icônes sont absentes.")
