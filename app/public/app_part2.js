@@ -55,8 +55,81 @@ function renderTasks(){
 async function moveTask(t,dir){ const active=state.tasks.filter(x=>!x.completed).sort((a,b)=>a.order_index-b.order_index); const i=active.findIndex(x=>x.id===t.id), j=i+dir;if(i<0||j<0||j>=active.length)return; const a=active[i],b=active[j]; await Promise.all([api(`/api/tasks/${a.id}`,{method:'PUT',body:JSON.stringify({order_index:b.order_index})}),api(`/api/tasks/${b.id}`,{method:'PUT',body:JSON.stringify({order_index:a.order_index})})]); await refresh(); }
 
 function renderReminders(){
-  const root=$('#reminderList'); root.innerHTML=''; if(!state.reminders.length){root.innerHTML='<div class="empty">Aucun rappel non traité.</div>';return}
-  state.reminders.forEach(r=>{const row=document.createElement('div');row.className='reminder-row';const title=r.title||r.entity_title||`${r.entity_type==='event'?'Rendez-vous':'Tâche'} #${r.entity_id}`;row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc((r.snoozed_until||r.remind_at).replace('T',' '))}</div></div><div class="reminder-actions"><button class="done">Fini</button><button class="snooze">Reporter</button></div>`;row.querySelector('.done').addEventListener('click',async()=>{await api(`/api/reminders/${r.id}/finish`,{method:'PUT',body:'{}'});await refresh()});row.querySelector('.snooze').addEventListener('click',()=>openSnooze(r));root.appendChild(row)});
+  const root=$('#reminderList');
+  root.innerHTML='';
+  if(!state.reminders.length){
+    root.innerHTML='<div class="empty">Aucun rappel non traité. Tu peux en créer un avec « + Ajouter un rappel ».</div>';
+    return;
+  }
+  state.reminders.forEach(r=>{
+    const row=document.createElement('div');
+    row.className='reminder-row'+(r.entity_type==='standalone'?' reminder-standalone':'');
+    const title=r.title||r.entity_title||`${r.entity_type==='event'?'Rendez-vous':r.entity_type==='task'?'Tâche':'Rappel'} #${r.id}`;
+    const kind=r.entity_type==='standalone'?'Rappel indépendant':r.entity_type==='event'?'Lié à un rendez-vous':'Lié à une tâche';
+    row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc((r.snoozed_until||r.remind_at).replace('T',' '))} · ${esc(kind)}</div></div><div class="reminder-actions"><button class="done">Fini</button><button class="snooze">Reporter</button>${r.entity_type==='standalone'?'<button class="edit">Modifier</button><button class="delete">Supprimer</button>':''}</div>`;
+    row.querySelector('.done').addEventListener('click',async()=>{
+      await api(`/api/reminders/${r.id}/finish`,{method:'PUT',body:'{}'});
+      shown.delete(r.id);
+      await refresh();
+    });
+    row.querySelector('.snooze').addEventListener('click',()=>openSnooze(r));
+    row.querySelector('.edit')?.addEventListener('click',()=>openStandaloneReminderModal(r));
+    row.querySelector('.delete')?.addEventListener('click',async()=>{
+      const ok=await askUiConfirm('Supprimer le rappel',`Supprimer « ${title} » ?`,'Supprimer',true);
+      if(!ok)return;
+      const result=await runUiAction('Impossible de supprimer le rappel',()=>api(`/api/reminders/${r.id}`,{method:'DELETE'}));
+      if(result.ok){shown.delete(r.id);await refresh();}
+    });
+    root.appendChild(row);
+  });
+}
+
+function openStandaloneReminderModal(reminder=null){
+  const editing=!!reminder?.id;
+  const raw=(reminder?.snoozed_until||reminder?.remind_at||'').slice(0,16);
+  const dateValue=raw.slice(0,10)||ymd(new Date());
+  const timeValue=raw.length>=16?raw.slice(11,16):'';
+  openModal(`<h2>${editing?'Modifier le rappel':'Nouveau rappel'}</h2><form id="standaloneReminderForm" class="form-grid">
+    <div class="field full"><label>Rappel</label><input name="title" required value="${esc(reminder?.title||'')}" placeholder="ex. Appeler la mission locale"></div>
+    <div class="field"><label>Date</label><input name="date" type="date" required value="${esc(dateValue)}"></div>
+    <div class="field"><label>Heure</label><input name="time" type="time" required value="${esc(timeValue)}"></div>
+    <div id="standaloneReminderError" class="form-error field full hidden"></div>
+    <div class="form-actions field full"><button type="button" id="cancelStandaloneReminder">Annuler</button><button id="saveStandaloneReminder" class="primary" type="submit">${editing?'Enregistrer':'Créer le rappel'}</button></div>
+  </form>`);
+  const form=$('#standaloneReminderForm');
+  const error=$('#standaloneReminderError');
+  const submit=$('#saveStandaloneReminder');
+  $('#cancelStandaloneReminder').onclick=closeModal;
+  form.onsubmit=async e=>{
+    e.preventDefault();
+    error.classList.add('hidden'); error.textContent='';
+    const fd=new FormData(form);
+    const title=String(fd.get('title')||'').trim();
+    const date=String(fd.get('date')||'');
+    const time=String(fd.get('time')||'');
+    if(!title||!date||!time){
+      error.textContent='Remplis le nom, la date et l’heure.';
+      error.classList.remove('hidden');
+      return;
+    }
+    submit.disabled=true;
+    submit.textContent='Enregistrement…';
+    const result=await runUiAction("Impossible d’enregistrer le rappel",()=>api(editing?`/api/reminders/${reminder.id}`:'/api/reminders',{
+      method:editing?'PUT':'POST',
+      body:JSON.stringify({title,remind_at:`${date}T${time}`})
+    }));
+    if(!result.ok){
+      error.textContent=result.error?.message||'Le rappel n’a pas pu être enregistré.';
+      error.classList.remove('hidden');
+      submit.disabled=false;
+      submit.textContent=editing?'Enregistrer':'Créer le rappel';
+      return;
+    }
+    if(reminder?.id)shown.delete(reminder.id);
+    closeModal();
+    await refresh();
+    showView('reminders');
+  };
 }
 
 function openDayList(ds,items){ openModal(`<h2>${ds}</h2><div class="task-list">${items.map(e=>`<button class="event-pill ${eventClass(e.category)}" data-eid="${e.id}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`).join('')}</div>`); $$('#modalBody [data-eid]').forEach(b=>b.addEventListener('click',()=>{const e=state.events.find(x=>x.id===Number(b.dataset.eid));openEventModal(e)})); }
