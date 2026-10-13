@@ -2474,6 +2474,12 @@ function renderLibraryPageEditor(notebook,page){
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
   </article>`;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  const serverData={title:page.title||'Sans titre',notes:page.notes||LIBRARY_RICH_PREFIX};
+  const durableDraft=libraryReadDraft(page);
+  if(durableDraft&&(durableDraft.title!==serverData.title||durableDraft.notes!==serverData.notes)){
+    page.title=durableDraft.title;page.notes=durableDraft.notes;
+    title.value=durableDraft.title;
+  }else if(durableDraft)libraryClearConfirmedDraft(page,serverData);
   body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
   librarySavedSnapshot=JSON.stringify({title:page.title||'Sans titre',notes:libraryNotesAreRich(page.notes)?page.notes:LIBRARY_RICH_PREFIX+libraryPageHtml(page)});
   if(!libraryConfirmedSnapshots.has(Number(page.id)))libraryConfirmedSnapshots.set(Number(page.id),librarySavedSnapshot);

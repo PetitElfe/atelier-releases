@@ -27,7 +27,8 @@ async function api(path,method='GET',body){
   await api('/api/objective-library-entries','POST',{section_id:notebook.id,title:'Page E2E',notes:'@@ATELIER_RICH_V1@@',url:'',done:false});
   browser=await chromium.launch({headless:true});
   const page=await browser.newPage();
-  page.on('pageerror',e=>console.error('PAGE ERROR:',e.message));
+  const pageErrors=[];
+  page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
@@ -57,6 +58,7 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
