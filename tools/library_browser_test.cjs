@@ -40,6 +40,20 @@ async function api(path,method='GET',body){
   await page.waitForTimeout(1300);
   const status=await page.locator('#librarySaveState').textContent();
   assert.equal(status.trim(),'Enregistré','Save status after typing: '+status);
+  // Contrôle géométrique du centrage après changement de page.
+  await page.locator('#libraryPageReader').click();
+  for(const pageNumber of [1,2]){
+    await page.locator('#libraryReaderPageNumber').fill(String(pageNumber));
+    await page.locator('#libraryReaderPageNumber').press('Tab');
+    await page.locator('#libraryReaderPages .library-reader-sheet').first().waitFor();
+    const center=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+      const p=el.getBoundingClientRect(),container=document.querySelector('#libraryReaderPages').getBoundingClientRect();
+      return Math.abs((p.left+p.right)/2-(container.left+container.right)/2);
+    });
+    assert.ok(center<5,'Reading page '+pageNumber+' off-center by '+center+'px');
+  }
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
@@ -124,16 +138,41 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
   await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderToc').click();
+  await page.locator('#libraryReaderTocList button').first().click();
+  assert.equal(await page.locator('#libraryReaderPageNumber').inputValue(),'1','Double page starts from first sheet');
+  await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderSpreadToggle').click();
+  const spreadGeometry=await page.locator('#libraryReaderPages').evaluate(root=>{
+    const pages=[...root.querySelectorAll('.library-reader-sheet')].map(el=>el.getBoundingClientRect());
+    return {count:pages.length,widths:pages.map(p=>p.width),tops:pages.map(p=>p.top)};
+  });
+  assert.equal(spreadGeometry.count,2,'Expected two sheets in spread mode');
+  assert.ok(Math.abs(spreadGeometry.widths[0]-spreadGeometry.widths[1])<3,'Spread widths unequal');
+  assert.ok(Math.abs(spreadGeometry.tops[0]-spreadGeometry.tops[1])<3,'Spread vertical alignment unequal');
+  await page.locator('#libraryReaderSpreadToggle').click();
+  await page.locator('#libraryReaderExpand').click();
+  // Le sommaire occupe volontairement 235 px quand il est ouvert.
+  // Le fermer avant de mesurer le centrage dans toute la fenêtre du lecteur.
+  if(await page.locator('#libraryReaderTocPanel').isVisible())await page.locator('#libraryReaderTocClose').click();
   // À 100 %, la feuille ne doit pas déborder horizontalement du lecteur.
   const fit=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
     const sheet=el.getBoundingClientRect(),frame=document.querySelector('.library-reader-layout').getBoundingClientRect();
     return {sheetWidth:sheet.width,frameWidth:frame.width};
   });
   assert.ok(fit.sheetWidth<=fit.frameWidth,'Reader sheet overflows viewport at 100%: '+JSON.stringify(fit));
+  const position=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+    const frame=document.querySelector('#libraryReaderPages').getBoundingClientRect(),sheet=el.getBoundingClientRect();
+    return {offset:Math.abs((sheet.left+sheet.right)/2-(frame.left+frame.right)/2),sheetWidth:sheet.width};
+  });
+  assert.ok(position.offset<24,'Reading sheet must be centered, got '+JSON.stringify(position));
   await page.locator('#libraryZoomIn').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
   await page.locator('#libraryReaderZoomLabel').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'100 %');
+  // Revenir sur la seconde feuille, qui contient le texte de recherche.
+  await page.locator('#libraryReaderPageNumber').fill('2');
+  await page.locator('#libraryReaderPageNumber').press('Tab');
   console.log('READER PAGE CONTENT',JSON.stringify(await page.locator('#libraryReaderPages').innerText()));
   const afterReaderSave=await api('/api/objective-library?node_id='+domain.id);
   console.log('READER DATABASE PAGE DATA',JSON.stringify(afterReaderSave.sections[0].entries.map(x=>({id:x.id,notes:x.notes.slice(0,120)}))));
@@ -151,6 +190,13 @@ async function api(path,method='GET',body){
   assert.ok(await page.locator('.library-progress-linear').count(),'Horizontal progress visible');
   await page.locator('#libraryPageReader').click();
   await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderSpreadToggle').click();
+  const spreadPosition=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+    const area=document.querySelector('.library-reader-layout').getBoundingClientRect(),sheets=[...document.querySelectorAll('#libraryReaderPages .library-reader-sheet')].map(x=>x.getBoundingClientRect());
+    const left=Math.min(...sheets.map(r=>r.left)),right=Math.max(...sheets.map(r=>r.right));
+    return {count:sheets.length,offset:Math.abs((left+right)/2-(area.left+area.right)/2)};
+  });
+  assert.ok(spreadPosition.offset<28,'Spread must be centered, got '+JSON.stringify(spreadPosition));
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'X exits expanded reading');
