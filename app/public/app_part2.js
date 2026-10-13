@@ -2459,6 +2459,7 @@ function goLibraryReaderPage(notebook,index,direction=0){
 let libraryReaderZoom=100;
 let libraryFindTerm='';
 let libraryFindIndex=0;
+let libraryWriterMatches=[];
 function libraryReaderApplyZoom(){
   const el=$('#libraryReaderPages');
   if(el)el.style.zoom=String(libraryReaderZoom/100);
@@ -2494,11 +2495,22 @@ function libraryUpdateFind(){
   libraryFindTerm=$('#libraryFindInput')?.value||'';
   const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
   if(!region)return;
-  // En écriture, ne jamais modifier le DOM contenteditable : cela pourrait altérer les brouillons.
+  // Rechercher dans des noeuds texte sans modifier le HTML ni les brouillons.
   if(libraryEditorMode==='write'){
-    const text=region.innerText||'';
-    const count=libraryFindTerm?text.toLocaleLowerCase().split(libraryFindTerm.toLocaleLowerCase()).length-1:0;
-    $('#libraryFindCount').textContent=count+' résultat'+(count>1?'s':'');
+    libraryWriterMatches=[];
+    const term=libraryFindTerm.toLocaleLowerCase();
+    if(term){
+      const walker=document.createTreeWalker(region,NodeFilter.SHOW_TEXT);
+      while(walker.nextNode()){
+        const node=walker.currentNode;
+        if(node.parentElement?.closest('[contenteditable="false"]'))continue;
+        const content=(node.nodeValue||'').toLocaleLowerCase();
+        let offset=0,found;
+        while((found=content.indexOf(term,offset))!==-1){libraryWriterMatches.push({node,start:found,end:found+term.length});offset=found+term.length}
+      }
+    }
+    libraryFindIndex=0;
+    libraryStepFind(0);
     return;
   }
   const matches=libraryFindMatches(region);
@@ -2507,6 +2519,23 @@ function libraryUpdateFind(){
 }
 function libraryStepFind(step,existing=null){
   const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
+  if(libraryEditorMode==='write'){
+    const count=libraryWriterMatches.length;
+    if(count){
+      libraryFindIndex=(libraryFindIndex+step+count)%count;
+      const result=libraryWriterMatches[libraryFindIndex];
+      if(result.node.isConnected){
+        const range=document.createRange();
+        range.setStart(result.node,result.start);range.setEnd(result.node,result.end);
+        const selection=window.getSelection();
+        selection.removeAllRanges();selection.addRange(range);
+        result.node.parentElement?.scrollIntoView({block:'nearest'});
+      }
+    }
+    const label=$('#libraryFindCount');
+    if(label)label.textContent=count?(libraryFindIndex+1)+' / '+count:'0 résultat';
+    return;
+  }
   const matches=existing||[...(region?.querySelectorAll('mark.library-find-mark')||[])];
   const count=matches.length;
   if(count)libraryFindIndex=(libraryFindIndex+step+count)%count;
