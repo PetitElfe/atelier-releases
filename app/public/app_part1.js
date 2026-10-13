@@ -66,7 +66,7 @@ async function refresh(){
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function')renderLibrary(); updateClock(); }
+function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function'&&state.view==='library'&&!window.__atelierLibraryViewRestoring)renderLibrary(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
