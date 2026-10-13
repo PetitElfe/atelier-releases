@@ -1,5 +1,5 @@
 {
-  "version": "0.12.6",
+  "version": "0.12.7",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "6c9ed48d97859ab93b8e6c25047eef5d121784f1f17632e6d9af9d64fa2d3cfd"
+      "sha256": "f9c67c0f4df0339ee19b9fe92674719f77d5e8e77f113c86e7480a313a31a6d6"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "8c818c166429dd362754900a2310fd2e4a59b3b8f02f036c1eec6f63bd0e4502"
+      "sha256": "35b52cadea19afa0fb4fe6c30f0ace0d7dd86176120e4e5abf474e4a5522a631"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "c1585c1d6fe3a75beb7b83b7fce280469c902d0eabfeaef7d880e308bace02d1"
+      "sha256": "890013c57a63eb75a4a6e7276905b15c5acf2ed58ae88ef2a178de0acc510816"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.6 : bouton de sauvegarde manuelle, exports PDF/HTML/TXT, démarrage sur Accueil et tiroir repositionné."
+  "notes": "0.12.7 : menu d'export PDF HTML TXT avec téléchargement direct, sans impression."
 }
