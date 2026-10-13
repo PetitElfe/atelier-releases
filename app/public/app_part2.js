@@ -2255,6 +2255,8 @@ if(!window.__atelierLibraryExitSave){
 
 function libraryCommand(command,value=null){
   const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
+  if(command==='undo'){libraryUndo();return}
+  if(command==='redo'){libraryRedo();return}
   editor.focus();restoreLibraryTextSelection();
   try{document.execCommand('styleWithCSS',false,true)}catch(_){}
   let ok=false;
@@ -2264,12 +2266,13 @@ function libraryCommand(command,value=null){
   }
   rememberLibraryTextSelection();
   scheduleLibraryAutosave(page);
+  scheduleLibraryHistory();
 }
 function libraryBlockFormat(tag){
   const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
   editor.focus();restoreLibraryTextSelection();
   try{document.execCommand('formatBlock',false,tag)}catch(_){}
-  rememberLibraryTextSelection();scheduleLibraryAutosave(page);
+  rememberLibraryTextSelection();scheduleLibraryAutosave(page);scheduleLibraryHistory();
 }
 function libraryToggleExpanded(){
   libraryPageExpanded=!libraryPageExpanded;
@@ -2412,9 +2415,18 @@ function renderLibraryPageEditor(notebook,page){
   const backlinksRoot=$('#libraryBacklinks>div');
   backlinks.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);backlinksRoot.appendChild(b)});
 
-  const changed=()=>scheduleLibraryAutosave(page);
+  libraryInitHistory();
+  const changed=()=>{scheduleLibraryAutosave(page);scheduleLibraryHistory()};
   body.addEventListener('input',changed);title.addEventListener('input',changed);
   body.addEventListener('keyup',rememberLibraryTextSelection);body.addEventListener('mouseup',rememberLibraryTextSelection);
+  body.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
+      e.preventDefault();
+      if(e.shiftKey)libraryRedo();else libraryUndo();
+    }else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){
+      e.preventDefault();libraryRedo();
+    }
+  });
   body.addEventListener('blur',()=>scheduleLibraryAutosave(page,{immediate:true}));
 
   $$('.library-format-btn').forEach(btn=>{
@@ -2488,4 +2500,191 @@ function renderLibraryNotebookContent(domain){
   }
   if(!librarySelectedPageId||!libraryPageById(librarySelectedPageId))librarySelectedPageId=Number(notebook.entries[0].id);
   renderLibraryPageEditor(notebook,libraryPageById(librarySelectedPageId));
+}
+
+
+/* 0.12.1 — corrections d’usage : sauvegarde de navigation, historique, liens actifs et double page */
+let libraryHistory=[];
+let libraryHistoryIndex=-1;
+let libraryHistoryTimerV121=null;
+let libraryHistoryApplying=false;
+let libraryReaderSpread=false;
+
+function libraryCaptureEditorState(){
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  if(!body||!title)return null;
+  return {title:title.value,html:body.innerHTML};
+}
+function libraryInitHistory(){
+  const state=libraryCaptureEditorState();
+  libraryHistory=state?[state]:[];
+  libraryHistoryIndex=libraryHistory.length-1;
+  clearTimeout(libraryHistoryTimerV121);
+}
+function libraryRecordHistoryNow(){
+  if(libraryHistoryApplying)return;
+  const state=libraryCaptureEditorState();if(!state)return;
+  const encoded=JSON.stringify(state);
+  const current=libraryHistory[libraryHistoryIndex];
+  if(current&&JSON.stringify(current)===encoded)return;
+  if(libraryHistoryIndex<libraryHistory.length-1)libraryHistory=libraryHistory.slice(0,libraryHistoryIndex+1);
+  libraryHistory.push(state);
+  if(libraryHistory.length>80)libraryHistory.shift();
+  libraryHistoryIndex=libraryHistory.length-1;
+}
+function scheduleLibraryHistory(){
+  clearTimeout(libraryHistoryTimerV121);
+  libraryHistoryTimerV121=setTimeout(libraryRecordHistoryNow,350);
+}
+function libraryApplyHistoryState(state,page){
+  if(!state)return;
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');if(!body||!title)return;
+  libraryHistoryApplying=true;
+  title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
+  libraryHistoryApplying=false;
+  scheduleLibraryAutosave(page,{immediate:true});
+}
+function libraryUndo(){
+  clearTimeout(libraryHistoryTimerV121);libraryRecordHistoryNow();
+  if(libraryHistoryIndex<=0)return;
+  libraryHistoryIndex--;libraryApplyHistoryState(libraryHistory[libraryHistoryIndex],libraryPageById(librarySelectedPageId));
+}
+function libraryRedo(){
+  clearTimeout(libraryHistoryTimerV121);
+  if(libraryHistoryIndex>=libraryHistory.length-1)return;
+  libraryHistoryIndex++;libraryApplyHistoryState(libraryHistory[libraryHistoryIndex],libraryPageById(librarySelectedPageId));
+}
+function persistLibraryBeforeNavigation(){
+  clearTimeout(libraryAutosaveTimerV12);
+  const page=libraryPageById(librarySelectedPageId),body=$('#libraryPageBody');
+  if(!page||!body)return;
+  const data=libraryEditorData(page);
+  page.title=data.title;page.notes=data.notes;
+  librarySavedSnapshot=JSON.stringify(data);libraryPageDirty=false;
+  saveLibraryPageData(page,data,{silent:true});
+}
+function libraryOpenWriteLink(a,page){
+  if(!a)return;
+  persistLibraryBeforeNavigation();
+  if(a.dataset.libraryLinkKind==='page'){
+    const target=libraryPageById(a.dataset.pageId);
+    if(target){
+      const notebook=libraryPageNotebook(target.id);
+      if(notebook){
+        librarySelectedNotebookId=Number(notebook.id);
+        librarySelectedPageId=Number(target.id);
+        libraryEditorMode='write';
+        renderLibraryDomain();
+      }
+    }
+  }else{
+    const url=safeLibraryUrl(a.getAttribute('href'));
+    if(url)window.open(url,'_blank','noopener');
+  }
+}
+function wireLibraryRichLinks(root,page){
+  root.querySelectorAll('a[data-library-link-kind]').forEach(a=>{
+    a.contentEditable='false';a.classList.add('library-rich-link');
+    const kind=a.dataset.libraryLinkKind;
+    if(kind==='page'){
+      const target=libraryPageById(a.dataset.pageId);
+      a.href='#';a.title=(target?`Ouvrir « ${target.title} »`:'Page liée introuvable')+' · clic droit pour modifier';
+    }else{
+      const url=safeLibraryUrl(a.getAttribute('href'));a.href=url||'#';a.target='_blank';a.rel='noopener noreferrer';a.title='Ouvrir le site · clic droit pour modifier';
+    }
+    a.onclick=e=>{
+      e.preventDefault();e.stopPropagation();
+      if(libraryEditorMode==='write')libraryOpenWriteLink(a,page);
+      else if(kind==='page'){const target=libraryPageById(a.dataset.pageId);if(target)openLibraryPageTarget(target.id)}
+      else{const url=safeLibraryUrl(a.getAttribute('href'));if(url)window.open(url,'_blank','noopener')}
+    };
+    a.oncontextmenu=e=>{
+      if(libraryEditorMode!=='write')return;
+      e.preventDefault();e.stopPropagation();
+      if(kind==='page')openLibraryInternalLinkModal(libraryNotebookById(librarySelectedNotebookId),page,a);
+      else openLibraryWebLinkModal(libraryNotebookById(librarySelectedNotebookId),page,a);
+    };
+  });
+}
+function libraryToggleExpanded(){
+  libraryPageExpanded=!libraryPageExpanded;
+  if(!libraryPageExpanded)libraryReaderSpread=false;
+  $('#libraryNotebookPanel')?.classList.toggle('library-notebook-expanded',libraryPageExpanded);
+  document.body.classList.toggle('library-page-expanded',libraryPageExpanded);
+  if(libraryEditorMode==='read'){
+    const notebook=libraryNotebookById(librarySelectedNotebookId),page=libraryPageById(librarySelectedPageId);
+    if(notebook&&page)renderLibraryReader(notebook,page,$('#libraryNotebookPages'));
+  }else{
+    const btn=$('#libraryPageExpand');if(btn){btn.textContent=libraryPageExpanded?'🗗':'⛶';btn.title=libraryPageExpanded?'Réduire la page':'Agrandir la page'}
+  }
+}
+function renderLibraryReaderSheet(page,index){
+  const sheet=document.createElement('section');sheet.className='library-reader-sheet';
+  sheet.innerHTML=`<div class="library-reader-page-number">${index+1}</div><h1>${esc(page.title)}</h1><div class="library-reading-view"></div><div class="library-backlinks hidden"><span>LIENS VERS CETTE PAGE</span><div></div></div>`;
+  sheet.querySelector('.library-reading-view').appendChild(renderLibraryReadHtml(page));
+  const backs=libraryBacklinks(page.id),back=sheet.querySelector('.library-backlinks');
+  if(backs.length){
+    back.classList.remove('hidden');
+    backs.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);back.querySelector('div').appendChild(b)});
+  }
+  return sheet;
+}
+function renderLibraryReader(notebook,page,root){
+  const pages=notebook.entries||[],index=libraryNotebookPageIndex(notebook,page.id);
+  const spread=libraryPageExpanded&&libraryReaderSpread;
+  root.innerHTML=`<article class="library-reader">
+    <div class="library-reader-bar">
+      <button id="libraryReaderBack" type="button" title="Retour à l’écriture">✎</button>
+      <button id="libraryReaderToc" type="button" title="Sommaire">☰</button>
+      <div class="library-reader-title"><strong>${esc(notebook.title)}</strong><span>${esc(page.title)}</span></div>
+      <div class="library-reader-pagination">
+        <button id="libraryReaderPrev" type="button" title="Page précédente" ${index<=0?'disabled':''}>←</button>
+        <label>Page <input id="libraryReaderPageNumber" type="number" min="1" max="${pages.length}" value="${index+1}"> / ${pages.length}</label>
+        <button id="libraryReaderNext" type="button" title="Page suivante" ${index>=pages.length-1?'disabled':''}>→</button>
+      </div>
+      <button id="libraryReaderSpreadToggle" class="${libraryPageExpanded?'':'hidden'}" type="button" title="Une ou deux pages">${spread?'▯▯':'▯'}</button>
+      <button id="libraryReaderExpand" type="button" title="${libraryPageExpanded?'Réduire':'Agrandir'}">${libraryPageExpanded?'🗗':'⛶'}</button>
+    </div>
+    <div class="library-reader-layout">
+      <aside id="libraryReaderTocPanel" class="library-reader-toc ${libraryReaderTocOpen?'':'hidden'}">
+        <div><strong>Sommaire</strong><button id="libraryReaderTocClose" type="button">×</button></div>
+        <nav id="libraryReaderTocList"></nav>
+      </aside>
+      <div id="libraryReaderPages" class="library-reader-pages ${spread?'is-spread':''}"></div>
+    </div>
+  </article>`;
+  const pageRoot=$('#libraryReaderPages');
+  pageRoot.appendChild(renderLibraryReaderSheet(page,index));
+  if(spread&&pages[index+1])pageRoot.appendChild(renderLibraryReaderSheet(pages[index+1],index+1));
+  const toc=$('#libraryReaderTocList');
+  pages.forEach((entry,i)=>{
+    const b=document.createElement('button');b.type='button';b.className=Number(entry.id)===Number(page.id)?'active':'';
+    b.innerHTML=`<span>${i+1}</span><strong>${esc(entry.title)}</strong>`;
+    b.onclick=()=>goLibraryReaderPage(notebook,i);toc.appendChild(b);
+  });
+  $('#libraryReaderBack').onclick=()=>{libraryEditorMode='write';renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#libraryReaderToc').onclick=()=>{libraryReaderTocOpen=!libraryReaderTocOpen;$('#libraryReaderTocPanel').classList.toggle('hidden',!libraryReaderTocOpen)};
+  $('#libraryReaderTocClose')?.addEventListener('click',()=>{libraryReaderTocOpen=false;$('#libraryReaderTocPanel').classList.add('hidden')});
+  const step=spread?2:1;
+  $('#libraryReaderPrev').onclick=()=>goLibraryReaderPage(notebook,index-step);
+  $('#libraryReaderNext').onclick=()=>goLibraryReaderPage(notebook,index+step);
+  $('#libraryReaderPageNumber').onchange=e=>goLibraryReaderPage(notebook,Math.max(0,Math.min(pages.length-1,Number(e.target.value)-1)));
+  $('#libraryReaderSpreadToggle').onclick=()=>{libraryReaderSpread=!libraryReaderSpread;renderLibraryReader(notebook,page,root)};
+  $('#libraryReaderExpand').onclick=libraryToggleExpanded;
+}
+function goLibraryReaderPage(notebook,index){
+  const pages=notebook?.entries||[];if(!pages.length)return;
+  const next=Math.max(0,Math.min(pages.length-1,Number(index)||0));
+  librarySelectedPageId=Number(pages[next].id);libraryEditorMode='read';
+  renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+}
+async function createLibraryPage(notebook){
+  await flushLibraryAutosave();
+  const result=await runUiAction('Impossible de créer la page',()=>api('/api/objective-library-entries',{method:'POST',body:JSON.stringify({section_id:notebook.id,title:'Nouvelle page',notes:LIBRARY_RICH_PREFIX,url:'',done:false})}));
+  if(!result.ok)return;
+  const entry={id:Number(result.value.id),section_id:Number(notebook.id),title:'Nouvelle page',url:'',notes:LIBRARY_RICH_PREFIX,done:0,order_index:(notebook.entries||[]).length+1};
+  notebook.entries=notebook.entries||[];notebook.entries.push(entry);
+  librarySelectedPageId=entry.id;librarySelectedNotebookId=Number(notebook.id);libraryEditorMode='write';
+  renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+  setTimeout(()=>{$('#libraryPageTitleInput')?.select();$('#libraryPageBody')?.focus()},20);
 }
