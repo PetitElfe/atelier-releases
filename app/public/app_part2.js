@@ -2188,28 +2188,97 @@ let libraryAutosaveTimerV12=null;
 let libraryAutosaveSerial=0;
 let libraryLastSavePromise=Promise.resolve();
 
-function libraryExportCurrentPage(page){
-  const data=libraryEditorData(page);
-  const safeName=(data.title||'Page').normalize('NFKC').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').slice(0,80)||'Page';
-  const html=librarySanitizeHtml(libraryRichPayload(data.notes));
-  const choice=window.prompt('Exporter cette page : entre PDF, HTML ou TXT','PDF');
-  if(!choice)return;
-  const type=choice.trim().toUpperCase();
-  if(type==='PDF'){
-    const printWindow=window.open('','_blank');
-    if(!printWindow){showUiError(new Error('Fenêtre bloquée'),'Autorise les fenêtres pour exporter le PDF');return}
-    printWindow.document.open();
-    printWindow.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(data.title)+'</title><style>@page{size:A4;margin:20mm}body{font:12pt Georgia,serif;color:#222}img{max-width:100%}h1{font-size:20pt}p{line-height:1.5}</style></head><body><h1>'+esc(data.title)+'</h1>'+html+'</body></html>');
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(()=>printWindow.print(),300);
-    return;
+// Export local autonome : aucun dialogue d'impression, aucune dépendance réseau.
+function libraryExportFilename(title){
+  return (String(title||'Page').normalize('NFKC').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').trim().slice(0,80)||'Page');
+}
+function libraryDownloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+function libraryPdfBytes(title,bodyText){
+  // PDF texte A4 multipage. WinAnsi préserve les accents français courants.
+  // Pour une fidélité complète des images/styles, utiliser l'export HTML.
+  const encode=text=>{
+    const special={'€':128,'‚':130,'ƒ':131,'„':132,'…':133,'†':134,'‡':135,'ˆ':136,'‰':137,'Š':138,'‹':139,'Œ':140,'Ž':142,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'˜':152,'™':153,'š':154,'›':155,'œ':156,'ž':158,'Ÿ':159};
+    return [...String(text)].map(c=>{const cp=c.codePointAt(0);return String.fromCharCode(special[c]??(cp<=255?cp:63))}).join('');
+  };
+  const escapePdf=text=>encode(text).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)').replace(/[\r\n]/g,' ');
+  const allLines=[];
+  const wrap=(text,max)=>{
+    const words=String(text).replace(/\t/g,'    ').split(/\s+/).filter(Boolean);
+    let line='';
+    for(const word of words){
+      if((line+' '+word).trim().length>max&&line){allLines.push(line);line=''}
+      if(word.length>max){
+        if(line){allLines.push(line);line=''}
+        for(let i=0;i<word.length;i+=max)allLines.push(word.slice(i,i+max));
+      }else line+=(line?' ':'')+word;
+    }
+    allLines.push(line);
+  };
+  for(const paragraph of String(bodyText||'').split(/\r?\n/)){
+    if(!paragraph.trim())allLines.push('');
+    else wrap(paragraph,82);
   }
-  if(!['TXT','HTML'].includes(type)){showUiError(new Error('Format inconnu'),'Choisis PDF, HTML ou TXT');return}
-  const text=type==='HTML'?'<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(data.title)+'</title></head><body><h1>'+esc(data.title)+'</h1>'+html+'</body></html>':(data.title+'\n\n'+($('#libraryPageBody')?.innerText||''));
-  const blob=new Blob([text],{type:type==='HTML'?'text/html;charset=utf-8':'text/plain;charset=utf-8'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=safeName+'.'+type.toLowerCase();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+  if(!allLines.length)allLines.push('');
+  const pages=[];for(let i=0;i<allLines.length;i+=44)pages.push(allLines.slice(i,i+44));
+  const objects=[null];
+  const reserve=()=>{objects.push(null);return objects.length-1};
+  const catalog=reserve(),tree=reserve(),font=reserve();
+  objects[font]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  const pageIds=[];
+  pages.forEach((lines,index)=>{
+    const pid=reserve(),streamId=reserve();pageIds.push(pid);
+    const commands=['BT','/F1 17 Tf','50 785 Td','('+escapePdf(title)+') Tj','/F1 11 Tf','0 -35 Td'];
+    for(const line of lines){commands.push('('+escapePdf(line)+') Tj','0 -15 Td')}
+    commands.push('ET');
+    const stream=commands.join('\n')+'\n';
+    objects[streamId]='<< /Length '+stream.length+' >>\nstream\n'+stream+'endstream';
+    objects[pid]='<< /Type /Page /Parent '+tree+' 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 '+font+' 0 R >> >> /Contents '+streamId+' 0 R >>';
+  });
+  objects[tree]='<< /Type /Pages /Kids ['+pageIds.map(id=>id+' 0 R').join(' ')+'] /Count '+pageIds.length+' >>';
+  objects[catalog]='<< /Type /Catalog /Pages '+tree+' 0 R >>';
+  let raw='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';const offsets=[0];
+  for(let i=1;i<objects.length;i++){offsets[i]=raw.length;raw+=i+' 0 obj\n'+objects[i]+'\nendobj\n'}
+  const xref=raw.length;raw+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';
+  for(let i=1;i<objects.length;i++)raw+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+  raw+='trailer\n<< /Size '+objects.length+' /Root '+catalog+' 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+  return Uint8Array.from(raw,c=>c.charCodeAt(0));
+}
+function libraryExportCurrentPage(page){
+  const data=libraryEditorData(page),name=libraryExportFilename(data.title);
+  const html=librarySanitizeHtml(libraryRichPayload(data.notes));
+  const plain=$('#libraryPageBody')?.innerText||'';
+  const popup=document.createElement('div');
+  popup.className='library-export-choices';
+  popup.style.cssText='display:flex;flex-wrap:wrap;gap:10px;margin-top:16px';
+  openModal('<h2>Exporter « '+esc(data.title)+' »</h2><p>Choisis un format. Le fichier sera enregistré dans tes téléchargements.</p><div id="libraryExportChoices"></div><div class="form-actions"><button id="libraryExportCancel" type="button">Annuler</button></div>');
+  const root=$('#libraryExportChoices');
+  const choices=[
+    {type:'pdf',label:'PDF · Document à lire',description:'Mise en page A4 simplifiée'},
+    {type:'html',label:'HTML · Page complète',description:'Conserve la mise en forme et les images intégrées'},
+    {type:'txt',label:'TXT · Texte brut',description:'Sans mise en forme'}
+  ];
+  for(const item of choices){
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='library-export-choice';
+    btn.style.cssText='display:block;width:100%;text-align:left;margin:8px 0;padding:12px;border-radius:8px';
+    btn.textContent=item.label+' — '+item.description;
+    btn.onclick=()=>{
+      try{
+        let blob;
+        if(item.type==='pdf')blob=new Blob([libraryPdfBytes(data.title,plain)],{type:'application/pdf'});
+        else if(item.type==='html')blob=new Blob(['<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(data.title)+'</title><style>body{max-width:780px;margin:40px auto;padding:20px;font:17px/1.6 Georgia,serif;color:#27221e}img{max-width:100%}</style></head><body><h1>'+esc(data.title)+'</h1>'+html+'</body></html>'],{type:'text/html;charset=utf-8'});
+        else blob=new Blob([data.title+'\n\n'+plain],{type:'text/plain;charset=utf-8'});
+        libraryDownloadBlob(blob,name+'.'+item.type);
+        closeModal();
+      }catch(err){showUiError(err,'Impossible d’exporter la page')}
+    };
+    root.appendChild(btn);
+  }
+  $('#libraryExportCancel').onclick=closeModal;
 }
 function libraryEditorData(page){
   return {
