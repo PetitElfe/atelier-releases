@@ -2544,6 +2544,7 @@ function libraryStepFind(step,existing=null){
   const label=$('#libraryFindCount');if(label)label.textContent=count?(libraryFindIndex+1)+' / '+count:'0 résultat';
 }
 function libraryWireFind(){
+  if(!$('#libraryFindInput'))return;
   $('#libraryFindInput').oninput=libraryUpdateFind;
   $('#libraryFindPrev').onclick=()=>libraryStepFind(-1);
   $('#libraryFindNext').onclick=()=>libraryStepFind(1);
