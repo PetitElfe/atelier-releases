@@ -2960,8 +2960,8 @@ document.addEventListener('keydown',event=>{
   if($('#libraryFindBar')&&!$('#libraryFindBar').classList.contains('hidden')){
     $('#libraryFindClose')?.click();event.preventDefault();return;
   }
-  if(libraryReaderTocOpen){$('#libraryReaderTocClose')?.click();event.preventDefault();return}
-  if(document.querySelector('.modal:not(.hidden),dialog[open]'))return;
+  if(libraryReaderTocOpen&&!$('#libraryReaderTocPanel')?.classList.contains('hidden')){$('#libraryReaderTocClose')?.click();event.preventDefault();return}
+  if(document.querySelector('dialog[open]'))return;
   libraryExitReading();event.preventDefault();
 });
 function renderLibraryReader(notebook,page,root){
