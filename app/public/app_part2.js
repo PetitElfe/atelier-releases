@@ -2744,7 +2744,14 @@ function renderLibraryPageEditor(notebook,page){
   $('#libraryInsertImage').onclick=()=>$('#libraryImageInput').click();
   $('#libraryImageInput').onchange=async e=>{await insertLibraryImage(e.target.files?.[0],page);scheduleLibraryAutosave(page,{immediate:true});e.target.value=''};
 
-  $('#libraryPageReader').onclick=async()=>{await flushLibraryAutosave(page);libraryEditorMode='read';libraryReaderTocOpen=false;renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#libraryPageReader').onclick=async()=>{
+    const captured=libraryEditorData(page);
+    const saved=await flushLibraryAutosave(page);
+    if(saved===false)return;
+    page.title=captured.title;page.notes=captured.notes;
+    libraryEditorMode='read';libraryReaderTocOpen=false;
+    renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+  };
   $('#librarySaveNow').onclick=async()=>{
     const button=$('#librarySaveNow');
     button.disabled=true;
