@@ -241,6 +241,10 @@ async function checkRuntimeCompatibility(){
   }
 }
 
+document.getElementById('globalHomeShortcut')?.addEventListener('click',()=>{
+  if(state.view==='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
+  showView('home');
+});
 function showView(view){
   const enteringLibrary=view==='library'&&state.view!=='library';
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
