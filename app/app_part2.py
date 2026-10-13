@@ -43,6 +43,13 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         with conn() as c:
+            if p == '/api/habits':
+                rows=[dict(row) for row in c.execute('SELECT * FROM habits WHERE archived=0 ORDER BY id')]
+                for row in rows:
+                    row['checked_dates']=[x['checked_date'] for x in c.execute('SELECT checked_date FROM habit_checks WHERE habit_id=? ORDER BY checked_date DESC LIMIT 90',(row['id'],))]
+                return self._json(rows)
+            if p == '/api/cycle-periods':
+                return self._json([dict(row) for row in c.execute('SELECT * FROM menstrual_periods ORDER BY start_date DESC,id DESC LIMIT 120')])
             if p == '/api/events':
                 start = q.get('start', ['1900-01-01'])[0]; end = q.get('end', ['2100-12-31'])[0]
                 rows = c.execute('SELECT * FROM events WHERE event_date <= ? ORDER BY event_date,start_time,id', (end,)).fetchall()
@@ -189,6 +196,23 @@ class Handler(BaseHTTPRequestHandler):
                 print('[Atelier] Import recette URL:', exc)
                 return self._json({'error':"Impossible de lire cette page. Vérifie le lien ou essaie une autre recette."},502)
         with conn() as c:
+            if p == '/api/habits':
+                title=str(body.get('title','')).strip()[:120]
+                if not title: return self._json({'error':'Le nom est requis.'},400)
+                freq='weekly' if body.get('frequency')=='weekly' else 'daily'
+                try: target=max(1,min(7,int(body.get('target_per_week',7 if freq=='daily' else 3))))
+                except (ValueError,TypeError): return self._json({'error':'Objectif hebdomadaire incorrect.'},400)
+                cur=c.execute('INSERT INTO habits(title,frequency,target_per_week,created_at,updated_at) VALUES(?,?,?,?,?)',(title,freq,target,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+            if p == '/api/cycle-periods':
+                try:
+                    start=date.fromisoformat(str(body.get('start_date','')))
+                    end=date.fromisoformat(str(body['end_date'])) if body.get('end_date') else None
+                except (ValueError,TypeError): return self._json({'error':'Dates invalides.'},400)
+                if end and (end<start or (end-start).days>20): return self._json({'error':'La période de règles ne peut pas dépasser 21 jours.'},400)
+                cur=c.execute('INSERT INTO menstrual_periods(start_date,end_date,notes,created_at) VALUES(?,?,?,?)',(start.isoformat(),end.isoformat() if end else None,str(body.get('notes',''))[:500],ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+        with conn() as c:
             if p == '/api/reminders':
                 title=(body.get('title') or '').strip()
                 remind_at=(body.get('remind_at') or '').strip()
@@ -320,6 +344,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        with conn() as c:
+            if len(parts)==4 and parts[:2]==['api','habits'] and parts[3]=='check':
+                try:
+                    hid=int(parts[2]); when=date.fromisoformat(str(body.get('date','')))
+                except (ValueError,TypeError): return self._json({'error':'Date invalide.'},400)
+                if not c.execute('SELECT 1 FROM habits WHERE id=? AND archived=0',(hid,)).fetchone():return self._json({'error':'Habitude introuvable.'},404)
+                if body.get('done',True):
+                    c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
+                else:c.execute('DELETE FROM habit_checks WHERE habit_id=? AND checked_date=?',(hid,when.isoformat()))
+                c.commit();return self._json({'ok':True})
+            if len(parts)==3 and parts[:2]==['api','habits']:
+                hid=int(parts[2]);title=str(body.get('title','')).strip()[:120]
+                if not title:return self._json({'error':'Nom requis.'},400)
+                freq='weekly' if body.get('frequency')=='weekly' else 'daily'
+                try: target=max(1,min(7,int(body.get('target_per_week',7))))
+                except (ValueError,TypeError): return self._json({'error':'Objectif invalide.'},400)
+                c.execute('UPDATE habits SET title=?,frequency=?,target_per_week=?,updated_at=? WHERE id=?',(title,freq,target,ts,hid))
+                c.commit();return self._json({'ok':True})
         with conn() as c:
             if len(parts)==3 and parts[0]=='api' and parts[1]=='recipe-books':
                 bid=int(parts[2]); book=c.execute('SELECT * FROM recipe_books WHERE id=?',(bid,)).fetchone()
@@ -635,6 +677,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==3 and parts[:2]==['api','habits']:
+                c.execute('UPDATE habits SET archived=1 WHERE id=?',(int(parts[2]),));c.commit();return self._json({'ok':True})
+            if len(parts)==3 and parts[:2]==['api','cycle-periods']:
+                c.execute('DELETE FROM menstrual_periods WHERE id=?',(int(parts[2]),));c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-nodes':
                 oid=int(parts[2]); node=c.execute('SELECT id FROM objective_nodes WHERE id=?',(oid,)).fetchone()
                 if not node: return self._json({'error':'Objectif introuvable.'},404)
