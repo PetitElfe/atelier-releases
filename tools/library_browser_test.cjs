@@ -224,7 +224,10 @@ async function api(path,method='GET',body){
   await page.locator('.habit-card').first().waitFor();
   assert.match(await page.locator('.habit-card').first().innerText(),/Marche quotidienne E2E/);
   await page.locator('.habit-card input[type="checkbox"]').first().check();
-  await page.waitForFunction(()=>document.querySelector('.habit-card-head small')?.textContent?.includes('1 / 7'));
+  await page.waitForTimeout(850);
+  console.log('HABIT LABEL AFTER CHECK:',JSON.stringify(await page.locator('.habit-card-head small').first().innerText()));
+  console.log('HABIT API:',JSON.stringify(await api('/api/habits')));
+  assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
   await page.locator('#cycleStart').fill('2026-08-01');
   await page.locator('#cycleForm button[type="submit"]').click();
   await page.locator('#cycleStart').fill('2026-08-29');
