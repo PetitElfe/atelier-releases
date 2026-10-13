@@ -151,6 +151,18 @@ async function api(path,method='GET',body){
   await page.locator('#libraryPageBody').waitFor();
   assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'X exits expanded reading');
   assert.ok(await page.locator('#libraryDomainQuickContext .library-head-books').count(),'Books beside domain title');
+  // Le mode écriture agrandi se ferme aussi par X ou Échap.
+  await page.locator('#libraryPageExpand').click();
+  await page.locator('#libraryWritingClose').click();
+  assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'Writing X exits expanded mode');
+  await page.locator('#libraryPageExpand').click();
+  await page.keyboard.press('Escape');
+  assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'Writing Escape exits expanded mode');
+  // Les liens à côté du domaine remplacent la grande colonne de gauche.
+  assert.equal(await page.locator('.library-domain-sidebar').evaluate(el=>getComputedStyle(el).display),'none');
+  await page.locator('#libraryQuickProgress').click();
+  await page.locator('#libraryDomainQuickContext [data-notebook-id]').first().click();
+  await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
   assert.ok(await page.locator('body').evaluate(el=>!el.classList.contains('library-page-expanded')),'Home does not leave expanded state');
 
