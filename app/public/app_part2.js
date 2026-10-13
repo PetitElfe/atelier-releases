@@ -2442,6 +2442,8 @@ function renderLibraryPageEditor(notebook,page){
       <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
       <div class="library-writing-actions">
         <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
+        <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
         <button id="libraryPageReader" type="button" title="Lecture tranquille">📖</button>
         <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
