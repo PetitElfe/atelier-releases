@@ -152,6 +152,9 @@ async function api(path,method='GET',body){
   assert.ok(Math.abs(spreadGeometry.tops[0]-spreadGeometry.tops[1])<3,'Spread vertical alignment unequal');
   await page.locator('#libraryReaderSpreadToggle').click();
   await page.locator('#libraryReaderExpand').click();
+  // Le sommaire occupe volontairement 235 px quand il est ouvert.
+  // Le fermer avant de mesurer le centrage dans toute la fenêtre du lecteur.
+  if(await page.locator('#libraryReaderTocPanel').isVisible())await page.locator('#libraryReaderTocClose').click();
   // À 100 %, la feuille ne doit pas déborder horizontalement du lecteur.
   const fit=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
     const sheet=el.getBoundingClientRect(),frame=document.querySelector('.library-reader-layout').getBoundingClientRect();
