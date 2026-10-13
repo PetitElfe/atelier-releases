@@ -2955,6 +2955,7 @@ function libraryToggleExpanded(){
     if(notebook&&page)renderLibraryReader(notebook,page,$('#libraryNotebookPages'));
   }else{
     const btn=$('#libraryPageExpand');if(btn){btn.textContent=libraryPageExpanded?'🗗':'⛶';btn.title=libraryPageExpanded?'Réduire la page':'Agrandir la page'}
+    $('#libraryWritingClose')?.classList.toggle('hidden',!libraryPageExpanded);
   }
 }
 function renderLibraryReaderSheet(page,index){
