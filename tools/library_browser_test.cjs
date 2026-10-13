@@ -40,6 +40,29 @@ async function api(path,method='GET',body){
   await page.waitForTimeout(1300);
   const status=await page.locator('#librarySaveState').textContent();
   assert.equal(status.trim(),'Enregistré','Save status after typing: '+status);
+  // Contrôle géométrique du centrage après changement de page.
+  await page.locator('#libraryPageReader').click();
+  for(const pageNumber of [1,2]){
+    await page.locator('#libraryReaderPageNumber').fill(String(pageNumber));
+    await page.locator('#libraryReaderPageNumber').press('Tab');
+    await page.locator('#libraryReaderPages .library-reader-sheet').first().waitFor();
+    const center=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+      const p=el.getBoundingClientRect(),container=document.querySelector('#libraryReaderPages').getBoundingClientRect();
+      return Math.abs((p.left+p.right)/2-(container.left+container.right)/2);
+    });
+    assert.ok(center<5,'Reading page '+pageNumber+' off-center by '+center+'px');
+  }
+  await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderSpreadToggle').click();
+  const spreadGeometry=await page.locator('#libraryReaderPages').evaluate(root=>{
+    const pages=[...root.querySelectorAll('.library-reader-sheet')].map(el=>el.getBoundingClientRect());
+    return {count:pages.length,widths:pages.map(p=>p.width),tops:pages.map(p=>p.top)};
+  });
+  assert.equal(spreadGeometry.count,2,'Expected two sheets in spread mode');
+  assert.ok(Math.abs(spreadGeometry.widths[0]-spreadGeometry.widths[1])<3,'Spread widths unequal');
+  assert.ok(Math.abs(spreadGeometry.tops[0]-spreadGeometry.tops[1])<3,'Spread vertical alignment unequal');
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
