@@ -1,0 +1,50 @@
+// Reproduit le bug signalé : écrire -> Enregistré -> Accueil -> Bibliothèque.
+const { chromium } = require('playwright');
+const { spawn } = require('node:child_process');
+const { mkdtempSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const { join, resolve } = require('node:path');
+const assert = require('node:assert/strict');
+const port = 18766, base = 'http://127.0.0.1:' + port;
+const data = mkdtempSync(join(tmpdir(), 'atelier-browser-'));
+const appPath = resolve(__dirname, '..', 'app', 'app.py');
+const proc = spawn('python', [appPath], {env:{...process.env,ATELIER_DATA_DIR:data,ATELIER_NO_BROWSER:'1',ATELIER_PORT:String(port)},stdio:'ignore'});
+async function waitReady(){
+ for(let i=0;i<100;i++){try{if((await fetch(base+'/api/runtime-version')).ok)return}catch{} await new Promise(r=>setTimeout(r,150))}
+ throw Error('Atelier did not start');
+}
+async function api(path,method='GET',body){
+ const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+ if(!r.ok)throw Error(path+': '+r.status);
+ return r.json();
+}
+(async()=>{
+ let browser;
+ try {
+  await waitReady();
+  const domain=await api('/api/objective-nodes','POST',{node_type:'domain',title:'Test E2E',description:'',progress:0,status:'active'});
+  const notebook=await api('/api/objective-library-sections','POST',{node_id:domain.id,title:'Carnet E2E',section_type:'notes'});
+  await api('/api/objective-library-entries','POST',{section_id:notebook.id,title:'Page E2E',notes:'@@ATELIER_RICH_V1@@',url:'',done:false});
+  browser=await chromium.launch({headless:true});
+  const page=await browser.newPage();
+  page.on('pageerror',e=>console.error('PAGE ERROR:',e.message));
+  await page.goto(base,{waitUntil:'domcontentloaded'});
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
+  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  const editor=page.locator('#libraryPageBody');
+  await editor.waitFor();
+  await editor.fill('Test sauvegarde navigateur 0124');
+  await page.waitForTimeout(1300);
+  const status=await page.locator('#librarySaveState').textContent();
+  assert.equal(status.trim(),'Enregistré','Save status after typing: '+status);
+  await page.locator('.tabs button[data-view="home"]').click();
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#libraryPageBody').waitFor();
+  const restored=await page.locator('#libraryPageBody').innerText();
+  assert.ok(restored.includes('Test sauvegarde navigateur 0124'),'Text missing after returning from Accueil: '+restored);
+  const back=await api('/api/objective-library?node_id='+domain.id);
+  assert.ok(back.sections[0].entries[0].notes.includes('Test sauvegarde navigateur 0124'),'Text missing in persisted database');
+  console.log('OK — editor saves and survives navigation');
+ } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
+})().catch(e=>{console.error(e);process.exitCode=1});
