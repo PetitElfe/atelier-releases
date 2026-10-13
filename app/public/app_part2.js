@@ -2185,32 +2185,67 @@ function libraryEditorData(page){
     notes:serializeLibraryRichEditor($('#libraryPageBody'))
   };
 }
+// 0.12.2 — Sauvegardes sérialisées et vérifiées avant confirmation visuelle.
+const librarySaveQueues=new Map();
+const libraryConfirmedSnapshots=new Map();
+
 function libraryApplySavedData(page,data){
   if(!page||!data)return;
-  page.title=data.title||'Sans titre';page.notes=data.notes||LIBRARY_RICH_PREFIX;
-  librarySavedSnapshot=JSON.stringify(data);libraryPageDirty=false;
-  const stateEl=$('#librarySaveState');if(stateEl){stateEl.textContent='Enregistré';stateEl.classList.remove('is-dirty','is-saving')}
-  const listItem=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
-  if(listItem)listItem.querySelector('strong').textContent=page.title;
+  page.title=data.title||'Sans titre';
+  page.notes=data.notes||LIBRARY_RICH_PREFIX;
+  libraryConfirmedSnapshots.set(Number(page.id),JSON.stringify(data));
+  if(Number(librarySelectedPageId)===Number(page.id)&&$('#libraryPageBody')){
+    const visible=libraryEditorData(page);
+    librarySavedSnapshot=JSON.stringify(data);
+    libraryPageDirty=JSON.stringify(visible)!==librarySavedSnapshot;
+    const stateEl=$('#librarySaveState');
+    if(stateEl){
+      stateEl.textContent=libraryPageDirty?'Modification non enregistrée':'Enregistré';
+      stateEl.classList.toggle('is-dirty',libraryPageDirty);
+      stateEl.classList.remove('is-saving');
+    }
+    const item=[...document.querySelectorAll('.library-page-list-item')].find(x=>Number(x.dataset.pageId)===Number(page.id));
+    if(item)item.querySelector('strong').textContent=page.title;
+  }
 }
 function saveLibraryPageData(page,data,{silent=false}={}){
   if(!page||!data)return Promise.resolve(false);
-  const serial=++libraryAutosaveSerial;
-  const stateEl=$('#librarySaveState');if(stateEl&&!silent){stateEl.textContent='Enregistrement…';stateEl.classList.add('is-saving')}
-  const work=runUiAction('Impossible d’enregistrer la page',()=>api(`/api/objective-library-entries/${page.id}`,{method:'PUT',body:JSON.stringify(data)}))
-    .then(result=>{
-      if(!result.ok){if(stateEl&&!silent){stateEl.textContent='Erreur';stateEl.classList.remove('is-saving')}return false}
-      if(serial===libraryAutosaveSerial||Number(librarySelectedPageId)!==Number(page.id))libraryApplySavedData(page,data);
+  const id=Number(page.id),nodeId=Number(librarySelectedDomainId);
+  // Conserver immédiatement la version en mémoire, même si la navigation détruit l'éditeur.
+  page.title=data.title;page.notes=data.notes;
+  const existing=librarySaveQueues.get(id)||Promise.resolve();
+  const work=existing.catch(()=>false).then(async()=>{
+    const stateEl=Number(librarySelectedPageId)===id?$('#librarySaveState'):null;
+    if(stateEl&&!silent){stateEl.textContent='Enregistrement…';stateEl.classList.add('is-saving')}
+    try{
+      await api(`/api/objective-library-entries/${id}`,{method:'PUT',body:JSON.stringify(data)});
+      // Le backend ne renvoie pas les données. Lire la base avant d'afficher « Enregistré ».
+      const response=await api(`/api/objective-library?node_id=${encodeURIComponent(nodeId)}`);
+      const persisted=(response.sections||[]).flatMap(x=>x.entries||[]).find(x=>Number(x.id)===id);
+      if(!persisted||persisted.title!==data.title||persisted.notes!==data.notes){
+        throw new Error('Le contenu relu ne correspond pas au texte envoyé.');
+      }
+      libraryApplySavedData(page,data);
       return true;
-    });
-  libraryLastSavePromise=work.catch(()=>false);
+    }catch(err){
+      const currentEl=Number(librarySelectedPageId)===id?$('#librarySaveState'):null;
+      if(currentEl){currentEl.textContent='Non enregistré — réessayer';currentEl.classList.add('is-dirty');currentEl.classList.remove('is-saving')}
+      showUiError(err,'La page n’a pas été enregistrée');
+      return false;
+    }
+  });
+  librarySaveQueues.set(id,work);
+  libraryLastSavePromise=work;
   return work;
 }
 function scheduleLibraryAutosave(page,{immediate=false}={}){
   if(!page)return;
   clearTimeout(libraryAutosaveTimerV12);
   const data=libraryEditorData(page);
-  libraryPageDirty=JSON.stringify(data)!==librarySavedSnapshot;
+  // Protéger aussi les changements de page déclenchés avant la fin du délai.
+  page.title=data.title;page.notes=data.notes;
+  const saved=libraryConfirmedSnapshots.get(Number(page.id))||librarySavedSnapshot;
+  libraryPageDirty=JSON.stringify(data)!==saved;
   const stateEl=$('#librarySaveState');
   if(stateEl){
     stateEl.textContent=libraryPageDirty?'Sauvegarde…':'Enregistré';
@@ -2224,7 +2259,8 @@ function flushLibraryAutosave(page=null){
   const current=page||libraryPageById(librarySelectedPageId);
   if(!current||!$('#libraryPageBody'))return libraryLastSavePromise;
   const data=libraryEditorData(current);
-  if(JSON.stringify(data)===librarySavedSnapshot)return libraryLastSavePromise;
+  const saved=libraryConfirmedSnapshots.get(Number(current.id))||librarySavedSnapshot;
+  if(JSON.stringify(data)===saved)return librarySaveQueues.get(Number(current.id))||Promise.resolve(true);
   return saveLibraryPageData(current,data);
 }
 function markLibraryPageDirty(page){scheduleLibraryAutosave(page)}
@@ -2237,13 +2273,12 @@ function libraryPersistOnExit(){
   const page=libraryPageById(librarySelectedPageId),body=$('#libraryPageBody');
   if(!page||!body)return;
   const data=libraryEditorData(page);
-  if(JSON.stringify(data)===librarySavedSnapshot)return;
+  page.title=data.title;page.notes=data.notes;
+  if(JSON.stringify(data)===(libraryConfirmedSnapshots.get(Number(page.id))||librarySavedSnapshot))return;
   try{
     fetch(`/api/objective-library-entries/${page.id}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(data),
-      keepalive:true
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data),keepalive:true
     });
   }catch(_){}
 }
@@ -2409,6 +2444,7 @@ function renderLibraryPageEditor(notebook,page){
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
   body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
   librarySavedSnapshot=JSON.stringify({title:page.title||'Sans titre',notes:libraryNotesAreRich(page.notes)?page.notes:LIBRARY_RICH_PREFIX+libraryPageHtml(page)});
+  if(!libraryConfirmedSnapshots.has(Number(page.id)))libraryConfirmedSnapshots.set(Number(page.id),librarySavedSnapshot);
   libraryPageDirty=false;librarySelectedRichLink=null;
   const notebookPanel=$('#libraryNotebookPanel');notebookPanel?.classList.toggle('library-notebook-expanded',libraryPageExpanded);
 
@@ -2560,7 +2596,7 @@ function persistLibraryBeforeNavigation(){
   if(!page||!body)return;
   const data=libraryEditorData(page);
   page.title=data.title;page.notes=data.notes;
-  librarySavedSnapshot=JSON.stringify(data);libraryPageDirty=false;
+  libraryPageDirty=true;
   saveLibraryPageData(page,data,{silent:true});
 }
 function libraryOpenWriteLink(a,page){

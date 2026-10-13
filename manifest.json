@@ -1,5 +1,5 @@
 {
-  "version": "0.12.1",
+  "version": "0.12.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f6ee69bf1c4b27a242266ccb5aeb4aa8c8306345b9ebe4ff7335b8c940452b81"
+      "sha256": "f482d06e4ee83158e42999dcf951d5909861dad7e03317deb2b1e2ddd5c46274"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "a25092ac39727bce5a1dc0ac9329d8a4cb2d7d6adb42b346fb0f251297a7b3a3"
+      "sha256": "fcc699496695b1c3ee0e034afcc5defb72855f330853708ad556b6015df68d6a"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f5426ad3bb9e001a21b235feb581722dae3e13d9084879a7fc07b3470a4c0e7c"
+      "sha256": "a4a5e264b6b6590640498ff1039f46c288815d87194a455b7e19aaa83a76c7d1"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.1 : sauvegarde fiable avant navigation, annuler/rétablir interne, liens actifs en écriture, lecture plus large avec double page optionnelle et création de page sans saut."
+  "notes": "0.12.2 : sauvegardes sérialisées, vérification de la persistance et protection du texte à la navigation."
 }
