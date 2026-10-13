@@ -58,6 +58,34 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Une feuille supplémentaire est toujours créée explicitement.
+  const beforeA4=await api('/api/objective-library?node_id='+domain.id);
+  const previousId=beforeA4.sections[0].entries[0].id;
+  await page.locator('#libraryAddA4Sheet').click();
+  await page.locator('.library-page-list-item').nth(1).waitFor();
+  await page.locator('.library-page-list-item').nth(1).waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelectorAll('.library-page-list-item').length===2&&document.querySelectorAll('.library-page-list-item')[1].classList.contains('active'));
+  await page.locator('#libraryPageBody').waitFor();
+  await page.locator('#libraryPageBody').fill('Texte deuxième feuille A4');
+  await page.locator('#librarySaveNow').click();
+  await page.waitForTimeout(850);
+  const afterA4=await api('/api/objective-library?node_id='+domain.id);
+  assert.equal(afterA4.sections[0].entries.length,2,'Manual A4 creates precisely one new page');
+  assert.ok(afterA4.sections[0].entries.find(e=>e.id===previousId)?.notes.includes('Brouillon 0124'),'Previous page survived: '+JSON.stringify(afterA4.sections[0].entries.map(e=>({id:e.id,title:e.title,notes:e.notes.slice(0,160)}))));
+  assert.ok(afterA4.sections[0].entries.some(e=>e.notes.includes('Texte deuxième feuille A4')),'Second sheet saved');
+  await page.locator('.library-page-list-item').first().click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Annuler / rétablir après la saisie, sans attendre le délai de l'historique.
+  await page.locator('#libraryPageBody').fill('Etat A de l editeur');
+  await page.waitForTimeout(500);
+  await page.locator('#libraryPageBody').fill('Etat B de l editeur');
+  await page.locator('.library-format-btn[data-command="undo"]').click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Etat A de l editeur/,'Undo should work on first click');
+  await page.locator('.library-format-btn[data-command="redo"]').click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Etat B de l editeur/,'Redo should restore latest edit');
+  // Conserver les textes pour les tests d'export à suivre.
+  await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
+  await page.locator('#librarySaveNow').click();
   // Vérifier les trois téléchargements sans boîte d'impression.
   for(const format of ['HTML','TXT','PDF']){
     await page.locator('#libraryExportPage').click();
@@ -66,7 +94,25 @@ async function api(path,method='GET',body){
     const download=await downloadPromise;
     assert.ok(download.suggestedFilename().toLowerCase().endsWith('.'+format.toLowerCase()),'Wrong export name: '+download.suggestedFilename());
   }
-  assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
+  // Mise en forme de la sélection uniquement.
+  await page.locator('#libraryPageBody').fill('Texte gras et texte normal');
+  await page.locator('#libraryPageBody').evaluate(el=>{
+    const first=el.firstChild;
+    const sel=window.getSelection(),range=document.createRange();
+    range.setStart(first,0);range.setEnd(first,10);sel.removeAllRanges();sel.addRange(range);
+    el.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
+  });
+  await page.locator('.library-format-btn[data-command="bold"]').click();
+  const formatted=await page.locator('#libraryPageBody').innerHTML();
+  assert.ok(formatted.includes('Texte gras') && /<(?:b|strong)\b|font-weight\s*:\s*(?:bold|700)/i.test(formatted),'Selected words should be bold: '+formatted);
+  assert.ok(!/<(?:b|strong)[^>]*>[^<]*texte normal/i.test(formatted),'Other words should remain normal');
+  await page.locator('#librarySaveNow').click();
+  // Lecture, retour à l'écriture et navigation entre feuilles.
+  await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderNext').click();
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
+    assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
