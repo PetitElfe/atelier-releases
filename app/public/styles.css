@@ -1126,3 +1126,20 @@ body.library-page-expanded{overflow:hidden}
 body.library-page-expanded .topbar{display:flex!important;position:fixed!important;top:0;left:0;right:0;z-index:10010;min-height:66px}
 body.library-page-expanded .library-notebook-expanded{top:68px!important;height:calc(100vh - 68px)!important}
 @media(max-width:900px){.library-domain-title-row{align-items:flex-start;gap:8px}.library-domain-quick-context{width:100%}.top-brand #globalHomeShortcut{width:32px;height:32px}}
+
+/* 0.13.5 — navigation dans l'en-tête : libérer toute la largeur du carnet */
+.library-domain-layout{grid-template-columns:minmax(0,1fr)!important;gap:0}
+.library-domain-sidebar{display:none!important}
+.library-domain-main,.library-notebook-panel,.library-notebook-workspace{min-width:0;width:100%;max-width:none}
+.library-domain-quick-context{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.library-head-progress{font:inherit;text-align:left;cursor:pointer;color:inherit;border:1px solid #665039;background:#29221c;border-radius:8px;padding:7px 10px;width:170px;min-width:160px}
+.library-head-progress .library-progress-linear-track{display:block;width:100%;height:7px}
+.library-head-books button.library-head-book{cursor:pointer;color:#e6d6bf;background:#2b231e}
+.library-head-books button.library-head-book:hover,.library-head-books button.library-head-book.active{background:#6e573c;color:#fff;border-color:#b99b70}
+.library-domain-main{margin-inline:auto}
+.library-reader-pages:not(.is-spread){display:grid!important;grid-template-columns:minmax(0,1fr)!important;justify-items:center!important;place-content:start center;width:100%!important;max-width:none!important;margin:0 auto!important}
+.library-reader-pages:not(.is-spread)>.library-reader-sheet{width:min(720px,100%)!important;margin-inline:auto!important;justify-self:center!important}
+.library-reader-pages.is-spread{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;justify-items:center!important;align-items:start!important;margin-inline:auto!important;max-width:1500px!important}
+.library-reader-pages.is-spread>.library-reader-sheet{width:min(720px,100%)!important;max-width:100%!important;justify-self:center!important;margin:0!important}
+.library-reader-pages.is-spread>.library-reader-sheet:only-child{grid-column:1/-1;justify-self:center!important}
+@media(max-width:960px){.library-reader-pages.is-spread{grid-template-columns:minmax(0,1fr)}}

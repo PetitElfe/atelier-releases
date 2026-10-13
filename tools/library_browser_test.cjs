@@ -30,17 +30,19 @@ async function api(path,method='GET',body){
   const pageErrors=[];
   page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await page.locator('.tabs button[data-view="library"]').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
-  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   const editor=page.locator('#libraryPageBody');
   await editor.waitFor();
   await editor.fill('Test sauvegarde navigateur 0124');
   await page.waitForTimeout(1300);
   const status=await page.locator('#librarySaveState').textContent();
   assert.equal(status.trim(),'Enregistré','Save status after typing: '+status);
-  await page.locator('.tabs button[data-view="home"]').click();
-  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   const restored=await page.locator('#libraryPageBody').innerText();
   assert.ok(restored.includes('Test sauvegarde navigateur 0124'),'Text missing after returning from Accueil: '+restored);
@@ -48,15 +50,17 @@ async function api(path,method='GET',body){
   assert.ok(back.sections[0].entries[0].notes.includes('Test sauvegarde navigateur 0124'),'Text missing in persisted database');
   // Tester aussi la navigation avant la fin des 650 ms d'autosauvegarde.
   await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
-  await page.locator('.tabs button[data-view="home"]').click();
-  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   await page.waitForTimeout(1500);
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('.tabs button[data-view="library"]').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
-  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   // Une feuille supplémentaire est toujours créée explicitement.
   const beforeA4=await api('/api/objective-library?node_id='+domain.id);
@@ -151,6 +155,18 @@ async function api(path,method='GET',body){
   await page.locator('#libraryPageBody').waitFor();
   assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'X exits expanded reading');
   assert.ok(await page.locator('#libraryDomainQuickContext .library-head-books').count(),'Books beside domain title');
+  // Le mode écriture agrandi se ferme aussi par X ou Échap.
+  await page.locator('#libraryPageExpand').click();
+  await page.locator('#libraryWritingClose').click();
+  assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'Writing X exits expanded mode');
+  await page.locator('#libraryPageExpand').click();
+  await page.keyboard.press('Escape');
+  assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'Writing Escape exits expanded mode');
+  // Les liens à côté du domaine remplacent la grande colonne de gauche.
+  assert.equal(await page.locator('.library-domain-sidebar').evaluate(el=>getComputedStyle(el).display),'none');
+  await page.locator('#libraryQuickProgress').click();
+  await page.locator('#libraryDomainQuickContext [data-notebook-id]').first().click();
+  await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
   assert.ok(await page.locator('body').evaluate(el=>!el.classList.contains('library-page-expanded')),'Home does not leave expanded state');
 

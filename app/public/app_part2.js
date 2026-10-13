@@ -1178,7 +1178,19 @@ function renderLibraryDomain(){
   if(quick){
     const books=libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections||[]:[];
     const pct=libraryProgressForDomain(domain);
-    quick.innerHTML='<div class="library-head-progress"><strong>Progression : '+pct+' %</strong><div class="library-progress-linear-track"><span style="width:'+pct+'%"></span></div></div><div class="library-head-books"><span>Carnets :</span> '+(books.length?books.map(book=>'<span class="library-head-book">'+esc(book.title)+'</span>').join(' '):'<span>Aucun carnet</span>')+'</div>';
+    quick.innerHTML='<button type="button" id="libraryQuickProgress" class="library-head-progress"><strong>Progression : '+pct+' %</strong><span class="library-progress-linear-track"><span style="width:'+pct+'%"></span></span></button><div class="library-head-books"><span>Carnets :</span> '+books.map(book=>'<button type="button" class="library-head-book'+(Number(librarySelectedNotebookId)===Number(book.id)?' active':'')+'" data-notebook-id="'+Number(book.id)+'">'+esc(book.title)+'</button>').join(' ')+' <button type="button" id="libraryQuickAddNotebook" class="library-head-book" title="Ajouter un carnet">＋</button></div>';
+    $('#libraryQuickProgress').onclick=async()=>{
+      if(librarySelectedNotebookId&&libraryEditorMode==='write'&&await flushLibraryAutosave()===false)return;
+      libraryLeaveExpanded();librarySelectedNotebookId=null;librarySelectedPageId=null;libraryEditorMode='write';renderLibraryDomain();
+    };
+    quick.querySelectorAll('[data-notebook-id]').forEach(button=>button.onclick=async()=>{
+      if(librarySelectedNotebookId&&libraryEditorMode==='write'&&await flushLibraryAutosave()===false)return;
+      libraryLeaveExpanded();librarySelectedNotebookId=Number(button.dataset.notebookId);
+      const notebook=libraryNotebookById(librarySelectedNotebookId);
+      librarySelectedPageId=(notebook?.entries||[])[0]?.id||null;libraryEditorMode='write';
+      renderLibraryDomain();
+    });
+    $('#libraryQuickAddNotebook').onclick=()=>$('#addLibraryNotebook')?.click();
   }
   const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
   $('#libraryDomainDescription').textContent=mainGoal?`Objectif principal : ${mainGoal.title}`:(domain.description||'Cet espace est à toi : ajoute seulement ce dont tu as besoin.');
@@ -2628,6 +2640,7 @@ function renderLibraryPageEditor(notebook,page){
         <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
         <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
         <button id="libraryAddA4Sheet" type="button" title="Créer manuellement la feuille A4 suivante">+ Feuille A4</button>
+        <button id="libraryWritingClose" type="button" title="Fermer l'affichage agrandi (Échap)" aria-label="Fermer l'affichage agrandi" class="${libraryPageExpanded?'':'hidden'}">×</button>
         <button id="libraryPageReader" type="button" title="Ouvrir le mode lecture">📖 Lire</button>
         <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
@@ -2780,6 +2793,7 @@ function renderLibraryPageEditor(notebook,page){
     if(!await flushLibraryAutosave(page))return;
     await createLibraryPage(notebook);
   };
+  $('#libraryWritingClose').onclick=()=>{libraryLeaveExpanded();renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
   $('#libraryPageExpand').onclick=libraryToggleExpanded;
   $('#libraryPageDoneToggle').onclick=async()=>{
     await flushLibraryAutosave(page);
@@ -2941,6 +2955,7 @@ function libraryToggleExpanded(){
     if(notebook&&page)renderLibraryReader(notebook,page,$('#libraryNotebookPages'));
   }else{
     const btn=$('#libraryPageExpand');if(btn){btn.textContent=libraryPageExpanded?'🗗':'⛶';btn.title=libraryPageExpanded?'Réduire la page':'Agrandir la page'}
+    $('#libraryWritingClose')?.classList.toggle('hidden',!libraryPageExpanded);
   }
 }
 function renderLibraryReaderSheet(page,index){
@@ -2961,7 +2976,13 @@ function libraryExitReading(){
   renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
 }
 document.addEventListener('keydown',event=>{
-  if(event.key!=='Escape'||state.view!=='library'||libraryEditorMode!=='read')return;
+  if(event.key!=='Escape'||state.view!=='library')return;
+  if(libraryEditorMode==='write'){
+    if($('#libraryFindBar')&&!$('#libraryFindBar').classList.contains('hidden')){$('#libraryFindClose')?.click();event.preventDefault();return}
+    if(libraryPageExpanded){libraryLeaveExpanded();renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));event.preventDefault()}
+    return;
+  }
+  if(libraryEditorMode!=='read')return;
   if($('#libraryFindBar')&&!$('#libraryFindBar').classList.contains('hidden')){
     $('#libraryFindClose')?.click();event.preventDefault();return;
   }
