@@ -52,15 +52,6 @@ async function api(path,method='GET',body){
     });
     assert.ok(center<5,'Reading page '+pageNumber+' off-center by '+center+'px');
   }
-  await page.locator('#libraryReaderExpand').click();
-  await page.locator('#libraryReaderSpreadToggle').click();
-  const spreadGeometry=await page.locator('#libraryReaderPages').evaluate(root=>{
-    const pages=[...root.querySelectorAll('.library-reader-sheet')].map(el=>el.getBoundingClientRect());
-    return {count:pages.length,widths:pages.map(p=>p.width),tops:pages.map(p=>p.top)};
-  });
-  assert.equal(spreadGeometry.count,2,'Expected two sheets in spread mode');
-  assert.ok(Math.abs(spreadGeometry.widths[0]-spreadGeometry.widths[1])<3,'Spread widths unequal');
-  assert.ok(Math.abs(spreadGeometry.tops[0]-spreadGeometry.tops[1])<3,'Spread vertical alignment unequal');
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
@@ -147,6 +138,19 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
   await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderPageNumber').fill('1');
+  await page.locator('#libraryReaderPageNumber').press('Tab');
+  await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderSpreadToggle').click();
+  const spreadGeometry=await page.locator('#libraryReaderPages').evaluate(root=>{
+    const pages=[...root.querySelectorAll('.library-reader-sheet')].map(el=>el.getBoundingClientRect());
+    return {count:pages.length,widths:pages.map(p=>p.width),tops:pages.map(p=>p.top)};
+  });
+  assert.equal(spreadGeometry.count,2,'Expected two sheets in spread mode');
+  assert.ok(Math.abs(spreadGeometry.widths[0]-spreadGeometry.widths[1])<3,'Spread widths unequal');
+  assert.ok(Math.abs(spreadGeometry.tops[0]-spreadGeometry.tops[1])<3,'Spread vertical alignment unequal');
+  await page.locator('#libraryReaderSpreadToggle').click();
+  await page.locator('#libraryReaderExpand').click();
   // À 100 %, la feuille ne doit pas déborder horizontalement du lecteur.
   const fit=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
     const sheet=el.getBoundingClientRect(),frame=document.querySelector('.library-reader-layout').getBoundingClientRect();
