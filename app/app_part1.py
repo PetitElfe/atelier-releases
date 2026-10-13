@@ -183,6 +183,31 @@ CREATE TABLE IF NOT EXISTS objective_library_entries (
   updated_at TEXT NOT NULL,
   FOREIGN KEY(section_id) REFERENCES objective_library_sections(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS habits (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ frequency TEXT NOT NULL DEFAULT 'daily' CHECK(frequency IN ('daily','weekly')),
+ target_per_week INTEGER NOT NULL DEFAULT 7,
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS habit_checks (
+ habit_id INTEGER NOT NULL,
+ checked_date TEXT NOT NULL,
+ completed_at TEXT NOT NULL,
+ PRIMARY KEY(habit_id,checked_date),
+ FOREIGN KEY(habit_id) REFERENCES habits(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS menstrual_periods (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ start_date TEXT NOT NULL,
+ end_date TEXT,
+ notes TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_habit_checks_date ON habit_checks(checked_date);
+CREATE INDEX IF NOT EXISTS idx_menstrual_period_start ON menstrual_periods(start_date);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);
