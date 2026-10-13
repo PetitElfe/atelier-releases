@@ -162,7 +162,7 @@ async function api(path,method='GET',body){
   });
   assert.ok(fit.sheetWidth<=fit.frameWidth,'Reader sheet overflows viewport at 100%: '+JSON.stringify(fit));
   const position=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
-    const frame=document.querySelector('.library-reader-layout').getBoundingClientRect(),sheet=el.getBoundingClientRect();
+    const frame=document.querySelector('#libraryReaderPages').getBoundingClientRect(),sheet=el.getBoundingClientRect();
     return {offset:Math.abs((sheet.left+sheet.right)/2-(frame.left+frame.right)/2),sheetWidth:sheet.width};
   });
   assert.ok(position.offset<24,'Reading sheet must be centered, got '+JSON.stringify(position));
