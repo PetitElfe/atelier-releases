@@ -1,5 +1,5 @@
 {
-  "version": "0.12.7",
+  "version": "0.13.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f9c67c0f4df0339ee19b9fe92674719f77d5e8e77f113c86e7480a313a31a6d6"
+      "sha256": "d84c9e596c7d6a94e5f74579ef8d8912a807b0d28582474900ad35dfb3edfcf4"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "35b52cadea19afa0fb4fe6c30f0ace0d7dd86176120e4e5abf474e4a5522a631"
+      "sha256": "68e4c2a7b7ebfaecf5e3b119d1d174580c8667729946a4edad47115a4e5df920"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "890013c57a63eb75a4a6e7276905b15c5acf2ed58ae88ef2a178de0acc510816"
+      "sha256": "0595923e770ecadb522b8c9a822222c0286aae688bebf713013f3fa59bb07d75"
     },
     {
       "path": "public/styles.css",
-      "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
+      "sha256": "8ad082a097b0103390e191b49292b48f85adba384c8fd1955cc57e852107d574"
     }
   ],
-  "notes": "0.12.7 : menu d'export PDF HTML TXT avec téléchargement direct, sans impression."
+  "notes": "0.13.0 : feuilles de carnet A4 ajoutées manuellement, mise en page adaptée et tests de conservation des textes."
 }
