@@ -1,5 +1,5 @@
 {
-  "version": "0.12.3",
+  "version": "0.12.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "01a507eda916863d2c56c6d24b13985c877640445bb13e272692d67ccf33f057"
+      "sha256": "6539836172e0b3f4ec57cf655d124ed57a665d5a316601339186fe7548f15e4a"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "fcc699496695b1c3ee0e034afcc5defb72855f330853708ad556b6015df68d6a"
+      "sha256": "5ea95d6faaf514cff2addf619dc30113a85b37f7e19b886df19b39df7f594504"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "905ae825709faed5727399b88259548690d5970f91d5567f8b16231a1fd8d80b"
+      "sha256": "f77be458c1d3da0e82f5c39db6eab375257b775a40d0cc19f31c790a66237177"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.3 : relecture depuis le serveur au retour dans la Bibliothèque et suppression de reconstructions inutiles hors de la Bibliothèque."
+  "notes": "0.12.4 : brouillons de secours locaux par page et protection contre les pertes lors des changements de vue."
 }
