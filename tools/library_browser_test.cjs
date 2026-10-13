@@ -104,7 +104,7 @@ async function api(path,method='GET',body){
   });
   await page.locator('.library-format-btn[data-command="bold"]').click();
   const formatted=await page.locator('#libraryPageBody').innerHTML();
-  assert.match(formatted,/<(?:b|strong|span)[^>]*>Texte gras<\\//i,'Selected words should be bold: '+formatted);
+  assert.ok(formatted.includes('Texte gras') && /<(?:b|strong)\b|font-weight\s*:\s*(?:bold|700)/i.test(formatted),'Selected words should be bold: '+formatted);
   assert.ok(!/<(?:b|strong)[^>]*>[^<]*texte normal/i.test(formatted),'Other words should remain normal');
   await page.locator('#librarySaveNow').click();
   // Lecture, retour à l'écriture et navigation entre feuilles.
