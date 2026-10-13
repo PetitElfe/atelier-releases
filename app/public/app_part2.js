@@ -2013,7 +2013,9 @@ function renderLibraryPageEditor(notebook,page){
   }else if(durableDraft)libraryClearConfirmedDraft(page,serverData);
   body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
   reading.innerHTML='';reading.appendChild(renderLibraryReadHtml(page));
-  librarySavedSnapshot=libraryCurrentSnapshot(page);libraryPageDirty=false;librarySelectedRichLink=null;
+  // Le texte restauré depuis un brouillon n'est pas une sauvegarde serveur confirmée.
+  // Comparer au dernier état fourni par l'API, puis déclencher une véritable sauvegarde.
+  librarySavedSnapshot=JSON.stringify(serverData);libraryPageDirty=false;librarySelectedRichLink=null;
   markLibraryPageDirty(page);
 
   const backlinksRoot=$('#libraryBacklinks>div');
