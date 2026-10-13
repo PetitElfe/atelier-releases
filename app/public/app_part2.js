@@ -2614,8 +2614,9 @@ function renderLibraryPageEditor(notebook,page){
   const backlinks=libraryBacklinks(page.id);
   root.innerHTML=`<article class="library-writing-page${page.done?' is-done':''}">
     <div class="library-writing-topbar">
-      <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
+      <div class="library-writing-heading"><input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page"><span class="library-writing-context">Carnet : ${esc(notebook.title)} · Domaine : ${esc(objectiveNodeById(librarySelectedDomainId)?.title||'Bibliothèque')}</span></div>
       <div class="library-writing-actions">
+        <button id="libraryWriterFind" type="button" title="Rechercher dans la page (Ctrl+F)">⌕ Chercher</button>
         <span id="librarySaveState" class="library-save-state">Enregistré</span>
         <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
         <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
@@ -2672,7 +2673,7 @@ function renderLibraryPageEditor(notebook,page){
         <button id="libraryOpenSelectedLink" class="hidden" type="button">Ouvrir</button>
         <button id="libraryEditSelectedLink" class="hidden" type="button">✎ Modifier</button>
       </div>
-      <button id="libraryWriterFind" type="button" class="library-writer-find">⌕ Rechercher (Ctrl+F)</button>
+
       ${libraryFindToolbar()}
       <div class="library-a4-caption" aria-label="Feuille A4">FEUILLE A4 · 210 × 297 mm · Nouvelle feuille uniquement sur demande</div>
       <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
@@ -2953,7 +2954,7 @@ function renderLibraryReader(notebook,page,root){
     <div class="library-reader-bar">
       <button id="libraryReaderBack" type="button" title="Retour à l’écriture">✎</button>
       <button id="libraryReaderToc" type="button" title="Sommaire">☰</button>
-      <div class="library-reader-title"><strong>${esc(notebook.title)}</strong><span>${esc(page.title)}</span></div>
+      <div class="library-reader-title"><strong>${esc(objectiveNodeById(librarySelectedDomainId)?.title||'Bibliothèque')}</strong><span>Carnet : ${esc(notebook.title)} · ${esc(page.title)}</span></div>
       <div class="library-reader-pagination">
         <button id="libraryReaderPrev" type="button" title="Page précédente" ${index<=0?'disabled':''}>←</button>
         <label>Page <input id="libraryReaderPageNumber" type="number" min="1" max="${pages.length}" value="${index+1}"> / ${pages.length}</label>
