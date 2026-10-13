@@ -48,5 +48,5 @@
       "sha256": "0a9cdef60759fc99c49f01c9a30400f23093a7798d6a038dbf0c5a6846c3da49"
     }
   ],
-  "notes": "0.13.6 : centrage géométrique du lecteur, double page et croix d'écriture visible."
+  "notes": "0.13.6 : centrage de toutes les pages, double page symétrique et croix de l'éditeur plus visible."
 }
