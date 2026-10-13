@@ -2749,6 +2749,10 @@ function renderLibraryPageEditor(notebook,page){
     const saved=await flushLibraryAutosave(page);
     if(saved===false)return;
     page.title=captured.title;page.notes=captured.notes;
+    // La liste des carnets peut être rechargée pendant l'enregistrement.
+    // Mettre également à jour l'objet actuellement sélectionné pour le lecteur.
+    const active=libraryPageById(page.id);
+    if(active){active.title=captured.title;active.notes=captured.notes}
     libraryEditorMode='read';libraryReaderTocOpen=false;
     renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
   };
