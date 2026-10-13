@@ -1,5 +1,5 @@
 {
-  "version": "0.12.2",
+  "version": "0.12.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f482d06e4ee83158e42999dcf951d5909861dad7e03317deb2b1e2ddd5c46274"
+      "sha256": "01a507eda916863d2c56c6d24b13985c877640445bb13e272692d67ccf33f057"
     },
     {
       "path": "app.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "95b029a05d1748cba9072364267b171998dbd4e7614e0b83926ebe428fc0bc22"
+      "sha256": "ed2a5dfad8b62846bbfadfa5e52e97aa4aeb775ef3c1ff8b4596ecdf91dac491"
     },
     {
       "path": "public/app_part2.js",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "123f90e83bfe0986277a163c5627a2d9e3aa7e5834297108e696eecef5e0193e"
+      "sha256": "75f0ceb8b6195758f85d67cdf3bfab6cc860313dcdee93f24d838eaeb047fbe5"
     },
     {
       "path": "public/index.html",
-      "sha256": "a4a5e264b6b6590640498ff1039f46c288815d87194a455b7e19aaa83a76c7d1"
+      "sha256": "905ae825709faed5727399b88259548690d5970f91d5567f8b16231a1fd8d80b"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.2 : sauvegardes sérialisées, vérification de la persistance et protection du texte à la navigation."
+  "notes": "0.12.3 : relecture depuis le serveur au retour dans la Bibliothèque et suppression de reconstructions inutiles hors de la Bibliothèque."
 }
