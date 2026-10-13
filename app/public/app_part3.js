@@ -242,6 +242,7 @@ async function checkRuntimeCompatibility(){
 }
 
 function showView(view){
+  const enteringLibrary=view==='library'&&state.view!=='library';
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
   if(state.view==='library'&&view!=='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
   state.view=view;
@@ -254,7 +255,15 @@ function showView(view){
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   syncGlobalLayoutEditing();
-  render();
+  // Ne pas reconstruire un éditeur à partir d'un état ancien pendant le changement d'onglet.
+  if(enteringLibrary&&typeof librarySelectedDomainId!=='undefined'&&librarySelectedDomainId){
+    window.__atelierLibraryViewRestoring=true;
+    render();
+    Promise.all([...librarySaveQueues.values()].map(p=>p.catch(()=>false))).then(async()=>{
+      const domain=librarySelectedDomainId,notebook=librarySelectedNotebookId,page=librarySelectedPageId;
+      if(domain&&state.view==='library')await loadLibraryNotebooks(domain,notebook,page);
+    }).catch(err=>showUiError(err,'Impossible de restaurer la Bibliothèque')).finally(()=>{window.__atelierLibraryViewRestoring=false});
+  }else render();
 }
 function setCalendarMode(mode){state.calendarMode=mode;applyCalendarMode();}
 function applyCalendarMode(){
