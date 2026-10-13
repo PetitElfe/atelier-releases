@@ -75,6 +75,17 @@ async function api(path,method='GET',body){
   assert.ok(afterA4.sections[0].entries.some(e=>e.notes.includes('Texte deuxième feuille A4')),'Second sheet saved');
   await page.locator('.library-page-list-item').first().click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Annuler / rétablir après la saisie, sans attendre le délai de l'historique.
+  await page.locator('#libraryPageBody').fill('Etat A de l editeur');
+  await page.waitForTimeout(500);
+  await page.locator('#libraryPageBody').fill('Etat B de l editeur');
+  await page.locator('.library-format-btn[data-command="undo"]').click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Etat A de l editeur/,'Undo should work on first click');
+  await page.locator('.library-format-btn[data-command="redo"]').click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Etat B de l editeur/,'Redo should restore latest edit');
+  // Conserver les textes pour les tests d'export à suivre.
+  await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
+  await page.locator('#librarySaveNow').click();
   // Vérifier les trois téléchargements sans boîte d'impression.
   for(const format of ['HTML','TXT','PDF']){
     await page.locator('#libraryExportPage').click();
