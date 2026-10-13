@@ -1,5 +1,5 @@
 {
-  "version": "0.13.5",
+  "version": "0.13.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "44712a66e62881fe24778a22d0f57d0e74084311fd2cd84070fc7fa9ce0f65bf"
+      "sha256": "020104c7452da1e8c2277ff39e691c90ef1e94b3bbaab7604f837868f2f58f08"
     },
     {
       "path": "app.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "7e2179bb2b26f9b075b436e17afcb8155f1a1e8b7addb2c6fbd4b2efd50378b1"
+      "sha256": "507fbd69c99755ce299512ae15c75e84eb5ecf87710f0fe1470928ca6567ebc6"
     },
     {
       "path": "public/styles.css",
-      "sha256": "8f287e2903578f88d85afe626fb7589429f1c3240170de0057780ae539997814"
+      "sha256": "0a9cdef60759fc99c49f01c9a30400f23093a7798d6a038dbf0c5a6846c3da49"
     }
   ],
-  "notes": "0.13.5 : navigation carnets depuis l'en-tête, espace libéré, tiroir automatique et fermeture de l'écriture agrandie."
+  "notes": "0.13.6 : centrage géométrique du lecteur, double page et croix d'écriture visible."
 }
