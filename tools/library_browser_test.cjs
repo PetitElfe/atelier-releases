@@ -130,6 +130,11 @@ async function api(path,method='GET',body){
     return {sheetWidth:sheet.width,frameWidth:frame.width};
   });
   assert.ok(fit.sheetWidth<=fit.frameWidth,'Reader sheet overflows viewport at 100%: '+JSON.stringify(fit));
+  const position=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+    const frame=document.querySelector('.library-reader-layout').getBoundingClientRect(),sheet=el.getBoundingClientRect();
+    return {offset:Math.abs((sheet.left+sheet.right)/2-(frame.left+frame.right)/2),sheetWidth:sheet.width};
+  });
+  assert.ok(position.offset<24,'Reading sheet must be centered, got '+JSON.stringify(position));
   await page.locator('#libraryZoomIn').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
   await page.locator('#libraryReaderZoomLabel').click();
@@ -151,6 +156,13 @@ async function api(path,method='GET',body){
   assert.ok(await page.locator('.library-progress-linear').count(),'Horizontal progress visible');
   await page.locator('#libraryPageReader').click();
   await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderSpreadToggle').click();
+  const spreadPosition=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+    const area=document.querySelector('.library-reader-layout').getBoundingClientRect(),sheets=[...document.querySelectorAll('#libraryReaderPages .library-reader-sheet')].map(x=>x.getBoundingClientRect());
+    const left=Math.min(...sheets.map(r=>r.left)),right=Math.max(...sheets.map(r=>r.right));
+    return {count:sheets.length,offset:Math.abs((left+right)/2-(area.left+area.right)/2)};
+  });
+  assert.ok(spreadPosition.offset<28,'Spread must be centered, got '+JSON.stringify(spreadPosition));
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'X exits expanded reading');
