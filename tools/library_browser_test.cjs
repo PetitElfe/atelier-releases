@@ -58,6 +58,20 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Une feuille supplémentaire est toujours créée explicitement.
+  const beforeA4=await api('/api/objective-library?node_id='+domain.id);
+  const previousId=beforeA4.sections[0].entries[0].id;
+  await page.locator('#libraryAddA4Sheet').click();
+  await page.locator('#libraryPageBody').waitFor();
+  await page.locator('#libraryPageBody').fill('Texte deuxième feuille A4');
+  await page.locator('#librarySaveNow').click();
+  await page.waitForTimeout(850);
+  const afterA4=await api('/api/objective-library?node_id='+domain.id);
+  assert.equal(afterA4.sections[0].entries.length,2,'Manual A4 creates precisely one new page');
+  assert.ok(afterA4.sections[0].entries.find(e=>e.id===previousId)?.notes.includes('Brouillon 0124'),'Previous page survived');
+  assert.ok(afterA4.sections[0].entries.some(e=>e.notes.includes('Texte deuxième feuille A4')),'Second sheet saved');
+  await page.locator('.library-page-list-item').first().click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   // Vérifier les trois téléchargements sans boîte d'impression.
   for(const format of ['HTML','TXT','PDF']){
     await page.locator('#libraryExportPage').click();
