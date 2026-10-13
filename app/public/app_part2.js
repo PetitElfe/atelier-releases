@@ -1174,8 +1174,12 @@ function renderLibraryDomain(){
   if(!domain){panel.classList.add('hidden');$('#libraryHubPanel')?.classList.remove('hidden');return}
   $('#libraryDomainTitle').textContent=domain.title;
   const heading=$('#libraryDomainTitle');
-  heading?.querySelector('.library-domain-mini-context')?.remove();
-  if(heading){const context=document.createElement('small');context.className='library-domain-mini-context';const active=libraryNotebookById(librarySelectedNotebookId);context.textContent=active?'Carnet : '+active.title+' · Progression : '+libraryProgressForDomain(domain)+' %':'Progression : '+libraryProgressForDomain(domain)+' %';heading.appendChild(context)}
+  const quick=$('#libraryDomainQuickContext');
+  if(quick){
+    const books=libraryNotebookState.domainId===Number(domain.id)?libraryNotebookState.sections||[]:[];
+    const pct=libraryProgressForDomain(domain);
+    quick.innerHTML='<div class="library-head-progress"><strong>Progression : '+pct+' %</strong><div class="library-progress-linear-track"><span style="width:'+pct+'%"></span></div></div><div class="library-head-books"><span>Carnets :</span> '+(books.length?books.map(book=>'<span class="library-head-book">'+esc(book.title)+'</span>').join(' '):'<span>Aucun carnet</span>')+'</div>';
+  }
   const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
   $('#libraryDomainDescription').textContent=mainGoal?`Objectif principal : ${mainGoal.title}`:(domain.description||'Cet espace est à toi : ajoute seulement ce dont tu as besoin.');
   $('#libraryDomainKicker').textContent='DOMAINE · '+String(domain.status==='done'?'TERMINÉ':domain.status==='paused'?'EN PAUSE':'ACTIF');
@@ -2953,6 +2957,7 @@ function renderLibraryReaderSheet(page,index){
 function libraryExitReading(){
   if(libraryEditorMode!=='read')return;
   libraryEditorMode='write';
+  libraryLeaveExpanded();
   renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
 }
 document.addEventListener('keydown',event=>{
@@ -2969,7 +2974,7 @@ function renderLibraryReader(notebook,page,root){
   const spread=libraryPageExpanded&&libraryReaderSpread;
   root.innerHTML=`<article class="library-reader">
     <div class="library-reader-bar library-reader-bar-compact">
-      <button id="libraryReaderBack" type="button" title="Fermer la lecture (Échap)" aria-label="Fermer la lecture">× <span class="library-reader-close-label">Fermer</span></button>
+      <button id="libraryReaderBack" type="button" title="Fermer la lecture (Échap)" aria-label="Fermer la lecture">×</button>
       <button id="libraryReaderToc" type="button" title="Sommaire">☰</button>
       <div class="library-reader-title"><strong>${esc(objectiveNodeById(librarySelectedDomainId)?.title||'Bibliothèque')}</strong><span>Carnet : ${esc(notebook.title)} · ${esc(page.title)}</span></div>
       <div class="library-reader-pagination">
