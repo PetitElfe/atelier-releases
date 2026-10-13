@@ -120,6 +120,12 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
   await page.locator('#libraryPageReader').click();
+  // À 100 %, la feuille ne doit pas déborder horizontalement du lecteur.
+  const fit=await page.locator('#libraryReaderPages .library-reader-sheet').first().evaluate(el=>{
+    const sheet=el.getBoundingClientRect(),frame=document.querySelector('.library-reader-layout').getBoundingClientRect();
+    return {sheetWidth:sheet.width,frameWidth:frame.width};
+  });
+  assert.ok(fit.sheetWidth<=fit.frameWidth,'Reader sheet overflows viewport at 100%: '+JSON.stringify(fit));
   await page.locator('#libraryZoomIn').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
   await page.locator('#libraryReaderZoomLabel').click();

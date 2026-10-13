@@ -1048,3 +1048,38 @@ body.library-page-expanded{overflow:hidden}
 .library-find-mark{background:#eac46e;color:#201a15}
 .library-find-current{outline:2px solid #c7772a}
 .library-writer-find{align-self:flex-end;margin:7px 0;font-size:11px}
+
+/* 0.13.2 — ergonomie : cadrage initial adapté à la largeur réellement disponible */
+.library-writing-page{max-width:100%;width:100%;padding:16px 20px;min-width:0}
+.library-writing-topbar{align-items:center;flex-wrap:wrap;gap:10px}
+.library-writing-heading{display:flex;flex:1 1 220px;min-width:180px;flex-direction:column;gap:2px}
+.library-writing-heading .library-writing-title{width:100%;flex:none;font-size:22px!important}
+.library-writing-context{font:11px/1.5 system-ui,sans-serif;color:#88745e}
+.library-writing-actions{flex:1 1 460px;justify-content:flex-end;gap:5px}
+.library-writing-actions button{font-size:11px;padding:7px 9px}
+.library-writing-toolbar-rich{gap:5px}
+.library-writer-find{display:none}
+.library-reader-bar{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px}
+.library-reader-title{flex:1 1 200px;min-width:160px}
+.library-reader-pagination{display:flex;align-items:center;justify-content:center;gap:5px}
+.library-reader-zoom{display:flex;gap:4px;align-items:center}
+.library-reader-zoom button{padding:6px 9px;min-width:32px;font-size:12px}
+.library-reader-layout{width:100%;max-width:100%;overflow:auto;min-height:calc(100vh - 180px)}
+.library-reader-pages{display:grid!important;width:100%;min-width:0;max-width:none;grid-template-columns:minmax(0,1fr);justify-items:center;overflow:visible;gap:14px;padding:16px;box-sizing:border-box}
+.library-reader-pages:not(.is-spread) .library-reader-sheet,
+.library-notebook-panel.library-notebook-expanded .library-reader-pages:not(.is-spread) .library-reader-sheet{width:min(720px,100%)!important;max-width:100%;min-height:990px!important;margin:0 auto;padding:58px clamp(20px,5vw,62px) 80px;box-sizing:border-box}
+.library-reader-pages.is-spread{grid-template-columns:repeat(2,minmax(0,1fr));justify-items:stretch;max-width:none!important;width:100%;padding:12px;gap:12px}
+.library-reader-pages.is-spread .library-reader-sheet,
+.library-notebook-panel.library-notebook-expanded .library-reader-pages.is-spread .library-reader-sheet{width:100%!important;max-width:100%;min-height:950px!important;margin:0;padding:42px clamp(16px,3vw,38px) 70px;box-sizing:border-box}
+.library-reader-sheet{overflow-wrap:anywhere}
+@media(max-width:960px){
+ .library-reader-pages.is-spread{grid-template-columns:minmax(0,1fr)}
+ .library-reader-pages.is-spread .library-reader-sheet{width:min(720px,100%)!important;margin:0 auto}
+ .library-reader-bar{gap:6px}
+ .library-reader-title{order:-1;flex-basis:100%}
+}
+
+/* Ne pas masquer les actions du carnet sous le tiroir flottant. */
+.library-writing-actions{max-width:100%;justify-content:flex-start}
+.library-writing-topbar{padding-right:clamp(12px,13vw,210px)}
+@media(max-width:1080px){.library-writing-topbar{padding-right:10px}}

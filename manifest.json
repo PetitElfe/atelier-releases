@@ -1,5 +1,5 @@
 {
-  "version": "0.13.1",
+  "version": "0.13.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "82526503d51e2bc1964b180753ad02a7465227ae94c41752649d369faa203eab"
+      "sha256": "fc4170b0fc945e55b2febedfdbd0b0b41b3165181b0feda001d86a01bf748f76"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "c5179d4ccb61a9145b8bba782b539a2295581c4b2cb03b739b9ffc81966ce0da"
+      "sha256": "555b6778b0d0b051b407524e95009037189ea86e6e2a624b4481bf965139157e"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "b27c1f9212a53a31e5096e37d2783a5c801244203c42ef901e3808c59e607394"
+      "sha256": "01c426de5971b50436bbf95396a432714c0fea44bc4fe7e5bacdd39a0c91053d"
     },
     {
       "path": "public/styles.css",
-      "sha256": "c1539d51375527fbbd354d8b944918cd8c1bde9c9d3ae07631e3786d89b34ae5"
+      "sha256": "519eeb6bde4e2ae5ad9b04d5adaad0db86f2e99ce6030456b6e570cabad1c8bd"
     }
   ],
-  "notes": "0.13.1 : pages lecture pleine hauteur, zoom des feuilles, recherche dans les carnets."
+  "notes": "0.13.2 : cadrage du lecteur, barres d'outils compactes, contexte des carnets et recherche intégrée."
 }
