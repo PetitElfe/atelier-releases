@@ -1,5 +1,5 @@
 {
-  "version": "0.12.4",
+  "version": "0.12.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "6539836172e0b3f4ec57cf655d124ed57a665d5a316601339186fe7548f15e4a"
+      "sha256": "ac2d429cc47303f2c51a5f93744865940b97bd2d548baec0ef5c5939c15a5a9b"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "5ea95d6faaf514cff2addf619dc30113a85b37f7e19b886df19b39df7f594504"
+      "sha256": "6c872aad8887924b67ae9d3d4bd4d52370ded5aa918cae0ec9e40c4d8f522e11"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f77be458c1d3da0e82f5c39db6eab375257b775a40d0cc19f31c790a66237177"
+      "sha256": "372e2d11ea802867f5782ad95712938e94d391db1ecfe9f5b4cdc9c504f0fb96"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.4 : brouillons de secours locaux par page et protection contre les pertes lors des changements de vue."
+  "notes": "0.12.5 : correction ReferenceError durableDraft dans l'éditeur actif, tests navigateur renforcés."
 }
