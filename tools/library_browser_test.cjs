@@ -58,6 +58,14 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Vérifier les trois téléchargements sans boîte d'impression.
+  for(const format of ['HTML','TXT','PDF']){
+    await page.locator('#libraryExportPage').click();
+    const downloadPromise=page.waitForEvent('download');
+    await page.locator('.library-export-choice').filter({hasText:format}).click();
+    const download=await downloadPromise;
+    assert.ok(download.suggestedFilename().toLowerCase().endsWith('.'+format.toLowerCase()),'Wrong export name: '+download.suggestedFilename());
+  }
   assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
