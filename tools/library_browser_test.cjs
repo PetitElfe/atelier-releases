@@ -112,6 +112,25 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderNext').click();
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
+  await page.locator('#libraryPageBody').fill('Recherche cible une fois');
+  await page.locator('#librarySaveNow').click();
+  // Recherche dans l'éditeur, sans altérer le document.
+  await page.locator('#libraryWriterFind').click();
+  await page.locator('#libraryFindInput').fill('Recherche');
+  assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
+  await page.locator('#libraryFindClose').click();
+  await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryZoomIn').click();
+  assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
+  await page.locator('#libraryReaderZoomLabel').click();
+  assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'100 %');
+  console.log('READER PAGE CONTENT',JSON.stringify(await page.locator('#libraryReaderPages').innerText()));
+  const afterReaderSave=await api('/api/objective-library?node_id='+domain.id);
+  console.log('READER DATABASE PAGE DATA',JSON.stringify(afterReaderSave.sections[0].entries.map(x=>({id:x.id,notes:x.notes.slice(0,120)}))));
+  await page.locator('#libraryReaderFind').click();
+  await page.locator('#libraryFindInput').fill('Recherche');
+  assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
+  await page.locator('#libraryFindClose').click();
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}

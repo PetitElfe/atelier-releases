@@ -1033,3 +1033,18 @@ body.library-page-expanded{overflow:hidden}
 .library-writing-page #libraryPageBody:focus{outline:2px solid #a38a6955;outline-offset:2px}
 .library-writing-page .library-writing-title{min-width:160px}
 @media(max-width:900px){.library-writing-page{width:100%;min-height:0;padding:12px}.library-writing-page .library-page-body{min-height:650px;padding:18px!important}.library-a4-caption{font-size:8px}}
+
+/* 0.13.1 — navigation document, controls outside the zoomed sheets */
+.library-reader-layout{min-height:calc(100vh - 150px);overflow:auto;align-items:stretch}
+.library-reader-pages{width:max-content;min-width:100%;align-content:start;overflow:visible}
+.library-reader-pages .library-reader-sheet{min-height:1123px!important;box-sizing:border-box}
+.library-reader-pages.is-spread .library-reader-sheet{min-height:1123px!important}
+.library-reader-zoom{display:flex;align-items:center;gap:5px}
+.library-reader-zoom button{min-width:34px}
+.library-find-bar{display:flex;align-items:center;gap:7px;padding:9px 12px;background:#2a231d;color:#f2e5d5;border-radius:6px}
+.library-find-bar.hidden{display:none!important}
+.library-find-bar input{min-width:140px;flex:1;max-width:360px}
+.library-find-bar button{padding:4px 9px}
+.library-find-mark{background:#eac46e;color:#201a15}
+.library-find-current{outline:2px solid #c7772a}
+.library-writer-find{align-self:flex-end;margin:7px 0;font-size:11px}
