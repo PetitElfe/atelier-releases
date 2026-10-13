@@ -34,6 +34,7 @@
       <button data-view="tasks">Tâches</button>
       <button data-view="library">Bibliothèque</button>
       <button data-view="reminders">Rappels</button>
+      <button data-view="organisation">Habitudes & cycle</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
     </div>
@@ -112,6 +113,7 @@
         </div>
       </div>
 
+      <div id="calendarCycleHint" class="calendar-cycle-hint hidden"></div>
       <div id="monthPanel" class="calendar-panel active-calendar-panel">
         <div class="view-head">
           <button id="prevMonth" aria-label="Mois précédent">‹</button>
@@ -234,6 +236,34 @@
       <div class="panel-head"><h2>Rappels non traités</h2><button id="addStandaloneReminder" class="primary" type="button">+ Ajouter un rappel</button></div>
       <p class="muted">Tu peux créer un rappel indépendant, ou laisser un rendez-vous / une tâche créer ses propres rappels.</p>
       <div id="reminderList" class="reminder-list"></div>
+    </section>
+
+    <section id="organisationView" class="view">
+      <div class="organisation-head"><div><span class="section-kicker">ORGANISATION</span><h2>Habitudes & routines</h2><p>Avance à ton rythme, avec un suivi personnel sans obligation de série parfaite.</p></div></div>
+      <div class="organisation-grid">
+        <section class="organisation-module">
+          <h3>Mes habitudes</h3>
+          <form id="habitCreateForm" class="organisation-form">
+            <label>Nouvelle habitude <input id="habitTitle" required maxlength="120" placeholder="Ex. : Pratiquer l'anglais"></label>
+            <label>Rythme <select id="habitFrequency"><option value="daily">Chaque jour</option><option value="weekly">Dans la semaine</option></select></label>
+            <label>Objectif hebdomadaire <input id="habitTarget" type="number" min="1" max="7" value="7" required></label>
+            <button type="submit">+ Ajouter</button>
+          </form>
+          <div id="habitList" class="organisation-list"></div>
+        </section>
+        <section class="organisation-module cycle-module">
+          <h3>Suivi du cycle menstruel</h3>
+          <p class="muted">Données sensibles stockées dans la base locale. Tant que les comptes indépendants n'existent pas, elles sont accessibles à toute personne utilisant cette installation.</p>
+          <form id="cycleForm" class="organisation-form">
+            <label>Début des règles <input id="cycleStart" type="date" required></label>
+            <label>Fin des règles (facultatif) <input id="cycleEnd" type="date"></label>
+            <button type="submit">Enregistrer la période</button>
+          </form>
+          <div id="cycleForecast" class="cycle-forecast" aria-live="polite"></div>
+          <div id="cycleEntries" class="organisation-list"></div>
+          <small class="muted">Les estimations ne sont pas des dates certaines et ne doivent pas servir de méthode contraceptive.</small>
+        </section>
+      </div>
     </section>
 
     <section id="kitchenView" class="view">
