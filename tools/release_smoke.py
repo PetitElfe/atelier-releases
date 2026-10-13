@@ -214,6 +214,29 @@ def check_server(version: str) -> None:
 
         proc = start_server(data)
         try:
+            # Organisation 0.14 : CRUD réel sur une base de test isolée.
+            status, habit = request("POST", "/api/habits", {"title":"Lire un chapitre","frequency":"weekly","target_per_week":3})
+            if status != 201:fail("Création d'une habitude impossible.")
+            hid=habit["id"]
+            status, _ = request("PUT", f"/api/habits/{hid}/check", {"date":"2026-10-13","done":True})
+            if status!=200:fail("Validation d'une journée impossible.")
+            status, habits = request("GET", "/api/habits")
+            if status!=200 or "2026-10-13" not in next(x for x in habits if x["id"]==hid)["checked_dates"]:
+                fail("Journée non enregistrée.")
+            status, _ = request("PUT", f"/api/habits/{hid}/check", {"date":"2026-10-13","done":False})
+            if status!=200:fail("Annulation d'une journée impossible.")
+            status, habits = request("GET", "/api/habits")
+            if "2026-10-13" in next(x for x in habits if x["id"]==hid)["checked_dates"]:fail("Journée non annulée.")
+            status, period = request("POST", "/api/cycle-periods", {"start_date":"2026-10-01","end_date":"2026-10-05"})
+            if status!=201:fail("Création de période impossible.")
+            status, _ = request("POST", "/api/cycle-periods", {"start_date":"2026-11-01","end_date":"2026-10-20"})
+            if status!=400:fail("Une fin antérieure au début doit être refusée.")
+            status, periods = request("GET", "/api/cycle-periods")
+            if status!=200 or not any(x["id"]==period["id"] for x in periods):fail("Période non conservée.")
+            status, _=request("DELETE",f"/api/cycle-periods/{period['id']}")
+            if status!=200:fail("Suppression de période impossible.")
+            status, _=request("DELETE",f"/api/habits/{hid}")
+            if status!=200:fail("Archivage impossible.")
             status, runtime = request("GET", "/api/runtime-version")
             if status != 200 or runtime.get("version") != version:
                 fail("Version runtime incorrect.")

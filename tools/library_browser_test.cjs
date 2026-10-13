@@ -216,7 +216,31 @@ async function api(path,method='GET',body){
   await page.locator('#globalHomeShortcut').click();
   assert.ok(await page.locator('body').evaluate(el=>!el.classList.contains('library-page-expanded')),'Home does not leave expanded state');
 
-  assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
+  // Organisation 0.14 : test de bout en bout sur des données temporaires.
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="organisation"]').click();
+  await page.locator('#habitTitle').fill('Marche quotidienne E2E');
+  await page.locator('#habitCreateForm button[type="submit"]').click();
+  await page.locator('.habit-card').first().waitFor();
+  assert.match(await page.locator('.habit-card').first().innerText(),/Marche quotidienne E2E/);
+  await page.locator('.habit-card input[type="checkbox"]').first().check();
+  await page.waitForTimeout(850);
+  console.log('HABIT LABEL AFTER CHECK:',JSON.stringify(await page.locator('.habit-card-head small').first().innerText()));
+  console.log('HABIT API:',JSON.stringify(await api('/api/habits')));
+  assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
+  await page.locator('#cycleStart').fill('2026-08-01');
+  await page.locator('#cycleForm button[type="submit"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1);
+  await page.locator('#cycleStart').fill('2026-08-29');
+  await page.locator('#cycleForm button[type="submit"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===2);
+  assert.match(await page.locator('#cycleForecast').innerText(),/cycle moyen de 28 jours/);
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="calendar"]').click();
+  await page.locator('#calendarCycleHint').waitFor({state:'visible'});
+  assert.match(await page.locator('#calendarCycleHint').innerText(),/Suivi du cycle/);
+    assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});

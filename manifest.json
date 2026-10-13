@@ -1,5 +1,5 @@
 {
-  "version": "0.13.6",
+  "version": "0.14.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "020104c7452da1e8c2277ff39e691c90ef1e94b3bbaab7604f837868f2f58f08"
+      "sha256": "065582655aacd6fc83ff742a5715c04bb4a57395bf3ee4559798fa42c2ce4589"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "12c3b97b89fcf34460c8b4f4cb447f34f92e198c15508e16c508ff0226b0041d"
+      "sha256": "8c3cd6f38fb8739ab0e5df9b38515e77b16127551b67a88804e840bb5046f8a8"
     },
     {
       "path": "app_part2.py",
-      "sha256": "51fd4ca4c0c92d96407683b0b165950feee95aaa72f5f26034e6a92e8ae5f189"
+      "sha256": "2549b4363855cf31df4f047cc336bc7289c60a64ddf0a14598031bff0b6874d1"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "cb78ff267c9da4c007c466fb4d21d0ff5b2ae3662c15064b57f2f1f87a50809c"
+      "sha256": "b3849786adbb40c9980b93b3b921a85bba4287faa0e3246842c2f8e7662b7e22"
     },
     {
       "path": "public/index.html",
-      "sha256": "507fbd69c99755ce299512ae15c75e84eb5ecf87710f0fe1470928ca6567ebc6"
+      "sha256": "90d32cfdcf801b7f2b8719a23104f8be0645d49d21c3ca670665ec3b8e5f553d"
     },
     {
       "path": "public/styles.css",
-      "sha256": "0a9cdef60759fc99c49f01c9a30400f23093a7798d6a038dbf0c5a6846c3da49"
+      "sha256": "9f17d8e8641229f00f9feaf83d4e7a6f3a6698403dd0b9d56562aad3e84af368"
     }
   ],
-  "notes": "0.13.6 : centrage de toutes les pages, double page symétrique et croix de l'éditeur plus visible."
+  "notes": "ALPHA 0.14.0 : habitudes quotidiennes et hebdomadaires, suivi des jours, calendrier menstruel local et estimation prudente des cycles."
 }

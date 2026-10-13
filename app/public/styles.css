@@ -1196,3 +1196,28 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
   .library-reader-pages.is-spread{flex-direction:column!important;align-items:center!important}
   .library-reader-pages.is-spread>.library-reader-sheet{width:min(720px,100%)!important;flex:0 0 auto!important}
 }
+
+/* ALPHA 0.14 — interface utilitaire des habitudes et suivi du cycle */
+.organisation-head{padding:18px 12px}
+.organisation-head h2{font-size:30px;margin:6px 0 4px}
+.organisation-head p{color:#b4a18d;margin:0}
+.organisation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:10px}
+.organisation-module{background:#241e19;border:1px solid #5b4837;border-radius:14px;padding:20px;min-width:0}
+.organisation-module h3{margin:0 0 15px;font-size:23px}
+.organisation-form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:14px 0 18px}
+.organisation-form label{display:flex;flex:1 1 160px;flex-direction:column;gap:5px;color:#d7c1a5;font-size:12px}
+.organisation-form input,.organisation-form select{width:100%;min-width:0;background:#eee1d0;border:1px solid #8b7358;border-radius:7px;padding:9px;color:#34261e}
+.organisation-form button,.cycle-entry button,.habit-card button,.calendar-cycle-hint button{padding:8px 13px;border:1px solid #94724d;border-radius:8px;background:#745637;color:#fff4df;cursor:pointer}
+.organisation-list{display:flex;flex-direction:column;gap:10px}
+.habit-card{background:#1c1713;border:1px solid #514031;border-radius:10px;padding:14px}
+.habit-card-head{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.habit-card-head strong{flex:1;min-width:120px}
+.habit-card-head small{color:#cbb08c}
+.habit-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:13px}
+.habit-week label{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 2px;background:#302720;border-radius:6px}
+.habit-week input{width:18px;height:18px;accent-color:#ae8b59}
+.cycle-forecast{background:#31291f;padding:14px;border-left:3px solid #b99662;border-radius:7px;line-height:1.5;margin:12px 0}
+.cycle-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#1c1713;border:1px solid #554433;border-radius:8px;padding:10px}
+.cycle-module>.muted{line-height:1.5}
+.calendar-cycle-hint{margin:10px 16px;padding:12px;background:#352b24;border:1px solid #70593f;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:1000px){.organisation-grid{grid-template-columns:1fr}}
