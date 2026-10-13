@@ -62,6 +62,9 @@ async function api(path,method='GET',body){
   const beforeA4=await api('/api/objective-library?node_id='+domain.id);
   const previousId=beforeA4.sections[0].entries[0].id;
   await page.locator('#libraryAddA4Sheet').click();
+  await page.locator('.library-page-list-item').nth(1).waitFor();
+  await page.locator('.library-page-list-item').nth(1).waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelectorAll('.library-page-list-item').length===2&&document.querySelectorAll('.library-page-list-item')[1].classList.contains('active'));
   await page.locator('#libraryPageBody').waitFor();
   await page.locator('#libraryPageBody').fill('Texte deuxième feuille A4');
   await page.locator('#librarySaveNow').click();
