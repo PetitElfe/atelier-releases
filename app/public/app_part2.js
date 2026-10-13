@@ -1983,6 +1983,13 @@ function renderLibraryPageEditor(notebook,page){
   </article>`;
 
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput'),reading=$('#libraryReadingView');
+  const durableDraft=libraryReadDraft(page);
+  const serverData={title:page.title||'Sans titre',notes:page.notes||LIBRARY_RICH_PREFIX};
+  // Priorité à un brouillon local non encore confirmé sur le serveur.
+  if(durableDraft&&(durableDraft.title!==serverData.title||durableDraft.notes!==serverData.notes)){
+    page.title=durableDraft.title;page.notes=durableDraft.notes;
+    title.value=durableDraft.title;
+  }else if(durableDraft)libraryClearConfirmedDraft(page,serverData);
   body.innerHTML=libraryPageHtml(page);wireLibraryEditorContents(body,page);
   reading.innerHTML='';reading.appendChild(renderLibraryReadHtml(page));
   librarySavedSnapshot=libraryCurrentSnapshot(page);libraryPageDirty=false;librarySelectedRichLink=null;
@@ -2188,12 +2195,36 @@ function libraryEditorData(page){
 // 0.12.2 — Sauvegardes sérialisées et vérifiées avant confirmation visuelle.
 const librarySaveQueues=new Map();
 const libraryConfirmedSnapshots=new Map();
+// Brouillons de secours locaux : ils survivent à la destruction de l'éditeur.
+function libraryDraftKey(id){return 'atelier-library-draft-v124-'+Number(id)}
+function libraryStoreDraft(page,data){
+  if(!page||!data)return;
+  try{localStorage.setItem(libraryDraftKey(page.id),JSON.stringify({title:data.title,notes:data.notes,updatedAt:Date.now()}))}
+  catch(err){const stateEl=$('#librarySaveState');if(stateEl)stateEl.textContent='Sauvegarde locale indisponible'}
+}
+function libraryReadDraft(page){
+  if(!page)return null;
+  try{
+    const raw=localStorage.getItem(libraryDraftKey(page.id));
+    if(!raw)return null;
+    const draft=JSON.parse(raw);
+    return typeof draft.title==='string'&&typeof draft.notes==='string'?draft:null;
+  }catch(_){return null}
+}
+function libraryClearConfirmedDraft(page,data){
+  try{
+    const draft=libraryReadDraft(page);
+    if(draft&&draft.title===data.title&&draft.notes===data.notes)localStorage.removeItem(libraryDraftKey(page.id));
+  }catch(_){}
+}
+
 
 function libraryApplySavedData(page,data){
   if(!page||!data)return;
   page.title=data.title||'Sans titre';
   page.notes=data.notes||LIBRARY_RICH_PREFIX;
   libraryConfirmedSnapshots.set(Number(page.id),JSON.stringify(data));
+  libraryClearConfirmedDraft(page,data);
   if(Number(librarySelectedPageId)===Number(page.id)&&$('#libraryPageBody')){
     const visible=libraryEditorData(page);
     librarySavedSnapshot=JSON.stringify(data);
@@ -2244,6 +2275,7 @@ function scheduleLibraryAutosave(page,{immediate=false}={}){
   const data=libraryEditorData(page);
   // Protéger aussi les changements de page déclenchés avant la fin du délai.
   page.title=data.title;page.notes=data.notes;
+  libraryStoreDraft(page,data);
   const saved=libraryConfirmedSnapshots.get(Number(page.id))||librarySavedSnapshot;
   libraryPageDirty=JSON.stringify(data)!==saved;
   const stateEl=$('#librarySaveState');
@@ -2454,6 +2486,11 @@ function renderLibraryPageEditor(notebook,page){
   libraryInitHistory();
   const changed=()=>{scheduleLibraryAutosave(page);scheduleLibraryHistory()};
   body.addEventListener('input',changed);title.addEventListener('input',changed);
+  if(durableDraft&&(durableDraft.title!==serverData.title||durableDraft.notes!==serverData.notes)){
+    // Ne jamais afficher « Enregistré » pour un brouillon pas encore confirmé.
+    libraryConfirmedSnapshots.set(Number(page.id),JSON.stringify(serverData));
+    scheduleLibraryAutosave(page,{immediate:true});
+  }
   body.addEventListener('keyup',rememberLibraryTextSelection);body.addEventListener('mouseup',rememberLibraryTextSelection);
   body.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
@@ -2596,6 +2633,7 @@ function persistLibraryBeforeNavigation(){
   if(!page||!body)return;
   const data=libraryEditorData(page);
   page.title=data.title;page.notes=data.notes;
+  libraryStoreDraft(page,data);
   libraryPageDirty=true;
   saveLibraryPageData(page,data,{silent:true});
 }
