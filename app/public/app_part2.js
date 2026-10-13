@@ -2494,6 +2494,13 @@ function libraryUpdateFind(){
   libraryFindTerm=$('#libraryFindInput')?.value||'';
   const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
   if(!region)return;
+  // En écriture, ne jamais modifier le DOM contenteditable : cela pourrait altérer les brouillons.
+  if(libraryEditorMode==='write'){
+    const text=region.innerText||'';
+    const count=libraryFindTerm?text.toLocaleLowerCase().split(libraryFindTerm.toLocaleLowerCase()).length-1:0;
+    $('#libraryFindCount').textContent=count+' résultat'+(count>1?'s':'');
+    return;
+  }
   const matches=libraryFindMatches(region);
   libraryFindIndex=0;
   libraryStepFind(0,matches);
@@ -2642,6 +2649,8 @@ function renderLibraryPageEditor(notebook,page){
     </div>
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
   </article>`;
+  libraryWireFind();
+  $('#libraryWriterFind').onclick=libraryShowFind;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
   const serverData={title:page.title||'Sans titre',notes:page.notes||LIBRARY_RICH_PREFIX};
   const durableDraft=libraryReadDraft(page);
@@ -2799,8 +2808,6 @@ function scheduleLibraryHistory(){
 }
 function libraryApplyHistoryState(state,page){
   if(!state)return;
-  libraryWireFind();
-  $('#libraryWriterFind').onclick=libraryShowFind;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');if(!body||!title)return;
   libraryHistoryApplying=true;
   title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
