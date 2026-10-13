@@ -1156,3 +1156,43 @@ body.library-page-expanded .library-notebook-expanded{top:68px!important;height:
 .library-reader-pages:not(.is-spread)>.library-reader-sheet{flex:0 1 720px!important;width:min(720px,100%)!important;max-width:720px!important;margin-inline:auto!important}
 body.library-page-expanded #libraryWritingClose{display:inline-flex!important;position:fixed!important;right:18px;top:80px;z-index:10020;font-size:24px!important;background:#3a2821;color:#fff;border:1px solid #c5a07a;border-radius:9px;min-width:44px;min-height:44px;align-items:center;justify-content:center}
 @media(max-width:960px){.library-reader-pages.is-spread{flex-direction:column;align-items:center!important}.library-reader-pages.is-spread>.library-reader-sheet{width:min(720px,100%)!important;flex:0 0 auto!important}}
+
+/* 0.13.6 — centrer le feuillet actif, quel que soit son numéro.
+   Utiliser un conteneur flex plutôt qu'une grille aux alignements concurrents. */
+.library-reader-layout{min-width:0;overflow:auto!important}
+.library-reader-pages,
+.library-reader-pages:not(.is-spread),
+.library-notebook-panel.library-notebook-expanded .library-reader-pages:not(.is-spread){
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:flex-start!important;gap:18px!important;width:100%!important;
+  max-width:none!important;margin:0 auto!important;padding:18px!important;
+  box-sizing:border-box!important;min-width:0!important;
+}
+.library-reader-pages:not(.is-spread)>.library-reader-sheet,
+.library-notebook-panel.library-notebook-expanded .library-reader-pages:not(.is-spread)>.library-reader-sheet{
+  display:block!important;flex:0 0 auto!important;width:min(720px,100%)!important;
+  max-width:720px!important;margin:0 auto!important;box-sizing:border-box!important;
+  min-height:990px!important;
+}
+.library-reader-pages.is-spread,
+.library-notebook-panel.library-notebook-expanded .library-reader-pages.is-spread{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:flex-start!important;justify-content:center!important;gap:18px!important;
+  width:100%!important;max-width:none!important;margin:0 auto!important;
+  padding:18px!important;box-sizing:border-box!important;
+}
+.library-reader-pages.is-spread>.library-reader-sheet,
+.library-notebook-panel.library-notebook-expanded .library-reader-pages.is-spread>.library-reader-sheet{
+  flex:0 1 720px!important;min-width:0!important;width:calc((100% - 18px)/2)!important;
+  max-width:720px!important;min-height:990px!important;margin:0!important;
+  box-sizing:border-box!important;
+}
+.library-reader-pages.is-spread>.library-reader-sheet:only-child{
+  flex:0 1 720px!important;width:min(720px,100%)!important;margin:0 auto!important;
+}
+#libraryWritingClose:not(.hidden){display:inline-flex!important;align-items:center;justify-content:center;
+  min-width:35px;height:35px;font-size:21px!important;position:relative;z-index:10}
+@media(max-width:960px){
+  .library-reader-pages.is-spread{flex-direction:column!important;align-items:center!important}
+  .library-reader-pages.is-spread>.library-reader-sheet{width:min(720px,100%)!important;flex:0 0 auto!important}
+}
