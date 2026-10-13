@@ -1024,3 +1024,12 @@ body.library-page-expanded{overflow:hidden}
   .library-reader-pages{padding:8px}
   .library-reader-pages .library-reader-sheet{padding:38px 20px 48px;min-height:780px}
 }
+
+/* 0.13.0 — carnet : feuille A4 créée uniquement par action explicite */
+.library-writing-page{max-width:860px;min-height:1120px;margin:0 auto;box-sizing:border-box;border-radius:3px;background:#f9f5ed;padding:24px 34px;box-shadow:0 4px 18px #0003}
+.library-writing-editor{min-height:0;flex:1}
+.library-a4-caption{font:9px/1.4 system-ui,sans-serif;letter-spacing:.13em;color:#8c7861;padding:10px 2px 0;text-align:right}
+.library-writing-page .library-page-body{min-height:850px;padding:25px 38px!important;line-height:1.65;overflow:visible;overflow-wrap:anywhere;background:#fffdfa!important;border:1px solid #e2d9cc!important;box-shadow:0 2px 8px #0000000b!important;box-sizing:border-box}
+.library-writing-page #libraryPageBody:focus{outline:2px solid #a38a6955;outline-offset:2px}
+.library-writing-page .library-writing-title{min-width:160px}
+@media(max-width:900px){.library-writing-page{width:100%;min-height:0;padding:12px}.library-writing-page .library-page-body{min-height:650px;padding:18px!important}.library-a4-caption{font-size:8px}}
