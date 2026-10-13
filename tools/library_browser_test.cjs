@@ -167,6 +167,9 @@ async function api(path,method='GET',body){
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
   await page.locator('#libraryReaderZoomLabel').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'100 %');
+  // Revenir sur la seconde feuille, qui contient le texte de recherche.
+  await page.locator('#libraryReaderPageNumber').fill('2');
+  await page.locator('#libraryReaderPageNumber').press('Tab');
   console.log('READER PAGE CONTENT',JSON.stringify(await page.locator('#libraryReaderPages').innerText()));
   const afterReaderSave=await api('/api/objective-library?node_id='+domain.id);
   console.log('READER DATABASE PAGE DATA',JSON.stringify(afterReaderSave.sections[0].entries.map(x=>({id:x.id,notes:x.notes.slice(0,120)}))));
