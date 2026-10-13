@@ -1,5 +1,5 @@
 {
-  "version": "0.13.4",
+  "version": "0.13.5",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "615c14cddd01d1f3f266cb52bcb5cd4e22e048c44ad1883d1228d4f6fec6f19c"
+      "sha256": "44712a66e62881fe24778a22d0f57d0e74084311fd2cd84070fc7fa9ce0f65bf"
     },
     {
       "path": "app.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "5a28328ed6e83bd1401ee79d7d61618faf9bdac12ee5668648d6e26b7f8577cf"
+      "sha256": "91dc5ab3d32256b7ec04a7edf8d84a54f73d8da97ac777c4bf058fdbef341979"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "8ccf8b291e265502fcfcd78f568f33cf61444bb6debaf574f270d8cc707aef1e"
+      "sha256": "cb78ff267c9da4c007c466fb4d21d0ff5b2ae3662c15064b57f2f1f87a50809c"
     },
     {
       "path": "public/index.html",
-      "sha256": "a1e3c68d9fb7dcb9aa68f60135a566ac0985ea4d7415a399e58806679dfe4efc"
+      "sha256": "7e2179bb2b26f9b075b436e17afcb8155f1a1e8b7addb2c6fbd4b2efd50378b1"
     },
     {
       "path": "public/styles.css",
-      "sha256": "7f43ea7af77b3aa0d1f425e75a7ebd45c6951d9b57eeac68f231393ae55edd26"
+      "sha256": "8f287e2903578f88d85afe626fb7589429f1c3240170de0057780ae539997814"
     }
   ],
-  "notes": "0.13.4 : raccourci Accueil persistant, sortie lecture agrandie et infos carnets/progression près du domaine."
+  "notes": "0.13.5 : navigation carnets depuis l'en-tête, espace libéré, tiroir automatique et fermeture de l'écriture agrandie."
 }
