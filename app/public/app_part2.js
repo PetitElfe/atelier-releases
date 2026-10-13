@@ -2735,7 +2735,9 @@ function libraryApplyHistoryState(state,page){
   scheduleLibraryAutosave(page,{immediate:true});
 }
 function libraryUndo(){
-  clearTimeout(libraryHistoryTimerV121);libraryRecordHistoryNow();
+  clearTimeout(libraryHistoryTimerV121);
+  // Capturer l'état actuel dès le premier clic, même avant la fin du délai d'historique.
+  libraryRecordHistoryNow();
   if(libraryHistoryIndex<=0)return;
   libraryHistoryIndex--;libraryApplyHistoryState(libraryHistory[libraryHistoryIndex],libraryPageById(librarySelectedPageId));
 }
