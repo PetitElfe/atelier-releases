@@ -138,8 +138,9 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
   await page.locator('#libraryPageReader').click();
-  await page.locator('#libraryReaderPageNumber').fill('1');
-  await page.locator('#libraryReaderPageNumber').press('Tab');
+  await page.locator('#libraryReaderToc').click();
+  await page.locator('#libraryReaderTocList button').first().click();
+  assert.equal(await page.locator('#libraryReaderPageNumber').inputValue(),'1','Double page starts from first sheet');
   await page.locator('#libraryReaderExpand').click();
   await page.locator('#libraryReaderSpreadToggle').click();
   const spreadGeometry=await page.locator('#libraryReaderPages').evaluate(root=>{
