@@ -1302,6 +1302,8 @@ function renderLibraryPageEditor(notebook,page){
       <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
       <div class="library-writing-actions">
         <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
+        <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (texte, HTML ou PDF)">↧ Exporter</button>
         <button id="libraryPageModeWrite" type="button" class="${libraryEditorMode==='write'?'active':''}">Écrire</button>
         <button id="libraryPageModeRead" type="button" class="${libraryEditorMode==='read'?'active':''}">Lire</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
@@ -2186,6 +2188,29 @@ let libraryAutosaveTimerV12=null;
 let libraryAutosaveSerial=0;
 let libraryLastSavePromise=Promise.resolve();
 
+function libraryExportCurrentPage(page){
+  const data=libraryEditorData(page);
+  const safeName=(data.title||'Page').normalize('NFKC').replace(/[\\/:*?"<>|\x00-\x1f]/g,'-').slice(0,80)||'Page';
+  const html=librarySanitizeHtml(libraryRichPayload(data.notes));
+  const choice=window.prompt('Exporter cette page : entre PDF, HTML ou TXT','PDF');
+  if(!choice)return;
+  const type=choice.trim().toUpperCase();
+  if(type==='PDF'){
+    const printWindow=window.open('','_blank');
+    if(!printWindow){showUiError(new Error('Fenêtre bloquée'),'Autorise les fenêtres pour exporter le PDF');return}
+    printWindow.document.open();
+    printWindow.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(data.title)+'</title><style>@page{size:A4;margin:20mm}body{font:12pt Georgia,serif;color:#222}img{max-width:100%}h1{font-size:20pt}p{line-height:1.5}</style></head><body><h1>'+esc(data.title)+'</h1>'+html+'</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(()=>printWindow.print(),300);
+    return;
+  }
+  if(!['TXT','HTML'].includes(type)){showUiError(new Error('Format inconnu'),'Choisis PDF, HTML ou TXT');return}
+  const text=type==='HTML'?'<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>'+esc(data.title)+'</title></head><body><h1>'+esc(data.title)+'</h1>'+html+'</body></html>':(data.title+'\n\n'+($('#libraryPageBody')?.innerText||''));
+  const blob=new Blob([text],{type:type==='HTML'?'text/html;charset=utf-8':'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=safeName+'.'+type.toLowerCase();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
 function libraryEditorData(page){
   return {
     title:$('#libraryPageTitleInput')?.value.trim()||page?.title||'Sans titre',
@@ -2417,6 +2442,8 @@ function renderLibraryPageEditor(notebook,page){
       <input id="libraryPageTitleInput" class="library-writing-title" value="${esc(page.title)}" aria-label="Titre de la page">
       <div class="library-writing-actions">
         <span id="librarySaveState" class="library-save-state">Enregistré</span>
+        <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
+        <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
         <button id="libraryPageReader" type="button" title="Lecture tranquille">📖</button>
         <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
@@ -2537,6 +2564,15 @@ function renderLibraryPageEditor(notebook,page){
   $('#libraryImageInput').onchange=async e=>{await insertLibraryImage(e.target.files?.[0],page);scheduleLibraryAutosave(page,{immediate:true});e.target.value=''};
 
   $('#libraryPageReader').onclick=async()=>{await flushLibraryAutosave(page);libraryEditorMode='read';libraryReaderTocOpen=false;renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#librarySaveNow').onclick=async()=>{
+    const button=$('#librarySaveNow');
+    button.disabled=true;
+    try{
+      const ok=await flushLibraryAutosave(page);
+      if(ok){button.textContent='✓ Sauvegardé';setTimeout(()=>{if(button.isConnected)button.textContent='💾 Sauvegarder'},1300)}
+    }finally{if(button.isConnected)button.disabled=false}
+  };
+  $('#libraryExportPage').onclick=()=>libraryExportCurrentPage(page);
   $('#libraryPageExpand').onclick=libraryToggleExpanded;
   $('#libraryPageDoneToggle').onclick=async()=>{
     await flushLibraryAutosave(page);

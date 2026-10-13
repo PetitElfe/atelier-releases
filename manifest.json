@@ -1,5 +1,5 @@
 {
-  "version": "0.12.5",
+  "version": "0.12.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "ac2d429cc47303f2c51a5f93744865940b97bd2d548baec0ef5c5939c15a5a9b"
+      "sha256": "6c9ed48d97859ab93b8e6c25047eef5d121784f1f17632e6d9af9d64fa2d3cfd"
     },
     {
       "path": "app.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "6c872aad8887924b67ae9d3d4bd4d52370ded5aa918cae0ec9e40c4d8f522e11"
+      "sha256": "8c818c166429dd362754900a2310fd2e4a59b3b8f02f036c1eec6f63bd0e4502"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "75f0ceb8b6195758f85d67cdf3bfab6cc860313dcdee93f24d838eaeb047fbe5"
+      "sha256": "5802be1872974c3ef3e10e476af98b45ab4e6c900de01acc82fcfb58dd34ca4c"
     },
     {
       "path": "public/index.html",
-      "sha256": "372e2d11ea802867f5782ad95712938e94d391db1ecfe9f5b4cdc9c504f0fb96"
+      "sha256": "c1585c1d6fe3a75beb7b83b7fce280469c902d0eabfeaef7d880e308bace02d1"
     },
     {
       "path": "public/styles.css",
       "sha256": "03a9b34ae3fc54ef80886645e30f68fb05ce769506defd7bfa114bcfc0d8c210"
     }
   ],
-  "notes": "0.12.5 : correction ReferenceError durableDraft dans l'éditeur actif, tests navigateur renforcés."
+  "notes": "0.12.6 : bouton de sauvegarde manuelle, exports PDF/HTML/TXT, démarrage sur Accueil et tiroir repositionné."
 }
