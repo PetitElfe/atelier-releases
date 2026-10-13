@@ -2946,8 +2946,10 @@ function renderLibraryReader(notebook,page,root){
         <button id="libraryReaderNext" type="button" title="Page suivante" ${index>=pages.length-1?'disabled':''}>→</button>
       </div>
       <button id="libraryReaderSpreadToggle" class="${libraryPageExpanded?'':'hidden'}" type="button" title="Une ou deux pages">${spread?'▯▯':'▯'}</button>
+      <div class="library-reader-zoom"><button id="libraryZoomOut" type="button" title="Dézoomer">−</button><button id="libraryReaderZoomLabel" type="button" title="Réinitialiser le zoom">100 %</button><button id="libraryZoomIn" type="button" title="Zoomer">+</button><button id="libraryReaderFind" type="button" title="Rechercher (Ctrl+F)">⌕</button></div>
       <button id="libraryReaderExpand" type="button" title="${libraryPageExpanded?'Réduire':'Agrandir'}">${libraryPageExpanded?'🗗':'⛶'}</button>
     </div>
+    ${libraryFindToolbar()}
     <div class="library-reader-layout">
       <aside id="libraryReaderTocPanel" class="library-reader-toc ${libraryReaderTocOpen?'':'hidden'}">
         <div><strong>Sommaire</strong><button id="libraryReaderTocClose" type="button">×</button></div>
