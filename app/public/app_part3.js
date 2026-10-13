@@ -242,6 +242,8 @@ async function checkRuntimeCompatibility(){
 }
 
 function showView(view){
+  if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
+  if(state.view==='library'&&view!=='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
   state.view=view;
   if(view!=='recipe' && view!=='settings') localStorage.setItem('atelierLastView',view);
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
