@@ -124,6 +124,7 @@ async function api(path,method='GET',body){
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'110 %');
   await page.locator('#libraryReaderZoomLabel').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'100 %');
+  console.log('READER PAGE CONTENT',JSON.stringify(await page.locator('#libraryReaderPages').innerText()));
   await page.locator('#libraryReaderFind').click();
   await page.locator('#libraryFindInput').fill('Recherche');
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
