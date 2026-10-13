@@ -1083,3 +1083,29 @@ body.library-page-expanded{overflow:hidden}
 .library-writing-actions{max-width:100%;justify-content:flex-start}
 .library-writing-topbar{padding-right:clamp(12px,13vw,210px)}
 @media(max-width:1080px){.library-writing-topbar{padding-right:10px}}
+
+/* 0.13.3 — progression horizontale et barres réellement compactes */
+.library-progress-linear{width:100%;padding:8px 1px}
+.library-progress-linear-label{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font:11px/1.5 system-ui,sans-serif;color:#ceb999}
+.library-progress-linear-label strong{font-size:16px;color:#e1c18b}
+.library-progress-linear-track{height:10px;overflow:hidden;border-radius:999px;border:1px solid #5a4938;background:#26201b;margin-top:5px}
+.library-progress-linear-track>span{height:100%;display:block;border-radius:inherit;background:#aa895d}
+.library-progress-panel{align-items:stretch}
+.library-domain-mini-context{display:block;font:12px/1.5 system-ui,sans-serif;color:#bca17e;font-weight:400;letter-spacing:0;margin:3px 0}
+.library-writing-context{display:none}
+.library-writing-page .library-writing-topbar{background:#e6d4bb;border-radius:8px;padding:9px 12px;gap:7px}
+.library-writing-heading{flex-basis:180px}
+.library-writing-actions{display:flex;flex-wrap:wrap;align-items:center;gap:5px;flex:2 1 600px}
+.library-writing-actions button{font-size:10px;padding:6px 8px}
+.library-reader-bar-compact{display:flex!important;align-items:center;flex-wrap:wrap;gap:7px;padding:8px 10px}
+.library-reader-bar-compact .library-reader-title{flex:1 1 150px}
+.library-reader-bar-compact .library-reader-zoom{white-space:nowrap}
+.library-reader-bar-compact .library-reader-pagination{white-space:nowrap}
+#libraryReaderBack{margin-left:auto;order:100;color:#e8ccaa;border-color:#72543a}
+.library-reader-close-label{font:11px system-ui,sans-serif}
+.library-reader-pages{justify-content:center}
+.library-reader-pages:not(.is-spread){grid-template-columns:minmax(0,1fr);justify-items:center}
+.library-reader-pages.is-spread{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;justify-items:center;width:100%;max-width:1500px!important;margin-inline:auto}
+.library-reader-pages.is-spread .library-reader-sheet{margin:0 auto!important;min-height:990px!important;width:100%!important;max-width:720px!important}
+.library-reader-pages.is-spread .library-reader-sheet:only-child{grid-column:1 / -1;width:min(720px,100%)!important;justify-self:center}
+@media(max-width:960px){.library-reader-pages.is-spread{grid-template-columns:minmax(0,1fr)}}

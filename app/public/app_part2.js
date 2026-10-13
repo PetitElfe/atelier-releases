@@ -1173,6 +1173,9 @@ function renderLibraryDomain(){
   const domain=objectiveNodeById(librarySelectedDomainId);
   if(!domain){panel.classList.add('hidden');$('#libraryHubPanel')?.classList.remove('hidden');return}
   $('#libraryDomainTitle').textContent=domain.title;
+  const heading=$('#libraryDomainTitle');
+  heading?.querySelector('.library-domain-mini-context')?.remove();
+  if(heading){const context=document.createElement('small');context.className='library-domain-mini-context';const active=libraryNotebookById(librarySelectedNotebookId);context.textContent=active?'Carnet : '+active.title+' · Progression : '+libraryProgressForDomain(domain)+' %':'Progression : '+libraryProgressForDomain(domain)+' %';heading.appendChild(context)}
   const mainGoal=objectiveChildren(domain.id).find(x=>x.node_type==='objective');
   $('#libraryDomainDescription').textContent=mainGoal?`Objectif principal : ${mainGoal.title}`:(domain.description||'Cet espace est à toi : ajoute seulement ce dont tu as besoin.');
   $('#libraryDomainKicker').textContent='DOMAINE · '+String(domain.status==='done'?'TERMINÉ':domain.status==='paused'?'EN PAUSE':'ACTIF');
@@ -1219,7 +1222,7 @@ function renderLibraryProgress(domain){
   const doneLevels=levels.filter(x=>x.status==='done').length;
   const tasks=state.tasks.filter(t=>t.objective_node_id&&ids.has(Number(t.objective_node_id)));
   const progress=libraryProgressForDomain(domain);
-  root.innerHTML=`<div class="library-progress-ring" style="--library-progress:${progress}%"><div><strong>${progress}%</strong><span>global</span></div></div>
+  root.innerHTML=`<div class="library-progress-linear" role="progressbar" aria-label="Progression globale" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><div class="library-progress-linear-label">Progression <strong>${progress} %</strong></div><div class="library-progress-linear-track"><span style="width:${progress}%"></span></div></div>
     ${mainGoal?`<div class="library-current-goal"><span>Objectif</span><strong>${esc(mainGoal.title)}</strong></div>`:''}
     <div class="library-progress-stats">
       <div><strong>${doneLevels}/${levels.length}</strong><span>niveaux</span></div>
@@ -2621,7 +2624,7 @@ function renderLibraryPageEditor(notebook,page){
         <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
         <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
         <button id="libraryAddA4Sheet" type="button" title="Créer manuellement la feuille A4 suivante">+ Feuille A4</button>
-        <button id="libraryPageReader" type="button" title="Lecture tranquille">📖</button>
+        <button id="libraryPageReader" type="button" title="Ouvrir le mode lecture">📖 Lire</button>
         <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
         <button id="libraryPageDelete" class="danger-button" type="button">×</button>
@@ -2947,12 +2950,26 @@ function renderLibraryReaderSheet(page,index){
   }
   return sheet;
 }
+function libraryExitReading(){
+  if(libraryEditorMode!=='read')return;
+  libraryEditorMode='write';
+  renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+}
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||state.view!=='library'||libraryEditorMode!=='read')return;
+  if($('#libraryFindBar')&&!$('#libraryFindBar').classList.contains('hidden')){
+    $('#libraryFindClose')?.click();event.preventDefault();return;
+  }
+  if(libraryReaderTocOpen&&!$('#libraryReaderTocPanel')?.classList.contains('hidden')){$('#libraryReaderTocClose')?.click();event.preventDefault();return}
+  if(document.querySelector('dialog[open]'))return;
+  libraryExitReading();event.preventDefault();
+});
 function renderLibraryReader(notebook,page,root){
   const pages=notebook.entries||[],index=libraryNotebookPageIndex(notebook,page.id);
   const spread=libraryPageExpanded&&libraryReaderSpread;
   root.innerHTML=`<article class="library-reader">
-    <div class="library-reader-bar">
-      <button id="libraryReaderBack" type="button" title="Retour à l’écriture">✎</button>
+    <div class="library-reader-bar library-reader-bar-compact">
+      <button id="libraryReaderBack" type="button" title="Fermer la lecture (Échap)" aria-label="Fermer la lecture">× <span class="library-reader-close-label">Fermer</span></button>
       <button id="libraryReaderToc" type="button" title="Sommaire">☰</button>
       <div class="library-reader-title"><strong>${esc(objectiveNodeById(librarySelectedDomainId)?.title||'Bibliothèque')}</strong><span>Carnet : ${esc(notebook.title)} · ${esc(page.title)}</span></div>
       <div class="library-reader-pagination">
@@ -2988,7 +3005,7 @@ function renderLibraryReader(notebook,page,root){
     b.innerHTML=`<span>${i+1}</span><strong>${esc(entry.title)}</strong>`;
     b.onclick=()=>goLibraryReaderPage(notebook,i);toc.appendChild(b);
   });
-  $('#libraryReaderBack').onclick=()=>{libraryEditorMode='write';renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId))};
+  $('#libraryReaderBack').onclick=libraryExitReading;
   $('#libraryReaderToc').onclick=()=>{libraryReaderTocOpen=!libraryReaderTocOpen;$('#libraryReaderTocPanel').classList.toggle('hidden',!libraryReaderTocOpen)};
   $('#libraryReaderTocClose')?.addEventListener('click',()=>{libraryReaderTocOpen=false;$('#libraryReaderTocPanel').classList.add('hidden')});
   const step=spread?2:1;

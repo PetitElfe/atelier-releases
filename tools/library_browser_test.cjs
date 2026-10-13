@@ -136,8 +136,16 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderFind').click();
   await page.locator('#libraryFindInput').fill('Recherche');
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
-  await page.locator('#libraryFindClose').click();
-    assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
+  await page.keyboard.press('Escape');
+  assert.ok(await page.locator('#libraryFindBar').evaluate(el=>el.classList.contains('hidden')),'First Escape closes search');
+  assert.ok(await page.locator('#libraryReaderPages').count(),'Escape from search must not close reader');
+  await page.keyboard.press('Escape');
+  await page.locator('#libraryPageBody').waitFor();
+  await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
+  assert.ok(await page.locator('.library-progress-linear').count(),'Horizontal progress visible');
+  assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
