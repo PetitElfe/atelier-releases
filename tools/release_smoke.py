@@ -174,6 +174,16 @@ def check_frontend_contract() -> None:
         fail("La lecture paginée est absente.")
     if "libraryReaderTocList" not in js2 or "Sommaire" not in js2:
         fail("Le sommaire cliquable du carnet est absent.")
+    if "persistLibraryBeforeNavigation" not in js2 or "state.view==='library'&&view!=='library'" not in js:
+        fail("La sauvegarde avant de quitter la Bibliothèque est absente.")
+    if "libraryUndo" not in js2 or "libraryRedo" not in js2 or "libraryHistory" not in js2:
+        fail("L’historique Annuler / Rétablir de l’éditeur est absent.")
+    if "oncontextmenu" not in js2 or "libraryOpenWriteLink" not in js2:
+        fail("Les liens ne sont pas ouvrables / modifiables directement en écriture.")
+    if "libraryReaderSpreadToggle" not in js2 or "libraryReaderSpread" not in js2 or "is-spread" not in css:
+        fail("Le choix une page / double page en lecture est absent.")
+    if "createLibraryPage" not in js2 or "notebook.entries.push(entry)" not in js2:
+        fail("La création locale de page sans rechargement est absente.")
     if "saveLibraryDomainConfig" not in js2 or "saveLibraryDomainCreate" not in js2 or "saveLibraryNotebook" not in js2:
         fail("Les éditeurs de structure n’utilisent pas de boutons d’enregistrement explicites.")
     if "insertLibraryImage" not in js2 or "library-image-resize-handle" not in js2 or "ondragstart" not in js2:
