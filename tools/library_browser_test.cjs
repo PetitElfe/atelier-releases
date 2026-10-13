@@ -30,7 +30,8 @@ async function api(path,method='GET',body){
   const pageErrors=[];
   page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await page.locator('.tabs button[data-view="library"]').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   const editor=page.locator('#libraryPageBody');
@@ -39,8 +40,9 @@ async function api(path,method='GET',body){
   await page.waitForTimeout(1300);
   const status=await page.locator('#librarySaveState').textContent();
   assert.equal(status.trim(),'Enregistré','Save status after typing: '+status);
-  await page.locator('.tabs button[data-view="home"]').click();
-  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   const restored=await page.locator('#libraryPageBody').innerText();
   assert.ok(restored.includes('Test sauvegarde navigateur 0124'),'Text missing after returning from Accueil: '+restored);
@@ -48,13 +50,15 @@ async function api(path,method='GET',body){
   assert.ok(back.sections[0].entries[0].notes.includes('Test sauvegarde navigateur 0124'),'Text missing in persisted database');
   // Tester aussi la navigation avant la fin des 650 ms d'autosauvegarde.
   await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
-  await page.locator('.tabs button[data-view="home"]').click();
-  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   await page.waitForTimeout(1500);
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('.tabs button[data-view="library"]').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
