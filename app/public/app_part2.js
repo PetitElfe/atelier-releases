@@ -2745,16 +2745,19 @@ function renderLibraryPageEditor(notebook,page){
   $('#libraryImageInput').onchange=async e=>{await insertLibraryImage(e.target.files?.[0],page);scheduleLibraryAutosave(page,{immediate:true});e.target.value=''};
 
   $('#libraryPageReader').onclick=async()=>{
-    const captured=libraryEditorData(page);
     const saved=await flushLibraryAutosave(page);
     if(saved===false)return;
-    page.title=captured.title;page.notes=captured.notes;
-    // La liste des carnets peut être rechargée pendant l'enregistrement.
-    // Mettre également à jour l'objet actuellement sélectionné pour le lecteur.
-    const active=libraryPageById(page.id);
-    if(active){active.title=captured.title;active.notes=captured.notes}
-    libraryEditorMode='read';libraryReaderTocOpen=false;
-    renderLibraryNotebookContent(objectiveNodeById(librarySelectedDomainId));
+    const domainId=Number(librarySelectedDomainId),notebookId=Number(notebook.id),pageId=Number(page.id);
+    try{
+      const response=await api('/api/objective-library?node_id='+encodeURIComponent(domainId));
+      if(!(response.sections||[]).some(section=>(section.entries||[]).some(entry=>Number(entry.id)===pageId)))throw Error('Page absente de la réponse');
+      // Le lecteur doit toujours utiliser les notes confirmées par la base.
+      libraryNotebookState={...libraryNotebookState,sections:response.sections};
+      librarySelectedNotebookId=notebookId;
+      librarySelectedPageId=pageId;
+      libraryEditorMode='read';libraryReaderTocOpen=false;
+      renderLibraryNotebookContent(objectiveNodeById(domainId));
+    }catch(err){showUiError(err,'Impossible de charger la dernière version de la page')}
   };
   $('#librarySaveNow').onclick=async()=>{
     const button=$('#librarySaveNow');
