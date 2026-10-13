@@ -94,7 +94,25 @@ async function api(path,method='GET',body){
     const download=await downloadPromise;
     assert.ok(download.suggestedFilename().toLowerCase().endsWith('.'+format.toLowerCase()),'Wrong export name: '+download.suggestedFilename());
   }
-  assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
+  // Mise en forme de la sélection uniquement.
+  await page.locator('#libraryPageBody').fill('Texte gras et texte normal');
+  await page.locator('#libraryPageBody').evaluate(el=>{
+    const first=el.firstChild;
+    const sel=window.getSelection(),range=document.createRange();
+    range.setStart(first,0);range.setEnd(first,10);sel.removeAllRanges();sel.addRange(range);
+    el.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
+  });
+  await page.locator('.library-format-btn[data-command="bold"]').click();
+  const formatted=await page.locator('#libraryPageBody').innerHTML();
+  assert.match(formatted,/<(?:b|strong|span)[^>]*>Texte gras<\\//i,'Selected words should be bold: '+formatted);
+  assert.ok(!/<(?:b|strong)[^>]*>[^<]*texte normal/i.test(formatted),'Other words should remain normal');
+  await page.locator('#librarySaveNow').click();
+  // Lecture, retour à l'écriture et navigation entre feuilles.
+  await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderNext').click();
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
+    assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
