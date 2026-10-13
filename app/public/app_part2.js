@@ -2456,6 +2456,73 @@ function goLibraryReaderPage(notebook,index,direction=0){
   const sheet=$('#libraryReaderSheet');
   if(sheet&&direction){sheet.classList.add(direction>0?'turn-next':'turn-prev');setTimeout(()=>sheet.classList.remove('turn-next','turn-prev'),260)}
 }
+let libraryReaderZoom=100;
+let libraryFindTerm='';
+let libraryFindIndex=0;
+function libraryReaderApplyZoom(){
+  const el=$('#libraryReaderPages');
+  if(el)el.style.zoom=String(libraryReaderZoom/100);
+  const output=$('#libraryReaderZoomLabel');
+  if(output)output.textContent=libraryReaderZoom+' %';
+}
+function libraryFindMatches(root){
+  root.querySelectorAll('mark.library-find-mark').forEach(mark=>mark.replaceWith(document.createTextNode(mark.textContent)));
+  root.normalize();
+  if(!libraryFindTerm.trim())return [];
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+  const matches=[];
+  for(const node of nodes){
+    if(node.parentElement?.closest('button,script,style,mark,[contenteditable="false"]'))continue;
+    const value=node.nodeValue||'';let start=0,at;
+    const offsets=[];while((at=value.toLocaleLowerCase().indexOf(libraryFindTerm.toLocaleLowerCase(),start))!==-1){offsets.push(at);start=at+Math.max(1,libraryFindTerm.length)}
+    for(const offset of offsets.reverse()){
+      const tail=node.splitText(offset);tail.splitText(libraryFindTerm.length);
+      const mark=document.createElement('mark');mark.className='library-find-mark';tail.replaceWith(mark);mark.appendChild(tail);matches.unshift(mark);
+    }
+  }
+  return [...root.querySelectorAll('mark.library-find-mark')];
+}
+function libraryShowFind(){
+  const bar=$('#libraryFindBar');
+  if(!bar)return;
+  bar.classList.remove('hidden');
+  $('#libraryFindInput')?.focus();
+  $('#libraryFindInput')?.select();
+}
+function libraryUpdateFind(){
+  libraryFindTerm=$('#libraryFindInput')?.value||'';
+  const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
+  if(!region)return;
+  const matches=libraryFindMatches(region);
+  libraryFindIndex=0;
+  libraryStepFind(0,matches);
+}
+function libraryStepFind(step,existing=null){
+  const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
+  const matches=existing||[...(region?.querySelectorAll('mark.library-find-mark')||[])];
+  const count=matches.length;
+  if(count)libraryFindIndex=(libraryFindIndex+step+count)%count;
+  matches.forEach((x,i)=>x.classList.toggle('library-find-current',i===libraryFindIndex));
+  if(count)matches[libraryFindIndex].scrollIntoView({block:'center',inline:'nearest'});
+  const label=$('#libraryFindCount');if(label)label.textContent=count?(libraryFindIndex+1)+' / '+count:'0 résultat';
+}
+function libraryWireFind(){
+  $('#libraryFindInput').oninput=libraryUpdateFind;
+  $('#libraryFindPrev').onclick=()=>libraryStepFind(-1);
+  $('#libraryFindNext').onclick=()=>libraryStepFind(1);
+  $('#libraryFindClose').onclick=()=>{
+    libraryFindTerm='';$('#libraryFindBar').classList.add('hidden');
+    const region=libraryEditorMode==='read'?$('#libraryReaderPages'):$('#libraryPageBody');
+    if(region){region.querySelectorAll('mark.library-find-mark').forEach(mark=>mark.replaceWith(document.createTextNode(mark.textContent)));region.normalize()}
+  };
+}
+function libraryFindToolbar(){
+ return '<div class="library-find-bar hidden" id="libraryFindBar"><input id="libraryFindInput" placeholder="Rechercher dans la page" aria-label="Rechercher du texte"><span id="libraryFindCount">0 résultat</span><button id="libraryFindPrev" type="button">↑</button><button id="libraryFindNext" type="button">↓</button><button id="libraryFindClose" type="button" title="Fermer la recherche">×</button></div>';
+}
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'&&state.view==='library'&&($('#libraryPageBody')||$('#libraryReaderPages'))){e.preventDefault();libraryShowFind()}
+});
 function renderLibraryReader(notebook,page,root){
   const pages=notebook.entries||[],index=libraryNotebookPageIndex(notebook,page.id);
   root.innerHTML=`<article class="library-reader">
@@ -2468,8 +2535,10 @@ function renderLibraryReader(notebook,page,root){
         <label>Page <input id="libraryReaderPageNumber" type="number" min="1" max="${pages.length}" value="${index+1}"> / ${pages.length}</label>
         <button id="libraryReaderNext" type="button" title="Page suivante" ${index>=pages.length-1?'disabled':''}>→</button>
       </div>
+      <div class="library-reader-zoom"><button id="libraryZoomOut" type="button" title="Dézoomer">−</button><button id="libraryReaderZoomLabel" type="button" title="Réinitialiser le zoom">100 %</button><button id="libraryZoomIn" type="button" title="Zoomer">+</button><button id="libraryReaderFind" type="button" title="Rechercher (Ctrl+F)">⌕</button></div>
       <button id="libraryReaderExpand" type="button" title="${libraryPageExpanded?'Réduire':'Agrandir'}">${libraryPageExpanded?'🗗':'⛶'}</button>
     </div>
+    ${libraryFindToolbar()}
     <div class="library-reader-layout">
       <aside id="libraryReaderTocPanel" class="library-reader-toc ${libraryReaderTocOpen?'':'hidden'}">
         <div><strong>Sommaire</strong><button id="libraryReaderTocClose" type="button">×</button></div>
@@ -2566,6 +2635,8 @@ function renderLibraryPageEditor(notebook,page){
         <button id="libraryOpenSelectedLink" class="hidden" type="button">Ouvrir</button>
         <button id="libraryEditSelectedLink" class="hidden" type="button">✎ Modifier</button>
       </div>
+      <button id="libraryWriterFind" type="button" class="library-writer-find">⌕ Rechercher (Ctrl+F)</button>
+      ${libraryFindToolbar()}
       <div class="library-a4-caption" aria-label="Feuille A4">FEUILLE A4 · 210 × 297 mm · Nouvelle feuille uniquement sur demande</div>
       <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
     </div>
@@ -2728,6 +2799,8 @@ function scheduleLibraryHistory(){
 }
 function libraryApplyHistoryState(state,page){
   if(!state)return;
+  libraryWireFind();
+  $('#libraryWriterFind').onclick=libraryShowFind;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');if(!body||!title)return;
   libraryHistoryApplying=true;
   title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
@@ -2846,9 +2919,15 @@ function renderLibraryReader(notebook,page,root){
       <div id="libraryReaderPages" class="library-reader-pages ${spread?'is-spread':''}"></div>
     </div>
   </article>`;
+  libraryWireFind();
+  $('#libraryReaderFind').onclick=libraryShowFind;
+  $('#libraryZoomOut').onclick=()=>{libraryReaderZoom=Math.max(50,libraryReaderZoom-10);libraryReaderApplyZoom()};
+  $('#libraryZoomIn').onclick=()=>{libraryReaderZoom=Math.min(200,libraryReaderZoom+10);libraryReaderApplyZoom()};
+  $('#libraryReaderZoomLabel').onclick=()=>{libraryReaderZoom=100;libraryReaderApplyZoom()};
   const pageRoot=$('#libraryReaderPages');
   pageRoot.appendChild(renderLibraryReaderSheet(page,index));
   if(spread&&pages[index+1])pageRoot.appendChild(renderLibraryReaderSheet(pages[index+1],index+1));
+  libraryReaderApplyZoom();
   const toc=$('#libraryReaderTocList');
   pages.forEach((entry,i)=>{
     const b=document.createElement('button');b.type='button';b.className=Number(entry.id)===Number(page.id)?'active':'';
