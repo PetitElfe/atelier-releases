@@ -2255,6 +2255,8 @@ if(!window.__atelierLibraryExitSave){
 
 function libraryCommand(command,value=null){
   const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
+  if(command==='undo'){libraryUndo();return}
+  if(command==='redo'){libraryRedo();return}
   editor.focus();restoreLibraryTextSelection();
   try{document.execCommand('styleWithCSS',false,true)}catch(_){}
   let ok=false;
@@ -2264,12 +2266,13 @@ function libraryCommand(command,value=null){
   }
   rememberLibraryTextSelection();
   scheduleLibraryAutosave(page);
+  scheduleLibraryHistory();
 }
 function libraryBlockFormat(tag){
   const editor=$('#libraryPageBody'),page=libraryPageById(librarySelectedPageId);if(!editor||!page)return;
   editor.focus();restoreLibraryTextSelection();
   try{document.execCommand('formatBlock',false,tag)}catch(_){}
-  rememberLibraryTextSelection();scheduleLibraryAutosave(page);
+  rememberLibraryTextSelection();scheduleLibraryAutosave(page);scheduleLibraryHistory();
 }
 function libraryToggleExpanded(){
   libraryPageExpanded=!libraryPageExpanded;
@@ -2412,9 +2415,18 @@ function renderLibraryPageEditor(notebook,page){
   const backlinksRoot=$('#libraryBacklinks>div');
   backlinks.forEach(source=>{const b=document.createElement('button');b.type='button';b.textContent=source.title;b.onclick=()=>openLibraryPageTarget(source.id);backlinksRoot.appendChild(b)});
 
-  const changed=()=>scheduleLibraryAutosave(page);
+  libraryInitHistory();
+  const changed=()=>{scheduleLibraryAutosave(page);scheduleLibraryHistory()};
   body.addEventListener('input',changed);title.addEventListener('input',changed);
   body.addEventListener('keyup',rememberLibraryTextSelection);body.addEventListener('mouseup',rememberLibraryTextSelection);
+  body.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
+      e.preventDefault();
+      if(e.shiftKey)libraryRedo();else libraryUndo();
+    }else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){
+      e.preventDefault();libraryRedo();
+    }
+  });
   body.addEventListener('blur',()=>scheduleLibraryAutosave(page,{immediate:true}));
 
   $$('.library-format-btn').forEach(btn=>{
