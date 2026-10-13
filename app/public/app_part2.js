@@ -2513,6 +2513,7 @@ function renderLibraryPageEditor(notebook,page){
         <span id="librarySaveState" class="library-save-state">Enregistré</span>
         <button id="librarySaveNow" type="button" title="Sauvegarder immédiatement cette page">💾 Sauvegarder</button>
         <button id="libraryExportPage" type="button" title="Exporter cette page sur votre PC (PDF, HTML ou TXT)">↧ Exporter</button>
+        <button id="libraryAddA4Sheet" type="button" title="Créer manuellement la feuille A4 suivante">+ Feuille A4</button>
         <button id="libraryPageReader" type="button" title="Lecture tranquille">📖</button>
         <button id="libraryPageExpand" type="button" title="${libraryPageExpanded?'Réduire la page':'Agrandir la page'}">${libraryPageExpanded?'🗗':'⛶'}</button>
         <button id="libraryPageDoneToggle" type="button">${page.done?'✓ Traité':'○ Marquer traité'}</button>
@@ -2565,6 +2566,7 @@ function renderLibraryPageEditor(notebook,page){
         <button id="libraryOpenSelectedLink" class="hidden" type="button">Ouvrir</button>
         <button id="libraryEditSelectedLink" class="hidden" type="button">✎ Modifier</button>
       </div>
+      <div class="library-a4-caption" aria-label="Feuille A4">FEUILLE A4 · 210 × 297 mm · Nouvelle feuille uniquement sur demande</div>
       <div id="libraryPageBody" class="library-page-body library-rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Écris directement dans cette page…"></div>
     </div>
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
@@ -2642,6 +2644,10 @@ function renderLibraryPageEditor(notebook,page){
     }finally{if(button.isConnected)button.disabled=false}
   };
   $('#libraryExportPage').onclick=()=>libraryExportCurrentPage(page);
+  $('#libraryAddA4Sheet').onclick=async()=>{
+    if(!await flushLibraryAutosave(page))return;
+    await createLibraryPage(notebook);
+  };
   $('#libraryPageExpand').onclick=libraryToggleExpanded;
   $('#libraryPageDoneToggle').onclick=async()=>{
     await flushLibraryAutosave(page);
