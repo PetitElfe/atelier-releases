@@ -1078,3 +1078,8 @@ body.library-page-expanded{overflow:hidden}
  .library-reader-bar{gap:6px}
  .library-reader-title{order:-1;flex-basis:100%}
 }
+
+/* Ne pas masquer les actions du carnet sous le tiroir flottant. */
+.library-writing-actions{max-width:100%;justify-content:flex-start}
+.library-writing-topbar{padding-right:clamp(12px,13vw,210px)}
+@media(max-width:1080px){.library-writing-topbar{padding-right:10px}}
