@@ -32,7 +32,7 @@ async function api(path,method='GET',body){
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
-  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   const editor=page.locator('#libraryPageBody');
   await editor.waitFor();
   await editor.fill('Test sauvegarde navigateur 0124');
@@ -56,7 +56,7 @@ async function api(path,method='GET',body){
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
-  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   // Une feuille supplémentaire est toujours créée explicitement.
   const beforeA4=await api('/api/objective-library?node_id='+domain.id);
