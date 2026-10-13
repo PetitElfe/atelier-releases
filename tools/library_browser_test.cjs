@@ -145,6 +145,15 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.ok(await page.locator('.library-progress-linear').count(),'Horizontal progress visible');
+  await page.locator('#libraryPageReader').click();
+  await page.locator('#libraryReaderExpand').click();
+  await page.locator('#libraryReaderBack').click();
+  await page.locator('#libraryPageBody').waitFor();
+  assert.ok(!await page.locator('body').evaluate(el=>el.classList.contains('library-page-expanded')),'X exits expanded reading');
+  assert.ok(await page.locator('#libraryDomainQuickContext .library-head-books').count(),'Books beside domain title');
+  await page.locator('#globalHomeShortcut').click();
+  assert.ok(await page.locator('body').evaluate(el=>!el.classList.contains('library-page-expanded')),'Home does not leave expanded state');
+
   assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
