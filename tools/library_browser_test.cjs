@@ -230,7 +230,7 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
   await page.locator('#cycleStart').fill('2026-08-01');
   await page.locator('#cycleForm button[type="submit"]').click();
-  try{await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1,{timeout:10000});}
+  try{await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1,null,{timeout:10000});}
   catch(err){
     console.log('CYCLE DIAGNOSTIC:',JSON.stringify({form:await page.locator('#cycleForm').evaluate(el=>({html:el.outerHTML,visible:!!el.offsetParent})),api:await api('/api/cycle-periods'),errors:pageErrors}));
     throw err;
