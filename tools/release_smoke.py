@@ -206,6 +206,7 @@ def check_frontend_contract() -> None:
     if "main{margin-left:" in css or ".topbar{margin-left:" in css:
         fail("Le tiroir de navigation ne doit pas déplacer l'accueil ou l'en-tête.")
 
+# 0.12.1 validates notebook persistence, history and reader spread.
 def check_server(version: str) -> None:
     with tempfile.TemporaryDirectory(prefix="atelier-ci-") as td:
         data = Path(td) / "data"
