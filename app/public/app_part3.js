@@ -258,10 +258,11 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
+  if(view==='organisation'||view==='calendar') refreshOrganisation();
   syncGlobalLayoutEditing();
   // Ne pas reconstruire un éditeur à partir d'un état ancien pendant le changement d'onglet.
   if(enteringLibrary&&typeof librarySelectedDomainId!=='undefined'&&librarySelectedDomainId){
@@ -702,3 +703,103 @@ window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
+/* ALPHA 0.14 — habitudes et cycle : aucune donnée de cycle dans le journal d'Accueil. */
+const organisationState={habits:[],periods:[]};
+let organisationRefreshSerial=0;
+async function refreshOrganisation(){
+  const serial=++organisationRefreshSerial;
+  try{
+    const [habits,periods]=await Promise.all([api('/api/habits'),api('/api/cycle-periods')]);
+    if(serial!==organisationRefreshSerial)return;
+    organisationState.habits=habits;organisationState.periods=periods;
+    renderOrganisation();
+  }catch(err){showUiError(err,'Impossible de charger le suivi')}
+}
+function localDayAdd(iso,days){
+  const date=parseYMD(iso);date.setDate(date.getDate()+days);return ymd(date);
+}
+function dayDistance(start,end){
+  return Math.round((parseYMD(end)-parseYMD(start))/86400000);
+}
+function cycleEstimate(){
+  const dates=[...new Set(organisationState.periods.map(x=>x.start_date))].sort();
+  const intervals=[];
+  for(let i=1;i<dates.length;i++){
+    const d=dayDistance(dates[i-1],dates[i]);
+    if(d>=21&&d<=45)intervals.push(d);
+  }
+  if(!intervals.length)return null;
+  const recent=intervals.slice(-6),avg=Math.round(recent.reduce((a,b)=>a+b,0)/recent.length);
+  let next=localDayAdd(dates[dates.length-1],avg);
+  const today=ymd(new Date());
+  while(next<today)next=localDayAdd(next,avg);
+  return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next))};
+}
+function renderOrganisation(){
+  const habits=$('#habitList'),entries=$('#cycleEntries'),forecast=$('#cycleForecast');
+  if(habits){
+    const week=monday(new Date()),days=Array.from({length:7},(_,i)=>ymd(new Date(week.getFullYear(),week.getMonth(),week.getDate()+i)));
+    habits.innerHTML=organisationState.habits.length?'':'<p class="muted">Aucune habitude enregistrée pour le moment.</p>';
+    for(const habit of organisationState.habits){
+      const checked=new Set(habit.checked_dates||[]);
+      const count=days.filter(day=>checked.has(day)).length;
+      const card=document.createElement('article');card.className='habit-card';
+      card.innerHTML='<div class="habit-card-head"><strong>'+esc(habit.title)+'</strong><small>'+count+' / '+habit.target_per_week+' cette semaine</small><button type="button" class="habit-archive" title="Archiver cette habitude">Archiver</button></div><div class="habit-week">'+days.map((day,i)=>'<label><input type="checkbox" data-day="'+day+'" '+(checked.has(day)?'checked':'')+'><span>'+['L','M','M','J','V','S','D'][i]+'</span></label>').join('')+'</div>';
+      card.querySelectorAll('[data-day]').forEach(input=>input.onchange=async()=>{
+        const ok=await runUiAction('Enregistrer cette journée',()=>api('/api/habits/'+habit.id+'/check',{method:'PUT',body:JSON.stringify({date:input.dataset.day,done:input.checked})}));
+        if(!ok.ok)input.checked=!input.checked;
+        else await refreshOrganisation();
+      });
+      card.querySelector('.habit-archive').onclick=async()=>{
+        if(!confirm('Archiver cette habitude ? Les journées enregistrées seront conservées.'))return;
+        const result=await runUiAction('Archiver cette habitude',()=>api('/api/habits/'+habit.id,{method:'DELETE'}));
+        if(result.ok)await refreshOrganisation();
+      };
+      habits.appendChild(card);
+    }
+  }
+  if(forecast){
+    const prediction=cycleEstimate();
+    forecast.textContent=prediction?'Prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+' (environ '+prediction.approxDays+' jour(s), cycle moyen de '+prediction.average+' jours).':'Ajoute au moins deux dates de début de règles pour obtenir une estimation indicative.';
+  }
+  if(entries){
+    entries.innerHTML=organisationState.periods.length?'':'<p class="muted">Aucune période enregistrée.</p>';
+    for(const period of organisationState.periods){
+      const card=document.createElement('div');card.className='cycle-entry';
+      card.innerHTML='<span>Début : '+esc(period.start_date)+(period.end_date?' · Fin : '+esc(period.end_date):'')+'</span><button type="button">Supprimer</button>';
+      card.querySelector('button').onclick=async()=>{
+        if(!confirm('Supprimer cette période ?'))return;
+        const response=await runUiAction('Supprimer la période',()=>api('/api/cycle-periods/'+period.id,{method:'DELETE'}));
+        if(response.ok)await refreshOrganisation();
+      };entries.appendChild(card);
+    }
+  }
+  const hint=$('#calendarCycleHint');
+  if(hint){
+    const prediction=cycleEstimate();
+    hint.classList.toggle('hidden',!prediction);
+    hint.replaceChildren();
+    if(prediction){
+      const label=document.createElement('span');
+      label.textContent='Suivi du cycle : prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+'. ';
+      const link=document.createElement('button');link.type='button';link.textContent='Voir mon suivi →';link.onclick=()=>showView('organisation');
+      hint.append(label,link);
+    }
+  }
+}
+$('#habitFrequency')?.addEventListener('change',event=>{
+  $('#habitTarget').value=event.target.value==='daily'?'7':'3';
+});
+$('#habitCreateForm')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const title=$('#habitTitle').value.trim();if(!title)return;
+  const result=await runUiAction('Créer une habitude',()=>api('/api/habits',{method:'POST',body:JSON.stringify({title,frequency:$('#habitFrequency').value,target_per_week:Number($('#habitTarget').value)})}));
+  if(result.ok){$('#habitTitle').value='';await refreshOrganisation()}
+});
+$('#cycleForm')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const start_date=$('#cycleStart').value,end_date=$('#cycleEnd').value;
+  if(end_date&&end_date<start_date){showUiError(new Error('La fin doit suivre le début.'),'Vérifier les dates');return}
+  const result=await runUiAction('Enregistrer la période',()=>api('/api/cycle-periods',{method:'POST',body:JSON.stringify({start_date,end_date})}));
+  if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
+});
