@@ -245,6 +245,10 @@ document.getElementById('globalHomeShortcut')?.addEventListener('click',()=>{
   if(state.view==='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
   showView('home');
 });
+// Replier le tiroir après la sélection d'une rubrique, sans gêner son déplacement.
+document.querySelectorAll('#sideNav [data-view]').forEach(button=>button.addEventListener('click',()=>{
+  setSideNavCollapsed(true);
+}));
 function showView(view){
   const enteringLibrary=view==='library'&&state.view!=='library';
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
