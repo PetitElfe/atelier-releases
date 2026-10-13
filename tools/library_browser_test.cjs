@@ -112,9 +112,11 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderNext').click();
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
-    // Recherche dans l'éditeur, sans altérer le document.
+  await page.locator('#libraryPageBody').fill('Recherche cible une fois');
+  await page.locator('#librarySaveNow').click();
+  // Recherche dans l'éditeur, sans altérer le document.
   await page.locator('#libraryWriterFind').click();
-  await page.locator('#libraryFindInput').fill('Texte gras');
+  await page.locator('#libraryFindInput').fill('Recherche');
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
   await page.locator('#libraryPageReader').click();
@@ -123,7 +125,7 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderZoomLabel').click();
   assert.equal((await page.locator('#libraryReaderZoomLabel').textContent()).trim(),'100 %');
   await page.locator('#libraryReaderFind').click();
-  await page.locator('#libraryFindInput').fill('Texte gras');
+  await page.locator('#libraryFindInput').fill('Recherche');
   assert.match(await page.locator('#libraryFindCount').textContent(),/1 \/ 1/);
   await page.locator('#libraryFindClose').click();
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
