@@ -800,6 +800,10 @@ $('#cycleForm')?.addEventListener('submit',async event=>{
   event.preventDefault();
   const start_date=$('#cycleStart').value,end_date=$('#cycleEnd').value;
   if(end_date&&end_date<start_date){showUiError(new Error('La fin doit suivre le début.'),'Vérifier les dates');return}
-  const result=await runUiAction('Enregistrer la période',()=>api('/api/cycle-periods',{method:'POST',body:JSON.stringify({start_date,end_date})}));
-  if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
+  const submit=$('#cycleForm button[type="submit"]');if(submit.disabled)return;
+  submit.disabled=true;
+  try{
+    const result=await runUiAction('Enregistrer la période',()=>api('/api/cycle-periods',{method:'POST',body:JSON.stringify({start_date,end_date})}));
+    if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
+  }finally{submit.disabled=false}
 });
