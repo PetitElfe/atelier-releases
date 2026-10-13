@@ -45,6 +45,18 @@ async function api(path,method='GET',body){
   assert.ok(restored.includes('Test sauvegarde navigateur 0124'),'Text missing after returning from Accueil: '+restored);
   const back=await api('/api/objective-library?node_id='+domain.id);
   assert.ok(back.sections[0].entries[0].notes.includes('Test sauvegarde navigateur 0124'),'Text missing in persisted database');
-  console.log('OK — editor saves and survives navigation');
+  // Tester aussi la navigation avant la fin des 650 ms d'autosauvegarde.
+  await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
+  await page.locator('.tabs button[data-view="home"]').click();
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('#libraryPageBody').waitFor();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  await page.waitForTimeout(1500);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
+  await page.locator('.library-notebook-link').filter({hasText:'Carnet E2E'}).click();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
