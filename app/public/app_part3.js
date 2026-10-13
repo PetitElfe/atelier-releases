@@ -318,7 +318,17 @@ function applySideNavPosition(pos=null){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
   const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
-  const next=clampSideNavPosition(Number.isFinite(Number(saved?.left))?Number(saved.left):fallback.left,Number.isFinite(Number(saved?.top))?Number(saved.top):fallback.top);
+  // Les anciennes positions enregistrées au milieu de l'écran sont réinitialisées.
+  // Seuls les emplacements à proximité d'un bord restent personnalisés.
+  const width=nav.offsetWidth||220;
+  const candidate=Number(saved?.left);
+  const edgeThreshold=Math.max(90,width*0.55);
+  const validEdge=Number.isFinite(candidate)&&(candidate<=edgeThreshold||candidate>=window.innerWidth-width-edgeThreshold);
+  if(saved&&!validEdge){
+    saved=null;
+    localStorage.removeItem('atelierSideNavPosition');
+  }
+  const next=clampSideNavPosition(saved&&Number.isFinite(Number(saved.left))?Number(saved.left):fallback.left,saved&&Number.isFinite(Number(saved.top))?Number(saved.top):fallback.top);
   nav.style.left=next.left+'px';
   nav.style.right='auto';
   nav.style.top=next.top+'px';
@@ -676,8 +686,9 @@ function initGlobalLayoutEditor(){
 }
 
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
-const savedView=localStorage.getItem('atelierLastView');
-refresh().then(()=>{if(['home','calendar','tasks','library','reminders','kitchen','cuisine'].includes(savedView))showView(savedView)}); checkRuntimeCompatibility();
+// Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
+localStorage.setItem('atelierLastView','home');
+refresh().then(()=>showView('home')); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
