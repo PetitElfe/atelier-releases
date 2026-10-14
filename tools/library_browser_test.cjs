@@ -292,7 +292,7 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>!document.querySelector('#eventForm'));
   await page.waitForFunction(async(id)=>{ const r=await fetch('/api/events?start=2026-10-20&end=2026-10-22'); const list=await r.json(); return r.ok && !list.some(item=>item.id===id); },original.id,{timeout:12000});
   const remainingEvents=await api('/api/events?start=2026-10-20&end=2026-10-22');
-  assert.ok(!remainingEvents.some(e=>e.id===original.id)&&remainingEvents.some(e=>e.id===copied.id),'Deleting original must retain copy');
+  assert.ok(!remainingEvents.some(e=>e.id===original.id)&&remainingEvents.some(e=>e.id===copied.id),'Deleting original must retain copy: '+JSON.stringify({originalId:original.id,copiedId:copied.id,remaining:remainingEvents.map(e=>({id:e.id,date:e.instance_date,title:e.title}))}));
   assert.ok(!(await api('/api/reminders')).some(r=>r.entity_type==='event'&&r.entity_id===original.id),'Deleting an appointment clears its reminders');
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
