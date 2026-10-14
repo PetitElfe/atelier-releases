@@ -648,26 +648,26 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.locator('#homeCanvas').waitFor({state:'visible'});
   assert.match(await page.title(),/Alpha 0\\.16\\.1/,'Le titre d’onglet doit être cohérent');
-  const movingCalendar=page.locator('#openCalendarCard');
-  const beforeMove=await movingCalendar.boundingBox();
-  const beforeOther=await page.locator('#journalBook').boundingBox();
+  const canvasCalendar=page.locator('#openCalendarCard');
+  const beforeCanvasMove=await canvasCalendar.boundingBox();
+  const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
   await page.locator('#globalLayoutEdit').click();
-  const moveGrip=await movingCalendar.locator(':scope > .layout-controls .layout-move-handle').boundingBox();
-  await page.mouse.move(moveGrip.x+moveGrip.width/2,moveGrip.y+moveGrip.height/2);
+  const canvasGrip=await canvasCalendar.locator(':scope > .layout-controls .layout-move-handle').boundingBox();
+  await page.mouse.move(canvasGrip.x+canvasGrip.width/2,canvasGrip.y+canvasGrip.height/2);
   await page.mouse.down();
-  await page.mouse.move(moveGrip.x+moveGrip.width/2-45,moveGrip.y+moveGrip.height/2+35,{steps:5});
+  await page.mouse.move(canvasGrip.x+canvasGrip.width/2-45,canvasGrip.y+canvasGrip.height/2+35,{steps:5});
   await page.mouse.up();
-  const afterMove=await movingCalendar.boundingBox();
-  const afterOther=await page.locator('#journalBook').boundingBox();
-  assert.ok(Math.abs(afterMove.y-beforeMove.y)>20,'Calendrier déplacé en position libre');
-  assert.ok(Math.abs(afterOther.y-beforeOther.y)<3,'Déplacer Calendrier ne déplace pas le Journal');
+  const afterCanvasMove=await canvasCalendar.boundingBox();
+  const afterOtherCanvas=await page.locator('#journalBook').boundingBox();
+  assert.ok(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)>20,'Calendrier déplacé en position libre');
+  assert.ok(Math.abs(afterOtherCanvas.y-beforeOtherCanvas.y)<3,'Déplacer Calendrier ne déplace pas le Journal');
   const storedCanvas=await page.evaluate(()=>localStorage.getItem('atelierHomeCanvasV2_calendar'));
   assert.ok(storedCanvas,'La position libre est conservée sous une clé indépendante');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  const restoredCanvas=await movingCalendar.boundingBox();
-  assert.ok(Math.abs(restoredCanvas.x-afterMove.x)<4&&Math.abs(restoredCanvas.y-afterMove.y)<4,
+  const restoredCanvas=await canvasCalendar.boundingBox();
+  assert.ok(Math.abs(restoredCanvas.x-afterCanvasMove.x)<4&&Math.abs(restoredCanvas.y-afterCanvasMove.y)<4,
     'La position du calendrier doit être identique après rechargement');
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierHomeCanvasV2_calendar')),storedCanvas,
     'Les coordonnées sauvegardées ne doivent pas changer au redémarrage');
