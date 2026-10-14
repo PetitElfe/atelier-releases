@@ -366,7 +366,7 @@ async function api(path,method='GET',body){
   const movedEvent=(await api('/api/events?start=2026-11-03&end=2026-11-04')).find(e=>e.id===movedInstance.moved_event_id);
   assert.equal(movedEvent.start_time,'10:00','Postponed occurrence must retain the original hour');
   await page.evaluate(async()=>{state.cursor=parseYMD('2026-11-03');await refresh()});
-  const oldPill=page.locator('#monthGrid .event-pill.event-instance-closed').filter({hasText:'Série récurrente E2E'});
+  const oldPill=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^3$/})}).locator('.event-pill.event-instance-closed').filter({hasText:'Série récurrente E2E'});
   await oldPill.click({button:'right'});
   await page.locator('#atelierContextMenu').getByText('Masquer l’ancienne occurrence barrée').click();
   await page.waitForFunction(async id=>{
