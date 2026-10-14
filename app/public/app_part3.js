@@ -1112,6 +1112,7 @@ function initGlobalLayoutEditor(){
       });
     }
     function finishInteraction(d,move,up,cancel){
+      if(!item.el.classList.contains('layout-selected'))return;
       saveGlobalLayout(item,d);
       item.el.classList.remove('layout-selected');
       window.removeEventListener('pointermove',move);
@@ -1122,6 +1123,7 @@ function initGlobalLayoutEditor(){
     const beginMove=event=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
       event.preventDefault();event.stopPropagation();
+      try{event.currentTarget.setPointerCapture?.(event.pointerId)}catch(_){}
       const d=readGlobalLayout(item),sx=event.clientX,sy=event.clientY,ox=d.x,oy=d.y;
       item.el.classList.add('layout-selected');
       const move=ev=>{
@@ -1131,6 +1133,9 @@ function initGlobalLayoutEditor(){
       };
       const up=()=>finishInteraction(d,move,up,cancel);
       const cancel=()=>finishInteraction(d,move,up,cancel);
+      // Capture ensures release is received even when the pointer leaves the handle.
+      event.currentTarget.addEventListener('pointerup',up,{once:true});
+      event.currentTarget.addEventListener('pointercancel',cancel,{once:true});
       window.addEventListener('pointermove',move);
       window.addEventListener('pointerup',up);
       window.addEventListener('pointercancel',cancel);
@@ -1140,6 +1145,7 @@ function initGlobalLayoutEditor(){
     const beginResize=(axis,event)=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
       event.preventDefault();event.stopPropagation();
+      try{event.currentTarget.setPointerCapture?.(event.pointerId)}catch(_){}
       const d=readGlobalLayout(item);
       const rect=item.el.getBoundingClientRect();
       const sx=event.clientX,sy=event.clientY;
@@ -1158,6 +1164,9 @@ function initGlobalLayoutEditor(){
       };
       const up=()=>finishInteraction(d,move,up,cancel);
       const cancel=()=>finishInteraction(d,move,up,cancel);
+      // Capture ensures release is received even when the pointer leaves the handle.
+      event.currentTarget.addEventListener('pointerup',up,{once:true});
+      event.currentTarget.addEventListener('pointercancel',cancel,{once:true});
       window.addEventListener('pointermove',move);
       window.addEventListener('pointerup',up);
       window.addEventListener('pointercancel',cancel);
