@@ -698,7 +698,7 @@ async function api(path,method='GET',body){
   await page.locator('#layoutModuleSettingsForm input[name="name"]').fill('Mes tâches rapides');
   await page.locator('#layoutModuleSettingsForm button[type="submit"]').click();
   assert.equal(await shortcut.locator('h3').innerText(),'Mes tâches rapides','Individual settings rename module');
-  await shortcut.locator('h3').dblclick();
+  await shortcut.locator('p').dblclick();
   assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click opens individual settings');
   await page.locator('#layoutSettingsCancel').click();
   await shortcut.locator('button[data-home-open]').click();
