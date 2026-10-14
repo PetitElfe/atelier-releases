@@ -322,6 +322,12 @@ async function api(path,method='GET',body){
   await page.locator('#saveEvent').click();
   await page.locator('#recurrenceSingle').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  // L'animation de fermeture du formulaire peut précéder la réponse API.
+  await page.waitForFunction(async ()=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-27');
+    const rows=await response.json();
+    return rows.some(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
+  },null,{timeout:12000});
   const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
   const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
