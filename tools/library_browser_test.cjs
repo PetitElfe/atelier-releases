@@ -560,6 +560,25 @@ async function api(path,method='GET',body){
   assert.equal((await page.locator('#sideNav [data-view="budget"]').innerText()).trim(),'Mes finances','Drawer rename persists after reload');
   assert.equal(await page.locator('#budgetLedgerPanel > h3').innerText(),'Mon historique','Card title persists after reload');
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
+  // Toutes les rubriques principales reçoivent aussi des poignées de modules.
+  await page.evaluate(()=>showView('organisation'));
+  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),2,'Habit and cycle modules can be moved');
+  await page.evaluate(()=>showView('kitchen'));
+  assert.equal(await page.locator('#kitchenView .kitchen-panel.layout-object').count(),3,'All kitchen modules can be moved');
+  await page.locator('#globalLayoutEdit').click();
+  const shopping=page.locator('#shoppingPanel');
+  await shopping.locator(':scope > .layout-controls .layout-rename-handle').click();
+  await page.locator('#moduleRenameForm input[name="name"]').fill('Mes courses test');
+  await page.locator('#moduleRenameForm button[type="submit"]').click();
+  assert.equal(await shopping.locator('.kitchen-head h3').innerText(),'Mes courses test','Kitchen panel title is customizable');
+  await page.locator('#globalLayoutEdit').click();
+  await page.evaluate(()=>showView('settings'));
+  assert.ok(await page.locator('#settingsView .settings-card.layout-object').count()>=2,'Settings modules can be moved');
+  await page.evaluate(()=>showView('library'));
+  assert.ok(await page.locator('#libraryView .library-side-module.layout-object').count()>=2,'Library side modules can be moved');
+  await page.evaluate(()=>showView('home'));
+  assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
+
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
