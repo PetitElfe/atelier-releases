@@ -1244,3 +1244,23 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 
 /* ALPHA 0.14.5 — masquer les zones d'erreur vides dans les formulaires */
 .form-error.hidden{display:none!important}
+
+
+/* ALPHA 0.15.0 — Gestion mensuelle du budget, utilitaire et responsive */
+.budget-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.budget-summary article{background:var(--panel);border:1px solid var(--line);padding:15px;border-radius:10px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.budget-summary article span{font-size:12px;color:var(--muted)}.budget-summary article strong{font-size:clamp(20px,2.2vw,28px);word-break:break-word}.budget-summary small{font-size:11px;color:var(--muted)}
+.budget-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.budget-grid .organisation-module{min-width:0}
+.budget-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.budget-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.budget-form label input,.budget-form label select{width:100%;min-width:0}
+.budget-form button[type="submit"]{grid-column:1/-1;justify-self:start}
+.budget-form .budget-checkbox{display:flex;flex-direction:row;align-items:center;grid-column:1/-1}.budget-checkbox input{width:auto!important}
+.budget-entry,.budget-rule,.budget-home-line{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.budget-entry strong,.budget-rule strong{font-size:14px;display:block}.budget-entry small,.budget-rule small{font-size:11px;color:var(--muted);display:block;margin-top:3px}
+.budget-positive{color:#95cb9b}.budget-negative{color:#e5a399}
+.budget-ledger{margin-bottom:16px}.budget-home-widget{margin:10px auto;padding:14px 20px;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-width:1050px}
+.budget-home-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.budget-home-line{font-size:12px}
+@media(max-width:1000px){.budget-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.budget-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.budget-form{grid-template-columns:1fr}.budget-form button[type="submit"]{grid-column:1}.budget-summary article strong{font-size:21px}}
