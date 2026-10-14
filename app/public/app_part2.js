@@ -14,12 +14,32 @@ function showCalendarEventMenu(event,anchor){
     {label:'Supprimer',danger:true,run:()=>deleteCalendarEventFromMenu(event)}
   ]);
 }
+function chooseRecurringEventScope(verb){
+  return new Promise(resolve=>{
+    openModal(`<div class="atelier-dialog"><h2>${esc(verb)} un rendez-vous récurrent</h2>
+      <p>Souhaites-tu modifier uniquement cette occurrence ou toute la série ?</p>
+      <div class="form-actions"><button id="recurrenceCancel" type="button">Annuler</button>
+      <button id="recurrenceSingle" type="button">Cette occurrence</button>
+      <button id="recurrenceSeries" class="primary" type="button">Toute la série</button></div></div>`);
+    const done=val=>{closeModal();resolve(val)};
+    $('#recurrenceCancel').onclick=()=>done(null);
+    $('#recurrenceSingle').onclick=()=>done('single');
+    $('#recurrenceSeries').onclick=()=>done('series');
+    $('#modalClose').onclick=()=>done(null);
+  });
+}
 async function deleteCalendarEventFromMenu(event){
   const recurring=event.recurrence&&event.recurrence!=='none';
   if(recurring){
-    const only=await askUiConfirm('Rendez-vous récurrent','Supprimer uniquement cette occurrence ? Choisis Annuler pour ne rien supprimer.','Cette occurrence',true);
-    if(only){
+    const scope=await chooseRecurringEventScope('Supprimer');
+    if(!scope)return;
+    if(scope==='single'){
       const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}/cancel-instance`,{method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date})}));
+      if(result.ok)await refresh();
+    }else{
+      const confirmed=await askUiConfirm('Supprimer toute la série',`Supprimer définitivement « ${event.title} », toutes ses occurrences et ses rappels ?`,'Supprimer toute la série',true);
+      if(!confirmed)return;
+      const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}`,{method:'DELETE'}));
       if(result.ok)await refresh();
     }
     return;
@@ -39,9 +59,23 @@ function bindCalendarDropTarget(cell,date,time=null){
     if(!event||!date)return;
     if(date===event.instance_date&&(!time||time===event.start_time))return;
     const newTime=time||event.start_time||'09:00';
-    if(event.recurrence&&event.recurrence!=='none'){
-      const single=await askUiConfirm('Déplacer un rendez-vous récurrent','Déplacer uniquement cette occurrence ? Pour modifier toute la série, annule et utilise son éditeur.','Cette occurrence');
-      if(!single)return;
+    const scope=event.recurrence&&event.recurrence!=='none'
+      ?await chooseRecurringEventScope('Déplacer'): 'single';
+    if(!scope)return;
+    if(scope==='series'){
+      const oldStart=new Date(`${event.instance_date||event.event_date}T${event.start_time||'00:00'}`);
+      const newStart=new Date(`${date}T${newTime}`);
+      const delta=newStart.getTime()-oldStart.getTime();
+      const base=new Date(`${event.event_date}T${event.start_time||'00:00'}`);
+      const shiftedBase=new Date(base.getTime()+delta);
+      const localDateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const shifted=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+        .map(r=>({title:r.title||'',remind_at:localDateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
+      const result=await runUiAction('Impossible de déplacer la série',()=>api(`/api/events/${event.id}`,{
+        method:'PUT',body:JSON.stringify({event_date:ymd(shiftedBase),start_time:pad(shiftedBase.getHours())+':'+pad(shiftedBase.getMinutes()),reminders:shifted})
+      }));
+      if(result.ok){state.cursor=parseYMD(date);await refresh()}
+      return;
     }
     const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}/postpone-instance`,{
       method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date,new_date:date,new_time:newTime})
