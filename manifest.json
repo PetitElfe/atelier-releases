@@ -1,15 +1,15 @@
 {
-  "version": "0.15.3",
+  "version": "0.16.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "dbd326ffd86ed560548bf141f84f8124381b97202084864db4c7796d2ab5b06a"
+      "sha256": "a0dcd747b80cd657e950ff7793f256aaa65e86c99a7503b63637628ca062be15"
     },
     {
       "path": "VERSION",
-      "sha256": "fad958a3c5fecd33c2b2bc667b8ad8661fce304517d3167543e93761fd155599"
+      "sha256": "aa037454b5e8320521a32b278a3f4aff05fc79009ab5503f5d4a1b9a33b38c47"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "cb4edf6440b2d5212e55477df113c2d814eb63d69402674c3b8fc6d76afde2f8"
+      "sha256": "9de369a65d4d7798f7020fe06ed1680eb0c606c964733951a888b180f8e69baf"
     },
     {
       "path": "public/index.html",
-      "sha256": "ba5686d059f715437d7dfee9da8bda528b250ad306f2febb4e2b5b98437db1e7"
+      "sha256": "e8dc409e638e7c460c46fd76dae231538e0b6585755d24e4953aa73a6be0284d"
     },
     {
       "path": "public/styles.css",
-      "sha256": "146d4364389ad17c7451a385817a087ea2b96ceacc000ba69e06bf7c6dbccb9c"
+      "sha256": "5bf07998bb72b0c6f018003975604dbf81042d5cebd75d58de33c79e295e0649"
     }
   ],
-  "notes": "ALPHA 0.15.3 — Redimensionnement vertical indépendant des autres encadrés et mini-calendrier bloqué en mode Modifier."
+  "notes": "ALPHA 0.16.0 — Accueil extensible, bibliothèque de modules, visibilité persistante et réglages individuels sur toutes les rubriques, sans migration de données."
 }
