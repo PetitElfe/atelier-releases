@@ -368,7 +368,7 @@ async function api(path,method='GET',body){
   await page.evaluate(async()=>{state.cursor=parseYMD('2026-11-03');await refresh()});
   const oldPill=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^3$/})}).locator('.event-pill.event-instance-closed').filter({hasText:'Série récurrente E2E'});
   await oldPill.click({button:'right'});
-  await page.locator('#atelierContextMenu').getByText('Masquer l’ancienne occurrence barrée').click();
+  await page.locator('#atelierContextMenu').getByText('Masquer cette occurrence barrée').click();
   await page.waitForFunction(async id=>{
     const r=await fetch('/api/events?start=2026-11-03&end=2026-11-04');
     const rows=await r.json();
