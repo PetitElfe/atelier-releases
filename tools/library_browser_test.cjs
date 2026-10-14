@@ -271,6 +271,7 @@ async function api(path,method='GET',body){
   await page.locator('#globalHomeShortcut').click();
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
+  await page.evaluate(()=>{state.cursor=parseYMD("2026-08-01");renderMonth();renderWeek()});
   await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
   const markedDay=page.locator('#monthGrid .day-cell.cycle-recorded').filter({has:page.locator('.day-number', {hasText:'1'})});
   assert.ok(await markedDay.count()>0,'Recorded 1 August must have cycle highlight');
