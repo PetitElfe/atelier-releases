@@ -580,6 +580,7 @@ async function api(path,method='GET',body){
   assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
 
   // ALPHA 0.15.2 : l'Accueil doit avoir un petit encadré Budget et un mode édition sûr.
+  await page.evaluate(()=>setSideNavCollapsed(true));
   const widget=page.locator('#homeBudgetWidget');
   const compactWidth=await widget.evaluate(el=>el.getBoundingClientRect().width);
   assert.ok(compactWidth<400,'Home Budget should be compact by default, not 1050px wide');
@@ -622,6 +623,7 @@ async function api(path,method='GET',body){
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).height,heightSaved.height,'Custom dimensions survive reload');
+  await page.evaluate(()=>setSideNavCollapsed(true));
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Calendar navigation works normally outside edit mode');
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
