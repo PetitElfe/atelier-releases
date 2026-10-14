@@ -207,6 +207,39 @@ CREATE TABLE IF NOT EXISTS menstrual_periods (
  created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_habit_checks_date ON habit_checks(checked_date);
+CREATE TABLE IF NOT EXISTS budget_settings (
+ id INTEGER PRIMARY KEY CHECK(id=1), opening_balance_cents INTEGER NOT NULL DEFAULT 0,
+ opening_date TEXT NOT NULL DEFAULT '2026-01-01'
+);
+CREATE TABLE IF NOT EXISTS budget_rules (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL CHECK(kind IN ('income','fixed')),
+ title TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Général',
+ amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),
+ day_of_month INTEGER NOT NULL CHECK(day_of_month BETWEEN 1 AND 31),
+ start_date TEXT NOT NULL, end_date TEXT, active INTEGER NOT NULL DEFAULT 1,
+ created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS budget_debts (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, total_cents INTEGER NOT NULL CHECK(total_cents>0),
+ monthly_cents INTEGER NOT NULL CHECK(monthly_cents>0),
+ day_of_month INTEGER NOT NULL CHECK(day_of_month BETWEEN 1 AND 31),
+ start_date TEXT NOT NULL, end_date TEXT, archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS budget_entries (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ rule_id INTEGER, debt_id INTEGER, scheduled_date TEXT NOT NULL,
+ title TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('income','expense')),
+ category TEXT NOT NULL DEFAULT 'Général', amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),
+ status TEXT NOT NULL CHECK(status IN ('pending','presumed','confirmed','skipped')),
+ source TEXT NOT NULL CHECK(source IN ('scheduled','manual')),
+ actual_date TEXT, notes TEXT DEFAULT '', created_at TEXT NOT NULL,
+ UNIQUE(rule_id, scheduled_date), UNIQUE(debt_id, scheduled_date)
+);
+CREATE TABLE IF NOT EXISTS budget_month_notes (
+ month TEXT PRIMARY KEY, notes TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_budget_entries_date ON budget_entries(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_menstrual_period_start ON menstrual_periods(start_date);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(due_date);

@@ -320,8 +320,9 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
+  if(view==='budget')loadBudget();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -759,7 +760,7 @@ function initGlobalLayoutEditor(){
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
-refresh().then(()=>showView('home')); checkRuntimeCompatibility();
+refresh().then(()=>{if(state.view==='home')showView('home')}); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
@@ -880,3 +881,135 @@ $('#cycleForm')?.addEventListener('submit',async event=>{
     if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
   }finally{submit.disabled=false}
 });
+
+
+/* ALPHA 0.15.0 — Budget financier local. Pas de données bancaires synchronisées. */
+let budgetData=null;
+let budgetSelectedMonth=ymd(new Date()).slice(0,7);
+const budgetMoney=cents=>(Number(cents||0)/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+const budgetSafeDate=s=>String(s||'').slice(0,10);
+function budgetFormData(form){const values=Object.fromEntries(new FormData(form).entries());values.planned=form.elements.planned?.checked||false;return values;}
+async function budgetRequest(url,method,body,label){
+  const result=await runUiAction(label,()=>api(url,{method,body:JSON.stringify(body)}));
+  if(result.ok)await loadBudget();
+  return result.ok;
+}
+async function loadBudget(month=budgetSelectedMonth){
+  budgetSelectedMonth=month;
+  const result=await runUiAction('Impossible de charger le Budget',()=>api('/api/budget?month='+encodeURIComponent(month)));
+  if(!result.ok)return;
+  budgetData=result.value;
+  renderBudget();
+  renderHomeBudgetWidget();
+}
+function askBudgetPaymentAmount(entry){
+  return new Promise(resolve=>{
+    openModal(`<div class="atelier-dialog"><h2>Confirmer ${entry.kind==='income'?'le revenu':'la dépense'}</h2>
+      <p>${esc(entry.title)} · montant réellement ${entry.kind==='income'?'reçu':'payé'}</p>
+      <form id="budgetConfirmForm" class="budget-form">
+        <label>Montant réel (€) <input name="amount" type="number" min="0" step=".01" required value="${(entry.amount_cents/100).toFixed(2)}"></label>
+        <label>Date effective <input name="actual_date" type="date" required value="${ymd(new Date())}"></label>
+        <div class="form-actions"><button id="budgetCancelConfirm" type="button">Annuler</button>
+          <button class="primary" type="submit">Confirmer</button></div>
+      </form></div>`);
+    const close=result=>{closeModal();resolve(result)};
+    $('#budgetCancelConfirm').onclick=()=>close(null);
+    $('#modalClose').onclick=()=>close(null);
+    $('#budgetConfirmForm').onsubmit=ev=>{
+      ev.preventDefault();
+      const f=ev.currentTarget;close({amount:f.elements.amount.value,actual_date:f.elements.actual_date.value});
+    };
+  });
+}
+function budgetRow(entry){
+  const row=document.createElement('div');row.className='budget-entry';
+  const desc=document.createElement('div');
+  desc.innerHTML='<strong>'+esc(entry.title)+'</strong><small>'+esc(entry.scheduled_date)+' · '+esc(entry.category||'Général')+' · '+esc(({pending:'Prévu',presumed:'Présumé payé',confirmed:'Confirmé',skipped:'Non effectué'})[entry.status]||entry.status)+'</small>';
+  const money=document.createElement('span');money.className=entry.kind==='income'?'budget-positive':'budget-negative';money.textContent=(entry.kind==='income'?'+':'−')+budgetMoney(entry.amount_cents);
+  row.append(desc,money);
+  if(entry.status!=='confirmed'&&entry.status!=='skipped'){
+    const confirm=document.createElement('button');confirm.textContent='Confirmer';confirm.onclick=async()=>{
+      const value=await askBudgetPaymentAmount(entry);
+      if(value===null)return;
+      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',...value},'Confirmation impossible');
+    };row.appendChild(confirm);
+  }
+  if(entry.status==='pending'||entry.status==='presumed'){
+    const skip=document.createElement('button');skip.textContent='Non effectué';skip.onclick=()=>budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'skipped'},'Modification impossible');row.appendChild(skip);
+  }
+  return row;
+}
+function renderBudget(){
+  if(!budgetData)return;
+  const b=budgetData, root=$('#budgetView');if(!root)return;
+  $('#budgetMonth').value=budgetSelectedMonth;
+  $('#budgetBalance').textContent=budgetMoney(b.balance_cents);
+  $('#budgetForecast').textContent=budgetMoney(b.forecast_cents);
+  $('#budgetIncome').textContent=budgetMoney(b.income_cents);
+  $('#budgetExpenses').textContent=budgetMoney(b.expenses_cents);
+  const entries=$('#budgetEntries');entries.innerHTML='';
+  if(!b.entries.length)entries.innerHTML='<p class="muted">Aucune opération ce mois-ci.</p>';
+  b.entries.forEach(e=>entries.appendChild(budgetRow(e)));
+  const rules=$('#budgetRules');rules.innerHTML='';
+  for(const r of b.rules){
+    const el=document.createElement('div');el.className='budget-rule';
+    el.innerHTML='<span><strong>'+esc(r.title)+'</strong><small>'+esc(r.kind==='income'?'Revenu':'Charge fixe')+' · jour '+r.day_of_month+' · '+esc(r.start_date)+(r.end_date?' au '+esc(r.end_date):'')+(r.active?'':' · arrêtée')+'</small></span><span>'+budgetMoney(r.amount_cents)+'</span>';
+    if(r.active){const stop=document.createElement('button');stop.textContent='Arrêter';stop.onclick=()=>budgetRequest('/api/budget/'+r.id+'/archive','PUT',{kind:'rule'},'Arrêt impossible');el.appendChild(stop)}
+    rules.appendChild(el);
+  }
+  const debts=$('#budgetDebts');debts.innerHTML='';
+  for(const d of b.debts){
+    const el=document.createElement('div');el.className='budget-rule';
+    const box=document.createElement('span');box.innerHTML='<strong>'+esc(d.title)+'</strong><small>'+budgetMoney(d.repaid_cents)+' remboursés sur '+budgetMoney(d.total_cents)+' · reste '+budgetMoney(d.remaining_cents)+(d.archived?' · arrêtée':'')+'</small>';
+    el.appendChild(box);
+    if(!d.archived){const btn=document.createElement('button');btn.textContent='Arrêter';btn.onclick=()=>budgetRequest('/api/budget/'+d.id+'/archive','PUT',{kind:'debt'},'Arrêt impossible');el.appendChild(btn)}
+    debts.appendChild(el);
+  }
+  $('#budgetNotes').value=b.notes||'';
+  const settings=$('#budgetSettingsForm');settings.elements.opening_balance.value=(b.opening_balance_cents/100).toFixed(2);settings.elements.opening_date.value=b.opening_date;
+}
+function renderHomeBudgetWidget(){
+  const root=$('#homeBudgetContent');if(!root)return;
+  if(!budgetData){root.textContent='Ouvre le Budget pour configurer tes revenus et charges.';return}
+  root.innerHTML='';
+  const b=budgetData;
+  const waiting=b.pending_income.filter(x=>x.scheduled_date<=ymd(new Date()));
+  const coming=b.upcoming_charges.slice(0,3);
+  if(!waiting.length&&!coming.length){root.textContent='Aucun revenu à confirmer ni prélèvement proche.';return}
+  for(const e of waiting){
+    const line=document.createElement('div');line.className='budget-home-line';
+    const label=document.createElement('span');label.textContent='Reçu : '+e.title+' ('+budgetMoney(e.amount_cents)+') ?';
+    const yes=document.createElement('button');yes.textContent='Oui';yes.onclick=()=>budgetRequest('/api/budget/'+e.id+'/status','PUT',{status:'confirmed',actual_date:ymd(new Date())},'Impossible de confirmer le revenu');
+    line.append(label,yes);root.appendChild(line);
+  }
+  for(const e of coming){
+    const p=document.createElement('div');p.className='budget-home-line';p.textContent=e.scheduled_date+' · '+e.title+' · '+budgetMoney(e.amount_cents);root.appendChild(p);
+  }
+}
+function initBudget(){
+  const month=$('#budgetMonth');if(!month)return;
+  month.value=budgetSelectedMonth;month.onchange=()=>loadBudget(month.value);
+  $('#homeBudgetOpen').onclick=()=>showView('budget');
+  const today=ymd(new Date());
+  for(const id of ['budgetRuleForm','budgetDebtForm'])$('#'+id).elements.start_date.value=today;
+  $('#budgetEntryForm').elements.date.value=today;
+  for(const [id,url] of [['budgetRuleForm','/api/budget/rules'],['budgetDebtForm','/api/budget/debts'],['budgetEntryForm','/api/budget/entries']]){
+    const form=$('#'+id);
+    form.addEventListener('submit',async ev=>{
+      ev.preventDefault();
+      const ok=await budgetRequest(url,'POST',budgetFormData(form),'Impossible d’enregistrer');
+      if(ok){
+        form.reset();
+        if(id==='budgetEntryForm')form.elements.date.value=today;
+        else form.elements.start_date.value=today;
+      }
+    });
+  }
+  $('#budgetSettingsForm').addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    await budgetRequest('/api/budget/settings','PUT',budgetFormData(ev.currentTarget),'Impossible d’enregistrer le solde initial');
+  });
+  $('#budgetSaveNotes').onclick=()=>budgetRequest('/api/budget/notes','PUT',{month:budgetSelectedMonth,notes:$('#budgetNotes').value},'Impossible d’enregistrer les notes');
+  loadBudget();
+}
+initBudget();

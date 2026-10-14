@@ -1,5 +1,5 @@
 {
-  "version": "0.14.6",
+  "version": "0.15.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "917bb3251e4d24c44edfe76c0f6bba3155877bd04759963f4a56c0673357a14a"
+      "sha256": "f8405a7330c287028d470c3ee3506f878f1ad85ed79c1d1adc19df2ff7398915"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "8c3cd6f38fb8739ab0e5df9b38515e77b16127551b67a88804e840bb5046f8a8"
+      "sha256": "8cf2d124a14ef4015428c42d1e54928394be3a2ce3be36ca046cb4cfc3154d30"
     },
     {
       "path": "app_part2.py",
-      "sha256": "4b608a1269910f420112abbdaa6123f95331a6e86741f44ac8e75bc76b5634fc"
+      "sha256": "17b5b6eb61df64571d26d35571becdc82dfc323c66f562d3a7d27dfb39bea3d8"
     },
     {
       "path": "app_part3.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "60a809e3ea07566cdeb88e536ecaa7d598376d6bc4a96ef67f1b18e9f3cdc3ef"
+      "sha256": "0dfc59381f15961863e47dfbfabe66fe79a67d8e71c46f71cf3c70224f6e8761"
     },
     {
       "path": "public/index.html",
-      "sha256": "8202db4af65e574a180193a68ae4aa6d650508e01228595a1fe5b21cca4e73af"
+      "sha256": "d39f0bbd456c2edf82182cb3bd90ee2ba0c0d389b3eb24f80c6ad516cde45b7e"
     },
     {
       "path": "public/styles.css",
-      "sha256": "ca837485ab3dac490ef9753dad36d44168e7a5d0f35890fe5e20c4eef54a5b22"
+      "sha256": "b892bf8f75ecaaa167454ef37c8f94fe1e795b3346a25fb74564cc843c6a15e2"
     }
   ],
-  "notes": "ALPHA 0.14.6 : option pour masquer les anciennes occurrences barrées et annulées."
+  "notes": "ALPHA 0.15.0 — Budget mensuel : revenus, abonnements, achats, suivi des dettes, solde et prévisions."
 }

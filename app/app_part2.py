@@ -1,3 +1,117 @@
+
+# Budget ALPHA 0.15.0 : montants en centimes, aucune connexion bancaire.
+def budget_amount(value):
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+    try:
+        d=Decimal(str(value).replace(',','.'))
+        if not d.is_finite() or d<0 or d>Decimal('100000000'): raise ValueError()
+        return int((d*100).quantize(Decimal('1'),rounding=ROUND_HALF_UP))
+    except (InvalidOperation,ValueError,TypeError):
+        raise ValueError('Montant invalide (positif, au maximum 100 millions d’euros).')
+
+def budget_date(value):
+    try: return date.fromisoformat(str(value)).isoformat()
+    except (ValueError,TypeError): raise ValueError('Date invalide.')
+
+def budget_month(value):
+    try:
+        text=str(value)
+        return date.fromisoformat(text+'-01') if len(text)==7 else date.fromisoformat(text).replace(day=1)
+    except (ValueError,TypeError): raise ValueError('Mois invalide.')
+
+def budget_last_day(year,month):
+    return monthrange(year,month)[1]
+
+def budget_entry_day(month,day):
+    return date(month.year,month.month,min(day,budget_last_day(month.year,month.month)))
+
+def budget_due_in_month(item,month):
+    due=budget_entry_day(month,item['day_of_month']).isoformat()
+    return due if item['start_date']<=due and (not item['end_date'] or item['end_date']>=due) else None
+
+def budget_materialize(c,month,ts):
+    today=date.today().isoformat()
+    for rule in c.execute('SELECT * FROM budget_rules WHERE active=1').fetchall():
+        due=budget_due_in_month(rule,month)
+        if not due:continue
+        status='presumed' if rule['kind']=='fixed' and due<=today else 'pending'
+        c.execute("""INSERT OR IGNORE INTO budget_entries
+          (rule_id,scheduled_date,title,kind,category,amount_cents,status,source,actual_date,created_at)
+          VALUES(?,?,?,?,?,?,?,?,?,?)""",
+          (rule['id'],due,rule['title'],'income' if rule['kind']=='income' else 'expense',
+           rule['category'],rule['amount_cents'],status,'scheduled',due if status=='presumed' else None,ts))
+    # Une charge consultée à l'avance devient « présumée payée » à échéance,
+    # sans jamais transformer un revenu en revenu confirmé.
+    c.execute("""UPDATE budget_entries
+      SET status='presumed', actual_date=scheduled_date
+      WHERE source='scheduled' AND status='pending' AND scheduled_date<=?
+      AND rule_id IN (SELECT id FROM budget_rules WHERE kind='fixed')""",(today,))
+    for debt in c.execute('SELECT * FROM budget_debts WHERE archived=0').fetchall():
+        due=budget_due_in_month(debt,month)
+        if not due:continue
+        repaid=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
+          WHERE debt_id=? AND status='confirmed'""",(debt['id'],)).fetchone()[0])
+        planned=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
+          WHERE debt_id=? AND scheduled_date<? AND status!='skipped'""",(debt['id'],due)).fetchone()[0])
+        remaining_plan=max(0,debt['total_cents']-planned)
+        installment=min(debt['monthly_cents'],remaining_plan)
+        if installment==0:continue
+        c.execute("""INSERT OR IGNORE INTO budget_entries
+          (debt_id,scheduled_date,title,kind,category,amount_cents,status,source,created_at)
+          VALUES(?,? ,?,'expense','Crédits / dettes',?,'pending','scheduled',?)""",
+          (debt['id'],due,debt['title'],installment,ts))
+    c.commit()
+
+def budget_snapshot(c,month,ts):
+    # Materialiser chronologiquement les mois depuis le solde de départ :
+    # sinon un mois antérieur jamais ouvert fausserait le solde actuel.
+    settings=c.execute('SELECT * FROM budget_settings WHERE id=1').fetchone()
+    start_date=settings['opening_date'] if settings else None
+    if not start_date:
+        dates=[r[0] for r in c.execute('SELECT start_date FROM budget_rules UNION ALL SELECT start_date FROM budget_debts').fetchall()]
+        start_date=min(dates) if dates else month.isoformat()
+    cursor=budget_month(start_date)
+    if cursor>month:cursor=month
+    span=(month.year-cursor.year)*12+(month.month-cursor.month)
+    if span>240:raise ValueError('Historique supérieur à 20 ans : ajuste la date du solde initial.')
+    while cursor<=month:
+        budget_materialize(c,cursor,ts)
+        cursor=date(cursor.year+1,1,1) if cursor.month==12 else date(cursor.year,cursor.month+1,1)
+    first=month.isoformat();last=month.replace(day=budget_last_day(month.year,month.month)).isoformat()
+    entries=[dict(x) for x in c.execute(
+      'SELECT * FROM budget_entries WHERE scheduled_date BETWEEN ? AND ? ORDER BY scheduled_date,id',(first,last))]
+    settings=c.execute('SELECT * FROM budget_settings WHERE id=1').fetchone()
+    opening=int(settings['opening_balance_cents']) if settings else 0
+    start=settings['opening_date'] if settings else '2026-01-01'
+    # Le solde courant suit les confirmations et les charges présumées jusqu'à aujourd'hui.
+    today=min(date.today().isoformat(),last)
+    movement=c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
+      FROM budget_entries WHERE status IN ('confirmed','presumed') AND COALESCE(actual_date,scheduled_date)<=?
+       AND COALESCE(actual_date,scheduled_date)>=?""",(today,start)).fetchone()[0]
+    balance=opening+int(movement)
+    pending=[x for x in entries if x['status']=='pending']
+    # Le prévisionnel tient compte de TOUTES les échéances entre le solde
+    # initial et la fin du mois sélectionné, pas seulement du mois affiché.
+    forecast=int(opening+c.execute("""SELECT COALESCE(SUM(
+       CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
+       FROM budget_entries WHERE status IN ('confirmed','presumed','pending')
+       AND COALESCE(actual_date,scheduled_date)>=?
+       AND COALESCE(actual_date,scheduled_date)<=?""",(start,last)).fetchone()[0])
+    notes=c.execute('SELECT notes FROM budget_month_notes WHERE month=?',(first[:7],)).fetchone()
+    debts=[]
+    for item in c.execute('SELECT * FROM budget_debts ORDER BY archived,id DESC'):
+        debt=dict(item)
+        paid=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
+        WHERE debt_id=? AND status='confirmed'""",(item['id'],)).fetchone()[0])
+        debt['repaid_cents']=paid;debt['remaining_cents']=max(0,debt['total_cents']-paid);debts.append(debt)
+    return {'month':first[:7],'entries':entries,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
+     'debts':debts,'opening_balance_cents':opening,'opening_date':start,'balance_cents':balance,
+     'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
+     'income_cents':sum(x['amount_cents'] for x in entries if x['kind']=='income' and x['status']!='skipped'),
+     'expenses_cents':sum(x['amount_cents'] for x in entries if x['kind']=='expense' and x['status']!='skipped'),
+     'pending_income':[x for x in pending if x['kind']=='income'],
+     'upcoming_charges':[x for x in entries if x['kind']=='expense' and x['source']=='scheduled' and x['scheduled_date']>=date.today().isoformat() and x['status']!='skipped']}
+
 class Handler(BaseHTTPRequestHandler):
     server_version = 'AtelierLocal/' + atelier_version()
 
@@ -43,6 +157,9 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         with conn() as c:
+            if p == '/api/budget':
+                try: return self._json(budget_snapshot(c,budget_month(q.get('month',[date.today().strftime('%Y-%m')])[0]),now_iso()))
+                except ValueError as ex:return self._json({'error':str(ex)},400)
             if p == '/api/habits':
                 rows=[dict(row) for row in c.execute('SELECT * FROM habits WHERE archived=0 ORDER BY id')]
                 for row in rows:
@@ -196,6 +313,49 @@ class Handler(BaseHTTPRequestHandler):
                 print('[Atelier] Import recette URL:', exc)
                 return self._json({'error':"Impossible de lire cette page. Vérifie le lien ou essaie une autre recette."},502)
         with conn() as c:
+            if p == '/api/budget/rules':
+                try:
+                    kind=str(body.get('kind',''))
+                    if kind not in ('income','fixed'):raise ValueError('Type invalide.')
+                    title=str(body.get('title','')).strip()[:120]
+                    if not title:raise ValueError('Nom requis.')
+                    amount=budget_amount(body.get('amount'))
+                    day=int(body.get('day_of_month'))
+                    if day<1 or day>31:raise ValueError('Jour invalide.')
+                    start=budget_date(body.get('start_date'));end=budget_date(body['end_date']) if body.get('end_date') else None
+                    if end and end<start:raise ValueError('La fin précède le début.')
+                    cur=c.execute("""INSERT INTO budget_rules(kind,title,category,amount_cents,day_of_month,start_date,end_date,created_at)
+                       VALUES(?,?,?,?,?,?,?,?)""",(kind,title,str(body.get('category') or 'Général')[:80],amount,day,start,end,ts))
+                    c.commit();return self._json({'id':cur.lastrowid},201)
+                except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
+            if p == '/api/budget/debts':
+                try:
+                    title=str(body.get('title','')).strip()[:120]
+                    if not title:raise ValueError('Nom requis.')
+                    total=budget_amount(body.get('total'));monthly=budget_amount(body.get('monthly'))
+                    if total<=0 or monthly<=0:raise ValueError('Montant nul.')
+                    day=int(body.get('day_of_month'))
+                    if not 1<=day<=31:raise ValueError('Jour invalide.')
+                    start=budget_date(body.get('start_date'));end=budget_date(body['end_date']) if body.get('end_date') else None
+                    if end and end<start:raise ValueError('Fin invalide.')
+                    cur=c.execute("""INSERT INTO budget_debts(title,total_cents,monthly_cents,day_of_month,start_date,end_date,created_at)
+                      VALUES(?,?,?,?,?,?,?)""",(title,total,monthly,day,start,end,ts))
+                    c.commit();return self._json({'id':cur.lastrowid},201)
+                except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
+            if p == '/api/budget/entries':
+                try:
+                    title=str(body.get('title','')).strip()[:120]
+                    if not title:raise ValueError('Nom requis.')
+                    kind=str(body.get('kind','expense'))
+                    if kind not in ('income','expense'):raise ValueError('Type invalide.')
+                    amount=budget_amount(body.get('amount'))
+                    when=budget_date(body.get('date'))
+                    status='pending' if body.get('planned') else 'confirmed'
+                    cur=c.execute("""INSERT INTO budget_entries(scheduled_date,title,kind,category,amount_cents,status,source,actual_date,notes,created_at)
+                       VALUES(?,?,?,?,? ,?,'manual',?,?,?)""",
+                      (when,title,kind,str(body.get('category') or 'Général')[:80],amount,status,None if status=='pending' else when,str(body.get('notes') or '')[:2000],ts))
+                    c.commit();return self._json({'id':cur.lastrowid},201)
+                except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
             if p == '/api/habits':
                 title=str(body.get('title','')).strip()[:120]
                 if not title: return self._json({'error':'Le nom est requis.'},400)
@@ -344,6 +504,52 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if p == '/api/budget/settings':
+            try:
+                opening=budget_amount(abs(float(str(body.get('opening_balance','0')).replace(',','.'))))
+                if float(str(body.get('opening_balance','0')).replace(',','.'))<0:opening=-opening
+                when=budget_date(body.get('opening_date'))
+                with conn() as c:
+                    c.execute('INSERT INTO budget_settings(id,opening_balance_cents,opening_date) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET opening_balance_cents=excluded.opening_balance_cents,opening_date=excluded.opening_date',(opening,when))
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
+        if p == '/api/budget/notes':
+            try:
+                month=budget_month(body.get('month')).strftime('%Y-%m')
+                with conn() as c:
+                    c.execute('INSERT INTO budget_month_notes(month,notes) VALUES(?,?) ON CONFLICT(month) DO UPDATE SET notes=excluded.notes',(month,str(body.get('notes') or '')[:10000]))
+                    c.commit()
+                return self._json({'ok':True})
+            except ValueError as ex:return self._json({'error':str(ex)},400)
+        if len(parts)==4 and parts[:2]==['api','budget'] and parts[3]=='status':
+            try:
+                eid=int(parts[2]); status=str(body.get('status',''))
+                if status not in ('confirmed','presumed','pending','skipped'):raise ValueError('Statut invalide.')
+                with conn() as c:
+                    old=c.execute('SELECT * FROM budget_entries WHERE id=?',(eid,)).fetchone()
+                    if not old:return self._json({'error':'Opération introuvable.'},404)
+                    amount=budget_amount(body.get('amount')) if body.get('amount') not in (None,'') else old['amount_cents']
+                    # Corriger des montants uniquement si explicitement demandé ; amount est en euros.
+                    actual=budget_date(body.get('actual_date')) if status=='confirmed' and body.get('actual_date') else date.today().isoformat() if status=='confirmed' else old['scheduled_date'] if status=='presumed' else None
+                    c.execute('UPDATE budget_entries SET status=?,amount_cents=?,actual_date=? WHERE id=?',(status,amount,actual,eid))
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
+        if len(parts)==4 and parts[:2]==['api','budget'] and parts[3]=='archive':
+            try:
+                rid=int(parts[2])
+                with conn() as c:
+                    table='budget_debts' if body.get('kind')=='debt' else 'budget_rules'
+                    field='archived' if table=='budget_debts' else 'active'
+                    value=1 if table=='budget_debts' else 0
+                    c.execute(f'UPDATE {table} SET {field}=? WHERE id=?',(value,rid))
+                    reference='debt_id' if table=='budget_debts' else 'rule_id'
+                    c.execute(f"""UPDATE budget_entries SET status='skipped'
+                         WHERE {reference}=? AND scheduled_date>? AND status='pending'""",(rid,date.today().isoformat()))
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
         with conn() as c:
             if len(parts)==4 and parts[:2]==['api','habits'] and parts[3]=='check':
                 try:
