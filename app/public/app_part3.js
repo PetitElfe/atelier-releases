@@ -815,10 +815,20 @@ function openLayoutModuleSettings(item){
   openModal('<h2>Réglages de cet encadré</h2><p class="muted">Ces réglages concernent seulement cet encadré. Ils ne modifient pas les données qu’il contient.</p><form id="layoutModuleSettingsForm" class="form-grid">'+
     (title?'<div class="field full"><label>Nom affiché</label><input name="name" maxlength="70" required value="'+esc(saved)+'"></div>':'')+
     (homeModule?'<label class="field full home-module-settings-check"><input type="checkbox" name="visible" '+(visible?'checked':'')+'> Afficher sur l’Accueil</label>':'')+
+    (homeModule?'<div class="field full"><button type="button" id="layoutBringHomeTop">Remonter en haut de l’Accueil</button><small class="muted">Déplace uniquement ce module, sans modifier les autres ni sa taille.</small></div>':'')+
     '<div class="field full"><button type="button" id="layoutResetSingle">Replacer et redimensionner cet encadré</button><small class="muted">Le reste de la rubrique ne sera pas réinitialisé.</small></div>'+
     '<div class="form-actions field full"><button type="button" id="layoutSettingsCancel">Annuler</button><button type="submit" class="primary">Enregistrer</button></div></form>');
   const form=$('#layoutModuleSettingsForm');
   $('#layoutSettingsCancel').onclick=closeModal;
+  const bringTop=$('#layoutBringHomeTop');
+  if(bringTop)bringTop.onclick=()=>{
+    if(!homeCanvasReady||!isHomeCanvasItem(item))return;
+    const d=readGlobalLayout(item);
+    d.y=12;
+    d.x=Math.max(0,Math.min(d.x,Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width)));
+    saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+    closeModal();window.scrollTo({top:0,behavior:'instant'});
+  };
   $('#layoutResetSingle').onclick=()=>{
     if(!confirm('Remettre uniquement cet encadré à sa place et à sa taille d’origine ?'))return;
     const d=isHomeCanvasItem(item)&&homeCanvasReady?homeSuggestedLayout(item):{x:0,y:0,scale:1,width:null,height:null};
@@ -971,6 +981,65 @@ function activateHomeCanvas(){
   }
   window.addEventListener('resize',requestHomeCanvasMeasure);
   requestHomeCanvasMeasure();
+}
+
+/* ALPHA 0.16.2 — glisser sur plusieurs écrans avec défilement automatique.
+   La coordonnée sauvegardée est indépendante du défilement de la page.
+   Les dispositions des autres rubriques ne sont pas modifiées. */
+function beginHomeCanvasDrag(event,item){
+  event.preventDefault();event.stopPropagation();
+  const handle=event.currentTarget;
+  const pointerId=event.pointerId;
+  try{handle.setPointerCapture?.(pointerId)}catch(_){}
+  const d=readGlobalLayout(item);
+  const initial={x:d.x,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
+  let clientX=event.clientX,clientY=event.clientY,active=true,frameId=0;
+  item.el.classList.add('layout-selected');
+  function updatePosition(){
+    if(!active||!homeCanvas)return;
+    const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width);
+    d.x=Math.round(Math.max(0,Math.min(maxX,initial.x+clientX-initial.clientX)));
+    d.y=Math.round(Math.max(0,initial.y+clientY-initial.clientY+window.scrollY-initial.scrollY));
+    applyGlobalLayout(item,d);
+    saveGlobalLayout(item,d);
+  }
+  function move(e){
+    if(e.pointerId!==pointerId)return;
+    clientX=e.clientX;clientY=e.clientY;
+    updatePosition();
+  }
+  function finish(){
+    if(!active)return;
+    active=false;
+    cancelAnimationFrame(frameId);
+    window.removeEventListener('pointermove',move);
+    window.removeEventListener('pointerup',finish);
+    window.removeEventListener('pointercancel',finish);
+    window.removeEventListener('blur',finish);
+    try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
+    item.el.classList.remove('layout-selected');
+    saveGlobalLayout(item,d);
+    requestHomeCanvasMeasure();
+  }
+  function autoScroll(){
+    if(!active)return;
+    const topEdge=Math.max(100,(document.querySelector('.topbar')?.getBoundingClientRect().bottom||0)+30);
+    const bottomEdge=window.innerHeight-85;
+    let amount=0;
+    if(clientY<topEdge)amount=-Math.min(34,Math.max(7,Math.round((topEdge-clientY)*0.28)));
+    else if(clientY>bottomEdge)amount=Math.min(34,Math.max(7,Math.round((clientY-bottomEdge)*0.28)));
+    if(amount!==0){
+      const before=window.scrollY;
+      window.scrollBy(0,amount);
+      if(window.scrollY!==before)updatePosition();
+    }
+    frameId=requestAnimationFrame(autoScroll);
+  }
+  window.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',finish);
+  window.addEventListener('pointercancel',finish);
+  window.addEventListener('blur',finish);
+  frameId=requestAnimationFrame(autoScroll);
 }
 
 /* ALPHA 0.15.2 : dimensions indépendantes, interactions protégées et annulation de réinitialisation. */
@@ -1126,6 +1195,7 @@ function initGlobalLayoutEditor(){
     }
     const beginMove=event=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
+      if(homeCanvasReady&&isHomeCanvasItem(item)){beginHomeCanvasDrag(event,item);return;}
       event.preventDefault();event.stopPropagation();
       try{event.currentTarget.setPointerCapture?.(event.pointerId)}catch(_){}
       const d=readGlobalLayout(item),sx=event.clientX,sy=event.clientY,ox=d.x,oy=d.y;
