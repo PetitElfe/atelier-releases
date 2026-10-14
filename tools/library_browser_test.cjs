@@ -593,6 +593,11 @@ async function api(path,method='GET',body){
   const widthHandle=widget.locator(':scope > .layout-controls .layout-resize-right');
   const widthRect=await widthHandle.boundingBox();
   assert.ok(widthRect,'Independent horizontal resize grip is visible');
+  const resizeHit=await widthHandle.evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===el;
+  });
+  assert.equal(resizeHit,true,'The grip must remain clickable without the floating drawer covering it');
   await page.mouse.move(widthRect.x+widthRect.width/2,widthRect.y+widthRect.height/2);
   await page.mouse.down();
   await page.mouse.move(widthRect.x+widthRect.width/2+90,widthRect.y+widthRect.height/2,{steps:6});
