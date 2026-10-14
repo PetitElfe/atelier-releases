@@ -17,6 +17,17 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     : e?.id
       ? state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(e.id)&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at||'').slice(0,16)}))
       : [];
+  // Une occurrence de série affiche les rappels à sa date effective,
+  // sans modifier les rappels modèles de la série.
+  if(!Array.isArray(e?.reminders)&&e?.recurrence&&e.recurrence!=='none'&&e.instance_date&&e.event_date&&e.instance_date!==e.event_date){
+    const difference=parseYMD(e.instance_date).getTime()-parseYMD(e.event_date).getTime();
+    for(const reminder of reminders){
+      if(reminder.remind_at){
+        const d=new Date(new Date(reminder.remind_at).getTime()+difference);
+        reminder.remind_at=`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
+  }
   openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid event-form-compact">
     <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
@@ -78,11 +89,39 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     payload.show_in_month=f.show_in_month.checked;
     payload.all_day=!payload.start_time;
     payload.reminders=collectReminders();
-    const result=await runUiAction("Impossible d’enregistrer le rendez-vous",()=>api(editing?`/api/events/${e.id}`:'/api/events',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
+    let route=editing?`/api/events/${e.id}`:'/api/events';
+    if(editing&&e.recurrence&&e.recurrence!=='none'){
+      const scope=await chooseRecurringEventScope('Modifier');
+      if(!scope){
+        openEventModal({...e,...payload,id:e.id,instance_date:e.instance_date,reminders:payload.reminders});
+        return;
+      }
+      const instanceDate=e.instance_date||e.event_date;
+      if(scope==='single'){
+        route=`/api/events/${e.id}/edit-instance`;
+        payload.instance_date=instanceDate;
+        payload.recurrence='none';
+      }else{
+        // Adapter la date de base de toute la série sans déplacer son ancrage
+        // lorsque l'on édite une occurrence autre que la première.
+        const gap=parseYMD(instanceDate).getTime()-parseYMD(e.event_date).getTime();
+        const newBase=new Date(parseYMD(payload.event_date).getTime()-gap);
+        payload.event_date=ymd(newBase);
+        payload.reminders=payload.reminders.map(rem=>{
+          const d=new Date(new Date(rem.remind_at).getTime()-gap);
+          return {...rem,remind_at:`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+        });
+      }
+    }
+    const result=await runUiAction("Impossible d’enregistrer le rendez-vous",()=>api(route,{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok){
-      error.textContent=result.error?.message||'Le rendez-vous n’a pas pu être enregistré.';
-      error.classList.remove('hidden');
-      submit.disabled=false; submit.textContent=duplicate?'Créer la copie':'Enregistrer';
+      if(!document.contains(f)){
+        openEventModal({...e,...payload,id:e.id,instance_date:e.instance_date,reminders:payload.reminders});
+      }else{
+        error.textContent=result.error?.message||'Le rendez-vous n’a pas pu être enregistré.';
+        error.classList.remove('hidden');
+        submit.disabled=false; submit.textContent=duplicate?'Créer la copie':'Enregistrer';
+      }
       return;
     }
     closeModal();
