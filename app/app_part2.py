@@ -439,8 +439,14 @@ class Handler(BaseHTTPRequestHandler):
                     if not instance_date:return self._json({'error':'Date requise.'},400)
                     existing=c.execute('SELECT action,moved_event_id FROM event_instance_actions WHERE event_id=? AND instance_date=?',
                                        (eid,instance_date)).fetchone()
-                    if not existing or existing['action']!='postponed':
-                        return self._json({'error':'Cette occurrence n’est pas un ancien rendez-vous reporté.'},400)
+                    completed=c.execute('SELECT 1 FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date)).fetchone()
+                    if not ((existing and existing['action'] in ('postponed','cancelled')) or completed):
+                        return self._json({'error':'Cette occurrence n’est ni reportée, ni annulée, ni terminée.'},400)
+                    if completed:
+                        c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                    if not existing:
+                        c.execute("INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at) VALUES(?,?,'hidden',NULL,?)",
+                                  (eid,instance_date,ts))
                     c.execute("UPDATE event_instance_actions SET action='hidden',action_at=? WHERE event_id=? AND instance_date=?",
                               (ts,eid,instance_date))
                     c.commit();return self._json({'ok':True})
