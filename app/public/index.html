@@ -9,7 +9,7 @@
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Accueil">⌂</button>
-      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.15.3</div><h1 id="pageTitle">Accueil</h1></div>
+      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.16.0</div><h1 id="pageTitle">Accueil</h1></div>
     </div>
     <div class="top-date-wrap">
       <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
@@ -45,17 +45,18 @@
 
   <main>
     <section id="homeView" class="view active-view">
-      <section id="homeBudgetWidget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
+      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary">＋ Bibliothèque de modules</button><span class="muted">Choisis les éléments visibles, puis place-les avec « Modifier ».</span></div>
+      <section id="homeBudgetWidget" data-home-module="budget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
         <div class="budget-home-title"><strong>Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
         <div id="homeBudgetContent" class="muted">Chargement des échéances…</div>
       </section>
       <div class="desk-top-row">
-        <button id="openCalendarCard" class="desk-object pinned-calendar" type="button">
+        <button id="openCalendarCard" data-home-module="calendar" class="desk-object pinned-calendar" type="button">
           <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
           <div id="homeMiniCalendar" class="home-mini-calendar"></div>
         </button>
 
-        <section class="desk-object desk-note" aria-labelledby="upcomingTitle">
+        <section id="homeUpcomingWidget" data-home-module="upcoming" class="desk-object desk-note" aria-labelledby="upcomingTitle">
           <div class="desk-note-head">
             <span id="upcomingTitle">À venir</span>
             <button id="openCalendarFromUpcoming" class="journal-link" type="button">calendrier →</button>
@@ -65,7 +66,7 @@
 
       </div>
 
-      <div id="journalBook" class="journal-book" aria-label="Journal de l’Atelier">
+      <div id="journalBook" data-home-module="journal" class="journal-book" aria-label="Journal de l’Atelier">
         <section class="journal-page journal-left">
           <div class="journal-date" id="homeDate"></div>
 
@@ -105,7 +106,7 @@
         </section>
       </div>
 
-      <div class="alpha-note">Maquette A : le livre devient un objet central plus compact, avec trois zones utiles au-dessus.</div>
+      <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
 
     <section id="calendarView" class="view">
