@@ -83,6 +83,7 @@ function renderReminders(){
       <button class="done reminder-icon-action" type="button" title="Fini" aria-label="Fini">✓</button>
       <button class="snooze reminder-icon-action" type="button" title="Reporter" aria-label="Reporter">↪</button>
       <button class="edit reminder-icon-action" type="button" title="Modifier" aria-label="Modifier">✎</button>
+      <button class="duplicate reminder-icon-action" type="button" title="Dupliquer" aria-label="Dupliquer">⧉</button>
       <button class="delete reminder-icon-action" type="button" title="Supprimer" aria-label="Supprimer">×</button>
     </div>`;
     row.querySelector('.done').addEventListener('click',async()=>{
@@ -92,6 +93,7 @@ function renderReminders(){
     });
     row.querySelector('.snooze').addEventListener('click',()=>openSnooze(r));
     row.querySelector('.edit').addEventListener('click',()=>openReminderModal(r));
+    row.querySelector('.duplicate').addEventListener('click',()=>openReminderModal({...r,id:null}));
     row.querySelector('.delete').addEventListener('click',async()=>{
       const ok=await askUiConfirm('Supprimer le rappel',`Supprimer « ${title} » ?`,'Supprimer',true);
       if(!ok)return;
