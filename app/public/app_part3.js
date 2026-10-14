@@ -337,6 +337,9 @@ function showView(view){
       if(domain&&state.view==='library')await loadLibraryNotebooks(domain,notebook,page);
     }).catch(err=>showUiError(err,'Impossible de restaurer la Bibliothèque')).finally(()=>{window.__atelierLibraryViewRestoring=false});
   }else render();
+  // Si l'utilisateur quitte l'Accueil pendant le chargement initial,
+  // activer le canvas à son retour une fois les données disponibles.
+  if(view==='home'&&homeCanvasActivationReady&&!homeCanvasReady)requestAnimationFrame(activateHomeCanvas);
 }
 function setCalendarMode(mode){state.calendarMode=mode;applyCalendarMode();}
 function applyCalendarMode(){
@@ -882,6 +885,7 @@ function initNavCustomization(){
    La migration prend une photographie visuelle UNE FOIS, après chargement des données,
    et enregistre les positions absolues dans de nouvelles clés. */
 let homeCanvasReady=false;
+let homeCanvasActivationReady=false;
 let homeCanvas=null;
 let homeCanvasMeasurePending=false;
 function isHomeCanvasItem(item){return item.view==='home'&&Boolean(item.el.dataset.homeModule)}
@@ -920,7 +924,7 @@ function homeSuggestedLayout(item){
   return {x:px,y:py,scale:1,width:null,height:null};
 }
 function activateHomeCanvas(){
-  if(homeCanvasReady)return;
+  if(homeCanvasReady||state.view!=='home')return;
   const home=$('#homeView'),toolbar=home?.querySelector('.home-module-toolbar');
   if(!home||!toolbar)return;
   const items=globalLayoutItems.filter(isHomeCanvasItem);
@@ -1213,7 +1217,10 @@ initHomeModuleLibrary(); initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
-refresh().then(()=>{if(state.view==='home'){showView('home');activateHomeCanvas()}}); checkRuntimeCompatibility();
+refresh().then(()=>{
+  homeCanvasActivationReady=true;
+  if(state.view==='home'){showView('home');activateHomeCanvas()}
+}); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
