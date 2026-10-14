@@ -669,9 +669,12 @@ function getGlobalLayoutSpecs(){
     '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
     '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
     '#libraryHubPanel','#libraryView .library-side-module','#libraryOverviewPanel',
-    '#libraryNotebookPanel','#libraryNotebookPages',
+    '#libraryNotebookPanel','#libraryNotebookPages','#libraryView .library-tasks-module',
+    '#libraryView .library-page-sidebar',
     '#kitchenView .kitchen-panel',
-    '#calendarView .mini-panel','#cuisineView .recipe-books-panel'
+    '#calendarView .mini-panel',
+    '#cuisineView .recipe-library-sidebar','#cuisineView .recipe-library-content',
+    '#settingsView .settings-card'
   ].join(',');
   const extra=[...document.querySelectorAll(selector)].map((el,index)=>{
     const view=el.closest('.view')?.id.replace(/View$/,'')||'home';
@@ -695,7 +698,7 @@ function moduleTitleElement(item){
     return label?.tagName==='BUTTON'?null:label;
   }
   if(el.id==='homeBudgetWidget')return el.querySelector('.budget-home-title strong');
-  return el.querySelector(':scope > h3, :scope > h2, :scope > .library-head h2, :scope > .library-module-head strong, :scope > .library-main-head h3, :scope > .budget-home-title strong');
+  return el.querySelector(':scope > h3, :scope > h2, :scope > .library-head h2, :scope > .library-module-head strong, :scope > .kitchen-head h3, :scope > .settings-card-title h3, :scope > .recipe-books-title, :scope > .budget-home-title strong');
 }
 function moduleCustomNameKey(item){return 'atelierModuleName_'+item.view+'_'+item.id}
 function applyModuleCustomName(item){
