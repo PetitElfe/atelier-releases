@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.15.0</title>
+  <title>L’Atelier — Alpha 0.15.1</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Accueil">⌂</button>
-      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.15.0</div><h1 id="pageTitle">Accueil</h1></div>
+      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.15.1</div><h1 id="pageTitle">Accueil</h1></div>
     </div>
     <div class="top-date-wrap">
       <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
@@ -38,6 +38,7 @@
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
+      <button id="renameNavButton" type="button" class="secondary atelier-nav-customize">✎ Renommer le tiroir</button>
     </div>
   </nav>
 
@@ -247,59 +248,38 @@
     <section id="budgetView" class="view">
       <div class="panel-head"><h2>Budget et dépenses</h2><label>Mois <input type="month" id="budgetMonth" /></label></div>
       <p class="muted">Prévisions, opérations comptabilisées et historique : les montants sont des suivis manuels, sans connexion bancaire.</p>
-      <div class="budget-summary">
+      <div class="budget-summary" id="budgetSummaryPanel">
         <article><span>Solde réel suivi</span><strong id="budgetBalance">—</strong><small>Confirmé et prélèvements présumés</small></article>
         <article><span>Reste prévisionnel</span><strong id="budgetForecast">—</strong><small>Inclut les opérations attendues</small></article>
         <article><span>Revenus du mois</span><strong id="budgetIncome">—</strong></article>
         <article><span>Dépenses du mois</span><strong id="budgetExpenses">—</strong></article>
       </div>
+      <div class="budget-action-bar">
+        <button type="button" id="budgetAddOperation" class="primary">＋ Ajouter un revenu ou une dépense</button>
+        <p class="muted">Une seule fenêtre pour tout noter. Les détails supplémentaires sont facultatifs.</p>
+      </div>
       <div class="budget-grid">
-        <section class="organisation-module"><h3>Revenus et abonnements mensuels</h3>
-          <form id="budgetRuleForm" class="budget-form">
-            <label>Type <select name="kind"><option value="income">Revenu attendu</option><option value="fixed">Charge fixe / abonnement</option></select></label>
-            <label>Nom <input name="title" required maxlength="120" placeholder="Ex. : Salaire, Internet" /></label>
-            <label>Catégorie <input name="category" maxlength="80" placeholder="Général" /></label>
-            <label>Montant mensuel (€) <input name="amount" type="number" step=".01" min="0" required /></label>
-            <label>Jour du mois <input name="day_of_month" type="number" min="1" max="31" required value="5" /></label>
-            <label>Date de début <input name="start_date" type="date" required /></label>
-            <label>Date de fin (facultative) <input name="end_date" type="date" /></label>
-            <button type="submit" class="primary">Ajouter la récurrence</button>
-          </form><div id="budgetRules"></div>
+        <section class="organisation-module" id="budgetRulesPanel"><h3>Revenus et abonnements</h3>
+          <p class="muted">Chaque échéance mensuelle se crée depuis « Ajouter ».</p>
+          <div id="budgetRules"></div>
         </section>
-        <section class="organisation-module"><h3>Achats et dépenses ponctuelles</h3>
-          <p class="muted">Utilise une dépense détaillée ou une somme « autres dépenses » pour les montants globaux, sans resaisir des achats déjà comptés.</p>
-          <form id="budgetEntryForm" class="budget-form">
-            <label>Type <select name="kind"><option value="expense">Dépense</option><option value="income">Revenu ponctuel</option></select></label>
-            <label>Libellé <input name="title" required maxlength="120" placeholder="Ex. : Courses ou autres courses" /></label>
-            <label>Catégorie <input name="category" maxlength="80" placeholder="Ex. : Alimentation" /></label>
-            <label>Montant (€) <input name="amount" type="number" step=".01" min="0" required /></label>
-            <label>Date <input name="date" type="date" required /></label>
-            <label class="budget-checkbox"><input name="planned" type="checkbox" /> Dépense prévue à confirmer plus tard</label>
-            <button type="submit" class="primary">Ajouter l'opération</button>
-          </form>
+        <section class="organisation-module" id="budgetDebtsPanel"><h3>Crédits et dettes</h3>
+          <p class="muted">Le montant restant baisse seulement après confirmation des remboursements.</p>
+          <div id="budgetDebts"></div>
         </section>
-        <section class="organisation-module"><h3>Crédits et dettes</h3>
-          <form id="budgetDebtForm" class="budget-form">
-            <label>Nom <input name="title" required maxlength="120" placeholder="Ex. : Ordinateur" /></label>
-            <label>Montant initial (€) <input name="total" type="number" step=".01" min=".01" required /></label>
-            <label>Mensualité (€) <input name="monthly" type="number" step=".01" min=".01" required /></label>
-            <label>Jour du mois <input name="day_of_month" type="number" min="1" max="31" value="5" required /></label>
-            <label>Date de début <input name="start_date" type="date" required /></label>
-            <label>Date de fin (facultative) <input name="end_date" type="date" /></label>
-            <button type="submit" class="primary">Ajouter la dette</button>
-          </form><div id="budgetDebts"></div>
-        </section>
-        <section class="organisation-module"><h3>Solde de départ</h3>
-          <form id="budgetSettingsForm" class="budget-form">
-            <label>Solde initial (€) <input name="opening_balance" type="number" step=".01" required /></label>
-            <label>À la date du <input name="opening_date" type="date" required /></label>
-            <button type="submit">Enregistrer le solde de départ</button>
-          </form>
-          <p class="muted">Renseigne un solde initial une seule fois. Le solde suivi dépend des opérations enregistrées et peut différer du solde bancaire.</p>
+        <section class="organisation-module" id="budgetOpeningPanel"><h3>Solde de départ</h3>
+          <details class="budget-more"><summary>Régler le solde initial</summary>
+            <form id="budgetSettingsForm" class="budget-form">
+              <label>Solde initial (€) <input name="opening_balance" type="number" step=".01" required /></label>
+              <label>À la date du <input name="opening_date" type="date" required /></label>
+              <button type="submit">Enregistrer</button>
+            </form>
+          </details>
+          <p class="muted">Le solde suivi est un suivi personnel, pas une synchronisation bancaire.</p>
         </section>
       </div>
-      <section class="organisation-module budget-ledger"><h3>Historique du mois</h3><div id="budgetEntries"></div></section>
-      <section class="organisation-module"><h3>Notes du mois</h3><textarea id="budgetNotes" rows="5" placeholder="Notes libres, prévues pour ce mois…"></textarea><div class="form-actions"><button id="budgetSaveNotes">Enregistrer les notes</button></div></section>
+      <section class="organisation-module budget-ledger" id="budgetLedgerPanel"><h3>Historique du mois</h3><div id="budgetEntries"></div></section>
+      <section class="organisation-module" id="budgetNotesPanel"><h3>Notes du mois</h3><textarea id="budgetNotes" rows="5" placeholder="Notes libres, prévues pour ce mois…"></textarea><div class="form-actions"><button id="budgetSaveNotes">Enregistrer les notes</button></div></section>
     </section>
     <section id="organisationView" class="view">
       <div class="organisation-head"><div><span class="section-kicker">ORGANISATION</span><h2>Habitudes & routines</h2><p>Avance à ton rythme, avec un suivi personnel sans obligation de série parfaite.</p></div></div>
