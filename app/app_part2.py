@@ -354,18 +354,6 @@ class Handler(BaseHTTPRequestHandler):
                     c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
                 else:c.execute('DELETE FROM habit_checks WHERE habit_id=? AND checked_date=?',(hid,when.isoformat()))
                 c.commit();return self._json({'ok':True})
-            if len(parts)==3 and parts[:2]==['api','events']:
-                eid=int(parts[2])
-                if not c.execute('SELECT id FROM events WHERE id=?',(eid,)).fetchone():
-                    return self._json({'error':'Rendez-vous introuvable.'},404)
-                # Supprimer aussi les rappels et les statuts des occurrences rattachés.
-                c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=?",(eid,))
-                c.execute('DELETE FROM event_completions WHERE event_id=?',(eid,))
-                c.execute('DELETE FROM event_instance_actions WHERE event_id=?',(eid,))
-                c.execute('UPDATE event_instance_actions SET moved_event_id=NULL WHERE moved_event_id=?',(eid,))
-                c.execute('DELETE FROM events WHERE id=?',(eid,))
-                c.commit()
-                return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','habits']:
                 hid=int(parts[2]);title=str(body.get('title','')).strip()[:120]
                 if not title:return self._json({'error':'Nom requis.'},400)
@@ -689,6 +677,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
         with conn() as c:
+            if len(parts)==3 and parts[:2]==['api','events']:
+                eid=int(parts[2])
+                if not c.execute('SELECT id FROM events WHERE id=?',(eid,)).fetchone():
+                    return self._json({'error':'Rendez-vous introuvable.'},404)
+                # Supprimer aussi les rappels et les statuts des occurrences rattachés.
+                c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=?",(eid,))
+                c.execute('DELETE FROM event_completions WHERE event_id=?',(eid,))
+                c.execute('DELETE FROM event_instance_actions WHERE event_id=?',(eid,))
+                c.execute('UPDATE event_instance_actions SET moved_event_id=NULL WHERE moved_event_id=?',(eid,))
+                c.execute('DELETE FROM events WHERE id=?',(eid,))
+                c.commit()
+                return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','habits']:
                 c.execute('UPDATE habits SET archived=1 WHERE id=?',(int(parts[2]),));c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','cycle-periods']:
