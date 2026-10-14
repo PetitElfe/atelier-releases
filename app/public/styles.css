@@ -1299,3 +1299,42 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
   .budget-unified-form{gap:12px}.budget-type-switch button{font-size:13px}
   .layout-controls .layout-rename-handle{left:90px}
 }
+
+
+/* ALPHA 0.15.2 — petit Budget d'Accueil et redimensionnement type Canva. */
+#homeBudgetWidget.budget-home-widget{
+  width:min(310px,calc(100vw - 64px));
+  max-width:calc(100vw - 64px);
+  margin:8px 0 12px 14px;
+  padding:10px 13px;
+  font-size:12px;
+  box-shadow:0 8px 20px #0004;
+}
+#homeBudgetWidget .budget-home-title{margin-bottom:4px}
+#homeBudgetWidget .budget-home-line{gap:8px;padding:6px 0;font-size:11px}
+#homeBudgetWidget .budget-home-line span{min-width:0}
+#homeBudgetWidget .budget-home-line button{padding:4px 8px;font-size:11px}
+.layout-editing .layout-object{outline:1px dashed #b79a6899;outline-offset:4px;cursor:default;touch-action:auto}
+.layout-editing .layout-object .layout-move-handle{cursor:grab;touch-action:none}
+.layout-editing .layout-object .layout-width-handle,
+.layout-editing .layout-object .layout-height-handle,
+.layout-editing .layout-object .layout-resize-handle{
+  width:26px;height:26px;border:1px solid var(--gold);background:#1b1713;
+  color:var(--gold);font-size:14px;display:grid;place-items:center;
+  pointer-events:auto;touch-action:none;user-select:none;z-index:22;
+  border-radius:6px;
+}
+.layout-controls .layout-width-handle{position:absolute;right:-13px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.layout-controls .layout-height-handle{position:absolute;left:50%;bottom:-13px;transform:translateX(-50%);cursor:ns-resize}
+.layout-controls .layout-resize-handle{right:-13px;bottom:-13px;cursor:nwse-resize}
+.layout-controls>.layout-scale-value{
+  position:absolute;right:5px;top:6px;bottom:auto;
+  min-width:85px;font-size:10px;text-align:center;pointer-events:none;
+}
+#globalLayoutUndo{font-size:11px;white-space:nowrap;border-color:var(--gold);color:var(--gold)}
+/* Le contenu conserve ses proportions : nous étirons le bloc, pas les lettres. */
+.layout-object{box-sizing:border-box}
+@media(max-width:600px){
+  #homeBudgetWidget.budget-home-widget{margin-left:5px;width:min(300px,calc(100vw - 36px))}
+  .layout-controls>.layout-scale-value{top:auto;bottom:44px;right:5px}
+}
