@@ -760,7 +760,7 @@ function initGlobalLayoutEditor(){
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
-refresh().then(()=>showView('home')); checkRuntimeCompatibility();
+refresh().then(()=>{if(state.view==='home')showView('home')}); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
