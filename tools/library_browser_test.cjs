@@ -475,6 +475,36 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('budget'));
   await page.locator('#budgetEntries').getByText('Achat prévu E2E').waitFor();
   assert.equal(await page.locator('#budgetNotes').inputValue(),'Mes notes E2E','Budget note survives reload');
+  // L'éditeur de confirmation interne doit proposer le montant et la date.
+  const extra=await api('/api/budget/entries','POST',{
+    title:'Confirmation via interface E2E',kind:'expense',amount:'15.20',
+    category:'Test',date:budgetDate,planned:true
+  });
+  await page.evaluate(async()=>{await loadBudget()});
+  const pendingRow=page.locator('#budgetEntries .budget-entry').filter({hasText:'Confirmation via interface E2E'});
+  await pendingRow.getByRole('button',{name:'Confirmer'}).click();
+  await page.locator('#budgetConfirmForm').waitFor({state:'visible'});
+  await page.locator('#budgetConfirmForm input[name="amount"]').fill('16.40');
+  await page.locator('#budgetConfirmForm button[type="submit"]').click();
+  await page.waitForFunction(async id=>{
+    const month=new Date().toISOString().slice(0,7);
+    const rows=(await (await fetch('/api/budget?month='+month)).json()).entries;
+    return rows.some(x=>x.id===id&&x.status==='confirmed'&&x.amount_cents===1640);
+  },extra.id,{timeout:12000});
+  // Un capital de 100 euros avec 25 euros par mois ne doit jamais
+  // générer plus de 100 euros de mensualités planifiées.
+  const nextFive=new Date(new Date().getFullYear(),new Date().getMonth()+5,1);
+  const futureMonth=nextFive.getFullYear()+'-'+String(nextFive.getMonth()+1).padStart(2,'0');
+  await api('/api/budget?month='+futureMonth);
+  let scheduled=0;
+  for(let offset=0;offset<=5;offset++){
+    const m=new Date(new Date().getFullYear(),new Date().getMonth()+offset,1);
+    const key=m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0');
+    scheduled+=(await api('/api/budget?month='+key)).entries
+      .filter(e=>e.debt_id===debt.id&&e.status!=='skipped')
+      .reduce((total,e)=>total+e.amount_cents,0);
+  }
+  assert.equal(scheduled,10000,'Debt scheduled installments must stop at the initial amount');
   await page.evaluate(()=>showView('home'));
   await page.locator('#homeBudgetWidget').waitFor({state:'visible'});
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
