@@ -594,15 +594,15 @@ class Handler(BaseHTTPRequestHandler):
                     if not old: return self._json({'error':'Rendez-vous introuvable.'},404)
                     if old['recurrence']=='none': return self._json({'error':'Ce rendez-vous n’est pas récurrent.'},400)
                     instance_date=(body.get('instance_date') or '').strip()
-                    date=(body.get('event_date') or '').strip()
+                    event_day=(body.get('event_date') or '').strip()
                     title=(body.get('title') or '').strip()
-                    if not instance_date or not date or not title:
+                    if not instance_date or not event_day or not title:
                         return self._json({'error':'Date de l’occurrence, date et titre requis.'},400)
                     existing=c.execute('SELECT * FROM event_instance_actions WHERE event_id=? AND instance_date=?',(eid,instance_date)).fetchone()
                     moved_id=existing['moved_event_id'] if existing and existing['action']=='postponed' else None
                     if moved_id and not c.execute('SELECT id FROM events WHERE id=?',(moved_id,)).fetchone():
                         moved_id=None
-                    vals=(title,date,body.get('start_time') or None,body.get('end_time') or None,
+                    vals=(title,event_day,body.get('start_time') or None,body.get('end_time') or None,
                           1 if body.get('all_day') else 0,body.get('category','general'),body.get('location',''),
                           body.get('notes',''),body.get('contact',''),body.get('travel_time',''),body.get('url',''),
                           body.get('status','planned'),'none',1 if body.get('show_in_month',True) else 0,ts)
