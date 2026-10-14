@@ -75,8 +75,7 @@ def budget_snapshot(c,month,ts):
     forecast=balance
     # À date future, seuls les mouvements attendus non encore réalisés sont ajoutés.
     for x in pending:
-        if x['scheduled_date']>today:
-            forecast+=x['amount_cents'] if x['kind']=='income' else -x['amount_cents']
+        forecast+=x['amount_cents'] if x['kind']=='income' else -x['amount_cents']
     notes=c.execute('SELECT notes FROM budget_month_notes WHERE month=?',(first[:7],)).fetchone()
     debts=[]
     for item in c.execute('SELECT * FROM budget_debts ORDER BY archived,id DESC'):
@@ -523,7 +522,11 @@ class Handler(BaseHTTPRequestHandler):
                     table='budget_debts' if body.get('kind')=='debt' else 'budget_rules'
                     field='archived' if table=='budget_debts' else 'active'
                     value=1 if table=='budget_debts' else 0
-                    c.execute(f'UPDATE {table} SET {field}=? WHERE id=?',(value,rid));c.commit()
+                    c.execute(f'UPDATE {table} SET {field}=? WHERE id=?',(value,rid))
+                    reference='debt_id' if table=='budget_debts' else 'rule_id'
+                    c.execute(f"""UPDATE budget_entries SET status='skipped'
+                         WHERE {reference}=? AND scheduled_date>? AND status='pending'""",(rid,date.today().isoformat()))
+                    c.commit()
                 return self._json({'ok':True})
             except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
         with conn() as c:
