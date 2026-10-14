@@ -40,6 +40,12 @@ def budget_materialize(c,month,ts):
           VALUES(?,?,?,?,?,?,?,?,?,?)""",
           (rule['id'],due,rule['title'],'income' if rule['kind']=='income' else 'expense',
            rule['category'],rule['amount_cents'],status,'scheduled',due if status=='presumed' else None,ts))
+    # Une charge consultée à l'avance devient « présumée payée » à échéance,
+    # sans jamais transformer un revenu en revenu confirmé.
+    c.execute("""UPDATE budget_entries
+      SET status='presumed', actual_date=scheduled_date
+      WHERE source='scheduled' AND status='pending' AND scheduled_date<=?
+      AND rule_id IN (SELECT id FROM budget_rules WHERE kind='fixed')""",(today,))
     for debt in c.execute('SELECT * FROM budget_debts WHERE archived=0').fetchall():
         due=budget_due_in_month(debt,month)
         if not due:continue
