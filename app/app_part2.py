@@ -89,12 +89,14 @@ def budget_snapshot(c,month,ts):
       FROM budget_entries WHERE status IN ('confirmed','presumed') AND COALESCE(actual_date,scheduled_date)<=?
        AND COALESCE(actual_date,scheduled_date)>=?""",(today,start)).fetchone()[0]
     balance=opening+int(movement)
-    confirmed=[x for x in entries if x['status'] in ('confirmed','presumed')]
     pending=[x for x in entries if x['status']=='pending']
-    forecast=balance
-    # À date future, seuls les mouvements attendus non encore réalisés sont ajoutés.
-    for x in pending:
-        forecast+=x['amount_cents'] if x['kind']=='income' else -x['amount_cents']
+    # Le prévisionnel tient compte de TOUTES les échéances entre le solde
+    # initial et la fin du mois sélectionné, pas seulement du mois affiché.
+    forecast=int(opening+c.execute("""SELECT COALESCE(SUM(
+       CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
+       FROM budget_entries WHERE status IN ('confirmed','presumed','pending')
+       AND COALESCE(actual_date,scheduled_date)>=?
+       AND COALESCE(actual_date,scheduled_date)<=?""",(start,last)).fetchone()[0])
     notes=c.execute('SELECT notes FROM budget_month_notes WHERE month=?',(first[:7],)).fetchone()
     debts=[]
     for item in c.execute('SELECT * FROM budget_debts ORDER BY archived,id DESC'):
