@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "8e55a65064117e5d8087abff0128b2c25d2cbdf22921ba57129a3ecc25f96294"
+      "sha256": "dace822dfdd03953cb06ac71576a1bfcdec67bf69ca3921efc4a7f745a5b543b"
     }
   ],
   "notes": "ALPHA 0.15.2 — widget Budget de l’Accueil compact, redimensionnement horizontal/vertical, mode Modifier sûr et réinitialisation annulable."
