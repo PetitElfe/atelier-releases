@@ -1,15 +1,15 @@
 {
-  "version": "0.16.0",
+  "version": "0.16.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "a0dcd747b80cd657e950ff7793f256aaa65e86c99a7503b63637628ca062be15"
+      "sha256": "c0571285fa5cc9a6565256de4938f52fb27d777213a0919029f569630df71589"
     },
     {
       "path": "VERSION",
-      "sha256": "aa037454b5e8320521a32b278a3f4aff05fc79009ab5503f5d4a1b9a33b38c47"
+      "sha256": "e5450fc0d13e2cf93045cd5bce133d536637a2e7f2bb202d30b39eca8036e313"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "9de369a65d4d7798f7020fe06ed1680eb0c606c964733951a888b180f8e69baf"
+      "sha256": "0722693dec95e7a2c433d2c57f442690304e44683b7c20275cc69db135513de1"
     },
     {
       "path": "public/index.html",
-      "sha256": "e8dc409e638e7c460c46fd76dae231538e0b6585755d24e4953aa73a6be0284d"
+      "sha256": "e11fe371cead6ed37a7e89455b832459e27f766e52afb66edcf4aa5c177175b4"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5bf07998bb72b0c6f018003975604dbf81042d5cebd75d58de33c79e295e0649"
+      "sha256": "a719ff4d698000e988b93e7514566153b370975235e7ec243f9012341bc58500"
     }
   ],
-  "notes": "ALPHA 0.16.0 — Accueil extensible, bibliothèque de modules, visibilité persistante et réglages individuels sur toutes les rubriques, sans migration de données."
+  "notes": "ALPHA 0.16.1 — accueil à coordonnées indépendantes, migration non destructive des positions, conservation au redémarrage et titre de version corrigé."
 }
