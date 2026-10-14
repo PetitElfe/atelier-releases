@@ -100,7 +100,9 @@ async function api(path,method='GET',body){
   const savedRecovered=await api('/api/objective-library?node_id='+secondDomain.id);
   assert.equal(savedRecovered.sections[0].entries[0].title,'Titre restauré');
   assert.match(savedRecovered.sections[0].entries[0].notes,/Texte restauré depuis le brouillon/,'Recovered draft must persist in SQLite');
-  await page.locator('#globalHomeShortcut').click();
+  // Le sélecteur de domaines est masqué lorsqu'un carnet est ouvert.
+  // Recharger la page pour retrouver la vue des domaines avant de rouvrir Test E2E.
+  await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
