@@ -180,9 +180,43 @@ function askUiConfirm(title,message,confirmLabel='Confirmer',danger=false){
 }
 
 function reminderEditor(existing=[], fallbackLabel='élément', defaultDate=''){ return `<div class="field full"><label>Rappels</label><div class="field-help">Laisse le nom vide : le rappel reprendra automatiquement le nom de ${fallbackLabel}. La date et l’heure sont séparées pour pouvoir les taper directement.</div><div id="reminderEditor" data-default-date="${esc(defaultDate)}">${existing.map(v=>reminderRow(v,defaultDate)).join('')}</div><button type="button" id="addReminder">+ Ajouter un rappel</button></div>`; }
-function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="remove-rem">×</button></div>`; }
-function wireReminderEditor(){ const ed=$('#reminderEditor'); const defaultDate=ed?.dataset.defaultDate||''; $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate)); wireRemoveRem()}); wireRemoveRem(); }
-function wireRemoveRem(){ $$('#reminderEditor .remove-rem').forEach(b=>b.onclick=()=>b.parentElement.remove()); }
+function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="reminder-more" aria-label="Actions du rappel" title="Actions du rappel">⋯</button></div>`; }
+function wireReminderEditor(){
+  const ed=$('#reminderEditor'); if(!ed)return;
+  const defaultDate=ed.dataset.defaultDate||'';
+  $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate))});
+  ed.addEventListener('click',event=>{
+    const more=event.target.closest('.reminder-more');if(!more)return;
+    const row=more.closest('.reminder-row-edit');if(row)showReminderRowActions(row,more);
+  });
+  ed.addEventListener('contextmenu',event=>{
+    const row=event.target.closest('.reminder-row-edit');if(!row)return;
+    event.preventDefault();showReminderRowActions(row,event);
+  });
+}
+function showReminderRowActions(row,anchor){
+  showAtelierContextMenu(anchor,[
+    {label:'Dupliquer le rappel',run:()=>{
+      const d=row.querySelector('.reminder-date').value,t=row.querySelector('.reminder-time').value;
+      row.insertAdjacentHTML('afterend',reminderRow({title:row.querySelector('.reminder-name').value,remind_at:d&&t?`${d}T${t}`:''},d));
+    }},
+    {label:'Supprimer le rappel',danger:true,run:()=>row.remove()}
+  ]);
+}
+function showAtelierContextMenu(anchor,actions){
+  document.querySelector('#atelierContextMenu')?.remove();
+  const menu=document.createElement('div');menu.id='atelierContextMenu';menu.className='atelier-context-menu';menu.setAttribute('role','menu');
+  for(const action of actions){const b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');b.textContent=action.label;if(action.danger)b.classList.add('danger');
+    b.onclick=()=>{menu.remove();action.run()};menu.appendChild(b)}
+  document.body.appendChild(menu);
+  const x=anchor.clientX??anchor.getBoundingClientRect().left,y=anchor.clientY??anchor.getBoundingClientRect().bottom;
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menu.offsetWidth-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menu.offsetHeight-8))+'px';
+  const dismiss=e=>{if(!menu.contains(e.target))menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
+  setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
+  menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.remove();anchor.focus?.()}});
+  menu.querySelector('button')?.focus();
+}
 function collectReminders(){ return $$('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
 
 
