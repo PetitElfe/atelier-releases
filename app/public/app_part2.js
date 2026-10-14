@@ -11,6 +11,11 @@ function showCalendarEventMenu(event,anchor){
   showAtelierContextMenu(anchor,[
     {label:'Modifier',run:()=>openEventModal(event)},
     {label:'Dupliquer',run:()=>openEventModal(event,event.instance_date||event.event_date,event.start_time,true)},
+    ...(event.instance_action==='postponed'?[{label:'Masquer l’ancienne occurrence barrée',run:async()=>{
+      const result=await runUiAction('Impossible de masquer l’ancienne occurrence',()=>api(`/api/events/${event.id}/hide-instance`,{
+        method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date})}));
+      if(result.ok)await refresh();
+    }}]:[]),
     {label:'Supprimer',danger:true,run:()=>deleteCalendarEventFromMenu(event)}
   ]);
 }
@@ -58,7 +63,7 @@ function bindCalendarDropTarget(cell,date,time=null){
     const event=state.events.find(e=>Number(e.id)===Number(payload.event_id)&&e.instance_date===payload.instance_date);
     if(!event||!date)return;
     if(date===event.instance_date&&(!time||time===event.start_time))return;
-    const newTime=time||event.start_time||'09:00';
+    const newTime=time||event.start_time||'00:00';
     const scope=event.recurrence&&event.recurrence!=='none'
       ?await chooseRecurringEventScope('Déplacer'): 'single';
     if(!scope)return;
