@@ -267,6 +267,20 @@ async function api(path,method='GET',body){
     console.log('CYCLE DIAGNOSTIC:',JSON.stringify({form:await page.locator('#cycleForm').evaluate(el=>({html:el.outerHTML,visible:!!el.offsetParent})),api:await api('/api/cycle-periods'),errors:pageErrors}));
     throw err;
   }
+  // Une seule période connue doit suffire à surligner le calendrier.
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="calendar"]').click();
+  await page.evaluate(()=>{state.cursor=parseYMD("2026-08-01");renderMonth();renderWeek()});
+  await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
+  const markedDay=page.locator('#monthGrid .day-cell.cycle-recorded').filter({has:page.locator('.day-number', {hasText:'1'})});
+  assert.ok(await markedDay.count()>0,'Recorded 1 August must have cycle highlight');
+  await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
+  await page.waitForFunction(()=>document.querySelectorAll('#miniMonth .mday.cycle-recorded').length>0,null,{timeout:10000});
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="organisation"]').click();
+  await page.locator('.cycle-entry').first().waitFor();
   await page.locator('#cycleStart').fill('2026-08-29');
   await page.locator('#cycleForm button[type="submit"]').click();
   await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===2);

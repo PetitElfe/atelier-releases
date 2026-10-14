@@ -1,5 +1,5 @@
 {
-  "version": "0.14.0",
+  "version": "0.14.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "065582655aacd6fc83ff742a5715c04bb4a57395bf3ee4559798fa42c2ce4589"
+      "sha256": "c6fb87657a4ee72e2b549cdd39c12854fdbecbdfef033c04f523d4bfcb02aa4c"
     },
     {
       "path": "app.py",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "90d32cfdcf801b7f2b8719a23104f8be0645d49d21c3ca670665ec3b8e5f553d"
+      "sha256": "8c0d84f4065c7ae16e6780df739f8f10afe5d64aac3d933d6fed5c11a45f7b61"
     },
     {
       "path": "public/styles.css",
       "sha256": "9c8800350dd6dbc7d27622e02aed386471b045176914b28b78c490db61a04966"
     }
   ],
-  "notes": "ALPHA 0.14.0 : habitudes quotidiennes et hebdomadaires, suivi des jours, calendrier menstruel local et estimation prudente des cycles."
+  "notes": "ALPHA 0.14.1 : correction de l'affichage des dates de règles enregistrées dans le calendrier, confirmation de suppression intégrée, sauvegardes fiables."
 }
