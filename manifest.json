@@ -1,5 +1,5 @@
 {
-  "version": "0.15.0",
+  "version": "0.15.1",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f8405a7330c287028d470c3ee3506f878f1ad85ed79c1d1adc19df2ff7398915"
+      "sha256": "44abf66b02260179b3a509b0f10b5f26f431f316ef4ca50f18764c9e4b8cfd4a"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "0dfc59381f15961863e47dfbfabe66fe79a67d8e71c46f71cf3c70224f6e8761"
+      "sha256": "3caca32eb971676874b5194e64e4ec5812911236bdfb6fef02989e662f661262"
     },
     {
       "path": "public/index.html",
-      "sha256": "d39f0bbd456c2edf82182cb3bd90ee2ba0c0d389b3eb24f80c6ad516cde45b7e"
+      "sha256": "b3339f58b19496525458be9363e4381836fcd66ad3376ad5674aa36154ddddf3"
     },
     {
       "path": "public/styles.css",
-      "sha256": "b892bf8f75ecaaa167454ef37c8f94fe1e795b3346a25fb74564cc843c6a15e2"
+      "sha256": "86bfb101110a517cfaf8cdb613bfcd0ad3298e7f5cb957f8dcf03e0d67617b2d"
     }
   ],
-  "notes": "ALPHA 0.15.0 — Budget mensuel : revenus, abonnements, achats, suivi des dettes, solde et prévisions."
+  "notes": "ALPHA 0.15.1 — Budget simplifié, éditeur unique, modules déplaçables et rubriques renommables."
 }

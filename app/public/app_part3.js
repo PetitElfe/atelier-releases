@@ -320,7 +320,8 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
   document.body.classList.toggle('home-active',view==='home');
@@ -646,7 +647,7 @@ let globalLayoutEditing=false;
 let globalLayoutItems=[];
 
 function getGlobalLayoutSpecs(){
-  return [
+  const base=[
     {view:'home',id:'calendar',el:$('#openCalendarCard'),key:'atelierLayout_calendar'},
     {view:'home',id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)'),key:'atelierLayout_upcoming'},
     {view:'home',id:'journal',el:$('#journalBook'),key:'atelierLayout_journal'},
@@ -660,6 +661,114 @@ function getGlobalLayoutSpecs(){
     {view:'cuisine',id:'library',el:$('.cuisine-library'),key:'atelierViewLayout_cuisine_library'},
     {view:'recipe',id:'recipe',el:$('.recipe-carnet'),key:'atelierViewLayout_recipe_carnet'}
   ].filter(x=>x.el);
+  // Ajouter toutes les cartes et sections stables de chaque rubrique,
+  // y compris la Bibliothèque, le Budget et les sections du journal.
+  const selector=[
+    '#homeBudgetWidget','#homeView .journal-section',
+    '#organisationView .organisation-module',
+    '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
+    '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
+    '#libraryHubPanel','#libraryView .library-side-module','#libraryOverviewPanel',
+    '#libraryNotebookPanel','#libraryNotebookPages','#libraryView .library-tasks-module',
+    '#libraryView .library-page-sidebar',
+    '#kitchenView .kitchen-panel',
+    '#calendarView .mini-panel',
+    '#cuisineView .recipe-library-sidebar','#cuisineView .recipe-library-content',
+    '#settingsView .settings-card'
+  ].join(',');
+  const extra=[...document.querySelectorAll(selector)].map((el,index)=>{
+    const view=el.closest('.view')?.id.replace(/View$/,'')||'home';
+    const id=el.id||'panel_'+index;
+    return {view,id,el,key:'atelierModuleLayout_'+view+'_'+id};
+  });
+  const seen=new Set();
+  return [...base,...extra].filter(item=>{
+    if(seen.has(item.el))return false;
+    seen.add(item.el);
+    return true;
+  });
+}
+function moduleTitleElement(item){
+  const el=item.el;
+  if(el.id==='budgetSummaryPanel')return null;
+  if(el.closest('#budgetSummaryPanel')&&el.tagName==='ARTICLE')return el.querySelector(':scope > span');
+  if(el.id==='libraryNotebookPanel'||el.id==='libraryNotebookPages'||el.id==='libraryOverviewPanel')return null;
+  if(el.classList.contains('journal-section')){
+    const label=el.querySelector('.journal-heading');
+    return label?.tagName==='BUTTON'?null:label;
+  }
+  if(el.id==='homeBudgetWidget')return el.querySelector('.budget-home-title strong');
+  return el.querySelector(':scope > h3, :scope > h2, :scope > .library-head h2, :scope > .library-module-head strong, :scope > .kitchen-head h3, :scope > .settings-card-title h3, :scope > .recipe-books-title, :scope > .budget-home-title strong');
+}
+function moduleCustomNameKey(item){return 'atelierModuleName_'+item.view+'_'+item.id}
+function applyModuleCustomName(item){
+  const title=moduleTitleElement(item);if(!title)return;
+  if(!title.dataset.defaultModuleName)title.dataset.defaultModuleName=title.textContent.trim();
+  const saved=localStorage.getItem(moduleCustomNameKey(item));
+  title.textContent=saved||title.dataset.defaultModuleName;
+}
+function openModuleNameEditor(item){
+  const title=moduleTitleElement(item);
+  if(!title)return;
+  const oldName=title.dataset.defaultModuleName||title.textContent.trim();
+  const saved=localStorage.getItem(moduleCustomNameKey(item))||oldName;
+  openModal(`<h2>Renommer l'encadré</h2>
+    <p class="muted">Tu modifies seulement le titre affiché, pas le contenu.</p>
+    <form id="moduleRenameForm" class="form-grid">
+      <div class="field full"><label>Nouveau nom</label>
+        <input name="name" value="${esc(saved)}" required maxlength="70"></div>
+      <div class="form-actions field full">
+        <button type="button" id="moduleResetName">Nom d'origine</button>
+        <button type="submit" class="primary">Enregistrer</button>
+      </div>
+    </form>`);
+  const form=$('#moduleRenameForm');
+  $('#moduleResetName').onclick=()=>{localStorage.removeItem(moduleCustomNameKey(item));applyModuleCustomName(item);closeModal()};
+  form.onsubmit=e=>{
+    e.preventDefault();
+    const value=form.elements.name.value.trim();
+    if(!value)return;
+    if(value===oldName)localStorage.removeItem(moduleCustomNameKey(item));
+    else localStorage.setItem(moduleCustomNameKey(item),value);
+    applyModuleCustomName(item);closeModal();
+  };
+}
+function initNavCustomization(){
+  const buttons=[...document.querySelectorAll('#sideNav [data-view]')];
+  for(const b of buttons){
+    b.dataset.originalLabel=b.textContent.trim();
+    const saved=localStorage.getItem('atelierNavLabel_'+b.dataset.view);
+    if(saved)b.textContent=saved;
+  }
+  $('#renameNavButton').onclick=()=>{
+    openModal(`<h2>Renommer le tiroir</h2>
+      <p class="muted">Ces noms ne changent pas les fonctionnalités ni tes données.</p>
+      <form id="atelierNavRenameForm" class="form-grid">${buttons.map(b=>
+        `<div class="field"><label>${esc(b.dataset.originalLabel)}</label>
+         <input name="${esc(b.dataset.view)}" maxlength="60" required value="${esc(b.textContent.trim())}"></div>`
+      ).join('')}
+        <div class="form-actions field full">
+          <button type="button" id="atelierNavReset">Noms d'origine</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>`);
+    $('#atelierNavReset').onclick=()=>{
+      buttons.forEach(b=>{localStorage.removeItem('atelierNavLabel_'+b.dataset.view);b.textContent=b.dataset.originalLabel});
+      closeModal();showView(state.view);
+    };
+    $('#atelierNavRenameForm').onsubmit=e=>{
+      e.preventDefault();
+      const form=e.currentTarget;
+      buttons.forEach(b=>{
+        const value=form.elements[b.dataset.view].value.trim();
+        if(!value)return;
+        if(value===b.dataset.originalLabel)localStorage.removeItem('atelierNavLabel_'+b.dataset.view);
+        else localStorage.setItem('atelierNavLabel_'+b.dataset.view,value);
+        b.textContent=value;
+      });
+      closeModal();showView(state.view);
+    };
+  };
 }
 
 function readGlobalLayout(item){
@@ -708,10 +817,17 @@ function initGlobalLayoutEditor(){
     if(!controls){
       controls=document.createElement('div');
       controls.className='layout-controls';
-      controls.innerHTML='<span class="layout-move-handle">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
+      controls.innerHTML='<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span><button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
+    applyModuleCustomName(item);
+    const renameButton=controls.querySelector('.layout-rename-handle');
+    if(renameButton){
+      const canRename=!!moduleTitleElement(item);
+      renameButton.hidden=!canRename;
+      if(canRename)renameButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openModuleNameEditor(item)});
+    }
 
     const beginMove=e=>{
       if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
@@ -738,13 +854,9 @@ function initGlobalLayoutEditor(){
       window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
     };
 
-    item.el.addEventListener('pointerdown',beginMove);
+    controls.querySelector('.layout-move-handle').addEventListener('pointerdown',beginMove);
     controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',beginResize);
-    item.el.addEventListener('click',e=>{
-      if(globalLayoutEditing&&state.view===item.view&&!e.target.closest('.layout-controls')){
-        e.preventDefault();e.stopImmediatePropagation();
-      }
-    },true);
+    // Les interactions restent accessibles : seul le petit handle permet le glisser-déposer.
   });
 
   $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
@@ -757,6 +869,7 @@ function initGlobalLayoutEditor(){
   syncGlobalLayoutEditing();
 }
 
+initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
@@ -883,7 +996,7 @@ $('#cycleForm')?.addEventListener('submit',async event=>{
 });
 
 
-/* ALPHA 0.15.0 — Budget financier local. Pas de données bancaires synchronisées. */
+/* ALPHA 0.15.1 — Budget financier local. Pas de données bancaires synchronisées. */
 let budgetData=null;
 let budgetSelectedMonth=ymd(new Date()).slice(0,7);
 const budgetMoney=cents=>(Number(cents||0)/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
@@ -986,25 +1099,110 @@ function renderHomeBudgetWidget(){
     const p=document.createElement('div');p.className='budget-home-line';p.textContent=e.scheduled_date+' · '+e.title+' · '+budgetMoney(e.amount_cents);root.appendChild(p);
   }
 }
+
+/* Un seul éditeur pour les revenus, dépenses, abonnements et remboursements. */
+function openBudgetEditor(){
+  const today=ymd(new Date());
+  openModal(`<div class="atelier-dialog budget-editor">
+    <h2>Ajouter une opération</h2>
+    <p class="muted">Le minimum d'abord. Les détails sont facultatifs.</p>
+    <form id="budgetUnifiedForm" class="budget-unified-form">
+      <div class="budget-type-switch" role="group" aria-label="Type d'opération">
+        <button type="button" class="budget-kind is-selected" data-kind="expense">− Dépense</button>
+        <button type="button" class="budget-kind" data-kind="income">＋ Revenu</button>
+      </div>
+      <label class="budget-primary-input">Montant (€)
+        <input name="amount" inputmode="decimal" type="number" step=".01" min=".01" required placeholder="0,00" autofocus>
+      </label>
+      <label class="budget-primary-input">Nom
+        <input name="title" required maxlength="120" placeholder="Ex. : Courses">
+      </label>
+      <fieldset class="budget-timing">
+        <legend>Quand ?</legend>
+        <label><input type="radio" name="timing" value="now" checked> Maintenant</label>
+        <label><input type="radio" name="timing" value="later"> Plus tard</label>
+      </fieldset>
+      <label id="budgetWhenWrap" class="budget-editor-date hidden">Date prévue
+        <input name="date" type="date" value="${today}" required>
+      </label>
+      <label class="budget-editor-repeat"><input name="repeat" type="checkbox"> Chaque mois</label>
+      <details class="budget-more" id="budgetMoreOptions">
+        <summary>Plus d'options</summary>
+        <div class="budget-editor-advanced">
+          <label>Catégorie <input name="category" maxlength="80" placeholder="Général"></label>
+          <label id="budgetEndWrap" class="hidden">Date de fin (facultative)
+            <input name="end_date" type="date"></label>
+          <label id="budgetDebtWrap" class="budget-editor-repeat">
+            <input name="is_debt" type="checkbox"> Suivre comme un crédit ou une dette
+          </label>
+          <label id="budgetMonthlyWrap" class="hidden">Mensualité (€)
+            <input name="monthly" type="number" step=".01" min=".01" placeholder="Montant à rembourser chaque mois"></label>
+          <label id="budgetNotesWrap">Note (facultative)
+            <textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+        </div>
+      </details>
+      <div id="budgetEditorError" class="form-error hidden" role="alert"></div>
+      <div class="form-actions">
+        <button type="button" id="budgetEditorCancel">Annuler</button>
+        <button type="submit" id="budgetEditorSave" class="primary">Enregistrer</button>
+      </div>
+    </form></div>`);
+  const form=$('#budgetUnifiedForm');
+  let kind='expense';
+  const sync=()=>{
+    const later=form.elements.timing.value==='later';
+    const repeat=form.elements.repeat.checked;
+    const debt=kind==='expense'&&form.elements.is_debt.checked;
+    $('#budgetWhenWrap').classList.toggle('hidden',!later);
+    $('#budgetEndWrap').classList.toggle('hidden',!repeat&&!debt);
+    $('#budgetDebtWrap').classList.toggle('hidden',kind!=='expense');
+    $('#budgetMonthlyWrap').classList.toggle('hidden',!debt);
+    $('#budgetNotesWrap').classList.toggle('hidden',repeat||debt);
+    form.elements.monthly.required=debt;
+    form.elements.date.value=(!later&&form.elements.date.value!==today)?today:form.elements.date.value;
+    const amountTitle=form.querySelector('.budget-primary-input');
+    amountTitle.firstChild.textContent=debt?'Montant total de la dette (€)':'Montant (€)';
+    $$('.budget-kind').forEach(b=>b.classList.toggle('is-selected',b.dataset.kind===kind));
+  };
+  $$('.budget-kind').forEach(button=>button.onclick=()=>{kind=button.dataset.kind;if(kind==='income')form.elements.is_debt.checked=false;sync()});
+  form.querySelectorAll('input[name="timing"],input[name="repeat"],input[name="is_debt"]').forEach(el=>el.addEventListener('change',sync));
+  $('#budgetEditorCancel').onclick=closeModal;
+  sync();
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const fields=Object.fromEntries(new FormData(form).entries());
+    const debt=kind==='expense'&&form.elements.is_debt.checked;
+    const recurring=form.elements.repeat.checked;
+    const later=form.elements.timing.value==='later';
+    const when=later?fields.date:ymd(new Date());
+    const day=Number(when.slice(-2));
+    let endpoint,body;
+    if(debt){
+      endpoint='/api/budget/debts';
+      body={title:fields.title,total:fields.amount,monthly:fields.monthly,
+        day_of_month:day,start_date:when,end_date:fields.end_date||null};
+    }else if(recurring){
+      endpoint='/api/budget/rules';
+      body={kind:kind==='income'?'income':'fixed',title:fields.title,category:fields.category||'Général',
+        amount:fields.amount,day_of_month:day,start_date:when,end_date:fields.end_date||null};
+    }else{
+      endpoint='/api/budget/entries';
+      body={title:fields.title,amount:fields.amount,kind,category:fields.category||'Général',
+        date:when,planned:later,notes:fields.notes||''};
+    }
+    const save=$('#budgetEditorSave');save.disabled=true;
+    const result=await runUiAction('Impossible d’enregistrer cette opération',()=>api(endpoint,{method:'POST',body:JSON.stringify(body)}));
+    if(result.ok){closeModal();await loadBudget();}
+    else{const err=$('#budgetEditorError');if(err){err.textContent=result.error?.message||'Erreur inconnue';err.classList.remove('hidden')}}
+    if(document.contains(save))save.disabled=false;
+  };
+}
 function initBudget(){
   const month=$('#budgetMonth');if(!month)return;
-  month.value=budgetSelectedMonth;month.onchange=()=>loadBudget(month.value);
+  month.value=budgetSelectedMonth;
+  month.onchange=()=>loadBudget(month.value);
   $('#homeBudgetOpen').onclick=()=>showView('budget');
-  const today=ymd(new Date());
-  for(const id of ['budgetRuleForm','budgetDebtForm'])$('#'+id).elements.start_date.value=today;
-  $('#budgetEntryForm').elements.date.value=today;
-  for(const [id,url] of [['budgetRuleForm','/api/budget/rules'],['budgetDebtForm','/api/budget/debts'],['budgetEntryForm','/api/budget/entries']]){
-    const form=$('#'+id);
-    form.addEventListener('submit',async ev=>{
-      ev.preventDefault();
-      const ok=await budgetRequest(url,'POST',budgetFormData(form),'Impossible d’enregistrer');
-      if(ok){
-        form.reset();
-        if(id==='budgetEntryForm')form.elements.date.value=today;
-        else form.elements.start_date.value=today;
-      }
-    });
-  }
+  $('#budgetAddOperation').onclick=openBudgetEditor;
   $('#budgetSettingsForm').addEventListener('submit',async ev=>{
     ev.preventDefault();
     await budgetRequest('/api/budget/settings','PUT',budgetFormData(ev.currentTarget),'Impossible d’enregistrer le solde initial');
@@ -1012,4 +1210,5 @@ function initBudget(){
   $('#budgetSaveNotes').onclick=()=>budgetRequest('/api/budget/notes','PUT',{month:budgetSelectedMonth,notes:$('#budgetNotes').value},'Impossible d’enregistrer les notes');
   loadBudget();
 }
+
 initBudget();
