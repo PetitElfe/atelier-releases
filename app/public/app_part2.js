@@ -298,7 +298,7 @@ function askUiConfirm(title,message,confirmLabel='Confirmer',danger=false){
 }
 
 function reminderEditor(existing=[], fallbackLabel='élément', defaultDate=''){ return `<div class="field full"><label>Rappels</label><div class="field-help">Laisse le nom vide : le rappel reprendra automatiquement le nom de ${fallbackLabel}. La date et l’heure sont séparées pour pouvoir les taper directement.</div><div id="reminderEditor" data-default-date="${esc(defaultDate)}">${existing.map(v=>reminderRow(v,defaultDate)).join('')}</div><button type="button" id="addReminder">+ Ajouter un rappel</button></div>`; }
-function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="reminder-more" aria-label="Actions du rappel" title="Actions du rappel">⋯</button></div>`; }
+function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):'09:00'; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="reminder-more" aria-label="Actions du rappel" title="Actions du rappel">⋯</button></div>`; }
 function wireReminderEditor(){
   const ed=$('#reminderEditor'); if(!ed)return;
   const defaultDate=ed.dataset.defaultDate||'';
@@ -335,7 +335,13 @@ function showAtelierContextMenu(anchor,actions){
   menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.remove();anchor.focus?.()}});
   menu.querySelector('button')?.focus();
 }
-function collectReminders(){ return $$('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
+function collectReminders(){
+  const rows=$('#reminderEditor .reminder-row-edit');
+  const invalid=rows.some(row=>!row.querySelector('.reminder-date').value||!row.querySelector('.reminder-time').value);
+  if(invalid)throw new Error('Chaque rappel doit avoir une date et une heure. Aucun rappel ne sera ignoré.');
+  return rows.map(row=>({title:row.querySelector('.reminder-name').value.trim(),
+    remind_at:`${row.querySelector('.reminder-date').value}T${row.querySelector('.reminder-time').value}`}));
+}
 
 
 function foodDateLabel(s){
