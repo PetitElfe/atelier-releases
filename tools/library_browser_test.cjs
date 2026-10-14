@@ -344,6 +344,37 @@ async function api(path,method='GET',body){
   },movable.id,{timeout:12000});
   const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E');
   assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
+  // ALPHA 0.14.5 : créer un rappel sans taper d'heure ne doit pas l'effacer.
+  await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
+  await page.locator('#monthGrid .day-add').first().click();
+  await page.locator('#eventForm input[name="title"]').fill('Rappel auto-horaire E2E');
+  await page.locator('#eventForm input[name="event_date"]').fill('2026-10-25');
+  await page.locator('#addReminder').click();
+  assert.equal(await page.locator('#reminderEditor .reminder-time').inputValue(),'09:00','New reminders must have a visible default hour');
+  await page.locator('#reminderEditor .reminder-name').fill('Rappel sans heure manuelle');
+  await page.locator('#saveEvent').click();
+  await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  const autoEvent=(await api('/api/events?start=2026-10-25&end=2026-10-25')).find(e=>e.title==='Rappel auto-horaire E2E');
+  assert.ok(autoEvent,'Appointment for reminder default test must save');
+  assert.ok((await api('/api/reminders')).some(r=>r.entity_id===autoEvent.id&&r.remind_at.endsWith('T09:00')),'Default-time reminder must persist');
+  // Une occurrence reportée garde l'heure initiale et sa barre peut être masquée.
+  const beforeMove=(await api('/api/events?start=2026-11-03&end=2026-11-04')).find(e=>e.id===recurring.id&&e.instance_date==='2026-11-03');
+  assert.ok(beforeMove,'Third weekly occurrence must exist');
+  const movedInstance=await api(`/api/events/${recurring.id}/postpone-instance`,'PUT',{
+    instance_date:'2026-11-03',new_date:'2026-11-04',new_time:beforeMove.start_time
+  });
+  const movedEvent=(await api('/api/events?start=2026-11-03&end=2026-11-04')).find(e=>e.id===movedInstance.moved_event_id);
+  assert.equal(movedEvent.start_time,'10:00','Postponed occurrence must retain the original hour');
+  await page.evaluate(async()=>{state.cursor=parseYMD('2026-11-03');await refresh()});
+  const oldPill=page.locator('#monthGrid .event-pill.event-instance-closed').filter({hasText:'Série récurrente E2E'});
+  await oldPill.click({button:'right'});
+  await page.locator('#atelierContextMenu').getByText('Masquer l’ancienne occurrence barrée').click();
+  await page.waitForFunction(async id=>{
+    const r=await fetch('/api/events?start=2026-11-03&end=2026-11-04');
+    const rows=await r.json();
+    return !rows.some(e=>e.id===id&&e.instance_date==='2026-11-03')
+        &&rows.some(e=>e.id!==id&&e.instance_date==='2026-11-04');
+  },recurring.id,{timeout:12000});
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
   await page.evaluate(()=>showView('reminders'));
