@@ -305,6 +305,45 @@ async function api(path,method='GET',body){
   const remainingEvents=await api('/api/events?start=2026-10-20&end=2026-10-22');
   assert.ok(!remainingEvents.some(e=>e.id===original.id)&&remainingEvents.some(e=>e.id===copied.id),'Deleting original must retain copy: '+JSON.stringify({originalId:original.id,copiedId:copied.id,remaining:remainingEvents.map(e=>({id:e.id,date:e.instance_date,title:e.title}))}));
   assert.ok(!(await api('/api/reminders')).some(r=>r.entity_type==='event'&&r.entity_id===original.id),'Deleting an appointment clears its reminders');
+  // ALPHA 0.14.4 : la modification d'une seule occurrence récurrente
+  // doit préserver le rendez-vous modèle et créer une exception autonome.
+  const recurring=await api('/api/events','POST',{
+    title:'Série récurrente E2E',event_date:'2026-10-20',start_time:'10:00',
+    recurrence:'weekly',show_in_month:true,
+    reminders:[{title:'Modèle rappel série',remind_at:'2026-10-19T09:00'}]
+  });
+  await page.evaluate(async id=>{
+    await refresh();
+    const instance=state.events.find(e=>e.id===id&&e.instance_date==='2026-10-27');
+    if(!instance)throw Error('Missing recurring instance October 27');
+    openEventModal(instance);
+  },recurring.id);
+  await page.locator('#eventForm input[name="title"]').fill('Occurrence isolée E2E');
+  await page.locator('#saveEvent').click();
+  await page.locator('#recurrenceSingle').click();
+  await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
+  assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
+  const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
+  assert.ok(exception,'Editing one instance must create a separate event for that occurrence');
+  const exceptionReminders=await api('/api/reminders');
+  assert.ok(exceptionReminders.some(r=>r.entity_id===exception.id&&r.entity_type==='event'),'Edited instance must retain a linked reminder');
+  // Un rendez-vous simple doit se déplacer en place, sans doublon fantôme.
+  const movable=await api('/api/events','POST',{
+    title:'Glisser-déposer E2E',event_date:'2026-10-20',start_time:'14:00',
+    reminders:[{title:'Rappel à déplacer E2E',remind_at:'2026-10-19T08:00'}]
+  });
+  await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
+  const pill=page.locator('#monthGrid .event-pill').filter({hasText:'Glisser-déposer E2E'});
+  const target=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^21$/})});
+  await pill.dragTo(target);
+  await page.waitForFunction(async id=>{
+    const r=await fetch('/api/events?start=2026-10-20&end=2026-10-21');
+    const items=await r.json();
+    return items.some(e=>e.id===id&&e.instance_date==='2026-10-21')&&!items.some(e=>e.id===id&&e.instance_date==='2026-10-20');
+  },movable.id,{timeout:12000});
+  const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E');
+  assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
   await page.evaluate(()=>showView('reminders'));
