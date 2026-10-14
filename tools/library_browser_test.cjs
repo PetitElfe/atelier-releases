@@ -248,6 +248,39 @@ async function api(path,method='GET',body){
   await page.locator('#globalHomeShortcut').click();
   assert.ok(await page.locator('body').evaluate(el=>!el.classList.contains('library-page-expanded')),'Home does not leave expanded state');
 
+  // Régression calendrier : créer un rendez-vous depuis l'interface, attendre l'API,
+  // puis vérifier sa persistance dans une base temporaire après rechargement.
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="calendar"]').click();
+  await page.locator('#monthGrid .day-add').first().click();
+  await page.locator('#eventForm input[name="title"]').fill('Rendez-vous persistant E2E');
+  await page.locator('#eventForm input[name="event_date"]').fill('2026-10-20');
+  await page.locator('#eventForm input[name="start_time"]').fill('14:30');
+  await page.locator('#saveEvent').click();
+  await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
+  assert.ok(savedAppointments.some(e=>e.title==='Rendez-vous persistant E2E'),'Appointment must exist in SQLite after saving');
+  assert.equal(await page.locator('#calendarView').evaluate(el=>el.classList.contains('active-view')),true,'Saving appointment must keep calendar visible');
+  await page.reload({waitUntil:'domcontentloaded'});
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="calendar"]').click();
+  await page.evaluate(()=>{state.cursor=parseYMD('2026-10-20');renderMonth()});
+  await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
+  // Un rappel autonome dupliqué doit conserver les valeurs éditables,
+  // mais obtenir son propre identifiant après enregistrement.
+  await page.evaluate(()=>showView('reminders'));
+  const firstReminder=await api('/api/reminders','POST',{title:'Rappel modèle E2E',remind_at:'2026-10-21T09:00'});
+  await page.reload({waitUntil:'domcontentloaded'});
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.evaluate(()=>showView('reminders'));
+  await page.locator('.reminder-row').filter({hasText:'Rappel modèle E2E'}).locator('.duplicate').click();
+  assert.equal(await page.locator('#standaloneReminderForm input[name="title"]').inputValue(),'Rappel modèle E2E');
+  await page.locator('#standaloneReminderForm input[name="title"]').fill('Rappel copie E2E');
+  await page.locator('#saveStandaloneReminder').click();
+  await page.locator('.reminder-row').filter({hasText:'Rappel copie E2E'}).waitFor({timeout:12000});
+  const remindersAfter=await api('/api/reminders');
+  assert.ok(remindersAfter.some(r=>r.title==='Rappel modèle E2E')&&remindersAfter.some(r=>r.title==='Rappel copie E2E'),'Both original reminder and copy must be kept');
+  await page.locator('#globalHomeShortcut').click();
   // Organisation 0.14 : test de bout en bout sur des données temporaires.
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="organisation"]').click();

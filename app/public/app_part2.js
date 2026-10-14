@@ -83,6 +83,7 @@ function renderReminders(){
       <button class="done reminder-icon-action" type="button" title="Fini" aria-label="Fini">✓</button>
       <button class="snooze reminder-icon-action" type="button" title="Reporter" aria-label="Reporter">↪</button>
       <button class="edit reminder-icon-action" type="button" title="Modifier" aria-label="Modifier">✎</button>
+      <button class="duplicate reminder-icon-action" type="button" title="Dupliquer" aria-label="Dupliquer">⧉</button>
       <button class="delete reminder-icon-action" type="button" title="Supprimer" aria-label="Supprimer">×</button>
     </div>`;
     row.querySelector('.done').addEventListener('click',async()=>{
@@ -92,6 +93,7 @@ function renderReminders(){
     });
     row.querySelector('.snooze').addEventListener('click',()=>openSnooze(r));
     row.querySelector('.edit').addEventListener('click',()=>openReminderModal(r));
+    row.querySelector('.duplicate').addEventListener('click',()=>openReminderModal({...r,id:null}));
     row.querySelector('.delete').addEventListener('click',async()=>{
       const ok=await askUiConfirm('Supprimer le rappel',`Supprimer « ${title} » ?`,'Supprimer',true);
       if(!ok)return;
@@ -180,8 +182,8 @@ function askUiConfirm(title,message,confirmLabel='Confirmer',danger=false){
 function reminderEditor(existing=[], fallbackLabel='élément', defaultDate=''){ return `<div class="field full"><label>Rappels</label><div class="field-help">Laisse le nom vide : le rappel reprendra automatiquement le nom de ${fallbackLabel}. La date et l’heure sont séparées pour pouvoir les taper directement.</div><div id="reminderEditor" data-default-date="${esc(defaultDate)}">${existing.map(v=>reminderRow(v,defaultDate)).join('')}</div><button type="button" id="addReminder">+ Ajouter un rappel</button></div>`; }
 function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="remove-rem">×</button></div>`; }
 function wireReminderEditor(){ const ed=$('#reminderEditor'); const defaultDate=ed?.dataset.defaultDate||''; $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate)); wireRemoveRem()}); wireRemoveRem(); }
-function wireRemoveRem(){ $('#reminderEditor .remove-rem').forEach(b=>b.onclick=()=>b.parentElement.remove()); }
-function collectReminders(){ return $('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
+function wireRemoveRem(){ $$('#reminderEditor .remove-rem').forEach(b=>b.onclick=()=>b.parentElement.remove()); }
+function collectReminders(){ return $$('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
 
 
 function foodDateLabel(s){
