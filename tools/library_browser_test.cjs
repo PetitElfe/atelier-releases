@@ -609,6 +609,7 @@ async function api(path,method='GET',body){
   await page.mouse.move(wr.x+wr.width/2+90,wr.y+wr.height/2,{steps:6});
   await page.mouse.up();
   let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')));
+  console.log('HOME WIDTH DEBUG',JSON.stringify({initialWidth:initialRect.width,layout,after:await homeCard.boundingBox(),editing:await page.evaluate(()=>globalLayoutEditing),saved:await page.evaluate(()=>localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget'))}));
   assert.ok(layout.width>=initialRect.width+65,'Width can change independently');
   assert.equal(layout.height,null,'Width drag must not change height');
   const nextBlock=page.locator('#homeUpcomingWidget');
