@@ -1130,6 +1130,8 @@ function initGlobalLayoutEditor(){
         d.x=clamp(ox+ev.clientX-sx,-window.innerWidth+100,window.innerWidth-100);
         d.y=clamp(oy+ev.clientY-sy,-window.innerHeight+100,window.innerHeight*2);
         applyGlobalLayout(item,d);
+        // Persist also during dragging: a lost pointerup must never lose a placement.
+        saveGlobalLayout(item,d);
       };
       const up=()=>finishInteraction(d,move,up,cancel);
       const cancel=()=>finishInteraction(d,move,up,cancel);
@@ -1161,6 +1163,8 @@ function initGlobalLayoutEditor(){
         if(axis!=='height')d.width=clamp(baseWidth+ev.clientX-sx,minWidth,maxWidth);
         if(axis!=='width')d.height=clamp(baseHeight+ev.clientY-sy,minHeight,maxHeight);
         applyGlobalLayout(item,d);
+        // Persist also during dragging: a lost pointerup must never lose a placement.
+        saveGlobalLayout(item,d);
       };
       const up=()=>finishInteraction(d,move,up,cancel);
       const cancel=()=>finishInteraction(d,move,up,cancel);
