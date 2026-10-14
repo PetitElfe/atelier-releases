@@ -1,5 +1,5 @@
 {
-  "version": "0.15.1",
+  "version": "0.15.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "44abf66b02260179b3a509b0f10b5f26f431f316ef4ca50f18764c9e4b8cfd4a"
+      "sha256": "355a2e14f6a7f2cb387d9d3b75a3550980d020ee1d005b139b62290c1645068a"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "3caca32eb971676874b5194e64e4ec5812911236bdfb6fef02989e662f661262"
+      "sha256": "0fb6a06681cf4d95a35715fd1c415279ccae2afb10e19b662f07505efca60b36"
     },
     {
       "path": "public/index.html",
-      "sha256": "b3339f58b19496525458be9363e4381836fcd66ad3376ad5674aa36154ddddf3"
+      "sha256": "9512e4a19ac19bc518c69a5e5b2f430c35955805b70e88f17d8bd8e047b9f7a7"
     },
     {
       "path": "public/styles.css",
-      "sha256": "86bfb101110a517cfaf8cdb613bfcd0ad3298e7f5cb957f8dcf03e0d67617b2d"
+      "sha256": "146d4364389ad17c7451a385817a087ea2b96ceacc000ba69e06bf7c6dbccb9c"
     }
   ],
-  "notes": "ALPHA 0.15.1 — Budget simplifié, éditeur unique, modules déplaçables et rubriques renommables."
+  "notes": "ALPHA 0.15.2 — Budget compact sur l'Accueil ; redimensionnement largeur/hauteur indépendant, protection du mode Modifier et réinitialisation annulable."
 }
