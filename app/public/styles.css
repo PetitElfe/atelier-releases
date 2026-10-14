@@ -1230,3 +1230,14 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 .cycle-inline-confirm span{flex:1;min-width:160px}
 .cycle-inline-confirm .cycle-cancel-delete{background:transparent;color:#f0dfcc}
 .cycle-inline-confirm .cycle-accept-delete{background:#85444a;border-color:#aa6670}
+
+/* ALPHA 0.14.4 — Calendrier: actions secondaires et deplacement */
+.atelier-context-menu{position:fixed;z-index:9999;display:flex;flex-direction:column;min-width:195px;padding:5px;background:#29231e;border:1px solid #866947;border-radius:9px;box-shadow:0 14px 32px #0009}
+.atelier-context-menu button{display:block;text-align:left;background:transparent;border:0;color:var(--text,#f4eadc);padding:9px 12px;border-radius:5px;cursor:pointer}
+.atelier-context-menu button:hover,.atelier-context-menu button:focus-visible{background:#55412f}
+.atelier-context-menu button.danger{color:#f6aca5}
+.event-form-actions{justify-content:flex-end;align-items:center}
+.event-form-actions .event-more{margin-right:auto;min-width:38px}
+.reminder-row-edit .reminder-more{min-width:32px}
+.calendar-dragging{opacity:.4}
+.calendar-drop-target{outline:2px dashed #c9aa73;outline-offset:-3px;background:#80644433}
