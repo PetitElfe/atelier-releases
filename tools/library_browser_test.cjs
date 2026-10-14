@@ -86,6 +86,9 @@ async function api(path,method='GET',body){
       title:'Titre restauré',notes:'@@ATELIER_RICH_V1@@<p>Texte restauré depuis le brouillon</p>',updatedAt:Date.now()
     }));
   },{id:secondPage.id});
+  // Le domaine a été créé par API après le chargement initial de l'interface :
+  // recharger pour rafraîchir les domaines, sans perdre le brouillon local.
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#globalHomeShortcut').click();
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
