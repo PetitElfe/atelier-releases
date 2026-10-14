@@ -771,45 +771,62 @@ function initNavCustomization(){
   };
 }
 
+/* ALPHA 0.15.2 : dimensions indépendantes, interactions protégées et annulation de réinitialisation. */
 function readGlobalLayout(item){
   try{
-    const v=JSON.parse(localStorage.getItem(item.key));
-    return v&&typeof v==='object'
-      ? {x:Number(v.x)||0,y:Number(v.y)||0,scale:Number(v.scale)||1}
-      : {x:0,y:0,scale:1};
-  }catch(e){return{x:0,y:0,scale:1}}
+    const data=JSON.parse(localStorage.getItem(item.key));
+    if(!data||typeof data!=='object')return {x:0,y:0,scale:1,width:null,height:null};
+    const sane=n=>Number.isFinite(Number(n))?Number(n):null;
+    return {x:sane(data.x)||0,y:sane(data.y)||0,scale:sane(data.scale)||1,
+      width:data.width==null?null:sane(data.width),height:data.height==null?null:sane(data.height)};
+  }catch(_){return {x:0,y:0,scale:1,width:null,height:null}}
 }
-
 function saveGlobalLayout(item,d){
-  localStorage.setItem(item.key,JSON.stringify({x:d.x||0,y:d.y||0,scale:d.scale||1}));
+  const value={x:d.x||0,y:d.y||0,scale:d.scale||1,
+    width:d.width==null?null:Math.round(d.width),
+    height:d.height==null?null:Math.round(d.height)};
+  localStorage.setItem(item.key,JSON.stringify(value));
 }
-
 function applyGlobalLayout(item,d){
   item.el.style.setProperty('--layout-x',(d.x||0)+'px');
   item.el.style.setProperty('--layout-y',(d.y||0)+'px');
   item.el.style.setProperty('--layout-scale',String(d.scale||1));
+  item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
+  // On agrandit la zone sans couper le contenu lorsqu'elle est plus petite que son texte.
+  item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
   const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
-  if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
+  if(value){
+    const rect=item.el.getBoundingClientRect();
+    value.textContent=Math.round(rect.width)+' × '+Math.round(rect.height);
+  }
 }
-
+function layoutUndoKey(view){return 'atelierLayoutResetUndo_'+view}
 function syncGlobalLayoutEditing(){
   $$('.view').forEach(v=>v.classList.remove('layout-editing'));
   if(globalLayoutEditing){
-    const view=$('#'+state.view+'View');
-    if(view)view.classList.add('layout-editing');
+    const view=$('#'+state.view+'View');if(view)view.classList.add('layout-editing');
   }
-  const toggle=$('#globalLayoutEdit'), reset=$('#globalLayoutReset');
+  const toggle=$('#globalLayoutEdit'),reset=$('#globalLayoutReset'),undo=$('#globalLayoutUndo');
   if(toggle){
     toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
     toggle.classList.toggle('is-active',globalLayoutEditing);
     toggle.setAttribute('aria-pressed',globalLayoutEditing?'true':'false');
   }
   if(reset)reset.classList.toggle('hidden',!globalLayoutEditing);
+  if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem(layoutUndoKey(state.view)));
 }
-
 function initGlobalLayoutEditor(){
   globalLayoutItems=getGlobalLayoutSpecs();
-  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  // Le clic normal d'un encadré (notamment le mini-calendrier) ne doit PAS
+  // activer ses boutons et liens pendant la manipulation de la disposition.
+  $$('.view').forEach(view=>view.addEventListener('click',event=>{
+    if(!globalLayoutEditing||view.id!==state.view+'View')return;
+    const target=event.target.closest?.('.layout-object');
+    if(!target||event.target.closest('.layout-controls'))return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },true));
 
   globalLayoutItems.forEach(item=>{
     item.el.classList.add('layout-object');
@@ -817,54 +834,105 @@ function initGlobalLayoutEditor(){
     if(!controls){
       controls=document.createElement('div');
       controls.className='layout-controls';
-      controls.innerHTML='<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span><button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
+      controls.innerHTML=`<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span>
+        <button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button>
+        <span class="layout-scale-value" aria-label="Dimensions">—</span>
+        <span class="layout-width-handle" title="Étirer la largeur" aria-label="Étirer la largeur">↔</span>
+        <span class="layout-height-handle" title="Étirer la hauteur" aria-label="Étirer la hauteur">↕</span>
+        <span class="layout-resize-handle" title="Étirer largeur et hauteur" aria-label="Étirer largeur et hauteur">↘</span>`;
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
     applyModuleCustomName(item);
-    const renameButton=controls.querySelector('.layout-rename-handle');
-    if(renameButton){
+    const rename=controls.querySelector('.layout-rename-handle');
+    if(rename){
       const canRename=!!moduleTitleElement(item);
-      renameButton.hidden=!canRename;
-      if(canRename)renameButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openModuleNameEditor(item)});
+      rename.hidden=!canRename;
+      if(canRename)rename.addEventListener('click',event=>{
+        event.preventDefault();event.stopPropagation();openModuleNameEditor(item);
+      });
     }
-
-    const beginMove=e=>{
-      if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
-      if(e.target.closest('.layout-resize-handle'))return;
-      e.preventDefault();e.stopPropagation();
-      const d=readGlobalLayout(item),sx=e.clientX,sy=e.clientY,ox=d.x||0,oy=d.y||0;
-      item.el.classList.add('layout-selected');
-      const move=ev=>{d.x=ox+(ev.clientX-sx);d.y=oy+(ev.clientY-sy);applyGlobalLayout(item,d)};
-      const up=()=>{saveGlobalLayout(item,d);item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
-    };
-
-    const beginResize=e=>{
-      if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
-      e.preventDefault();e.stopPropagation();
-      const d=readGlobalLayout(item),start=d.scale||1,sx=e.clientX,sy=e.clientY;
+    function finishInteraction(d,move,up,cancel){
+      saveGlobalLayout(item,d);
+      item.el.classList.remove('layout-selected');
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',up);
+      window.removeEventListener('pointercancel',cancel);
+      applyGlobalLayout(item,d);
+    }
+    const beginMove=event=>{
+      if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
+      event.preventDefault();event.stopPropagation();
+      const d=readGlobalLayout(item),sx=event.clientX,sy=event.clientY,ox=d.x,oy=d.y;
       item.el.classList.add('layout-selected');
       const move=ev=>{
-        const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;
-        d.scale=clamp(start+delta,.55,1.75);
+        d.x=clamp(ox+ev.clientX-sx,-window.innerWidth+100,window.innerWidth-100);
+        d.y=clamp(oy+ev.clientY-sy,-window.innerHeight+100,window.innerHeight*2);
         applyGlobalLayout(item,d);
       };
-      const up=()=>{saveGlobalLayout(item,d);item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+      const up=()=>finishInteraction(d,move,up,cancel);
+      const cancel=()=>finishInteraction(d,move,up,cancel);
+      window.addEventListener('pointermove',move);
+      window.addEventListener('pointerup',up);
+      window.addEventListener('pointercancel',cancel);
     };
-
-    controls.querySelector('.layout-move-handle').addEventListener('pointerdown',beginMove);
-    controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',beginResize);
-    // Les interactions restent accessibles : seul le petit handle permet le glisser-déposer.
+    // Au redimensionnement, largeur/hauteur deviennent de vraies dimensions CSS,
+    // contrairement à l'ancien zoom qui agrandissait également tout le texte.
+    const beginResize=(axis,event)=>{
+      if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
+      event.preventDefault();event.stopPropagation();
+      const d=readGlobalLayout(item);
+      const rect=item.el.getBoundingClientRect();
+      const sx=event.clientX,sy=event.clientY;
+      const baseWidth=rect.width,baseHeight=rect.height;
+      const isSmallCard=item.el.closest('#budgetSummaryPanel')&&item.el.tagName==='ARTICLE';
+      const minWidth=isSmallCard?165:item.el.id==='openCalendarCard'?175:200;
+      const maxWidth=Math.max(minWidth,Math.min(1400,window.innerWidth-48));
+      const minHeight=isSmallCard?90:item.el.id==='openCalendarCard'?130:105;
+      const maxHeight=1600;
+      d.scale=1;
+      item.el.classList.add('layout-selected');
+      const move=ev=>{
+        if(axis!=='height')d.width=clamp(baseWidth+ev.clientX-sx,minWidth,maxWidth);
+        if(axis!=='width')d.height=clamp(baseHeight+ev.clientY-sy,minHeight,maxHeight);
+        applyGlobalLayout(item,d);
+      };
+      const up=()=>finishInteraction(d,move,up,cancel);
+      const cancel=()=>finishInteraction(d,move,up,cancel);
+      window.addEventListener('pointermove',move);
+      window.addEventListener('pointerup',up);
+      window.addEventListener('pointercancel',cancel);
+    };
+    controls.querySelector('.layout-move-handle')?.addEventListener('pointerdown',beginMove);
+    controls.querySelector('.layout-width-handle')?.addEventListener('pointerdown',event=>beginResize('width',event));
+    controls.querySelector('.layout-height-handle')?.addEventListener('pointerdown',event=>beginResize('height',event));
+    controls.querySelector('.layout-resize-handle')?.addEventListener('pointerdown',event=>beginResize('both',event));
   });
-
   $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
   $('#globalLayoutReset').onclick=()=>{
-    globalLayoutItems.filter(x=>x.view===state.view).forEach(item=>{
-      const d={x:0,y:0,scale:1};
+    const items=globalLayoutItems.filter(x=>x.view===state.view);
+    if(!items.length)return;
+    if(!confirm('Remettre la disposition par défaut ? Tu pourras annuler cette réinitialisation avec « Annuler la remise à zéro ».'))return;
+    const snapshot=items.map(item=>({key:item.key,raw:localStorage.getItem(item.key)}));
+    localStorage.setItem(layoutUndoKey(state.view),JSON.stringify(snapshot));
+    items.forEach(item=>{
+      const d={x:0,y:0,scale:1,width:null,height:null};
       saveGlobalLayout(item,d);applyGlobalLayout(item,d);
     });
+    syncGlobalLayoutEditing();
+  };
+  $('#globalLayoutUndo').onclick=()=>{
+    const key=layoutUndoKey(state.view);
+    let snapshot;
+    try{snapshot=JSON.parse(localStorage.getItem(key)||'[]')}catch(_){snapshot=[]}
+    for(const entry of snapshot){
+      if(!entry||!entry.key)continue;
+      if(entry.raw===null)localStorage.removeItem(entry.key);
+      else localStorage.setItem(entry.key,entry.raw);
+    }
+    localStorage.removeItem(key);
+    globalLayoutItems.filter(x=>x.view===state.view).forEach(item=>applyGlobalLayout(item,readGlobalLayout(item)));
+    syncGlobalLayoutEditing();
   };
   syncGlobalLayoutEditing();
 }
