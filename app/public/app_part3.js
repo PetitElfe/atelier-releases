@@ -883,7 +883,7 @@ $('#cycleForm')?.addEventListener('submit',async event=>{
 });
 
 
-/* ALPHA 0.15.0 — Budget financier local. Pas de données bancaires synchronisées. */
+/* ALPHA 0.15.1 — Budget financier local. Pas de données bancaires synchronisées. */
 let budgetData=null;
 let budgetSelectedMonth=ymd(new Date()).slice(0,7);
 const budgetMoney=cents=>(Number(cents||0)/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
@@ -986,25 +986,110 @@ function renderHomeBudgetWidget(){
     const p=document.createElement('div');p.className='budget-home-line';p.textContent=e.scheduled_date+' · '+e.title+' · '+budgetMoney(e.amount_cents);root.appendChild(p);
   }
 }
+
+/* Un seul éditeur pour les revenus, dépenses, abonnements et remboursements. */
+function openBudgetEditor(){
+  const today=ymd(new Date());
+  openModal(`<div class="atelier-dialog budget-editor">
+    <h2>Ajouter une opération</h2>
+    <p class="muted">Le minimum d'abord. Les détails sont facultatifs.</p>
+    <form id="budgetUnifiedForm" class="budget-unified-form">
+      <div class="budget-type-switch" role="group" aria-label="Type d'opération">
+        <button type="button" class="budget-kind is-selected" data-kind="expense">− Dépense</button>
+        <button type="button" class="budget-kind" data-kind="income">＋ Revenu</button>
+      </div>
+      <label class="budget-primary-input">Montant (€)
+        <input name="amount" inputmode="decimal" type="number" step=".01" min=".01" required placeholder="0,00" autofocus>
+      </label>
+      <label class="budget-primary-input">Nom
+        <input name="title" required maxlength="120" placeholder="Ex. : Courses">
+      </label>
+      <fieldset class="budget-timing">
+        <legend>Quand ?</legend>
+        <label><input type="radio" name="timing" value="now" checked> Maintenant</label>
+        <label><input type="radio" name="timing" value="later"> Plus tard</label>
+      </fieldset>
+      <label id="budgetWhenWrap" class="budget-editor-date hidden">Date prévue
+        <input name="date" type="date" value="${today}" required>
+      </label>
+      <label class="budget-editor-repeat"><input name="repeat" type="checkbox"> Chaque mois</label>
+      <details class="budget-more" id="budgetMoreOptions">
+        <summary>Plus d'options</summary>
+        <div class="budget-editor-advanced">
+          <label>Catégorie <input name="category" maxlength="80" placeholder="Général"></label>
+          <label id="budgetEndWrap" class="hidden">Date de fin (facultative)
+            <input name="end_date" type="date"></label>
+          <label id="budgetDebtWrap" class="budget-editor-repeat">
+            <input name="is_debt" type="checkbox"> Suivre comme un crédit ou une dette
+          </label>
+          <label id="budgetMonthlyWrap" class="hidden">Mensualité (€)
+            <input name="monthly" type="number" step=".01" min=".01" placeholder="Montant à rembourser chaque mois"></label>
+          <label id="budgetNotesWrap">Note (facultative)
+            <textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+        </div>
+      </details>
+      <div id="budgetEditorError" class="form-error hidden" role="alert"></div>
+      <div class="form-actions">
+        <button type="button" id="budgetEditorCancel">Annuler</button>
+        <button type="submit" id="budgetEditorSave" class="primary">Enregistrer</button>
+      </div>
+    </form></div>`);
+  const form=$('#budgetUnifiedForm');
+  let kind='expense';
+  const sync=()=>{
+    const later=form.elements.timing.value==='later';
+    const repeat=form.elements.repeat.checked;
+    const debt=kind==='expense'&&form.elements.is_debt.checked;
+    $('#budgetWhenWrap').classList.toggle('hidden',!later);
+    $('#budgetEndWrap').classList.toggle('hidden',!repeat&&!debt);
+    $('#budgetDebtWrap').classList.toggle('hidden',kind!=='expense');
+    $('#budgetMonthlyWrap').classList.toggle('hidden',!debt);
+    $('#budgetNotesWrap').classList.toggle('hidden',repeat||debt);
+    form.elements.monthly.required=debt;
+    form.elements.date.value=(!later&&form.elements.date.value!==today)?today:form.elements.date.value;
+    const amountTitle=form.querySelector('.budget-primary-input');
+    amountTitle.firstChild.textContent=debt?'Montant total de la dette (€)':'Montant (€)';
+    $$('.budget-kind').forEach(b=>b.classList.toggle('is-selected',b.dataset.kind===kind));
+  };
+  $$('.budget-kind').forEach(button=>button.onclick=()=>{kind=button.dataset.kind;if(kind==='income')form.elements.is_debt.checked=false;sync()});
+  form.querySelectorAll('input[name="timing"],input[name="repeat"],input[name="is_debt"]').forEach(el=>el.addEventListener('change',sync));
+  $('#budgetEditorCancel').onclick=closeModal;
+  sync();
+  form.onsubmit=async ev=>{
+    ev.preventDefault();
+    const fields=Object.fromEntries(new FormData(form).entries());
+    const debt=kind==='expense'&&form.elements.is_debt.checked;
+    const recurring=form.elements.repeat.checked;
+    const later=form.elements.timing.value==='later';
+    const when=later?fields.date:ymd(new Date());
+    const day=Number(when.slice(-2));
+    let endpoint,body;
+    if(debt){
+      endpoint='/api/budget/debts';
+      body={title:fields.title,total:fields.amount,monthly:fields.monthly,
+        day_of_month:day,start_date:when,end_date:fields.end_date||null};
+    }else if(recurring){
+      endpoint='/api/budget/rules';
+      body={kind:kind==='income'?'income':'fixed',title:fields.title,category:fields.category||'Général',
+        amount:fields.amount,day_of_month:day,start_date:when,end_date:fields.end_date||null};
+    }else{
+      endpoint='/api/budget/entries';
+      body={title:fields.title,amount:fields.amount,kind,category:fields.category||'Général',
+        date:when,planned:later,notes:fields.notes||''};
+    }
+    const save=$('#budgetEditorSave');save.disabled=true;
+    const result=await runUiAction('Impossible d’enregistrer cette opération',()=>api(endpoint,{method:'POST',body:JSON.stringify(body)}));
+    if(result.ok){closeModal();await loadBudget();}
+    else{const err=$('#budgetEditorError');if(err){err.textContent=result.error?.message||'Erreur inconnue';err.classList.remove('hidden')}}
+    if(document.contains(save))save.disabled=false;
+  };
+}
 function initBudget(){
   const month=$('#budgetMonth');if(!month)return;
-  month.value=budgetSelectedMonth;month.onchange=()=>loadBudget(month.value);
+  month.value=budgetSelectedMonth;
+  month.onchange=()=>loadBudget(month.value);
   $('#homeBudgetOpen').onclick=()=>showView('budget');
-  const today=ymd(new Date());
-  for(const id of ['budgetRuleForm','budgetDebtForm'])$('#'+id).elements.start_date.value=today;
-  $('#budgetEntryForm').elements.date.value=today;
-  for(const [id,url] of [['budgetRuleForm','/api/budget/rules'],['budgetDebtForm','/api/budget/debts'],['budgetEntryForm','/api/budget/entries']]){
-    const form=$('#'+id);
-    form.addEventListener('submit',async ev=>{
-      ev.preventDefault();
-      const ok=await budgetRequest(url,'POST',budgetFormData(form),'Impossible d’enregistrer');
-      if(ok){
-        form.reset();
-        if(id==='budgetEntryForm')form.elements.date.value=today;
-        else form.elements.start_date.value=today;
-      }
-    });
-  }
+  $('#budgetAddOperation').onclick=openBudgetEditor;
   $('#budgetSettingsForm').addEventListener('submit',async ev=>{
     ev.preventDefault();
     await budgetRequest('/api/budget/settings','PUT',budgetFormData(ev.currentTarget),'Impossible d’enregistrer le solde initial');
@@ -1012,4 +1097,5 @@ function initBudget(){
   $('#budgetSaveNotes').onclick=()=>budgetRequest('/api/budget/notes','PUT',{month:budgetSelectedMonth,notes:$('#budgetNotes').value},'Impossible d’enregistrer les notes');
   loadBudget();
 }
+
 initBudget();
