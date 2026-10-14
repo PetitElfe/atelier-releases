@@ -268,11 +268,11 @@ async function api(path,method='GET',body){
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
-  await page.locator('.tabs button[data-view="reminders"]').click();
+  await page.evaluate(()=>showView('reminders'));
   const firstReminder=await api('/api/reminders','POST',{title:'Rappel modèle E2E',remind_at:'2026-10-21T09:00'});
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="reminders"]').click();
+  await page.evaluate(()=>showView('reminders'));
   await page.locator('.reminder-row').filter({hasText:'Rappel modèle E2E'}).locator('.duplicate').click();
   assert.equal(await page.locator('#standaloneReminderForm input[name="title"]').inputValue(),'Rappel modèle E2E');
   await page.locator('#standaloneReminderForm input[name="title"]').fill('Rappel copie E2E');
