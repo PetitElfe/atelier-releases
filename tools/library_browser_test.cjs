@@ -608,10 +608,10 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(wr.x+wr.width/2+90,wr.y+wr.height/2,{steps:6});
   await page.mouse.up();
-  let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
+  let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')));
   assert.ok(layout.width>=initialRect.width+65,'Width can change independently');
   assert.equal(layout.height,null,'Width drag must not change height');
-  const nextBlock=page.locator('#homeView .desk-top-row');
+  const nextBlock=page.locator('#homeUpcomingWidget');
   const nextBefore=(await nextBlock.boundingBox()).y;
   const calendarBefore=(await page.locator('#openCalendarCard').boundingBox()).y;
   const heightHandle=homeCard.locator(':scope > .layout-controls .layout-height-handle');
@@ -620,7 +620,7 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2+70,{steps:6});
   await page.mouse.up();
-  layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
+  layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')));
   assert.ok(layout.height>=120,'Height can be adjusted independently');
   const nextAfter=(await nextBlock.boundingBox()).y;
   const calendarAfter=(await page.locator('#openCalendarCard').boundingBox()).y;
@@ -631,18 +631,46 @@ async function api(path,method='GET',body){
   const beforeReset=JSON.stringify(layout);
   page.once('dialog',dialog=>dialog.dismiss());
   await page.locator('#globalLayoutReset').click();
-  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')))),beforeReset,'Dismissed reset does not erase the layout');
+  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')))),beforeReset,'Dismissed reset does not erase the layout');
   page.once('dialog',dialog=>dialog.accept());
   await page.locator('#globalLayoutReset').click();
   assert.ok(await page.locator('#globalLayoutUndo').isVisible(),'Undo is available immediately after reset');
   await page.locator('#globalLayoutUndo').click();
-  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')))),beforeReset,'Undo restores the exact original dimensions');
+  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')))),beforeReset,'Undo restores the exact original dimensions');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
-  assert.ok(await page.evaluate(initialWidth=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')).width>initialWidth,initialRect.width),'Width survives browser reload');
+  assert.ok(await page.evaluate(initialWidth=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')).width>initialWidth,initialRect.width),'Width survives browser reload');
   // Le clic ordinaire doit redevenir fonctionnel hors du mode Modifier.
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
+
+  // ALPHA 0.16.1 — Canvas libre : les positions absolues survivent à un rechargement.
+  await page.evaluate(()=>showView('home'));
+  await page.locator('#homeCanvas').waitFor({state:'visible'});
+  assert.match(await page.title(),/Alpha 0\\.16\\.1/,'Le titre d’onglet doit être cohérent');
+  const movingCalendar=page.locator('#openCalendarCard');
+  const beforeMove=await movingCalendar.boundingBox();
+  const beforeOther=await page.locator('#journalBook').boundingBox();
+  await page.locator('#globalLayoutEdit').click();
+  const moveGrip=await movingCalendar.locator(':scope > .layout-controls .layout-move-handle').boundingBox();
+  await page.mouse.move(moveGrip.x+moveGrip.width/2,moveGrip.y+moveGrip.height/2);
+  await page.mouse.down();
+  await page.mouse.move(moveGrip.x+moveGrip.width/2-45,moveGrip.y+moveGrip.height/2+35,{steps:5});
+  await page.mouse.up();
+  const afterMove=await movingCalendar.boundingBox();
+  const afterOther=await page.locator('#journalBook').boundingBox();
+  assert.ok(Math.abs(afterMove.y-beforeMove.y)>20,'Calendrier déplacé en position libre');
+  assert.ok(Math.abs(afterOther.y-beforeOther.y)<3,'Déplacer Calendrier ne déplace pas le Journal');
+  const storedCanvas=await page.evaluate(()=>localStorage.getItem('atelierHomeCanvasV2_calendar'));
+  assert.ok(storedCanvas,'La position libre est conservée sous une clé indépendante');
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#homeCanvas').waitFor({state:'visible'});
+  const restoredCanvas=await movingCalendar.boundingBox();
+  assert.ok(Math.abs(restoredCanvas.x-afterMove.x)<4&&Math.abs(restoredCanvas.y-afterMove.y)<4,
+    'La position du calendrier doit être identique après rechargement');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('atelierHomeCanvasV2_calendar')),storedCanvas,
+    'Les coordonnées sauvegardées ne doivent pas changer au redémarrage');
 
   // ALPHA 0.16.0 — Catalogue sans création de données, Accueil extensible.
   await page.evaluate(()=>{showView('home');setSideNavCollapsed(true)});
