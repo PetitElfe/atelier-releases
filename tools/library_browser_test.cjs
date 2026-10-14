@@ -381,8 +381,13 @@ async function api(path,method='GET',body){
   const cancelledDay=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^10$/})});
   await cancelledDay.locator('.event-pill.event-instance-closed').filter({hasText:'Série récurrente E2E'}).click({button:'right'});
   await page.locator('#atelierContextMenu').getByText('Masquer cette occurrence barrée').click();
-  const afterHide=await api('/api/events?start=2026-11-10&end=2026-11-10');
-  assert.ok(!afterHide.some(e=>e.id===recurring.id&&e.instance_date==='2026-11-10'),'Cancelled instance must be hidden without deleting series');
+  await page.waitForFunction(async id=>{
+    const r=await fetch('/api/events?start=2026-11-10&end=2026-11-10');
+    const rows=await r.json();
+    return r.ok&&!rows.some(e=>e.id===id&&e.instance_date==='2026-11-10');
+  },recurring.id,{timeout:12000});
+  const remainingSeries=await api('/api/events?start=2026-11-17&end=2026-11-17');
+  assert.ok(remainingSeries.some(e=>e.id===recurring.id),'Hiding cancelled occurrence must preserve future recurring dates');
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
   await page.evaluate(()=>showView('reminders'));
