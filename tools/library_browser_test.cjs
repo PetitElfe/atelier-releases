@@ -76,6 +76,38 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
+  // Régression critique : un brouillon local restauré doit être réellement
+  // renvoyé au serveur, y compris dans un nouveau domaine / carnet.
+  const secondDomain=await api('/api/objective-nodes','POST',{node_type:'domain',title:'Santé mentale E2E',description:'',progress:0,status:'active'});
+  const secondNotebook=await api('/api/objective-library-sections','POST',{node_id:secondDomain.id,title:'Traitement et ressentis E2E',section_type:'notes'});
+  const secondPage=await api('/api/objective-library-entries','POST',{section_id:secondNotebook.id,title:'Nouvelle page',notes:'@@ATELIER_RICH_V1@@',url:'',done:false});
+  await page.evaluate(({id})=>{
+    localStorage.setItem('atelier-library-draft-v124-'+id,JSON.stringify({
+      title:'Titre restauré',notes:'@@ATELIER_RICH_V1@@<p>Texte restauré depuis le brouillon</p>',updatedAt:Date.now()
+    }));
+  },{id:secondPage.id});
+  // Le domaine a été créé par API après le chargement initial de l'interface :
+  // recharger pour rafraîchir les domaines, sans perdre le brouillon local.
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#globalHomeShortcut').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('.library-domain-open').filter({hasText:'Santé mentale E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Traitement et ressentis E2E'}).click();
+  await page.locator('#libraryPageBody').waitFor();
+  assert.match(await page.locator('#libraryPageBody').innerText(),/Texte restauré depuis le brouillon/);
+  await page.waitForFunction(()=>document.querySelector('#librarySaveState')?.textContent?.trim()==='Enregistré',null,{timeout:12000});
+  const savedRecovered=await api('/api/objective-library?node_id='+secondDomain.id);
+  assert.equal(savedRecovered.sections[0].entries[0].title,'Titre restauré');
+  assert.match(savedRecovered.sections[0].entries[0].notes,/Texte restauré depuis le brouillon/,'Recovered draft must persist in SQLite');
+  // Le sélecteur de domaines est masqué lorsqu'un carnet est ouvert.
+  // Recharger la page pour retrouver la vue des domaines avant de rouvrir Test E2E.
+  await page.reload({waitUntil:'domcontentloaded'});
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  await page.locator('.tabs button[data-view="library"]').click();
+  await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
+  await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
+  await page.locator('#libraryPageBody').waitFor();
   // Une feuille supplémentaire est toujours créée explicitement.
   const beforeA4=await api('/api/objective-library?node_id='+domain.id);
   const previousId=beforeA4.sections[0].entries[0].id;
@@ -230,7 +262,11 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
   await page.locator('#cycleStart').fill('2026-08-01');
   await page.locator('#cycleForm button[type="submit"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1);
+  try{await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1,null,{timeout:10000});}
+  catch(err){
+    console.log('CYCLE DIAGNOSTIC:',JSON.stringify({form:await page.locator('#cycleForm').evaluate(el=>({html:el.outerHTML,visible:!!el.offsetParent})),api:await api('/api/cycle-periods'),errors:pageErrors}));
+    throw err;
+  }
   await page.locator('#cycleStart').fill('2026-08-29');
   await page.locator('#cycleForm button[type="submit"]').click();
   await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===2);
