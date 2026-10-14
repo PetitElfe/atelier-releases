@@ -256,6 +256,10 @@ async function api(path,method='GET',body){
   await page.locator('#eventForm input[name="title"]').fill('Rendez-vous persistant E2E');
   await page.locator('#eventForm input[name="event_date"]').fill('2026-10-20');
   await page.locator('#eventForm input[name="start_time"]').fill('14:30');
+  await page.locator('#addReminder').click();
+  await page.locator('#reminderEditor .reminder-name').fill('Rappel du rendez-vous E2E');
+  await page.locator('#reminderEditor .reminder-date').fill('2026-10-19');
+  await page.locator('#reminderEditor .reminder-time').fill('09:00');
   await page.locator('#saveEvent').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
   const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
@@ -266,6 +270,28 @@ async function api(path,method='GET',body){
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.evaluate(()=>{state.cursor=parseYMD('2026-10-20');renderMonth()});
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
+  // La duplication reprend les rappels liés à l'événement, sans écraser l'original.
+  await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).click();
+  await page.locator('#duplicateEvent').click();
+  assert.equal(await page.locator('#reminderEditor .reminder-row-edit').count(),1,'Linked reminder must be copied into the event draft');
+  assert.equal(await page.locator('#reminderEditor .reminder-name').inputValue(),'Rappel du rendez-vous E2E');
+  await page.locator('#eventForm input[name="event_date"]').fill('2026-10-22');
+  await page.locator('#saveEvent').click();
+  await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  const copiedEvents=await api('/api/events?start=2026-10-20&end=2026-10-22');
+  const original=copiedEvents.find(e=>e.title==='Rendez-vous persistant E2E'&&e.instance_date==='2026-10-20');
+  const copied=copiedEvents.find(e=>e.title==='Rendez-vous persistant E2E'&&e.instance_date==='2026-10-22');
+  assert.ok(original&&copied&&original.id!==copied.id,'Both appointment and copy should exist');
+  const linked=await api('/api/reminders');
+  assert.ok(linked.some(r=>r.entity_type==='event'&&r.entity_id===copied.id&&r.title==='Rappel du rendez-vous E2E'),'Copy must save its linked reminder');
+  // Supprimer l'original depuis son éditeur et confirmer par la boîte intégrée.
+  await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).first().click();
+  await page.locator('#deleteEvent').click();
+  await page.locator('#atelierDialogConfirm').click();
+  await page.waitForFunction(()=>!document.querySelector('#eventForm'));
+  const remainingEvents=await api('/api/events?start=2026-10-20&end=2026-10-22');
+  assert.ok(!remainingEvents.some(e=>e.id===original.id)&&remainingEvents.some(e=>e.id===copied.id),'Deleting original must retain copy');
+  assert.ok(!(await api('/api/reminders')).some(r=>r.entity_type==='event'&&r.entity_id===original.id),'Deleting an appointment clears its reminders');
   // Un rappel autonome dupliqué doit conserver les valeurs éditables,
   // mais obtenir son propre identifiant après enregistrement.
   await page.evaluate(()=>showView('reminders'));
