@@ -261,6 +261,20 @@ async function api(path,method='GET',body){
   await page.locator('#reminderEditor .reminder-date').fill('2026-10-19');
   await page.locator('#reminderEditor .reminder-time').fill('09:00');
   await page.locator('#saveEvent').click();
+  await page.waitForTimeout(800);
+  if(await page.locator('#eventForm').count()){
+    console.log('EVENT FORM DIAGNOSTIC',JSON.stringify(await page.locator('#eventForm').evaluate(f=>({
+      title:f.querySelector('[name="title"]').value,
+      date:f.querySelector('[name="event_date"]').value,
+      rows:[...f.querySelectorAll('.reminder-row-edit')].map(x=>({
+        date:x.querySelector('.reminder-date')?.value,time:x.querySelector('.reminder-time')?.value
+      })),
+      error:f.querySelector('#eventSaveError')?.textContent,
+      html:f.querySelector('#eventSaveError')?.outerHTML,
+      saving:f.querySelector('#saveEvent')?.textContent
+    }))));
+    console.log('PAGE ERRORS DIAG',JSON.stringify(pageErrors));
+  }
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
   const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
   assert.ok(savedAppointments.some(e=>e.title==='Rendez-vous persistant E2E'),'Appointment must exist in SQLite after saving');
