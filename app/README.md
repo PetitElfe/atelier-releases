@@ -1,44 +1,26 @@
-# L’Atelier 0.12.1
+# L’Atelier 0.16.0 — Modules et ergonomie
 
-Correctif ergonomique du bloc Bibliothèque / carnets.
+Cette version consolide les fonctions existantes sans changer les données de la base SQLite ni celles des carnets.
 
-## Sauvegarde fiable
+## Accueil
+- La page se développe librement vers le bas : le défilement reste disponible sur ordinateur.
+- Le bouton **＋ Bibliothèque de modules** permet d'afficher ou masquer les éléments de l'Accueil.
+- Par défaut : Budget compact, Calendrier, « À venir » et Journal.
+- Modules supplémentaires facultatifs : raccourcis vers Tâches, Rappels, Bibliothèque, Habitudes & cycle, Courses & repas, Recettes et Paramètres.
+- Afficher ou masquer un encadré ne supprime **jamais** les informations qu'il contient.
 
-- quitter la Bibliothèque vers l’Accueil ou un autre onglet force immédiatement la sauvegarde de la page courante ;
-- le contenu est aussi mis à jour en mémoire avant le changement d’écran ;
-- revenir tout de suite sur le carnet ne doit plus faire réapparaître une ancienne version ;
-- fermeture / arrière-plan gardent la sauvegarde de sécurité introduite en 0.12.0.
+## Personnalisation
+- Dans **Modifier**, les poignées conservent les fonctions de déplacement et de redimensionnement indépendant.
+- **⋯** ouvre les réglages d'un module : titre, affichage sur l'Accueil (si applicable) et retour à la disposition par défaut du module.
+- Le double-clic sur un encadré non interactif ouvre les mêmes réglages en mode Modifier.
+- Les remises à zéro globales demandent confirmation et restent annulables.
 
-## Annuler / rétablir
+## Rubriques existantes
+La Bibliothèque et ses carnets, le Budget, les tâches, le Calendrier, les rappels, les habitudes et le cycle, les courses, les recettes et les Paramètres restent disponibles. Leur contenu n'est pas déplacé par les raccourcis de l'Accueil.
 
-Les boutons ↶ et ↷ utilisent désormais un historique géré par L’Atelier :
-- Ctrl+Z annule ;
-- Ctrl+Y ou Ctrl+Maj+Z rétablit ;
-- texte et mise en forme sont suivis dans le même historique.
+## Données
+Aucune migration SQLite ni suppression des dossiers `data` ou `user`.
 
-## Liens pendant l’écriture
+**Attention :** les positions, dimensions et choix de modules sont conservés dans le stockage local du **profil de navigateur**. La sauvegarde des dossiers `data` et `user` ne contient pas ce stockage. L'application ne possède pas encore de comptes indépendants et de cloisonnement confidentiel des données sensibles.
 
-Les liens sont actifs même en mode Écrire :
-- clic sur un lien web : ouvre le site ;
-- clic sur un lien interne : ouvre la page liée ;
-- clic droit sur un lien : permet de le modifier ;
-- le mot, l’adresse / la cible et le type de lien restent modifiables.
-
-## Lecture
-
-- suppression de l’effet de mouvement de page ;
-- feuille de lecture plus large ;
-- en taille normale : une seule page ;
-- en mode agrandi : choix entre une page ▯ ou deux pages ▯▯ ;
-- les flèches avancent d’une page en mode simple et de deux pages en mode double ;
-- numéro de page et sommaire cliquable conservés.
-
-## Création d’une page
-
-Créer une nouvelle page ne recharge plus toute la bibliothèque : elle est ajoutée puis ouverte directement, pour éviter le saut visuel.
-
-## Éditeurs de structure
-
-Les fenêtres de création / configuration du domaine et du carnet gardent un vrai bouton Enregistrer. Entrée ne valide pas ces formulaires.
-
-Aucune donnée existante n’est supprimée.
+Voir `docs/ALPHA_0.16.0_PLAN.md` à la racine du dépôt pour le cahier des charges et les scénarios de réception.
