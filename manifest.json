@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "f127346d6d251ca9cf44442c64974581726fccaccc812390c7b1b50109f442e2"
+      "sha256": "3caca32eb971676874b5194e64e4ec5812911236bdfb6fef02989e662f661262"
     },
     {
       "path": "public/index.html",
@@ -48,5 +48,5 @@
       "sha256": "86bfb101110a517cfaf8cdb613bfcd0ad3298e7f5cb957f8dcf03e0d67617b2d"
     }
   ],
-  "notes": "ALPHA 0.15.1 — Éditeur Budget unique, renommage du tiroir et des encadrés, déplacement dans chaque rubrique."
+  "notes": "ALPHA 0.15.1 — Budget simplifié, éditeur unique, modules déplaçables et rubriques renommables."
 }
