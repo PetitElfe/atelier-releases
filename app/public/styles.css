@@ -1402,3 +1402,18 @@ body.home-active{overflow-y:auto}
   .home-shortcut-shelf,.home-library-list{grid-template-columns:1fr}
   .home-library-list{max-height:45vh}
 }
+
+/* ALPHA 0.16.1 — Canvas indépendant pour l'Accueil uniquement.
+   Les autres rubriques conservent leurs dispositions et leurs clés existantes. */
+#homeView.home-free-ready #homeCanvas{position:relative;width:100%;min-height:330px;overflow:visible}
+#homeView.home-free-ready #homeCanvas>.desk-top-row,
+#homeView.home-free-ready #homeShortcutShelf{display:contents}
+#homeView.home-free-ready #homeBudgetWidget,
+#homeView.home-free-ready #openCalendarCard,
+#homeView.home-free-ready #homeUpcomingWidget,
+#homeView.home-free-ready #journalBook,
+#homeView.home-free-ready #homeShortcutShelf>.home-shortcut-card{
+  position:absolute;
+  margin:0;
+}
+#homeView.home-free-ready #homeModulesEmpty{position:absolute;top:16px;left:12px;right:12px}
