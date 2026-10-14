@@ -320,7 +320,8 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'}; $('#pageTitle').textContent=titles[view]||'L’Atelier';
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
   document.body.classList.toggle('home-active',view==='home');
@@ -646,7 +647,7 @@ let globalLayoutEditing=false;
 let globalLayoutItems=[];
 
 function getGlobalLayoutSpecs(){
-  return [
+  const base=[
     {view:'home',id:'calendar',el:$('#openCalendarCard'),key:'atelierLayout_calendar'},
     {view:'home',id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)'),key:'atelierLayout_upcoming'},
     {view:'home',id:'journal',el:$('#journalBook'),key:'atelierLayout_journal'},
@@ -660,6 +661,111 @@ function getGlobalLayoutSpecs(){
     {view:'cuisine',id:'library',el:$('.cuisine-library'),key:'atelierViewLayout_cuisine_library'},
     {view:'recipe',id:'recipe',el:$('.recipe-carnet'),key:'atelierViewLayout_recipe_carnet'}
   ].filter(x=>x.el);
+  // Ajouter toutes les cartes et sections stables de chaque rubrique,
+  // y compris la Bibliothèque, le Budget et les sections du journal.
+  const selector=[
+    '#homeBudgetWidget','#homeView .journal-section',
+    '#organisationView .organisation-module',
+    '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
+    '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
+    '#libraryHubPanel','#libraryView .library-side-module','#libraryOverviewPanel',
+    '#libraryNotebookPanel','#libraryNotebookPages',
+    '#kitchenView .kitchen-panel',
+    '#calendarView .mini-panel','#cuisineView .recipe-books-panel'
+  ].join(',');
+  const extra=[...document.querySelectorAll(selector)].map((el,index)=>{
+    const view=el.closest('.view')?.id.replace(/View$/,'')||'home';
+    const id=el.id||'panel_'+index;
+    return {view,id,el,key:'atelierModuleLayout_'+view+'_'+id};
+  });
+  const seen=new Set();
+  return [...base,...extra].filter(item=>{
+    if(seen.has(item.el))return false;
+    seen.add(item.el);
+    return true;
+  });
+}
+function moduleTitleElement(item){
+  const el=item.el;
+  if(el.id==='budgetSummaryPanel')return null;
+  if(el.closest('#budgetSummaryPanel')&&el.tagName==='ARTICLE')return el.querySelector(':scope > span');
+  if(el.id==='libraryNotebookPanel'||el.id==='libraryNotebookPages'||el.id==='libraryOverviewPanel')return null;
+  if(el.classList.contains('journal-section')){
+    const label=el.querySelector('.journal-heading');
+    return label?.tagName==='BUTTON'?null:label;
+  }
+  if(el.id==='homeBudgetWidget')return el.querySelector('.budget-home-title strong');
+  return el.querySelector(':scope > h3, :scope > h2, :scope > .library-head h2, :scope > .library-module-head strong, :scope > .library-main-head h3, :scope > .budget-home-title strong');
+}
+function moduleCustomNameKey(item){return 'atelierModuleName_'+item.view+'_'+item.id}
+function applyModuleCustomName(item){
+  const title=moduleTitleElement(item);if(!title)return;
+  if(!title.dataset.defaultModuleName)title.dataset.defaultModuleName=title.textContent.trim();
+  const saved=localStorage.getItem(moduleCustomNameKey(item));
+  title.textContent=saved||title.dataset.defaultModuleName;
+}
+function openModuleNameEditor(item){
+  const title=moduleTitleElement(item);
+  if(!title)return;
+  const oldName=title.dataset.defaultModuleName||title.textContent.trim();
+  const saved=localStorage.getItem(moduleCustomNameKey(item))||oldName;
+  openModal(`<h2>Renommer l'encadré</h2>
+    <p class="muted">Tu modifies seulement le titre affiché, pas le contenu.</p>
+    <form id="moduleRenameForm" class="form-grid">
+      <div class="field full"><label>Nouveau nom</label>
+        <input name="name" value="${esc(saved)}" required maxlength="70"></div>
+      <div class="form-actions field full">
+        <button type="button" id="moduleResetName">Nom d'origine</button>
+        <button type="submit" class="primary">Enregistrer</button>
+      </div>
+    </form>`);
+  const form=$('#moduleRenameForm');
+  $('#moduleResetName').onclick=()=>{localStorage.removeItem(moduleCustomNameKey(item));applyModuleCustomName(item);closeModal()};
+  form.onsubmit=e=>{
+    e.preventDefault();
+    const value=form.elements.name.value.trim();
+    if(!value)return;
+    if(value===oldName)localStorage.removeItem(moduleCustomNameKey(item));
+    else localStorage.setItem(moduleCustomNameKey(item),value);
+    applyModuleCustomName(item);closeModal();
+  };
+}
+function initNavCustomization(){
+  const buttons=[...document.querySelectorAll('#sideNav [data-view]')];
+  for(const b of buttons){
+    b.dataset.originalLabel=b.textContent.trim();
+    const saved=localStorage.getItem('atelierNavLabel_'+b.dataset.view);
+    if(saved)b.textContent=saved;
+  }
+  $('#renameNavButton').onclick=()=>{
+    openModal(`<h2>Renommer le tiroir</h2>
+      <p class="muted">Ces noms ne changent pas les fonctionnalités ni tes données.</p>
+      <form id="atelierNavRenameForm" class="form-grid">${buttons.map(b=>
+        `<div class="field"><label>${esc(b.dataset.originalLabel)}</label>
+         <input name="${esc(b.dataset.view)}" maxlength="60" required value="${esc(b.textContent.trim())}"></div>`
+      ).join('')}
+        <div class="form-actions field full">
+          <button type="button" id="atelierNavReset">Noms d'origine</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>`);
+    $('#atelierNavReset').onclick=()=>{
+      buttons.forEach(b=>{localStorage.removeItem('atelierNavLabel_'+b.dataset.view);b.textContent=b.dataset.originalLabel});
+      closeModal();showView(state.view);
+    };
+    $('#atelierNavRenameForm').onsubmit=e=>{
+      e.preventDefault();
+      const form=e.currentTarget;
+      buttons.forEach(b=>{
+        const value=form.elements[b.dataset.view].value.trim();
+        if(!value)return;
+        if(value===b.dataset.originalLabel)localStorage.removeItem('atelierNavLabel_'+b.dataset.view);
+        else localStorage.setItem('atelierNavLabel_'+b.dataset.view,value);
+        b.textContent=value;
+      });
+      closeModal();showView(state.view);
+    };
+  };
 }
 
 function readGlobalLayout(item){
@@ -708,10 +814,17 @@ function initGlobalLayoutEditor(){
     if(!controls){
       controls=document.createElement('div');
       controls.className='layout-controls';
-      controls.innerHTML='<span class="layout-move-handle">✥ Déplacer</span><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
+      controls.innerHTML='<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span><button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
+    applyModuleCustomName(item);
+    const renameButton=controls.querySelector('.layout-rename-handle');
+    if(renameButton){
+      const canRename=!!moduleTitleElement(item);
+      renameButton.hidden=!canRename;
+      if(canRename)renameButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openModuleNameEditor(item)});
+    }
 
     const beginMove=e=>{
       if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
@@ -738,13 +851,9 @@ function initGlobalLayoutEditor(){
       window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
     };
 
-    item.el.addEventListener('pointerdown',beginMove);
+    controls.querySelector('.layout-move-handle').addEventListener('pointerdown',beginMove);
     controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',beginResize);
-    item.el.addEventListener('click',e=>{
-      if(globalLayoutEditing&&state.view===item.view&&!e.target.closest('.layout-controls')){
-        e.preventDefault();e.stopImmediatePropagation();
-      }
-    },true);
+    // Les interactions restent accessibles : seul le petit handle permet le glisser-déposer.
   });
 
   $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
@@ -757,6 +866,7 @@ function initGlobalLayoutEditor(){
   syncGlobalLayoutEditing();
 }
 
+initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
