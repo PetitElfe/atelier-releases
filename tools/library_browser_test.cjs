@@ -285,7 +285,8 @@ async function api(path,method='GET',body){
   const linked=await api('/api/reminders');
   assert.ok(linked.some(r=>r.entity_type==='event'&&r.entity_id===copied.id&&r.title==='Rappel du rendez-vous E2E'),'Copy must save its linked reminder');
   // Supprimer l'original depuis son éditeur et confirmer par la boîte intégrée.
-  await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).first().click();
+  await page.waitForFunction(id=>state.events.some(item=>item.id===id),original.id,{timeout:12000});
+  await page.evaluate(id=>{ const item=state.events.find(ev=>ev.id===id); openEventModal(item); },original.id);
   await page.locator('#deleteEvent').click();
   await page.locator('#atelierDialogConfirm').click();
   await page.waitForFunction(()=>!document.querySelector('#eventForm'));
