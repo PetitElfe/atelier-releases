@@ -586,6 +586,8 @@ async function api(path,method='GET',body){
   assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
 
   // ALPHA 0.15.2 : carte Budget compacte sur l'accueil.
+  // Attendre la fin du chargement : le placement libre n'est activé qu'après les données.
+  await page.waitForFunction(()=>homeCanvasReady);
   const homeCard=page.locator('#homeBudgetWidget');
   const initialRect=await homeCard.boundingBox();
   assert.ok(initialRect&&initialRect.width<=350,'Budget home widget must be a compact card');
@@ -609,7 +611,6 @@ async function api(path,method='GET',body){
   await page.mouse.move(wr.x+wr.width/2+90,wr.y+wr.height/2,{steps:6});
   await page.mouse.up();
   let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')));
-  console.log('HOME WIDTH DEBUG',JSON.stringify({initialWidth:initialRect.width,layout,after:await homeCard.boundingBox(),debug:await page.evaluate(()=>({homeCanvasReady,items:globalLayoutItems.filter(i=>i.el.id==='homeBudgetWidget').map(i=>({key:i.key,layout:readGlobalLayout(i),saved:localStorage.getItem(i.key),isHome:isHomeCanvasItem(i),selected:i.el.classList.contains('layout-selected'),styleWidth:i.el.style.width})),old:localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget'),newKey:localStorage.getItem('atelierHomeCanvasV2_homeBudgetWidget')}))}));
   assert.ok(layout.width>=initialRect.width+65,'Width can change independently');
   assert.equal(layout.height,null,'Width drag must not change height');
   const nextBlock=page.locator('#homeUpcomingWidget');
@@ -647,6 +648,7 @@ async function api(path,method='GET',body){
 
   // ALPHA 0.16.1 — Canvas libre : les positions absolues survivent à un rechargement.
   await page.evaluate(()=>showView('home'));
+  await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
   assert.ok((await page.title()).includes('Alpha 0.16.1'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
@@ -666,6 +668,7 @@ async function api(path,method='GET',body){
   assert.ok(storedCanvas,'La position libre est conservée sous une clé indépendante');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
   const restoredCanvas=await canvasCalendar.boundingBox();
   assert.ok(Math.abs(restoredCanvas.x-afterCanvasMove.x)<4&&Math.abs(restoredCanvas.y-afterCanvasMove.y)<4,
