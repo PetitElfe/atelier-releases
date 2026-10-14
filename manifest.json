@@ -1,5 +1,5 @@
 {
-  "version": "0.14.3",
+  "version": "0.14.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "f562b78d53673f1c58695eacf0753914674f1930a8ef51196cffca98ed8bee12"
+      "sha256": "c78c310b641231eb31cf7f005d8defa7d36327d421e9b20903fec67a0de982bc"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "02111dc67f170d3ed5ac37bc65365adc009ceaf5858ac7f007ed1a15bce5cc3b"
+      "sha256": "1a3df88680c9dd03dd8b67831b6426d1f763a8468bddefe59dbc92a2ab496939"
     },
     {
       "path": "app_part3.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "fddd35bfc9d9a1805e59d534b5abe434a0577bb9984ee2d8ff3330b1d62c8372"
+      "sha256": "a06162f41aca4f25a658b59fdf43b6c8e76314851527b8538708807830c6b002"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "823e5d1ee9543907df6fc58d44b4b9410b19b9b5241a85863f2bf6f778f9795c"
+      "sha256": "ddb133e78616eed17b3ff97a9537f359309c752a233686444a2c5f768a850ebd"
     },
     {
       "path": "public/index.html",
-      "sha256": "5f5f7cae2e6194446213df8b5cee068f551277619e065ace86b7ab78b7f3ae97"
+      "sha256": "597becfda893b2590d1689188da2f51ca13f56b526aa2eab10ce2c53b7d31f68"
     },
     {
       "path": "public/styles.css",
-      "sha256": "9c8800350dd6dbc7d27622e02aed386471b045176914b28b78c490db61a04966"
+      "sha256": "ff8643ed48eab39b651719b1652dc86dbd90f2396630243597af9210ffd4d4df"
     }
   ],
-  "notes": "ALPHA 0.14.3 : suppression confirmée des rendez-vous et duplication avec rappels associés."
+  "notes": "ALPHA 0.14.4 : édition plus légère, menus contextuels, duplication des rappels et déplacement des rendez-vous."
 }
