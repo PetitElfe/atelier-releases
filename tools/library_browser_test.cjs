@@ -650,7 +650,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.16.1'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.16.2'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
