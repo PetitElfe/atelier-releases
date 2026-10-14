@@ -1,13 +1,65 @@
+function bindCalendarEventActions(button,event){
+  button.addEventListener('contextmenu',ev=>{ev.preventDefault();showCalendarEventMenu(event,ev)});
+  button.draggable=true;
+  button.addEventListener('dragstart',ev=>{
+    ev.dataTransfer.setData('text/plain',JSON.stringify({event_id:event.id,instance_date:event.instance_date||event.event_date}));
+    ev.dataTransfer.effectAllowed='move';button.classList.add('calendar-dragging');
+  });
+  button.addEventListener('dragend',()=>button.classList.remove('calendar-dragging'));
+}
+function showCalendarEventMenu(event,anchor){
+  showAtelierContextMenu(anchor,[
+    {label:'Modifier',run:()=>openEventModal(event)},
+    {label:'Dupliquer',run:()=>openEventModal(event,event.instance_date||event.event_date,event.start_time,true)},
+    {label:'Supprimer',danger:true,run:()=>deleteCalendarEventFromMenu(event)}
+  ]);
+}
+async function deleteCalendarEventFromMenu(event){
+  const recurring=event.recurrence&&event.recurrence!=='none';
+  if(recurring){
+    const only=await askUiConfirm('Rendez-vous récurrent','Supprimer uniquement cette occurrence ? Choisis Annuler pour ne rien supprimer.','Cette occurrence',true);
+    if(only){
+      const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}/cancel-instance`,{method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date})}));
+      if(result.ok)await refresh();
+    }
+    return;
+  }
+  const confirmed=await askUiConfirm('Supprimer le rendez-vous',`Supprimer « ${event.title} » et ses rappels ?`,'Supprimer',true);
+  if(!confirmed)return;
+  const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}`,{method:'DELETE'}));
+  if(result.ok)await refresh();
+}
+function bindCalendarDropTarget(cell,date,time=null){
+  cell.addEventListener('dragover',ev=>{if(ev.dataTransfer.types.includes('text/plain')){ev.preventDefault();ev.dataTransfer.dropEffect='move';cell.classList.add('calendar-drop-target')}});
+  cell.addEventListener('dragleave',ev=>{if(!cell.contains(ev.relatedTarget))cell.classList.remove('calendar-drop-target')});
+  cell.addEventListener('drop',async ev=>{
+    ev.preventDefault();cell.classList.remove('calendar-drop-target');
+    let payload;try{payload=JSON.parse(ev.dataTransfer.getData('text/plain'))}catch{return}
+    const event=state.events.find(e=>Number(e.id)===Number(payload.event_id)&&e.instance_date===payload.instance_date);
+    if(!event||!date)return;
+    if(date===event.instance_date&&(!time||time===event.start_time))return;
+    const newTime=time||event.start_time||'09:00';
+    if(event.recurrence&&event.recurrence!=='none'){
+      const single=await askUiConfirm('Déplacer un rendez-vous récurrent','Déplacer uniquement cette occurrence ? Pour modifier toute la série, annule et utilise son éditeur.','Cette occurrence');
+      if(!single)return;
+    }
+    const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}/postpone-instance`,{
+      method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date,new_date:date,new_time:newTime})
+    }));
+    if(result.ok){state.cursor=parseYMD(date);await refresh()}
+  });
+}
+
 function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
     const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ds); const cell=document.createElement('div'); cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'');
     cell.innerHTML=`<div class="day-number">${d.getDate()}</div><button class="day-add" title="Ajouter un rendez-vous">+</button>`;
-    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));
+    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
-      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e)); cell.appendChild(b);
+      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); cell.appendChild(b);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
     cell.title='Double-clique pour ajouter un rendez-vous';
@@ -29,11 +81,11 @@ function renderWeek(){
   for(let hour=7;hour<=22;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=`${pad(hour)}:00`;grid.appendChild(tl);
     for(let i=0;i<7;i++){
-      const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d);const cell=document.createElement('div');cell.className='week-slot';
+      const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d);const cell=document.createElement('div');cell.className='week-slot';bindCalendarDropTarget(cell,ds,`${pad(hour)}:00`);
       const events=state.events.filter(e=>e.instance_date===ds && (e.all_day || !e.start_time ? hour===7 : Number(e.start_time.slice(0,2))===hour));
       const tasks=state.tasks.filter(t=>!t.completed && t.due_date===ds && t.due_time && Number(t.due_time.slice(0,2))===hour);
       if(events.length+tasks.length>2) cell.classList.add('has-many');
-      events.forEach(e=>{const b=document.createElement('button');b.className=`week-item ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`;const mark=eventInstanceIcon(e);b.textContent=`${mark?mark+' ':''}${e.all_day?'Toute la journée':fmtTime(e.start_time)} ${e.title}`;b.addEventListener('click',()=>openEventModal(e));cell.appendChild(b)});
+      events.forEach(e=>{const b=document.createElement('button');b.className=`week-item ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`;const mark=eventInstanceIcon(e);b.textContent=`${mark?mark+' ':''}${e.all_day?'Toute la journée':fmtTime(e.start_time)} ${e.title}`;b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e);cell.appendChild(b)});
       tasks.forEach(t=>{const b=document.createElement('button');b.className='week-item week-task';b.textContent=`☐ ${t.title}`;b.addEventListener('click',()=>openTaskModal(t));cell.appendChild(b)});
       cell.addEventListener('dblclick',()=>openEventModal(null,ds,`${pad(hour)}:00`)); grid.appendChild(cell);
     }
