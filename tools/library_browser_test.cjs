@@ -432,6 +432,51 @@ async function api(path,method='GET',body){
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.locator('#calendarCycleHint').waitFor({state:'visible'});
   assert.match(await page.locator('#calendarCycleHint').innerText(),/Suivi du cycle/);
+  // ALPHA 0.15.0 — Budget : récurrences, confirmations, solde, dettes et historique.
+  await page.evaluate(()=>showView('budget'));
+  await page.locator('#budgetView').waitFor({state:'visible'});
+  await page.locator('#budgetBalance').waitFor({state:'visible'});
+  const budgetMonth=new Date().toISOString().slice(0,7);
+  const budgetDate=budgetMonth+'-01';
+  const income=await api('/api/budget/rules','POST',{
+    kind:'income',title:'Revenu récurrent E2E',category:'Revenus',amount:'1000',
+    day_of_month:1,start_date:budgetDate
+  });
+  await api('/api/budget/rules','POST',{
+    kind:'fixed',title:'Abonnement E2E',category:'Abonnements',amount:'19.90',
+    day_of_month:1,start_date:budgetDate
+  });
+  const debt=await api('/api/budget/debts','POST',{
+    title:'Dette E2E',total:'100',monthly:'25',day_of_month:1,start_date:budgetDate
+  });
+  const oneOff=await api('/api/budget/entries','POST',{
+    title:'Achat prévu E2E',kind:'expense',amount:'25.50',category:'Loisirs',
+    date:budgetDate,planned:true
+  });
+  const snapshot=await api('/api/budget?month='+budgetMonth);
+  const recurringIncome=snapshot.entries.find(x=>x.rule_id===income.id);
+  assert.ok(recurringIncome&&recurringIncome.status==='pending','Recurring income remains pending until user confirmation');
+  assert.equal(snapshot.entries.filter(x=>x.title==='Abonnement E2E').length,1,'Subscription appears exactly once');
+  assert.ok(snapshot.entries.some(x=>x.debt_id===debt.id),'Debt installment must appear');
+  assert.equal(snapshot.entries.find(x=>x.id===oneOff.id).status,'pending','One-off planned expense must remain pending');
+  assert.equal(snapshot.income_cents,100000,'Monthly income total must use cents');
+  await api('/api/budget/'+recurringIncome.id+'/status','PUT',{status:'confirmed',amount:'990',actual_date:budgetDate});
+  await api('/api/budget/'+oneOff.id+'/status','PUT',{status:'confirmed',amount:'26',actual_date:budgetDate});
+  const updated=await api('/api/budget?month='+budgetMonth);
+  assert.equal(updated.entries.find(x=>x.id===recurringIncome.id).amount_cents,99000,'Confirmed income can differ from planned');
+  assert.equal(updated.entries.find(x=>x.id===oneOff.id).amount_cents,2600,'Confirmed expense amount must be editable');
+  assert.equal(updated.entries.filter(x=>x.title==='Abonnement E2E').length,1,'Reading same month again must not duplicate subscription');
+  await api('/api/budget/notes','PUT',{month:budgetMonth,notes:'Mes notes E2E'});
+  assert.equal((await api('/api/budget?month='+budgetMonth)).notes,'Mes notes E2E','Monthly notes persist');
+  await page.evaluate(async()=>{await loadBudget()});
+  await page.locator('#budgetEntries').getByText('Revenu récurrent E2E').waitFor();
+  assert.ok((await page.locator('#budgetBalance').innerText()).includes('€'),'Dashboard must show balance');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('budget'));
+  await page.locator('#budgetEntries').getByText('Achat prévu E2E').waitFor();
+  assert.equal(await page.locator('#budgetNotes').inputValue(),'Mes notes E2E','Budget note survives reload');
+  await page.evaluate(()=>showView('home'));
+  await page.locator('#homeBudgetWidget').waitFor({state:'visible'});
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
