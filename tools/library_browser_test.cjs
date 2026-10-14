@@ -507,6 +507,59 @@ async function api(path,method='GET',body){
   assert.equal(scheduled,10000,'Debt scheduled installments must stop at the initial amount');
   await page.evaluate(()=>showView('home'));
   await page.locator('#homeBudgetWidget').waitFor({state:'visible'});
+  // ALPHA 0.15.1 — Un seul éditeur : dépense immédiate, revenu récurrent différé.
+  await page.evaluate(()=>showView('budget'));
+  await page.locator('#budgetAddOperation').click();
+  await page.locator('#budgetUnifiedForm').waitFor({state:'visible'});
+  await page.locator('#budgetUnifiedForm input[name="amount"]').fill('13.40');
+  await page.locator('#budgetUnifiedForm input[name="title"]').fill('Dépense rapide E2E');
+  assert.equal(await page.locator('#budgetWhenWrap').isVisible(),false,'A new operation defaults to now');
+  await page.locator('#budgetEditorSave').click();
+  await page.waitForFunction(async()=>{
+    const k=new Date().toISOString().slice(0,7);
+    return (await (await fetch('/api/budget?month='+k)).json()).entries.some(e=>e.title==='Dépense rapide E2E'&&e.amount_cents===1340&&e.status==='confirmed');
+  },null,{timeout:10000});
+  await page.locator('#budgetAddOperation').click();
+  await page.locator('#budgetUnifiedForm .budget-kind[data-kind="income"]').click();
+  await page.locator('#budgetUnifiedForm input[name="amount"]').fill('550');
+  await page.locator('#budgetUnifiedForm input[name="title"]').fill('Revenu futur E2E');
+  await page.locator('#budgetUnifiedForm input[value="later"][name="timing"]').check();
+  await page.locator('#budgetUnifiedForm input[name="date"]').fill('2026-11-12');
+  await page.locator('#budgetUnifiedForm input[name="repeat"]').check();
+  await page.locator('#budgetMoreOptions summary').click();
+  await page.locator('#budgetUnifiedForm input[name="end_date"]').fill('2027-03-12');
+  await page.locator('#budgetEditorSave').click();
+  await page.waitForFunction(async()=>{
+    return (await (await fetch('/api/budget?month=2026-11')).json()).rules.some(r=>r.title==='Revenu futur E2E'&&r.day_of_month===12&&r.start_date==='2026-11-12'&&r.end_date==='2027-03-12');
+  },null,{timeout:10000});
+  // Titres du tiroir : modification persistante après rechargement.
+  await page.evaluate(()=>setSideNavCollapsed(false));
+  await page.locator('#renameNavButton').click();
+  await page.locator('#atelierNavRenameForm input[name="budget"]').fill('Mes finances');
+  await page.locator('#atelierNavRenameForm button[type="submit"]').click();
+  assert.equal((await page.locator('#sideNav [data-view="budget"]').innerText()).trim(),'Mes finances');
+  assert.equal(await page.locator('#pageTitle').innerText(),'Mes finances');
+  // Renommer et déplacer une carte du Budget via le mode Modifier.
+  await page.locator('#globalLayoutEdit').click();
+  const ledger=page.locator('#budgetLedgerPanel');
+  await ledger.locator(':scope > .layout-controls .layout-rename-handle').click();
+  await page.locator('#moduleRenameForm input[name="name"]').fill('Mon historique');
+  await page.locator('#moduleRenameForm button[type="submit"]').click();
+  assert.equal(await ledger.locator(':scope > h3').innerText(),'Mon historique');
+  const grip=ledger.locator(':scope > .layout-controls .layout-move-handle');
+  const rect=await grip.boundingBox();
+  assert.ok(rect,'The layout drag handle must be displayed');
+  await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);
+  await page.mouse.down();
+  await page.mouse.move(rect.x+rect.width/2+34,rect.y+rect.height/2+12,{steps:4});
+  await page.mouse.up();
+  assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'The module position must be saved');
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('budget'));
+  assert.equal((await page.locator('#sideNav [data-view="budget"]').innerText()).trim(),'Mes finances','Drawer rename persists after reload');
+  assert.equal(await page.locator('#budgetLedgerPanel > h3').innerText(),'Mon historique','Card title persists after reload');
+  assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}
