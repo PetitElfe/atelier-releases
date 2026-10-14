@@ -621,7 +621,7 @@ async function api(path,method='GET',body){
   assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')))),beforeReset,'Undo restores the exact original dimensions');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
-  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')).width>initialRect.width),'Width survives browser reload');
+  assert.ok(await page.evaluate(initialWidth=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')).width>initialWidth,initialRect.width),'Width survives browser reload');
   // Le clic ordinaire doit redevenir fonctionnel hors du mode Modifier.
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
