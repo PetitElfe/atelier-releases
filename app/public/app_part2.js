@@ -77,6 +77,30 @@ function bindCalendarDropTarget(cell,date,time=null){
       if(result.ok){state.cursor=parseYMD(date);await refresh()}
       return;
     }
+    if(!event.recurrence||event.recurrence==='none'){
+      // Simple rendez-vous : modifier son enregistrement au lieu de créer un report fantôme.
+      const allDay=!!event.all_day||!event.start_time;
+      const oldDate=new Date(`${event.event_date}T${allDay?'00:00':event.start_time}`);
+      const nextDate=new Date(`${date}T${allDay?'00:00':newTime}`);
+      const delta=nextDate.getTime()-oldDate.getTime();
+      const dateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const remind=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+        .map(r=>({title:r.title||'',remind_at:dateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
+      let endTime=event.end_time||null;
+      if(!allDay&&event.end_time){
+        const [h,m]=event.end_time.split(':').map(Number);
+        const [sh,sm]=event.start_time.split(':').map(Number);
+        const duration=((h*60+m)-(sh*60+sm)+1440)%1440;
+        const [nh,nm]=newTime.split(':').map(Number);
+        const total=(nh*60+nm+duration)%1440;
+        endTime=pad(Math.floor(total/60))+':'+pad(total%60);
+      }
+      const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}`,{
+        method:'PUT',body:JSON.stringify({event_date:date,start_time:allDay?null:newTime,end_time:endTime,reminders:remind})
+      }));
+      if(result.ok){state.cursor=parseYMD(date);await refresh()}
+      return;
+    }
     const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}/postpone-instance`,{
       method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date,new_date:date,new_time:newTime})
     }));
