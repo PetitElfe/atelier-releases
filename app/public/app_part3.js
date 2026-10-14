@@ -902,6 +902,25 @@ async function loadBudget(month=budgetSelectedMonth){
   renderBudget();
   renderHomeBudgetWidget();
 }
+function askBudgetPaymentAmount(entry){
+  return new Promise(resolve=>{
+    openModal(`<div class="atelier-dialog"><h2>Confirmer ${entry.kind==='income'?'le revenu':'la dépense'}</h2>
+      <p>${esc(entry.title)} · montant réellement ${entry.kind==='income'?'reçu':'payé'}</p>
+      <form id="budgetConfirmForm" class="budget-form">
+        <label>Montant réel (€) <input name="amount" type="number" min="0" step=".01" required value="${(entry.amount_cents/100).toFixed(2)}"></label>
+        <label>Date effective <input name="actual_date" type="date" required value="${ymd(new Date())}"></label>
+        <div class="form-actions"><button id="budgetCancelConfirm" type="button">Annuler</button>
+          <button class="primary" type="submit">Confirmer</button></div>
+      </form></div>`);
+    const close=result=>{closeModal();resolve(result)};
+    $('#budgetCancelConfirm').onclick=()=>close(null);
+    $('#modalClose').onclick=()=>close(null);
+    $('#budgetConfirmForm').onsubmit=ev=>{
+      ev.preventDefault();
+      const f=ev.currentTarget;close({amount:f.elements.amount.value,actual_date:f.elements.actual_date.value});
+    };
+  });
+}
 function budgetRow(entry){
   const row=document.createElement('div');row.className='budget-entry';
   const desc=document.createElement('div');
@@ -910,9 +929,9 @@ function budgetRow(entry){
   row.append(desc,money);
   if(entry.status!=='confirmed'&&entry.status!=='skipped'){
     const confirm=document.createElement('button');confirm.textContent='Confirmer';confirm.onclick=async()=>{
-      const value=prompt('Montant réellement '+(entry.kind==='income'?'reçu':'payé')+' (€)',(entry.amount_cents/100).toFixed(2));
+      const value=await askBudgetPaymentAmount(entry);
       if(value===null)return;
-      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',amount:value,actual_date:ymd(new Date())},'Confirmation impossible');
+      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',...value},'Confirmation impossible');
     };row.appendChild(confirm);
   }
   if(entry.status==='pending'||entry.status==='presumed'){
