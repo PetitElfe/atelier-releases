@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "4b6557768d8c7a536a56f98688e50cf086171828e118d2c106aef91c278cea8c"
+      "sha256": "17b5b6eb61df64571d26d35571becdc82dfc323c66f562d3a7d27dfb39bea3d8"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "1379b908ba116792194c6c54b07d95d71fd3ea9e38c87ed3de8b8d6a8e97d96d"
+      "sha256": "0dfc59381f15961863e47dfbfabe66fe79a67d8e71c46f71cf3c70224f6e8761"
     },
     {
       "path": "public/index.html",
