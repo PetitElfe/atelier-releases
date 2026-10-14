@@ -1,5 +1,5 @@
 {
-  "version": "0.14.5",
+  "version": "0.14.6",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "475bb4c68d135a249416c4ad975cf4ad4fb5d970ba2696c827df0d8dbfc00118"
+      "sha256": "917bb3251e4d24c44edfe76c0f6bba3155877bd04759963f4a56c0673357a14a"
     },
     {
       "path": "app.py",
@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "a20d227b9fae2a3d174f1933b14419a7e6d5f7919f991a4d659b2c529785e24e"
+      "sha256": "4b608a1269910f420112abbdaa6123f95331a6e86741f44ac8e75bc76b5634fc"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "764c0549976031c7184d5fa3bf325a8fb81596b854439fb1c87d3dfbd89ad894"
+      "sha256": "f1d8d2fdc395cc9b5aa472706989f61ef7ee36eca59caefcd552926ccfa657dd"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "ffc8c58ed2234da5f927ac26c7ccb51372debc95276fc9aad40322ad5d7bfcc2"
+      "sha256": "8202db4af65e574a180193a68ae4aa6d650508e01228595a1fe5b21cca4e73af"
     },
     {
       "path": "public/styles.css",
       "sha256": "ca837485ab3dac490ef9753dad36d44168e7a5d0f35890fe5e20c4eef54a5b22"
     }
   ],
-  "notes": "ALPHA 0.14.5 : fiabilisation des rappels et affichage des occurrences reportées."
+  "notes": "ALPHA 0.14.6 : option pour masquer les anciennes occurrences barrées et annulées."
 }
