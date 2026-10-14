@@ -341,7 +341,7 @@ function showAtelierContextMenu(anchor,actions){
   menu.querySelector('button')?.focus();
 }
 function collectReminders(){
-  const rows=$('#reminderEditor .reminder-row-edit');
+  const rows=Array.from(document.querySelectorAll('#reminderEditor .reminder-row-edit'));
   const invalid=rows.some(row=>!row.querySelector('.reminder-date').value||!row.querySelector('.reminder-time').value);
   if(invalid)throw new Error('Chaque rappel doit avoir une date et une heure. Aucun rappel ne sera ignoré.');
   return rows.map(row=>({title:row.querySelector('.reminder-name').value.trim(),
