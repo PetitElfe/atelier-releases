@@ -1241,3 +1241,6 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 .reminder-row-edit .reminder-more{min-width:32px}
 .calendar-dragging{opacity:.4}
 .calendar-drop-target{outline:2px dashed #c9aa73;outline-offset:-3px;background:#80644433}
+
+/* ALPHA 0.14.5 — masquer les zones d'erreur vides dans les formulaires */
+.form-error.hidden{display:none!important}
