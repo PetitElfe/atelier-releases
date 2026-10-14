@@ -1221,3 +1221,12 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 .cycle-module>.muted{line-height:1.5}
 .calendar-cycle-hint{margin:10px 16px;padding:12px;background:#352b24;border:1px solid #70593f;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 @media(max-width:1000px){.organisation-grid{grid-template-columns:1fr}}
+
+/* Cycle : dates effectivement enregistrées, jamais une prévision colorée comme certaine. */
+.day-cell.cycle-recorded{background:linear-gradient(135deg,rgba(167,58,73,.18),rgba(167,58,73,.075));box-shadow:inset 0 0 0 1px rgba(207,93,107,.4)}
+.mini-month .mday.cycle-recorded{background:rgba(167,58,73,.22);box-shadow:inset 0 0 0 1px rgba(207,93,107,.5)}
+.cycle-entry{flex-wrap:wrap}
+.cycle-inline-confirm{width:100%;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:#332521;border:1px solid #98645c;border-radius:8px;font-size:13px}
+.cycle-inline-confirm span{flex:1;min-width:160px}
+.cycle-inline-confirm .cycle-cancel-delete{background:transparent;color:#f0dfcc}
+.cycle-inline-confirm .cycle-accept-delete{background:#85444a;border-color:#aa6670}

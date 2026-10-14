@@ -713,6 +713,7 @@ async function refreshOrganisation(){
     if(serial!==organisationRefreshSerial)return;
     organisationState.habits=habits;organisationState.periods=periods;
     renderOrganisation();
+    renderMonth();renderMiniMonth();
   }catch(err){showUiError(err,'Impossible de charger le suivi')}
 }
 function localDayAdd(iso,days){
@@ -720,6 +721,9 @@ function localDayAdd(iso,days){
 }
 function dayDistance(start,end){
   return Math.round((parseYMD(end)-parseYMD(start))/86400000);
+}
+function isRecordedCycleDay(day){
+  return organisationState.periods.some(p=>p.start_date<=day&&day<=(p.end_date||p.start_date));
 }
 function cycleEstimate(){
   const dates=[...new Set(organisationState.periods.map(x=>x.start_date))].sort();
@@ -760,7 +764,7 @@ function renderOrganisation(){
   }
   if(forecast){
     const prediction=cycleEstimate();
-    forecast.textContent=prediction?'Prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+' (environ '+prediction.approxDays+' jour(s), cycle moyen de '+prediction.average+' jours).':'Ajoute au moins deux dates de début de règles pour obtenir une estimation indicative.';
+    forecast.textContent=prediction?'Prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+' (environ '+prediction.approxDays+' jour(s), cycle moyen de '+prediction.average+' jours).':'Ta période enregistrée apparaît dans le calendrier. Une seule date suffit pour le suivi ; deux débuts de cycles sont nécessaires pour une estimation indicative.';
   }
   if(entries){
     entries.innerHTML=organisationState.periods.length?'':'<p class="muted">Aucune période enregistrée.</p>';
@@ -768,9 +772,16 @@ function renderOrganisation(){
       const card=document.createElement('div');card.className='cycle-entry';
       card.innerHTML='<span>Début : '+esc(period.start_date)+(period.end_date?' · Fin : '+esc(period.end_date):'')+'</span><button type="button">Supprimer</button>';
       card.querySelector('button').onclick=async()=>{
-        if(!confirm('Supprimer cette période ?'))return;
-        const response=await runUiAction('Supprimer la période',()=>api('/api/cycle-periods/'+period.id,{method:'DELETE'}));
-        if(response.ok)await refreshOrganisation();
+        if(!card.querySelector('.cycle-inline-confirm')){
+          const ask=document.createElement('div');ask.className='cycle-inline-confirm';
+          ask.innerHTML='<span>Supprimer cette période enregistrée ?</span><button type="button" class="cycle-cancel-delete">Conserver</button><button type="button" class="cycle-accept-delete">Supprimer</button>';
+          ask.querySelector('.cycle-cancel-delete').onclick=()=>ask.remove();
+          ask.querySelector('.cycle-accept-delete').onclick=async()=>{
+            const response=await runUiAction('Supprimer la période',()=>api('/api/cycle-periods/'+period.id,{method:'DELETE'}));
+            if(response.ok)await refreshOrganisation();
+          };
+          card.appendChild(ask);
+        }
       };entries.appendChild(card);
     }
   }
