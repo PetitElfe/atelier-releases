@@ -643,6 +643,73 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
   });
 }
 
+/* ALPHA 0.16.0 — catalogue utilitaire de modules déjà existants.
+   Les choix sont locaux au navigateur ; aucune donnée de carnet n'est déplacée. */
+const homeShortcutDefs=[
+  {id:'tasks',title:'Tâches',description:'Retrouver tes tâches et tes échéances.',view:'tasks'},
+  {id:'reminders',title:'Rappels',description:'Voir les rappels à traiter.',view:'reminders'},
+  {id:'library',title:'Bibliothèque',description:'Ouvrir les domaines et les carnets.',view:'library'},
+  {id:'organisation',title:'Habitudes & cycle',description:'Accéder à tes suivis personnels.',view:'organisation'},
+  {id:'kitchen',title:'Courses & repas',description:'Retrouver les listes et les aliments.',view:'kitchen'},
+  {id:'cuisine',title:'Recettes',description:'Ouvrir la bibliothèque de recettes.',view:'cuisine'},
+  {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
+];
+const homeModuleOrder=[
+  ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],
+  ...homeShortcutDefs.map(item=>[item.id,item.title])
+];
+const homeModuleVisibilityKey=id=>'atelierHomeModuleVisible_'+id;
+function homeModuleIsVisible(id){
+  const stored=localStorage.getItem(homeModuleVisibilityKey(id));
+  return stored===null?['budget','calendar','upcoming','journal'].includes(id):stored==='1';
+}
+function syncHomeModuleVisibility(){
+  const sections=[...document.querySelectorAll('#homeView [data-home-module]')];
+  for(const section of sections)section.classList.toggle('home-module-off',!homeModuleIsVisible(section.dataset.homeModule));
+  const visible=sections.filter(el=>!el.classList.contains('home-module-off'));
+  const notice=$('#homeModulesEmpty');
+  if(notice)notice.classList.toggle('hidden',visible.length!==0);
+}
+function initHomeModuleLibrary(){
+  const shelf=$('#homeShortcutShelf');
+  if(!shelf)return;
+  for(const info of homeShortcutDefs){
+    const section=document.createElement('section');
+    section.className='home-shortcut-card';
+    section.dataset.homeModule=info.id;
+    section.id='homeShortcut_'+info.id;
+    const h=document.createElement('h3');h.textContent=info.title;
+    const p=document.createElement('p');p.textContent=info.description;
+    const button=document.createElement('button');button.type='button';button.textContent='Ouvrir →';
+    button.dataset.homeOpen=info.view;
+    button.addEventListener('click',()=>{if(!globalLayoutEditing)showView(info.view)});
+    section.append(h,p,button);shelf.appendChild(section);
+  }
+  const empty=document.createElement('p');empty.id='homeModulesEmpty';empty.className='home-modules-empty muted hidden';
+  empty.textContent='Aucun module affiché. Utilise « Bibliothèque de modules » pour en ajouter.';
+  shelf.after(empty);
+  syncHomeModuleVisibility();
+  $('#openHomeModuleLibrary').onclick=()=>{
+    const controls=homeModuleOrder.map(([id,label])=>{
+      const el=$('#homeView [data-home-module="'+id+'"]');
+      const spec=globalLayoutItems.find(item=>item.el===el);
+      const title=spec?moduleTitleElement(spec):null;
+      const name=title?.textContent.trim()||label;
+      return '<label class="home-library-item"><input type="checkbox" data-module="'+esc(id)+'" '+(homeModuleIsVisible(id)?'checked':'')+'><span><strong>'+esc(name)+'</strong><small>'+(id==='journal'||id==='budget'||id==='calendar'||id==='upcoming'?'Module de l’Accueil':'Accès à une rubrique existante')+'</small></span></label>';
+    }).join('');
+    openModal('<h2>Bibliothèque de modules</h2><p class="muted">Choisis ce que tu souhaites voir sur l’Accueil. Les modules retirés restent disponibles ici, sans suppression de données.</p><form id="homeModulePicker"><div class="home-library-list">'+controls+'</div><div class="form-actions"><button type="button" id="homeModuleAll">Tout afficher</button><button type="submit" class="primary">Appliquer</button></div></form>');
+    const form=$('#homeModulePicker');
+    $('#homeModuleAll').onclick=()=>form.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=true);
+    form.onsubmit=event=>{
+      event.preventDefault();
+      form.querySelectorAll('input[data-module]').forEach(input=>localStorage.setItem(homeModuleVisibilityKey(input.dataset.module),input.checked?'1':'0'));
+      syncHomeModuleVisibility();
+      syncGlobalLayoutEditing();
+      closeModal();
+    };
+  };
+}
+
 let globalLayoutEditing=false;
 let globalLayoutItems=[];
 
@@ -664,7 +731,7 @@ function getGlobalLayoutSpecs(){
   // Ajouter toutes les cartes et sections stables de chaque rubrique,
   // y compris la Bibliothèque, le Budget et les sections du journal.
   const selector=[
-    '#homeBudgetWidget','#homeView .journal-section',
+    '#homeBudgetWidget','#homeShortcutShelf .home-shortcut-card','#homeView .journal-section',
     '#organisationView .organisation-module',
     '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
     '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
@@ -972,7 +1039,7 @@ function initGlobalLayoutEditor(){
   syncGlobalLayoutEditing();
 }
 
-initNavCustomization();
+initHomeModuleLibrary(); initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
