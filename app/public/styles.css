@@ -1305,7 +1305,7 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 #homeBudgetWidget{
   width:min(310px,calc(100vw - 56px));
   max-width:calc(100vw - 56px);
-  margin:10px 8px 12px auto;
+  margin:10px auto 12px;
   padding:12px 14px;
   font-size:12px;
 }
@@ -1338,7 +1338,7 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 body.home-active:has(#homeView.layout-editing){overflow-y:auto}
 #globalLayoutUndo{border-color:var(--gold);color:var(--gold)}
 @media(max-width:560px){
-  #homeBudgetWidget{width:min(290px,calc(100vw - 32px));max-width:calc(100vw - 32px);margin-right:0}
+  #homeBudgetWidget{width:min(290px,calc(100vw - 32px));max-width:calc(100vw - 32px)}
   .layout-resize-right{right:-8px}
   .layout-resize-bottom{bottom:-8px}
 }
