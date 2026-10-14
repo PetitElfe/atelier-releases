@@ -1,5 +1,5 @@
 {
-  "version": "0.14.1",
+  "version": "0.14.2",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "c6fb87657a4ee72e2b549cdd39c12854fdbecbdfef033c04f523d4bfcb02aa4c"
+      "sha256": "232cca15f9cab0453d820d20649067576ec18d279ce3b1dc6d2931d1eb638721"
     },
     {
       "path": "app.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "79fd41e6cc203d4b633473e9e39ae3591d84cbd06d7bbc3d3e1ed71922aeb1e1"
+      "sha256": "30bdaa6505996425dd6445e4b0b12021500a3b94b8485515c81aa98b2b9c2b70"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,12 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "8c0d84f4065c7ae16e6780df739f8f10afe5d64aac3d933d6fed5c11a45f7b61"
+      "sha256": "ab1bca465021e7281ea6a920e75c0f545e0b4754ec1647473e70381d29410e52"
     },
     {
       "path": "public/styles.css",
       "sha256": "9c8800350dd6dbc7d27622e02aed386471b045176914b28b78c490db61a04966"
     }
   ],
-  "notes": "ALPHA 0.14.1 : correction de l'affichage des dates de règles enregistrées dans le calendrier, confirmation de suppression intégrée, sauvegardes fiables."
+  "notes": "ALPHA 0.14.2 : duplication des rappels, tests de persistance des rendez-vous et du calendrier."
 }
