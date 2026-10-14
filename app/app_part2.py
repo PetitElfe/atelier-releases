@@ -489,6 +489,21 @@ class Handler(BaseHTTPRequestHandler):
                                           (moved_event_id,shifted,snoozed,rem['id']))
                         except Exception as reminder_error:
                             print('[Atelier] Report du rappel ignoré:', reminder_error)
+                    else:
+                        # Une occurrence de série reportée reçoit ses propres rappels.
+                        # Les modèles de rappels de la série ne sont ni déplacés ni supprimés.
+                        try:
+                            base_dt=datetime.fromisoformat(f"{old['event_date']}T{old['start_time'] or '00:00'}")
+                            moved_dt=datetime.fromisoformat(f"{new_date}T{new_time}")
+                            delta=moved_dt-base_dt
+                            c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(moved_event_id,))
+                            rems=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
+                            for rem in rems:
+                                shifted=(datetime.fromisoformat(rem['remind_at'])+delta).replace(microsecond=0).isoformat()
+                                c.execute("INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)",
+                                          ('event',moved_event_id,rem['title'],shifted,'pending',ts))
+                        except Exception as reminder_error:
+                            print('[Atelier] Report des rappels récurrents ignoré:', reminder_error)
 
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                     c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
