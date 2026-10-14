@@ -1417,3 +1417,12 @@ body.home-active{overflow-y:auto}
   margin:0;
 }
 #homeView.home-free-ready #homeModulesEmpty{position:absolute;top:16px;left:12px;right:12px}
+
+/* ALPHA 0.16.2 — contrôles lisibles sur les petits raccourcis de l'Accueil. */
+#homeView.layout-editing .home-shortcut-card{
+  padding-top:78px;
+  min-height:190px;
+}
+#homeView .home-shortcut-card .layout-rename-handle{left:6px;top:38px}
+#homeView .home-shortcut-card .layout-settings-handle{left:auto;right:6px;top:38px;bottom:auto}
+#homeView .home-shortcut-card .layout-controls>.layout-scale-value{right:6px;top:6px;bottom:auto}
