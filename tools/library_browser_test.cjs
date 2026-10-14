@@ -288,8 +288,10 @@ async function api(path,method='GET',body){
   await page.waitForFunction(id=>state.events.some(item=>item.id===id),original.id,{timeout:12000});
   await page.evaluate(id=>{ const item=state.events.find(ev=>ev.id===id); openEventModal(item); },original.id);
   await page.locator('#deleteEvent').click();
+  const deleteResponse=page.waitForResponse(r=>r.url().includes('/api/events/'+original.id)&&r.request().method()==='DELETE',{timeout:12000});
   await page.locator('#atelierDialogConfirm').click();
-  await page.waitForFunction(()=>!document.querySelector('#eventForm'));
+  assert.ok((await deleteResponse).ok(),'DELETE endpoint must confirm successful removal');
+  await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
   await page.waitForFunction(async(id)=>{ const r=await fetch('/api/events?start=2026-10-20&end=2026-10-22'); const list=await r.json(); return r.ok && !list.some(item=>item.id===id); },original.id,{timeout:12000});
   const remainingEvents=await api('/api/events?start=2026-10-20&end=2026-10-22');
   assert.ok(!remainingEvents.some(e=>e.id===original.id)&&remainingEvents.some(e=>e.id===copied.id),'Deleting original must retain copy: '+JSON.stringify({originalId:original.id,copiedId:copied.id,remaining:remainingEvents.map(e=>({id:e.id,date:e.instance_date,title:e.title}))}));
