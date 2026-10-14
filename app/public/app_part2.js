@@ -1,13 +1,123 @@
+function bindCalendarEventActions(button,event){
+  button.addEventListener('contextmenu',ev=>{ev.preventDefault();showCalendarEventMenu(event,ev)});
+  button.draggable=true;
+  button.addEventListener('dragstart',ev=>{
+    ev.dataTransfer.setData('text/plain',JSON.stringify({event_id:event.id,instance_date:event.instance_date||event.event_date}));
+    ev.dataTransfer.effectAllowed='move';button.classList.add('calendar-dragging');
+  });
+  button.addEventListener('dragend',()=>button.classList.remove('calendar-dragging'));
+}
+function showCalendarEventMenu(event,anchor){
+  showAtelierContextMenu(anchor,[
+    {label:'Modifier',run:()=>openEventModal(event)},
+    {label:'Dupliquer',run:()=>openEventModal(event,event.instance_date||event.event_date,event.start_time,true)},
+    {label:'Supprimer',danger:true,run:()=>deleteCalendarEventFromMenu(event)}
+  ]);
+}
+function chooseRecurringEventScope(verb){
+  return new Promise(resolve=>{
+    openModal(`<div class="atelier-dialog"><h2>${esc(verb)} un rendez-vous récurrent</h2>
+      <p>Souhaites-tu modifier uniquement cette occurrence ou toute la série ?</p>
+      <div class="form-actions"><button id="recurrenceCancel" type="button">Annuler</button>
+      <button id="recurrenceSingle" type="button">Cette occurrence</button>
+      <button id="recurrenceSeries" class="primary" type="button">Toute la série</button></div></div>`);
+    const done=val=>{closeModal();resolve(val)};
+    $('#recurrenceCancel').onclick=()=>done(null);
+    $('#recurrenceSingle').onclick=()=>done('single');
+    $('#recurrenceSeries').onclick=()=>done('series');
+    $('#modalClose').onclick=()=>done(null);
+  });
+}
+async function deleteCalendarEventFromMenu(event){
+  const recurring=event.recurrence&&event.recurrence!=='none';
+  if(recurring){
+    const scope=await chooseRecurringEventScope('Supprimer');
+    if(!scope)return;
+    if(scope==='single'){
+      const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}/cancel-instance`,{method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date})}));
+      if(result.ok)await refresh();
+    }else{
+      const confirmed=await askUiConfirm('Supprimer toute la série',`Supprimer définitivement « ${event.title} », toutes ses occurrences et ses rappels ?`,'Supprimer toute la série',true);
+      if(!confirmed)return;
+      const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}`,{method:'DELETE'}));
+      if(result.ok)await refresh();
+    }
+    return;
+  }
+  const confirmed=await askUiConfirm('Supprimer le rendez-vous',`Supprimer « ${event.title} » et ses rappels ?`,'Supprimer',true);
+  if(!confirmed)return;
+  const result=await runUiAction('Suppression impossible',()=>api(`/api/events/${event.id}`,{method:'DELETE'}));
+  if(result.ok)await refresh();
+}
+function bindCalendarDropTarget(cell,date,time=null){
+  cell.addEventListener('dragover',ev=>{if(ev.dataTransfer.types.includes('text/plain')){ev.preventDefault();ev.dataTransfer.dropEffect='move';cell.classList.add('calendar-drop-target')}});
+  cell.addEventListener('dragleave',ev=>{if(!cell.contains(ev.relatedTarget))cell.classList.remove('calendar-drop-target')});
+  cell.addEventListener('drop',async ev=>{
+    ev.preventDefault();cell.classList.remove('calendar-drop-target');
+    let payload;try{payload=JSON.parse(ev.dataTransfer.getData('text/plain'))}catch{return}
+    const event=state.events.find(e=>Number(e.id)===Number(payload.event_id)&&e.instance_date===payload.instance_date);
+    if(!event||!date)return;
+    if(date===event.instance_date&&(!time||time===event.start_time))return;
+    const newTime=time||event.start_time||'09:00';
+    const scope=event.recurrence&&event.recurrence!=='none'
+      ?await chooseRecurringEventScope('Déplacer'): 'single';
+    if(!scope)return;
+    if(scope==='series'){
+      const oldStart=new Date(`${event.instance_date||event.event_date}T${event.start_time||'00:00'}`);
+      const newStart=new Date(`${date}T${newTime}`);
+      const delta=newStart.getTime()-oldStart.getTime();
+      const base=new Date(`${event.event_date}T${event.start_time||'00:00'}`);
+      const shiftedBase=new Date(base.getTime()+delta);
+      const localDateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const shifted=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+        .map(r=>({title:r.title||'',remind_at:localDateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
+      const result=await runUiAction('Impossible de déplacer la série',()=>api(`/api/events/${event.id}`,{
+        method:'PUT',body:JSON.stringify({event_date:ymd(shiftedBase),start_time:pad(shiftedBase.getHours())+':'+pad(shiftedBase.getMinutes()),reminders:shifted})
+      }));
+      if(result.ok){state.cursor=parseYMD(date);await refresh()}
+      return;
+    }
+    if(!event.recurrence||event.recurrence==='none'){
+      // Simple rendez-vous : modifier son enregistrement au lieu de créer un report fantôme.
+      const allDay=!!event.all_day||!event.start_time;
+      const oldDate=new Date(`${event.event_date}T${allDay?'00:00':event.start_time}`);
+      const nextDate=new Date(`${date}T${allDay?'00:00':newTime}`);
+      const delta=nextDate.getTime()-oldDate.getTime();
+      const dateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const remind=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+        .map(r=>({title:r.title||'',remind_at:dateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
+      let endTime=event.end_time||null;
+      if(!allDay&&event.end_time){
+        const [h,m]=event.end_time.split(':').map(Number);
+        const [sh,sm]=event.start_time.split(':').map(Number);
+        const duration=((h*60+m)-(sh*60+sm)+1440)%1440;
+        const [nh,nm]=newTime.split(':').map(Number);
+        const total=(nh*60+nm+duration)%1440;
+        endTime=pad(Math.floor(total/60))+':'+pad(total%60);
+      }
+      const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}`,{
+        method:'PUT',body:JSON.stringify({event_date:date,start_time:allDay?null:newTime,end_time:endTime,reminders:remind})
+      }));
+      if(result.ok){state.cursor=parseYMD(date);await refresh()}
+      return;
+    }
+    const result=await runUiAction('Impossible de déplacer le rendez-vous',()=>api(`/api/events/${event.id}/postpone-instance`,{
+      method:'PUT',body:JSON.stringify({instance_date:event.instance_date||event.event_date,new_date:date,new_time:newTime})
+    }));
+    if(result.ok){state.cursor=parseYMD(date);await refresh()}
+  });
+}
+
 function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
     const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ds); const cell=document.createElement('div'); cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'');
     cell.innerHTML=`<div class="day-number">${d.getDate()}</div><button class="day-add" title="Ajouter un rendez-vous">+</button>`;
-    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));
+    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
-      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e)); cell.appendChild(b);
+      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); cell.appendChild(b);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
     cell.title='Double-clique pour ajouter un rendez-vous';
@@ -29,11 +139,11 @@ function renderWeek(){
   for(let hour=7;hour<=22;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=`${pad(hour)}:00`;grid.appendChild(tl);
     for(let i=0;i<7;i++){
-      const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d);const cell=document.createElement('div');cell.className='week-slot';
+      const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d);const cell=document.createElement('div');cell.className='week-slot';bindCalendarDropTarget(cell,ds,`${pad(hour)}:00`);
       const events=state.events.filter(e=>e.instance_date===ds && (e.all_day || !e.start_time ? hour===7 : Number(e.start_time.slice(0,2))===hour));
       const tasks=state.tasks.filter(t=>!t.completed && t.due_date===ds && t.due_time && Number(t.due_time.slice(0,2))===hour);
       if(events.length+tasks.length>2) cell.classList.add('has-many');
-      events.forEach(e=>{const b=document.createElement('button');b.className=`week-item ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`;const mark=eventInstanceIcon(e);b.textContent=`${mark?mark+' ':''}${e.all_day?'Toute la journée':fmtTime(e.start_time)} ${e.title}`;b.addEventListener('click',()=>openEventModal(e));cell.appendChild(b)});
+      events.forEach(e=>{const b=document.createElement('button');b.className=`week-item ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`;const mark=eventInstanceIcon(e);b.textContent=`${mark?mark+' ':''}${e.all_day?'Toute la journée':fmtTime(e.start_time)} ${e.title}`;b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e);cell.appendChild(b)});
       tasks.forEach(t=>{const b=document.createElement('button');b.className='week-item week-task';b.textContent=`☐ ${t.title}`;b.addEventListener('click',()=>openTaskModal(t));cell.appendChild(b)});
       cell.addEventListener('dblclick',()=>openEventModal(null,ds,`${pad(hour)}:00`)); grid.appendChild(cell);
     }
@@ -99,6 +209,14 @@ function renderReminders(){
       if(!ok)return;
       const result=await runUiAction('Impossible de supprimer le rappel',()=>api(`/api/reminders/${r.id}`,{method:'DELETE'}));
       if(result.ok){shown.delete(r.id);await refresh();}
+    });
+    row.addEventListener('contextmenu',ev=>{
+      ev.preventDefault();
+      showAtelierContextMenu(ev,[
+        {label:'Modifier le rappel',run:()=>row.querySelector('.edit').click()},
+        {label:'Dupliquer le rappel',run:()=>row.querySelector('.duplicate').click()},
+        {label:'Supprimer le rappel',danger:true,run:()=>row.querySelector('.delete').click()}
+      ]);
     });
     root.appendChild(row);
   });
@@ -180,9 +298,43 @@ function askUiConfirm(title,message,confirmLabel='Confirmer',danger=false){
 }
 
 function reminderEditor(existing=[], fallbackLabel='élément', defaultDate=''){ return `<div class="field full"><label>Rappels</label><div class="field-help">Laisse le nom vide : le rappel reprendra automatiquement le nom de ${fallbackLabel}. La date et l’heure sont séparées pour pouvoir les taper directement.</div><div id="reminderEditor" data-default-date="${esc(defaultDate)}">${existing.map(v=>reminderRow(v,defaultDate)).join('')}</div><button type="button" id="addReminder">+ Ajouter un rappel</button></div>`; }
-function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="remove-rem">×</button></div>`; }
-function wireReminderEditor(){ const ed=$('#reminderEditor'); const defaultDate=ed?.dataset.defaultDate||''; $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate)); wireRemoveRem()}); wireRemoveRem(); }
-function wireRemoveRem(){ $$('#reminderEditor .remove-rem').forEach(b=>b.onclick=()=>b.parentElement.remove()); }
+function reminderRow(v={},defaultDate=''){ const r=typeof v==='string'?{remind_at:v,title:''}:v||{}; const raw=(r.remind_at||r.snoozed_until||'').slice(0,16); const d=raw.slice(0,10)||defaultDate||ymd(new Date()); const t=raw.length>=16?raw.slice(11,16):''; return `<div class="reminder-row-edit"><input class="reminder-name" type="text" placeholder="Nom personnalisé (facultatif)" value="${esc(r.title||'')}"><input class="reminder-date" type="date" value="${esc(d)}"><input class="reminder-time" type="time" value="${esc(t)}"><button type="button" class="reminder-more" aria-label="Actions du rappel" title="Actions du rappel">⋯</button></div>`; }
+function wireReminderEditor(){
+  const ed=$('#reminderEditor'); if(!ed)return;
+  const defaultDate=ed.dataset.defaultDate||'';
+  $('#addReminder')?.addEventListener('click',()=>{ed.insertAdjacentHTML('beforeend',reminderRow({},defaultDate))});
+  ed.addEventListener('click',event=>{
+    const more=event.target.closest('.reminder-more');if(!more)return;
+    const row=more.closest('.reminder-row-edit');if(row)showReminderRowActions(row,more);
+  });
+  ed.addEventListener('contextmenu',event=>{
+    const row=event.target.closest('.reminder-row-edit');if(!row)return;
+    event.preventDefault();showReminderRowActions(row,event);
+  });
+}
+function showReminderRowActions(row,anchor){
+  showAtelierContextMenu(anchor,[
+    {label:'Dupliquer le rappel',run:()=>{
+      const d=row.querySelector('.reminder-date').value,t=row.querySelector('.reminder-time').value;
+      row.insertAdjacentHTML('afterend',reminderRow({title:row.querySelector('.reminder-name').value,remind_at:d&&t?`${d}T${t}`:''},d));
+    }},
+    {label:'Supprimer le rappel',danger:true,run:()=>row.remove()}
+  ]);
+}
+function showAtelierContextMenu(anchor,actions){
+  document.querySelector('#atelierContextMenu')?.remove();
+  const menu=document.createElement('div');menu.id='atelierContextMenu';menu.className='atelier-context-menu';menu.setAttribute('role','menu');
+  for(const action of actions){const b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');b.textContent=action.label;if(action.danger)b.classList.add('danger');
+    b.onclick=()=>{menu.remove();action.run()};menu.appendChild(b)}
+  document.body.appendChild(menu);
+  const x=anchor.clientX??anchor.getBoundingClientRect().left,y=anchor.clientY??anchor.getBoundingClientRect().bottom;
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menu.offsetWidth-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menu.offsetHeight-8))+'px';
+  const dismiss=e=>{if(!menu.contains(e.target))menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
+  setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
+  menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.remove();anchor.focus?.()}});
+  menu.querySelector('button')?.focus();
+}
 function collectReminders(){ return $$('#reminderEditor .reminder-row-edit').map(row=>{const d=row.querySelector('.reminder-date').value; const t=row.querySelector('.reminder-time').value; return {title:row.querySelector('.reminder-name').value.trim(),remind_at:(d&&t)?`${d}T${t}`:''};}).filter(r=>r.remind_at); }
 
 

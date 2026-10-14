@@ -489,6 +489,21 @@ class Handler(BaseHTTPRequestHandler):
                                           (moved_event_id,shifted,snoozed,rem['id']))
                         except Exception as reminder_error:
                             print('[Atelier] Report du rappel ignoré:', reminder_error)
+                    else:
+                        # Une occurrence de série reportée reçoit ses propres rappels.
+                        # Les modèles de rappels de la série ne sont ni déplacés ni supprimés.
+                        try:
+                            base_dt=datetime.fromisoformat(f"{old['event_date']}T{old['start_time'] or '00:00'}")
+                            moved_dt=datetime.fromisoformat(f"{new_date}T{new_time}")
+                            delta=moved_dt-base_dt
+                            c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(moved_event_id,))
+                            rems=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
+                            for rem in rems:
+                                shifted=(datetime.fromisoformat(rem['remind_at'])+delta).replace(microsecond=0).isoformat()
+                                c.execute("INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)",
+                                          ('event',moved_event_id,rem['title'],shifted,'pending',ts))
+                        except Exception as reminder_error:
+                            print('[Atelier] Report des rappels récurrents ignoré:', reminder_error)
 
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                     c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
@@ -570,6 +585,51 @@ class Handler(BaseHTTPRequestHandler):
                              ON CONFLICT(event_id,instance_date) DO UPDATE SET action=excluded.action,moved_event_id=excluded.moved_event_id,action_at=excluded.action_at''',
                           (eid,instance_date,action,moved_event_id,ts))
                 c.commit(); return self._json({'ok':True,'moved_event_id':moved_event_id})
+
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='edit-instance':
+                # Édition atomique d'une seule occurrence récurrente.
+                try:
+                    eid=int(parts[2])
+                    old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
+                    if not old: return self._json({'error':'Rendez-vous introuvable.'},404)
+                    if old['recurrence']=='none': return self._json({'error':'Ce rendez-vous n’est pas récurrent.'},400)
+                    instance_date=(body.get('instance_date') or '').strip()
+                    event_day=(body.get('event_date') or '').strip()
+                    title=(body.get('title') or '').strip()
+                    if not instance_date or not event_day or not title:
+                        return self._json({'error':'Date de l’occurrence, date et titre requis.'},400)
+                    existing=c.execute('SELECT * FROM event_instance_actions WHERE event_id=? AND instance_date=?',(eid,instance_date)).fetchone()
+                    moved_id=existing['moved_event_id'] if existing and existing['action']=='postponed' else None
+                    if moved_id and not c.execute('SELECT id FROM events WHERE id=?',(moved_id,)).fetchone():
+                        moved_id=None
+                    vals=(title,event_day,body.get('start_time') or None,body.get('end_time') or None,
+                          1 if body.get('all_day') else 0,body.get('category','general'),body.get('location',''),
+                          body.get('notes',''),body.get('contact',''),body.get('travel_time',''),body.get('url',''),
+                          body.get('status','planned'),'none',1 if body.get('show_in_month',True) else 0,ts)
+                    if moved_id:
+                        c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
+                                  vals+(moved_id,))
+                    else:
+                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals+(ts,))
+                        moved_id=cur.lastrowid
+                    c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(moved_id,))
+                    for ra in body.get('reminders',[]) or []:
+                        if isinstance(ra,str): ra={'remind_at':ra,'title':''}
+                        when=(ra or {}).get('remind_at')
+                        if when:
+                            c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',
+                                      ('event',moved_id,(ra or {}).get('title',''),when,'pending',ts))
+                    c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
+                    c.execute('''INSERT INTO event_instance_actions(event_id,instance_date,action,moved_event_id,action_at)
+                                 VALUES(?,?,'postponed',?,?)
+                                 ON CONFLICT(event_id,instance_date) DO UPDATE SET action='postponed',moved_event_id=excluded.moved_event_id,action_at=excluded.action_at''',
+                              (eid,instance_date,moved_id,ts))
+                    c.commit()
+                    return self._json({'ok':True,'moved_event_id':moved_id})
+                except Exception as ex:
+                    print('[Atelier] Erreur édition occurrence:',repr(ex))
+                    return self._json({'error':'La modification de cette occurrence a échoué.','detail':str(ex)},500)
 
             if len(parts)==3 and parts[0]=='api' and parts[1]=='events':
                 eid=int(parts[2]); old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
