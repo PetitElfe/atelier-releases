@@ -33,11 +33,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "d0bda65d22db3b685999f953daae60d59f7c50be1e468e01754256f2f96c5ad1"
+      "sha256": "79fd41e6cc203d4b633473e9e39ae3591d84cbd06d7bbc3d3e1ed71922aeb1e1"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "b3849786adbb40c9980b93b3b921a85bba4287faa0e3246842c2f8e7662b7e22"
+      "sha256": "4bcd8e95c9f71a33b886c398a184c3014c43409e15e95af1bf6b3fb5a7bd4b65"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "9f17d8e8641229f00f9feaf83d4e7a6f3a6698403dd0b9d56562aad3e84af368"
+      "sha256": "9c8800350dd6dbc7d27622e02aed386471b045176914b28b78c490db61a04966"
     }
   ],
   "notes": "ALPHA 0.14.0 : habitudes quotidiennes et hebdomadaires, suivi des jours, calendrier menstruel local et estimation prudente des cycles."
