@@ -647,7 +647,7 @@ async function api(path,method='GET',body){
   // ALPHA 0.16.1 — Canvas libre : les positions absolues survivent à un rechargement.
   await page.evaluate(()=>showView('home'));
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.match(await page.title(),/Alpha 0\\.16\\.1/,'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.16.1'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
