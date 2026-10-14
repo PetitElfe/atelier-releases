@@ -322,6 +322,12 @@ async function api(path,method='GET',body){
   await page.locator('#saveEvent').click();
   await page.locator('#recurrenceSingle').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
+  // L'animation de fermeture du formulaire peut précéder la réponse API.
+  await page.waitForFunction(async ()=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-27');
+    const rows=await response.json();
+    return rows.some(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
+  },null,{timeout:12000});
   const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
   const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
@@ -578,6 +584,54 @@ async function api(path,method='GET',body){
   assert.ok(await page.locator('#libraryView .library-side-module.layout-object').count()>=2,'Library side modules can be moved');
   await page.evaluate(()=>showView('home'));
   assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
+
+  // ALPHA 0.15.2 : carte Budget compacte sur l'accueil.
+  const homeCard=page.locator('#homeBudgetWidget');
+  const initialRect=await homeCard.boundingBox();
+  assert.ok(initialRect&&initialRect.width<=350,'Budget home widget must be a compact card');
+  await page.locator('#globalLayoutEdit').click();
+  // Replier le tiroir pour qu'il ne masque pas le mini-calendrier sur ce viewport.
+  await page.evaluate(()=>setSideNavCollapsed(true));
+  await page.waitForTimeout(240);
+  // Pendant Modifier, cliquer sur le mini-calendrier NE doit PAS ouvrir Calendrier.
+  await page.locator('#openCalendarCard').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Edit mode protects calendar card navigation');
+  const widthHandle=homeCard.locator(':scope > .layout-controls .layout-width-handle');
+  const wr=await widthHandle.boundingBox();
+  assert.ok(wr,'Width handle appears during editing');
+  await page.mouse.move(wr.x+wr.width/2,wr.y+wr.height/2);
+  await page.mouse.down();
+  await page.mouse.move(wr.x+wr.width/2+90,wr.y+wr.height/2,{steps:6});
+  await page.mouse.up();
+  let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
+  assert.ok(layout.width>=initialRect.width+65,'Width can change independently');
+  assert.equal(layout.height,null,'Width drag must not change height');
+  const heightHandle=homeCard.locator(':scope > .layout-controls .layout-height-handle');
+  const hr=await heightHandle.boundingBox();
+  await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2);
+  await page.mouse.down();
+  await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2+70,{steps:6});
+  await page.mouse.up();
+  layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
+  assert.ok(layout.height>=120,'Height can be adjusted independently');
+  assert.ok(layout.width>=initialRect.width+65,'Height drag does not remove the width adjustment');
+  // Demander confirmation avant la réinitialisation, puis permettre une annulation.
+  const beforeReset=JSON.stringify(layout);
+  page.once('dialog',dialog=>dialog.dismiss());
+  await page.locator('#globalLayoutReset').click();
+  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')))),beforeReset,'Dismissed reset does not erase the layout');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#globalLayoutReset').click();
+  assert.ok(await page.locator('#globalLayoutUndo').isVisible(),'Undo is available immediately after reset');
+  await page.locator('#globalLayoutUndo').click();
+  assert.equal(JSON.stringify(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')))),beforeReset,'Undo restores the exact original dimensions');
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.ok(await page.evaluate(initialWidth=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')).width>initialWidth,initialRect.width),'Width survives browser reload');
+  // Le clic ordinaire doit redevenir fonctionnel hors du mode Modifier.
+  await page.locator('#openCalendarCard').click();
+  assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
+
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
