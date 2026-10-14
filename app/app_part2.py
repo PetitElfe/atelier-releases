@@ -67,7 +67,7 @@ class Handler(BaseHTTPRequestHandler):
                     e['instance_action'] = action['action'] if action else ''
                     e['moved_event_id'] = action['moved_event_id'] if action else None
                     e['instance_action_at'] = action['action_at'] if action else ''
-                return self._json(expanded)
+                return self._json([e for e in expanded if e.get('instance_action')!='hidden'])
             if p == '/api/event-template':
                 title = (q.get('title', [''])[0] or '').strip()
                 if not title:
@@ -432,6 +432,20 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                 c.commit(); return self._json({'ok':True})
+
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='hide-instance':
+                try:
+                    eid=int(parts[2]); instance_date=str(body.get('instance_date') or '').strip()
+                    if not instance_date:return self._json({'error':'Date requise.'},400)
+                    existing=c.execute('SELECT action,moved_event_id FROM event_instance_actions WHERE event_id=? AND instance_date=?',
+                                       (eid,instance_date)).fetchone()
+                    if not existing or existing['action']!='postponed':
+                        return self._json({'error':'Cette occurrence n’est pas un ancien rendez-vous reporté.'},400)
+                    c.execute("UPDATE event_instance_actions SET action='hidden',action_at=? WHERE event_id=? AND instance_date=?",
+                              (ts,eid,instance_date))
+                    c.commit();return self._json({'ok':True})
+                except Exception as ex:
+                    return self._json({'error':'Impossible de masquer cette occurrence.','detail':str(ex)},500)
 
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='postpone-instance':
                 try:
