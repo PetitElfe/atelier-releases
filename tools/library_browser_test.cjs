@@ -596,6 +596,11 @@ async function api(path,method='GET',body){
   // Pendant Modifier, cliquer sur le mini-calendrier NE doit PAS ouvrir Calendrier.
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'home','Edit mode protects calendar card navigation');
+  // Le clic sur une poignée ne doit pas remonter au bouton Calendrier.
+  await page.locator('#openCalendarCard > .layout-controls .layout-move-handle').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Calendar move handle cannot activate card');
+  await page.locator('#openCalendarCard > .layout-controls .layout-height-handle').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Calendar height handle cannot activate card');
   const widthHandle=homeCard.locator(':scope > .layout-controls .layout-width-handle');
   const wr=await widthHandle.boundingBox();
   assert.ok(wr,'Width handle appears during editing');
@@ -606,6 +611,9 @@ async function api(path,method='GET',body){
   let layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
   assert.ok(layout.width>=initialRect.width+65,'Width can change independently');
   assert.equal(layout.height,null,'Width drag must not change height');
+  const nextBlock=page.locator('#homeView .desk-top-row');
+  const nextBefore=(await nextBlock.boundingBox()).y;
+  const calendarBefore=(await page.locator('#openCalendarCard').boundingBox()).y;
   const heightHandle=homeCard.locator(':scope > .layout-controls .layout-height-handle');
   const hr=await heightHandle.boundingBox();
   await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2);
@@ -614,6 +622,10 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   layout=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierModuleLayout_home_homeBudgetWidget')));
   assert.ok(layout.height>=120,'Height can be adjusted independently');
+  const nextAfter=(await nextBlock.boundingBox()).y;
+  const calendarAfter=(await page.locator('#openCalendarCard').boundingBox()).y;
+  assert.ok(Math.abs(nextAfter-nextBefore)<3,'Resizing a card vertically must not move the next section: '+JSON.stringify({nextBefore,nextAfter}));
+  assert.ok(Math.abs(calendarAfter-calendarBefore)<3,'Resizing a card vertically must not move the adjacent calendar: '+JSON.stringify({calendarBefore,calendarAfter}));
   assert.ok(layout.width>=initialRect.width+65,'Height drag does not remove the width adjustment');
   // Demander confirmation avant la réinitialisation, puis permettre une annulation.
   const beforeReset=JSON.stringify(layout);

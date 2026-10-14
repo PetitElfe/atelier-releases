@@ -447,8 +447,8 @@ window.addEventListener('resize',()=>{
 $('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
-$('#openCalendarCard').onclick=()=>showView('calendar');
-$('#openCalendarFromUpcoming').onclick=()=>showView('calendar');
+$('#openCalendarCard').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
+$('#openCalendarFromUpcoming').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#addLibraryDomain').onclick=()=>openLibraryDomainCreateModal();
 $('#libraryBack').onclick=()=>closeLibraryDomain();
@@ -787,13 +787,41 @@ function saveGlobalLayout(item,d){
     height:d.height==null?null:Math.round(d.height)};
   localStorage.setItem(item.key,JSON.stringify(value));
 }
+// Chaque carte conserve la place qu'elle occupait dans la grille.
+ // Les dimensions ajoutées doivent être visuelles, sans repousser les cartes suivantes.
+function ensureLayoutNaturalHeight(item){
+  if(item.layoutNaturalHeight>0)return;
+  const el=item.el;
+  const oldHeight=el.style.minHeight,oldMargin=el.style.marginBottom;
+  el.style.minHeight='';
+  el.style.marginBottom='';
+  const rect=el.getBoundingClientRect();
+  if(rect.height>0){
+    item.layoutNaturalHeight=rect.height;
+    item.layoutNaturalMarginBottom=parseFloat(getComputedStyle(el).marginBottom)||0;
+  }
+  el.style.minHeight=oldHeight;
+  el.style.marginBottom=oldMargin;
+}
 function applyGlobalLayout(item,d){
   item.el.style.setProperty('--layout-x',(d.x||0)+'px');
   item.el.style.setProperty('--layout-y',(d.y||0)+'px');
   item.el.style.setProperty('--layout-scale',String(d.scale||1));
   item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
-  // On agrandit la zone sans couper le contenu lorsqu'elle est plus petite que son texte.
-  item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
+  // L'agrandissement vertical ne doit pas modifier la position des autres cartes.
+  // Une marge négative compense strictement la hauteur supplémentaire dans le flux.
+  // La hauteur naturelle reste le minimum, afin de préserver le contenu.
+  if(d.height!=null){
+    ensureLayoutNaturalHeight(item);
+    item.el.style.minHeight=Math.round(d.height)+'px';
+    if(item.layoutNaturalHeight>0){
+      const excess=Math.max(0,Math.round(d.height)-item.layoutNaturalHeight);
+      item.el.style.marginBottom=(item.layoutNaturalMarginBottom-excess)+'px';
+    }
+  }else{
+    item.el.style.minHeight='';
+    item.el.style.marginBottom='';
+  }
   const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
   if(value){
     const rect=item.el.getBoundingClientRect();
@@ -806,6 +834,10 @@ function syncGlobalLayoutEditing(){
   if(globalLayoutEditing){
     const view=$('#'+state.view+'View');if(view)view.classList.add('layout-editing');
   }
+  // Les rubriques initialement masquées ne peuvent être mesurées qu'une fois visibles.
+  globalLayoutItems.filter(item=>item.view===state.view).forEach(item=>{
+    applyGlobalLayout(item,readGlobalLayout(item));
+  });
   const toggle=$('#globalLayoutEdit'),reset=$('#globalLayoutReset'),undo=$('#globalLayoutUndo');
   if(toggle){
     toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
@@ -844,6 +876,9 @@ function initGlobalLayoutEditor(){
     }
     applyGlobalLayout(item,readGlobalLayout(item));
     applyModuleCustomName(item);
+    // Les contrôles sont parfois dans une carte cliquable (mini-calendrier).
+    // On laisse leurs actions fonctionner sans faire remonter le clic à la carte.
+    controls.addEventListener('click',event=>event.stopPropagation());
     const rename=controls.querySelector('.layout-rename-handle');
     if(rename){
       const canRename=!!moduleTitleElement(item);

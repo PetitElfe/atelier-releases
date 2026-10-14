@@ -1,5 +1,5 @@
 {
-  "version": "0.15.2",
+  "version": "0.15.3",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "355a2e14f6a7f2cb387d9d3b75a3550980d020ee1d005b139b62290c1645068a"
+      "sha256": "fad958a3c5fecd33c2b2bc667b8ad8661fce304517d3167543e93761fd155599"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "0fb6a06681cf4d95a35715fd1c415279ccae2afb10e19b662f07505efca60b36"
+      "sha256": "cb4edf6440b2d5212e55477df113c2d814eb63d69402674c3b8fc6d76afde2f8"
     },
     {
       "path": "public/index.html",
-      "sha256": "9512e4a19ac19bc518c69a5e5b2f430c35955805b70e88f17d8bd8e047b9f7a7"
+      "sha256": "ba5686d059f715437d7dfee9da8bda528b250ad306f2febb4e2b5b98437db1e7"
     },
     {
       "path": "public/styles.css",
       "sha256": "146d4364389ad17c7451a385817a087ea2b96ceacc000ba69e06bf7c6dbccb9c"
     }
   ],
-  "notes": "ALPHA 0.15.2 — Budget compact sur l'Accueil ; redimensionnement largeur/hauteur indépendant, protection du mode Modifier et réinitialisation annulable."
+  "notes": "ALPHA 0.15.3 — Redimensionnement vertical indépendant des autres encadrés et mini-calendrier bloqué en mode Modifier."
 }
