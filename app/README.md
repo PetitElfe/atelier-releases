@@ -1,6 +1,8 @@
-# L’Atelier 0.16.0 — Modules et ergonomie
+# L’Atelier 0.16.1 — Disposition libre et stabilité de l’Accueil
 
-Cette version consolide les fonctions existantes sans changer les données de la base SQLite ni celles des carnets.
+Cette version corrige la disposition de l’Accueil sans changer les données de la base SQLite ni celles des carnets.
+
+**Nouveau en 0.16.1 :** les modules de l'Accueil sont placés dans un canvas indépendant du flux et des grilles, ce qui évite qu'un autre module les décale après recharge. Les dimensions et positions 0.16.0 sont copiées une seule fois vers des clés `atelierHomeCanvasV2_*` ; les clés historiques ne sont ni écrasées ni supprimées. La zone conserve une hauteur adaptée au contenu. Le titre de l’onglet indique aussi la version actuelle. Les autres rubriques ne changent pas.
 
 ## Accueil
 - La page se développe librement vers le bas : le défilement reste disponible sur ordinateur.
