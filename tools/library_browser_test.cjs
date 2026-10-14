@@ -579,6 +579,58 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
 
+  // ALPHA 0.15.2 : l'Accueil doit avoir un petit encadré Budget et un mode édition sûr.
+  await page.evaluate(()=>setSideNavCollapsed(true));
+  const widget=page.locator('#homeBudgetWidget');
+  const compactWidth=await widget.evaluate(el=>el.getBoundingClientRect().width);
+  assert.ok(compactWidth<400,'Home Budget should be compact by default, not 1050px wide');
+  await page.locator('#globalLayoutEdit').click();
+  await page.locator('#openCalendarCard').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Clicking the calendar in edit mode must not navigate');
+  await page.locator('#homeBudgetOpen').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Clicking Home Budget in edit mode must not navigate');
+  const layoutKey='atelierModuleLayout_home_homeBudgetWidget';
+  const widthHandle=widget.locator(':scope > .layout-controls .layout-resize-right');
+  const widthRect=await widthHandle.boundingBox();
+  assert.ok(widthRect,'Independent horizontal resize grip is visible');
+  const resizeHit=await widthHandle.evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===el;
+  });
+  assert.equal(resizeHit,true,'The grip must remain clickable without the floating drawer covering it');
+  await page.mouse.move(widthRect.x+widthRect.width/2,widthRect.y+widthRect.height/2);
+  await page.mouse.down();
+  await page.mouse.move(widthRect.x+widthRect.width/2+90,widthRect.y+widthRect.height/2,{steps:6});
+  await page.mouse.up();
+  const widthSaved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey);
+  assert.ok(widthSaved.width>compactWidth+40,'Horizontal grip changes width independently');
+  assert.equal(widthSaved.height,null,'Horizontal resize must not force a height');
+  const heightHandle=widget.locator(':scope > .layout-controls .layout-resize-bottom');
+  const heightRect=await heightHandle.boundingBox();
+  assert.ok(heightRect,'Independent vertical resize grip is visible');
+  const heightBefore=await widget.evaluate(el=>el.getBoundingClientRect().height);
+  await page.mouse.move(heightRect.x+heightRect.width/2,heightRect.y+heightRect.height/2);
+  await page.mouse.down();
+  await page.mouse.move(heightRect.x+heightRect.width/2,heightRect.y+heightRect.height/2+80,{steps:6});
+  await page.mouse.up();
+  const heightSaved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey);
+  assert.ok(heightSaved.height>heightBefore+40,'Vertical grip changes height');
+  assert.equal(heightSaved.width,widthSaved.width,'Vertical resize preserves width');
+  await page.locator('#globalLayoutReset').click();
+  await page.locator('#layoutResetCancel').click();
+  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).width,widthSaved.width,'Cancelling a reset preserves the layout');
+  await page.locator('#globalLayoutReset').click();
+  await page.locator('#layoutResetConfirm').click();
+  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).width,null,'Confirmed reset returns to default width');
+  await page.locator('#globalLayoutUndo').click();
+  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).width,widthSaved.width,'Undo reset restores prior layout');
+  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).height,heightSaved.height,'Undo reset restores prior height');
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),layoutKey)).height,heightSaved.height,'Custom dimensions survive reload');
+  await page.evaluate(()=>setSideNavCollapsed(true));
+  await page.locator('#openCalendarCard').click();
+  assert.equal(await page.evaluate(()=>state.view),'calendar','Calendar navigation works normally outside edit mode');
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
  } finally {if(browser)await browser.close();proc.kill();rmSync(data,{recursive:true,force:true})}

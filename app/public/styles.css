@@ -1299,3 +1299,46 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
   .budget-unified-form{gap:12px}.budget-type-switch button{font-size:13px}
   .layout-controls .layout-rename-handle{left:90px}
 }
+
+
+/* ALPHA 0.15.2 — Taille d'encadré libre, sans zoom du texte. */
+#homeBudgetWidget{
+  width:min(310px,calc(100vw - 56px));
+  max-width:calc(100vw - 56px);
+  margin:10px auto 12px;
+  padding:12px 14px;
+  font-size:12px;
+}
+#homeBudgetWidget .budget-home-title{gap:12px}
+#homeBudgetWidget .budget-home-line{line-height:1.35}
+.layout-controls>.layout-scale-value{
+  right:47px;bottom:11px;min-width:84px;
+  white-space:nowrap;font-size:10px;
+}
+.layout-editing .layout-object .layout-resize-right,
+.layout-editing .layout-object .layout-resize-bottom{
+  display:grid;
+}
+.layout-resize-right,.layout-resize-bottom{
+  display:none;place-items:center;position:absolute;
+  z-index:22;pointer-events:auto;user-select:none;touch-action:none;
+  background:#6b5438ed;border:1px solid var(--gold);
+  border-radius:6px;color:var(--text);font-size:15px;
+}
+.layout-resize-right{
+  right:-10px;top:50%;transform:translateY(-50%);
+  width:23px;height:52px;cursor:ew-resize;
+}
+.layout-resize-bottom{
+  bottom:-10px;left:50%;transform:translateX(-50%);
+  width:52px;height:23px;cursor:ns-resize;
+}
+.layout-resize-handle{touch-action:none}
+.layout-object.layout-custom-height:not(.journal-book){overflow:auto}
+body.home-active:has(#homeView.layout-editing){overflow-y:auto}
+#globalLayoutUndo{border-color:var(--gold);color:var(--gold)}
+@media(max-width:560px){
+  #homeBudgetWidget{width:min(290px,calc(100vw - 32px));max-width:calc(100vw - 32px)}
+  .layout-resize-right{right:-8px}
+  .layout-resize-bottom{bottom:-8px}
+}
