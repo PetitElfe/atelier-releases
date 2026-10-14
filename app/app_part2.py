@@ -476,13 +476,13 @@ class Handler(BaseHTTPRequestHandler):
                     if moved_event_id:
                         moved=c.execute('SELECT id FROM events WHERE id=?',(moved_event_id,)).fetchone()
                         if moved:
-                            c.execute('''UPDATE events SET event_date=?,start_time=?,end_time=?,updated_at=? WHERE id=?''',
-                                      (new_date,new_time,new_end,ts,moved_event_id))
+                            c.execute('''UPDATE events SET event_date=?,start_time=?,end_time=?,all_day=?,updated_at=? WHERE id=?''',
+                                      (new_date,None if old['all_day'] else new_time,new_end,old['all_day'],ts,moved_event_id))
                         else:
                             moved_event_id=None
 
                     if not moved_event_id:
-                        vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['location'],old['notes'],
+                        vals=(old['title'],new_date,None if old['all_day'] else new_time,new_end,old['all_day'],old['category'],old['location'],old['notes'],
                               old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
                         cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
                                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
