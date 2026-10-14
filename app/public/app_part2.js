@@ -210,6 +210,14 @@ function renderReminders(){
       const result=await runUiAction('Impossible de supprimer le rappel',()=>api(`/api/reminders/${r.id}`,{method:'DELETE'}));
       if(result.ok){shown.delete(r.id);await refresh();}
     });
+    row.addEventListener('contextmenu',ev=>{
+      ev.preventDefault();
+      showAtelierContextMenu(ev,[
+        {label:'Modifier le rappel',run:()=>row.querySelector('.edit').click()},
+        {label:'Dupliquer le rappel',run:()=>row.querySelector('.duplicate').click()},
+        {label:'Supprimer le rappel',danger:true,run:()=>row.querySelector('.delete').click()}
+      ]);
+    });
     root.appendChild(row);
   });
 }
