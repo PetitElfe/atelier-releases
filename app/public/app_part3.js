@@ -775,21 +775,44 @@ function readGlobalLayout(item){
   try{
     const v=JSON.parse(localStorage.getItem(item.key));
     return v&&typeof v==='object'
-      ? {x:Number(v.x)||0,y:Number(v.y)||0,scale:Number(v.scale)||1}
-      : {x:0,y:0,scale:1};
-  }catch(e){return{x:0,y:0,scale:1}}
+      ? {x:Number(v.x)||0,y:Number(v.y)||0,scale:Number(v.scale)||1,
+          width:Number(v.width)>0?Number(v.width):null,
+          height:Number(v.height)>0?Number(v.height):null}
+      : {x:0,y:0,scale:1,width:null,height:null};
+  }catch(e){return{x:0,y:0,scale:1,width:null,height:null}}
 }
 
 function saveGlobalLayout(item,d){
-  localStorage.setItem(item.key,JSON.stringify({x:d.x||0,y:d.y||0,scale:d.scale||1}));
+  localStorage.setItem(item.key,JSON.stringify({
+    x:d.x||0,y:d.y||0,scale:d.scale||1,
+    width:Number(d.width)>0?Math.round(d.width):null,
+    height:Number(d.height)>0?Math.round(d.height):null
+  }));
 }
 
 function applyGlobalLayout(item,d){
   item.el.style.setProperty('--layout-x',(d.x||0)+'px');
   item.el.style.setProperty('--layout-y',(d.y||0)+'px');
   item.el.style.setProperty('--layout-scale',String(d.scale||1));
+  if(Number(d.width)>0)item.el.style.width=Math.round(d.width)+'px';
+  else item.el.style.removeProperty('width');
+  if(Number(d.height)>0)item.el.style.height=Math.round(d.height)+'px';
+  else item.el.style.removeProperty('height');
+  item.el.classList.toggle('layout-custom-height',Number(d.height)>0);
+  // Le journal possède deux pages : leur hauteur doit suivre celle du cadre.
+  if(item.el.id==='journalBook'){
+    item.el.querySelectorAll(':scope > .journal-page').forEach(page=>{
+      if(Number(d.height)>0)page.style.height=Math.round(d.height)+'px';
+      else page.style.removeProperty('height');
+    });
+  }
   const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
-  if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
+  if(value){
+    const width=Number(d.width)>0?Math.round(d.width):Math.round(item.el.offsetWidth);
+    const height=Number(d.height)>0?Math.round(d.height):Math.round(item.el.offsetHeight);
+    value.textContent=width+' × '+height;
+    value.title='Largeur × hauteur en pixels';
+  }
 }
 
 function syncGlobalLayoutEditing(){
@@ -805,6 +828,8 @@ function syncGlobalLayoutEditing(){
     toggle.setAttribute('aria-pressed',globalLayoutEditing?'true':'false');
   }
   if(reset)reset.classList.toggle('hidden',!globalLayoutEditing);
+  const undo=$('#globalLayoutUndo');
+  if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem('atelierLayoutUndo_'+state.view));
 }
 
 function initGlobalLayoutEditor(){
@@ -817,7 +842,7 @@ function initGlobalLayoutEditor(){
     if(!controls){
       controls=document.createElement('div');
       controls.className='layout-controls';
-      controls.innerHTML='<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span><button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button><span class="layout-scale-value">100%</span><span class="layout-resize-handle" title="Tirer le coin pour redimensionner">↘</span>';
+      controls.innerHTML='<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span><button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button><span class="layout-scale-value">Taille</span><span class="layout-resize-right" title="Étirer en largeur">↔</span><span class="layout-resize-bottom" title="Étirer en hauteur">↕</span><span class="layout-resize-handle" title="Étirer en largeur et en hauteur">↘</span>';
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
@@ -840,31 +865,92 @@ function initGlobalLayoutEditor(){
       window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
     };
 
-    const beginResize=e=>{
+    const beginResize=(e,axis)=>{
       if(!globalLayoutEditing||state.view!==item.view||e.button!==0)return;
       e.preventDefault();e.stopPropagation();
-      const d=readGlobalLayout(item),start=d.scale||1,sx=e.clientX,sy=e.clientY;
+      const d=readGlobalLayout(item),sx=e.clientX,sy=e.clientY;
+      // Passage du zoom uniforme à une taille réelle : le texte garde sa taille.
+      const scale=d.scale||1,rect=item.el.getBoundingClientRect();
+      const startWidth=scale!==1?rect.width:item.el.offsetWidth;
+      const startHeight=scale!==1?rect.height:item.el.offsetHeight;
+      d.scale=1;
+      const snap=n=>Math.round(n/8)*8;
+      const minWidth=item.el.id==='homeBudgetWidget'?190:130;
+      const minHeight=item.el.id==='homeBudgetWidget'?100:80;
+      const maxWidth=Math.max(minWidth,Math.min(window.innerWidth-40,1500));
+      const maxHeight=Math.max(minHeight,Math.min(window.innerHeight*1.7,1300));
       item.el.classList.add('layout-selected');
       const move=ev=>{
-        const delta=((ev.clientX-sx)+(ev.clientY-sy))/700;
-        d.scale=clamp(start+delta,.55,1.75);
+        if(axis!=='height')d.width=clamp(snap(startWidth+ev.clientX-sx),minWidth,maxWidth);
+        if(axis!=='width')d.height=clamp(snap(startHeight+ev.clientY-sy),minHeight,maxHeight);
         applyGlobalLayout(item,d);
       };
-      const up=()=>{saveGlobalLayout(item,d);item.el.classList.remove('layout-selected');window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};
-      window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+      const up=()=>{
+        saveGlobalLayout(item,d);
+        item.el.classList.remove('layout-selected');
+        window.removeEventListener('pointermove',move);
+        window.removeEventListener('pointerup',up);
+        window.removeEventListener('pointercancel',up);
+      };
+      window.addEventListener('pointermove',move);
+      window.addEventListener('pointerup',up);
+      window.addEventListener('pointercancel',up);
     };
 
     controls.querySelector('.layout-move-handle').addEventListener('pointerdown',beginMove);
-    controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',beginResize);
-    // Les interactions restent accessibles : seul le petit handle permet le glisser-déposer.
+    controls.querySelector('.layout-resize-right').addEventListener('pointerdown',e=>beginResize(e,'width'));
+    controls.querySelector('.layout-resize-bottom').addEventListener('pointerdown',e=>beginResize(e,'height'));
+    controls.querySelector('.layout-resize-handle').addEventListener('pointerdown',e=>beginResize(e,'both'));
+    // En mode Modifier, cliquer sur un contenu n'ouvre plus le module par accident.
+    // Les poignées et le bouton Renommer restent utilisables.
+    item.el.addEventListener('click',e=>{
+      if(globalLayoutEditing&&state.view===item.view&&!e.target.closest('.layout-controls')){
+        e.preventDefault();e.stopImmediatePropagation();
+      }
+    },true);
   });
 
-  $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
+  $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing();syncUndo()};
+  const layoutUndoKey=view=>'atelierLayoutUndo_'+view;
+  const syncUndo=()=>{
+    const undo=$('#globalLayoutUndo');
+    if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem(layoutUndoKey(state.view)));
+  };
   $('#globalLayoutReset').onclick=()=>{
-    globalLayoutItems.filter(x=>x.view===state.view).forEach(item=>{
-      const d={x:0,y:0,scale:1};
-      saveGlobalLayout(item,d);applyGlobalLayout(item,d);
-    });
+    const view=state.view;
+    const items=globalLayoutItems.filter(x=>x.view===view);
+    openModal(`<h2>Réinitialiser la disposition ?</h2>
+      <p>Les tailles et positions des encadrés de cette rubrique seront remises à zéro.</p>
+      <p class="muted">Tes carnets et tes données ne seront pas modifiés. Tu pourras annuler cette réinitialisation.</p>
+      <div class="form-actions">
+        <button id="layoutResetCancel" type="button">Annuler</button>
+        <button id="layoutResetConfirm" type="button" class="primary">Réinitialiser la disposition</button>
+      </div>`);
+    $('#layoutResetCancel').onclick=closeModal;
+    $('#layoutResetConfirm').onclick=()=>{
+      const previous=items.map(item=>({key:item.key,raw:localStorage.getItem(item.key)}));
+      localStorage.setItem(layoutUndoKey(view),JSON.stringify(previous));
+      items.forEach(item=>{
+        const d={x:0,y:0,scale:1,width:null,height:null};
+        saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+      });
+      closeModal();syncUndo();
+    };
+  };
+  $('#globalLayoutUndo').onclick=()=>{
+    const key=layoutUndoKey(state.view);
+    let backup;
+    try{backup=JSON.parse(localStorage.getItem(key)||'null')}catch(_){backup=null}
+    if(!Array.isArray(backup))return;
+    for(const saved of backup){
+      const item=globalLayoutItems.find(x=>x.key===saved.key&&x.view===state.view);
+      if(!item)continue;
+      if(saved.raw===null)localStorage.removeItem(item.key);
+      else localStorage.setItem(item.key,saved.raw);
+      applyGlobalLayout(item,readGlobalLayout(item));
+    }
+    localStorage.removeItem(key);
+    syncUndo();
   };
   syncGlobalLayoutEditing();
 }
