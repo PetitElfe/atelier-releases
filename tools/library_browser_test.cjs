@@ -584,6 +584,9 @@ async function api(path,method='GET',body){
   const initialRect=await homeCard.boundingBox();
   assert.ok(initialRect&&initialRect.width<=350,'Budget home widget must be a compact card');
   await page.locator('#globalLayoutEdit').click();
+  // Replier le tiroir pour qu'il ne masque pas le mini-calendrier sur ce viewport.
+  await page.evaluate(()=>setSideNavCollapsed(true));
+  await page.waitForTimeout(240);
   // Pendant Modifier, cliquer sur le mini-calendrier NE doit PAS ouvrir Calendrier.
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'home','Edit mode protects calendar card navigation');
