@@ -644,6 +644,47 @@ async function api(path,method='GET',body){
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
 
+  // ALPHA 0.16.0 — Catalogue sans création de données, Accueil extensible.
+  await page.evaluate(()=>{showView('home');setSideNavCollapsed(true)});
+  await page.waitForTimeout(260);
+  assert.equal(await page.locator('#homeView').evaluate(el=>getComputedStyle(el).maxHeight),'none','Home height must be extensible on desktop');
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'auto','Home must remain vertically scrollable');
+  await page.locator('#openHomeModuleLibrary').click();
+  const picker=page.locator('#homeModulePicker');
+  await picker.waitFor({state:'visible'});
+  assert.equal(await picker.locator('input[data-module]').count(),11,'The home module library lists the four existing widgets and seven shortcuts');
+  await picker.locator('input[data-module="tasks"]').check();
+  await picker.locator('input[data-module="upcoming"]').uncheck();
+  await picker.locator('button[type="submit"]').click();
+  assert.ok(await page.locator('#homeShortcut_tasks').isVisible(),'Tasks shortcut can be added');
+  assert.ok(!(await page.locator('#homeUpcomingWidget').isVisible()),'Upcoming widget can be hidden without deleting it');
+  await page.locator('#globalLayoutEdit').click();
+  const shortcut=page.locator('#homeShortcut_tasks');
+  assert.ok(await shortcut.locator(':scope > .layout-controls .layout-settings-handle').isVisible(),'New module has an individual settings button');
+  await shortcut.locator(':scope > .layout-controls .layout-settings-handle').click();
+  await page.locator('#layoutModuleSettingsForm').waitFor({state:'visible'});
+  await page.locator('#layoutModuleSettingsForm input[name="name"]').fill('Mes tâches rapides');
+  await page.locator('#layoutModuleSettingsForm button[type="submit"]').click();
+  assert.equal(await shortcut.locator('h3').innerText(),'Mes tâches rapides','Individual settings rename module');
+  await shortcut.locator('h3').dblclick();
+  assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click opens individual settings');
+  await page.locator('#layoutSettingsCancel').click();
+  await shortcut.locator('button[data-home-open]').click();
+  assert.equal(await page.evaluate(()=>state.view),'home','Module link must not navigate during edit mode');
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.ok(await page.locator('#homeShortcut_tasks').isVisible(),'Home library selection persists after reload');
+  assert.ok(!(await page.locator('#homeUpcomingWidget').isVisible()),'Home hidden module persists after reload');
+  assert.equal(await page.locator('#homeShortcut_tasks h3').innerText(),'Mes tâches rapides','Renamed shortcut persists after reload');
+  await page.locator('#homeShortcut_tasks button[data-home-open]').click();
+  assert.equal(await page.evaluate(()=>state.view),'tasks','Shortcut navigation resumes after editing');
+  // Les modules masqués restent accessibles depuis le catalogue.
+  await page.evaluate(()=>showView('home'));
+  await page.locator('#openHomeModuleLibrary').click();
+  await page.locator('#homeModulePicker input[data-module="upcoming"]').check();
+  await page.locator('#homeModulePicker button[type="submit"]').click();
+  assert.ok(await page.locator('#homeUpcomingWidget').isVisible(),'Hidden original widget can be restored');
+
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
