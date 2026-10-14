@@ -272,9 +272,17 @@ async function api(path,method='GET',body){
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
   // La duplication reprend les rappels liés à l'événement, sans écraser l'original.
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).click();
-  await page.locator('#duplicateEvent').click();
+  await page.locator('#eventMore').click();
+  await page.locator('#atelierContextMenu').getByText('Dupliquer le rendez-vous').click();
   assert.equal(await page.locator('#reminderEditor .reminder-row-edit').count(),1,'Linked reminder must be copied into the event draft');
   assert.equal(await page.locator('#reminderEditor .reminder-name').inputValue(),'Rappel du rendez-vous E2E');
+  // Menu contextuel du rappel : dupliquer, puis retirer uniquement sa copie.
+  await page.locator('#reminderEditor .reminder-more').first().click();
+  await page.locator('#atelierContextMenu').getByText('Dupliquer le rappel').click();
+  assert.equal(await page.locator('#reminderEditor .reminder-row-edit').count(),2,'Reminder duplication must create an editable row');
+  await page.locator('#reminderEditor .reminder-more').last().click();
+  await page.locator('#atelierContextMenu').getByText('Supprimer le rappel').click();
+  assert.equal(await page.locator('#reminderEditor .reminder-row-edit').count(),1,'Deleting copied reminder must preserve original');
   await page.locator('#eventForm input[name="event_date"]').fill('2026-10-22');
   await page.locator('#saveEvent').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
@@ -287,7 +295,8 @@ async function api(path,method='GET',body){
   // Supprimer l'original depuis son éditeur et confirmer par la boîte intégrée.
   await page.waitForFunction(id=>state.events.some(item=>item.id===id),original.id,{timeout:12000});
   await page.evaluate(id=>{ const item=state.events.find(ev=>ev.id===id); openEventModal(item); },original.id);
-  await page.locator('#deleteEvent').click();
+  await page.locator('#eventMore').click();
+  await page.locator('#atelierContextMenu').getByText('Supprimer le rendez-vous').click();
   const deleteResponse=page.waitForResponse(r=>r.url().includes('/api/events/'+original.id)&&r.request().method()==='DELETE',{timeout:12000});
   await page.locator('#atelierDialogConfirm').click();
   assert.ok((await deleteResponse).ok(),'DELETE endpoint must confirm successful removal');
