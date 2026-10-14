@@ -14,7 +14,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const editing=!!e&&!duplicate;
   const reminders=duplicate&&Array.isArray(e?.reminders)
     ? e.reminders
-    : editing
+    : (editing||duplicate)&&e?.id
       ? state.reminders.filter(r=>r.entity_type==='event'&&r.entity_id===e.id&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at).slice(0,16)}))
       : [];
   openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid event-form-compact">
@@ -34,7 +34,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div id="eventSaveError" class="form-error field full hidden"></div>
-    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="duplicateEvent">Dupliquer</button><button type="button" id="openUrl">Ouvrir le lien</button>':''}<button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
+    <div class="form-actions field full"><button type="button" id="cancelEvent">Annuler</button>${editing?'<button type="button" id="duplicateEvent">Dupliquer</button><button type="button" id="openUrl">Ouvrir le lien</button><button type="button" id="deleteEvent" class="danger-button">Supprimer</button>':''}<button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal; $('#openUrl')?.addEventListener('click',()=>{if(e?.url)window.open(e.url,'_blank')});
   $('#duplicateEvent')?.addEventListener('click',()=>{
@@ -42,6 +42,14 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time; copy.reminders=collectReminders();
     // Le titre reste strictement identique : jamais de « (1) » ajouté automatiquement.
     openEventModal(copy,copy.event_date,copy.start_time,true);
+  });
+  $('#deleteEvent')?.addEventListener('click',async()=>{
+    const confirmed=await askUiConfirm('Supprimer le rendez-vous','Supprimer « '+(e.title||'ce rendez-vous')+' » et ses rappels associés ? Si ce rendez-vous est récurrent, toutes ses occurrences seront supprimées.','Supprimer',true);
+    if(!confirmed)return;
+    const result=await runUiAction('Impossible de supprimer le rendez-vous',()=>api('/api/events/'+e.id,{method:'DELETE'}));
+    if(!result.ok)return;
+    closeModal();
+    await refresh();
   });
   const touched={category:false,contact:false,travel_time:false}; let templateTimer=null;
   if(!editing){
