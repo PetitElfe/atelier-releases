@@ -800,6 +800,44 @@ function openModuleNameEditor(item){
     applyModuleCustomName(item);closeModal();
   };
 }
+/* Réglages individuels des cartes, accessibles via ⋯ ou double-clic en mode Modifier. */
+function openLayoutModuleSettings(item){
+  if(!globalLayoutEditing||state.view!==item.view)return;
+  const title=moduleTitleElement(item);
+  const original=title?.dataset.defaultModuleName||title?.textContent.trim()||item.id;
+  const saved=localStorage.getItem(moduleCustomNameKey(item))||original;
+  const homeModule=item.view==='home'?item.el.dataset.homeModule:null;
+  const visible=homeModule?homeModuleIsVisible(homeModule):true;
+  openModal('<h2>Réglages de cet encadré</h2><p class="muted">Ces réglages concernent seulement cet encadré. Ils ne modifient pas les données qu’il contient.</p><form id="layoutModuleSettingsForm" class="form-grid">'+
+    (title?'<div class="field full"><label>Nom affiché</label><input name="name" maxlength="70" required value="'+esc(saved)+'"></div>':'')+
+    (homeModule?'<label class="field full home-module-settings-check"><input type="checkbox" name="visible" '+(visible?'checked':'')+'> Afficher sur l’Accueil</label>':'')+
+    '<div class="field full"><button type="button" id="layoutResetSingle">Replacer et redimensionner cet encadré</button><small class="muted">Le reste de la rubrique ne sera pas réinitialisé.</small></div>'+
+    '<div class="form-actions field full"><button type="button" id="layoutSettingsCancel">Annuler</button><button type="submit" class="primary">Enregistrer</button></div></form>');
+  const form=$('#layoutModuleSettingsForm');
+  $('#layoutSettingsCancel').onclick=closeModal;
+  $('#layoutResetSingle').onclick=()=>{
+    if(!confirm('Remettre uniquement cet encadré à sa place et à sa taille d’origine ?'))return;
+    const d={x:0,y:0,scale:1,width:null,height:null};
+    saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+    closeModal();
+  };
+  form.onsubmit=event=>{
+    event.preventDefault();
+    if(title){
+      const name=form.elements.name.value.trim();
+      if(!name)return;
+      if(name===original)localStorage.removeItem(moduleCustomNameKey(item));
+      else localStorage.setItem(moduleCustomNameKey(item),name);
+      applyModuleCustomName(item);
+    }
+    if(homeModule){
+      localStorage.setItem(homeModuleVisibilityKey(homeModule),form.elements.visible.checked?'1':'0');
+      syncHomeModuleVisibility();
+    }
+    syncGlobalLayoutEditing();
+    closeModal();
+  };
+}
 function initNavCustomization(){
   const buttons=[...document.querySelectorAll('#sideNav [data-view]')];
   for(const b of buttons){
@@ -935,6 +973,7 @@ function initGlobalLayoutEditor(){
       controls.className='layout-controls';
       controls.innerHTML=`<span class="layout-move-handle" title="Glisser pour déplacer cet encadré">✥ Déplacer</span>
         <button class="layout-rename-handle" type="button" title="Renommer cet encadré">⋯ Renommer</button>
+        <button class="layout-settings-handle" type="button" aria-label="Réglages de cet encadré" title="Réglages de cet encadré">⋯</button>
         <span class="layout-scale-value" aria-label="Dimensions">—</span>
         <span class="layout-width-handle" title="Étirer la largeur" aria-label="Étirer la largeur">↔</span>
         <span class="layout-height-handle" title="Étirer la hauteur" aria-label="Étirer la hauteur">↕</span>
@@ -946,6 +985,13 @@ function initGlobalLayoutEditor(){
     // Les contrôles sont parfois dans une carte cliquable (mini-calendrier).
     // On laisse leurs actions fonctionner sans faire remonter le clic à la carte.
     controls.addEventListener('click',event=>event.stopPropagation());
+    const settings=controls.querySelector('.layout-settings-handle');
+    settings?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openLayoutModuleSettings(item)});
+    item.el.addEventListener('dblclick',event=>{
+      if(!globalLayoutEditing||state.view!==item.view)return;
+      if(event.target.closest('.layout-controls, input, textarea, select, button, a, [contenteditable="true"]'))return;
+      event.preventDefault();event.stopPropagation();openLayoutModuleSettings(item);
+    });
     const rename=controls.querySelector('.layout-rename-handle');
     if(rename){
       const canRename=!!moduleTitleElement(item);
