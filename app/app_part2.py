@@ -45,10 +45,10 @@ def budget_materialize(c,month,ts):
         if not due:continue
         repaid=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
           WHERE debt_id=? AND status='confirmed'""",(debt['id'],)).fetchone()[0])
-        previous=int(c.execute('SELECT COUNT(*) FROM budget_entries WHERE debt_id=? AND scheduled_date<?',(debt['id'],due)).fetchone()[0])
-        if previous==0 and repaid>=debt['total_cents']:continue
-        remainder=max(0,debt['total_cents']-repaid)
-        installment=min(debt['monthly_cents'],remainder)
+        planned=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
+          WHERE debt_id=? AND scheduled_date<? AND status!='skipped'""",(debt['id'],due)).fetchone()[0])
+        remaining_plan=max(0,debt['total_cents']-planned)
+        installment=min(debt['monthly_cents'],remaining_plan)
         if installment==0:continue
         c.execute("""INSERT OR IGNORE INTO budget_entries
           (debt_id,scheduled_date,title,kind,category,amount_cents,status,source,created_at)
@@ -57,7 +57,20 @@ def budget_materialize(c,month,ts):
     c.commit()
 
 def budget_snapshot(c,month,ts):
-    budget_materialize(c,month,ts)
+    # Materialiser chronologiquement les mois depuis le solde de départ :
+    # sinon un mois antérieur jamais ouvert fausserait le solde actuel.
+    settings=c.execute('SELECT * FROM budget_settings WHERE id=1').fetchone()
+    start_date=settings['opening_date'] if settings else None
+    if not start_date:
+        dates=[r[0] for r in c.execute('SELECT start_date FROM budget_rules UNION ALL SELECT start_date FROM budget_debts').fetchall()]
+        start_date=min(dates) if dates else month.isoformat()
+    cursor=budget_month(start_date)
+    if cursor>month:cursor=month
+    span=(month.year-cursor.year)*12+(month.month-cursor.month)
+    if span>240:raise ValueError('Historique supérieur à 20 ans : ajuste la date du solde initial.')
+    while cursor<=month:
+        budget_materialize(c,cursor,ts)
+        cursor=date(cursor.year+1,1,1) if cursor.month==12 else date(cursor.year,cursor.month+1,1)
     first=month.isoformat();last=month.replace(day=budget_last_day(month.year,month.month)).isoformat()
     entries=[dict(x) for x in c.execute(
       'SELECT * FROM budget_entries WHERE scheduled_date BETWEEN ? AND ? ORDER BY scheduled_date,id',(first,last))]
