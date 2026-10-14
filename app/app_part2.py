@@ -67,7 +67,7 @@ class Handler(BaseHTTPRequestHandler):
                     e['instance_action'] = action['action'] if action else ''
                     e['moved_event_id'] = action['moved_event_id'] if action else None
                     e['instance_action_at'] = action['action_at'] if action else ''
-                return self._json(expanded)
+                return self._json([e for e in expanded if e.get('instance_action')!='hidden'])
             if p == '/api/event-template':
                 title = (q.get('title', [''])[0] or '').strip()
                 if not title:
@@ -433,6 +433,20 @@ class Handler(BaseHTTPRequestHandler):
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
                 c.commit(); return self._json({'ok':True})
 
+            if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='hide-instance':
+                try:
+                    eid=int(parts[2]); instance_date=str(body.get('instance_date') or '').strip()
+                    if not instance_date:return self._json({'error':'Date requise.'},400)
+                    existing=c.execute('SELECT action,moved_event_id FROM event_instance_actions WHERE event_id=? AND instance_date=?',
+                                       (eid,instance_date)).fetchone()
+                    if not existing or existing['action']!='postponed':
+                        return self._json({'error':'Cette occurrence n’est pas un ancien rendez-vous reporté.'},400)
+                    c.execute("UPDATE event_instance_actions SET action='hidden',action_at=? WHERE event_id=? AND instance_date=?",
+                              (ts,eid,instance_date))
+                    c.commit();return self._json({'ok':True})
+                except Exception as ex:
+                    return self._json({'error':'Impossible de masquer cette occurrence.','detail':str(ex)},500)
+
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='postpone-instance':
                 try:
                     eid=int(parts[2])
@@ -462,13 +476,13 @@ class Handler(BaseHTTPRequestHandler):
                     if moved_event_id:
                         moved=c.execute('SELECT id FROM events WHERE id=?',(moved_event_id,)).fetchone()
                         if moved:
-                            c.execute('''UPDATE events SET event_date=?,start_time=?,end_time=?,updated_at=? WHERE id=?''',
-                                      (new_date,new_time,new_end,ts,moved_event_id))
+                            c.execute('''UPDATE events SET event_date=?,start_time=?,end_time=?,all_day=?,updated_at=? WHERE id=?''',
+                                      (new_date,None if old['all_day'] else new_time,new_end,old['all_day'],ts,moved_event_id))
                         else:
                             moved_event_id=None
 
                     if not moved_event_id:
-                        vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['location'],old['notes'],
+                        vals=(old['title'],new_date,None if old['all_day'] else new_time,new_end,old['all_day'],old['category'],old['location'],old['notes'],
                               old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
                         cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
                                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)

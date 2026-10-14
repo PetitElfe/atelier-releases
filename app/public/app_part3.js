@@ -59,7 +59,10 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   }
   $('#duplicateEventAction')?.addEventListener('click',()=>{
     const fd=new FormData(f); const copy=Object.fromEntries(fd.entries());
-    copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time; copy.reminders=collectReminders();
+    copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time;
+    try{copy.reminders=collectReminders()}catch(err){
+      const error=$('#eventSaveError');error.textContent=err.message;error.classList.remove('hidden');return;
+    }
     // Le titre reste strictement identique : jamais de « (1) » ajouté automatiquement.
     openEventModal(copy,copy.event_date,copy.start_time,true);
   });
@@ -88,7 +91,10 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     const payload=Object.fromEntries(fd.entries());
     payload.show_in_month=f.show_in_month.checked;
     payload.all_day=!payload.start_time;
-    payload.reminders=collectReminders();
+    try{payload.reminders=collectReminders()}catch(err){
+      error.textContent=err.message;error.classList.remove('hidden');
+      submit.disabled=false;submit.textContent=duplicate?'Créer la copie':'Enregistrer';return;
+    }
     let route=editing?`/api/events/${e.id}`:'/api/events';
     if(editing&&e.recurrence&&e.recurrence!=='none'){
       const scope=await chooseRecurringEventScope('Modifier');
