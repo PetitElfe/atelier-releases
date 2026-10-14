@@ -692,9 +692,33 @@ async function api(path,method='GET',body){
   assert.ok(!(await page.locator('#homeUpcomingWidget').isVisible()),'Upcoming widget can be hidden without deleting it');
   await page.locator('#globalLayoutEdit').click();
   const shortcut=page.locator('#homeShortcut_tasks');
+  // ALPHA 0.16.2 : un raccourci ajouté très bas peut être remonté sans être
+  // limité par la hauteur de la fenêtre. C'est le bug observé chez Léo.
+  const taskStart=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y);
+  assert.ok(taskStart>500,'Le raccourci de test doit commencer sous la zone visible');
+  await shortcut.scrollIntoViewIfNeeded();
+  const handle=shortcut.locator(':scope > .layout-controls .layout-move-handle');
+  const handleRect=await handle.boundingBox();
+  await page.mouse.move(handleRect.x+handleRect.width/2,handleRect.y+handleRect.height/2);
+  await page.mouse.down();
+  await page.mouse.move(handleRect.x+handleRect.width/2,20,{steps:8});
+  await page.waitForFunction(()=>window.scrollY<10,null,{timeout:12000});
+  await page.mouse.up();
+  const taskTop=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y);
+  assert.ok(taskTop<taskStart-350,'Le raccourci doit pouvoir remonter sur plusieurs écrans : '+JSON.stringify({taskStart,taskTop}));
+  // Les petits modules ont un espace d'édition dédié pour les poignées.
+  assert.ok(await shortcut.evaluate(el=>{
+    const title=el.querySelector('h3')?.getBoundingClientRect();
+    const rename=el.querySelector('.layout-rename-handle')?.getBoundingClientRect();
+    return title&&rename&&title.top>=rename.bottom-1;
+  }),'Le titre d’un raccourci ne doit pas être recouvert par Renommer');
   assert.ok(await shortcut.locator(':scope > .layout-controls .layout-settings-handle').isVisible(),'New module has an individual settings button');
   await shortcut.locator(':scope > .layout-controls .layout-settings-handle').click();
   await page.locator('#layoutModuleSettingsForm').waitFor({state:'visible'});
+  assert.ok(await page.locator('#layoutBringHomeTop').isVisible(),'Un module perdu en bas peut être remonté instantanément');
+  await page.locator('#layoutBringHomeTop').click();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y),12,'Remonter en haut conserve le module sans reset');
+  await shortcut.locator(':scope > .layout-controls .layout-settings-handle').click();
   await page.locator('#layoutModuleSettingsForm input[name="name"]').fill('Mes tâches rapides');
   await page.locator('#layoutModuleSettingsForm button[type="submit"]').click();
   assert.equal(await shortcut.locator('h3').innerText(),'Mes tâches rapides','Individual settings rename module');
