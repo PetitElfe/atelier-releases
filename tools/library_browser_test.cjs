@@ -753,11 +753,11 @@ async function api(path,method='GET',body){
   await page.locator('#layoutModuleSettingsForm input[name="name"]').fill('Mes tâches rapides');
   await page.locator('#layoutModuleSettingsForm button[type="submit"]').click();
   assert.equal(await shortcut.locator('h3').innerText(),'Mes tâches rapides','Individual settings rename module');
-  await shortcut.locator('p').dblclick();
-  assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click opens individual settings');
+  await shortcut.dblclick({position:{x:70,y:100}});
+  assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click on a selected card opens individual settings');
   await page.locator('#layoutSettingsCancel').click();
-  await shortcut.locator('button[data-home-open]').click();
-  assert.equal(await page.evaluate(()=>state.view),'home','Module link must not navigate during edit mode');
+  await shortcut.click({position:{x:70,y:100}});
+  assert.equal(await page.evaluate(()=>state.view),'home','Module click selects it without navigating during edit mode');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('#homeShortcut_tasks').isVisible(),'Home library selection persists after reload');
