@@ -914,7 +914,20 @@ function requestHomeCanvasMeasure(){
       if(!r.width||!r.height)continue;
       bottom=Math.max(bottom,r.bottom-frame.top);
     }
-    homeCanvas.style.height=Math.ceil(Math.max(330,bottom+24))+'px';
+    // Hors édition, la page doit s'arrêter après le dernier module réellement
+    // visible. Aucun espace artificiel ne doit forcer une barre de défilement.
+    let height=Math.max(64,Math.ceil(bottom+12));
+    if(globalLayoutEditing){
+      // Laisser temporairement de la place au déplacement même lorsque tous
+      // les modules tiennent sur l'écran. Ce surplus disparaît à « Terminer ».
+      const canvasDocumentTop=frame.top+window.scrollY;
+      const editingRoom=Math.max(
+        window.innerHeight-canvasDocumentTop+440,
+        bottom+440
+      );
+      height=Math.max(height,Math.ceil(editingRoom));
+    }
+    homeCanvas.style.height=height+'px';
   });
 }
 function homeSuggestedLayout(item){
@@ -1135,6 +1148,7 @@ function syncGlobalLayoutEditing(){
   }
   if(reset)reset.classList.toggle('hidden',!globalLayoutEditing);
   if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem(layoutUndoKey(state.view)));
+  if(homeCanvasReady&&state.view==='home')requestHomeCanvasMeasure();
 }
 function initGlobalLayoutEditor(){
   globalLayoutItems=getGlobalLayoutSpecs();
