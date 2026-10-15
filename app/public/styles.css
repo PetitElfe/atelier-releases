@@ -1516,3 +1516,20 @@ body.home-active{overflow-y:auto}
 #homeCanvas>.home-alignment-guide.is-visible{display:block}
 #homeCanvas>.home-alignment-guide.vertical{width:1px;top:0;bottom:0;border-left:1px dashed #c1a56e99}
 #homeCanvas>.home-alignment-guide.horizontal{height:1px;left:0;right:0;border-top:1px dashed #c1a56e99}
+
+/* ALPHA 0.17.0 — ajustements utilitaires transversaux, sans refonte graphique. */
+.atelier-inline-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.atelier-inline-actions label{font-size:.86rem;color:var(--muted)}
+.atelier-inline-actions select{min-width:110px;max-width:170px}
+.atelier-list-summary{font-size:.85rem;color:var(--muted);margin:6px 0 12px}
+.atelier-today-button{font-size:.82rem;white-space:nowrap;padding:5px 10px}
+.budget-month-nav input[type="month"]{max-width:170px}
+.atelier-settings-shortcuts{display:grid;grid-template-columns:1fr auto;gap:10px 12px;font-size:.83rem;align-items:center}
+.atelier-settings-shortcuts>span{color:var(--muted)}
+.atelier-settings-shortcuts>strong{font-weight:600;text-align:right}
+@media(max-width:720px){
+ .atelier-inline-actions{justify-content:flex-start}
+ .budget-month-nav{width:100%}
+ .atelier-settings-shortcuts{grid-template-columns:1fr}
+ .atelier-settings-shortcuts>strong{text-align:left}
+}
