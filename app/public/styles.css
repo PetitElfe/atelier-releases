@@ -1343,11 +1343,11 @@ body.library-page-expanded #libraryWritingClose{display:inline-flex!important;po
 /* ALPHA 0.16.0 — Accueil extensible, bibliothèque de modules et réglages individuels. */
 body.home-active{overflow-y:auto}
 #homeView.active-view{
-  min-height:calc(100vh - 150px);
+  min-height:0;
   height:auto;
   max-height:none;
   overflow:visible;
-  padding-bottom:125px;
+  padding-bottom:0;
 }
 .home-module-toolbar{
   width:min(1120px,calc(100vw - 40px));margin:2px auto 12px;
@@ -1405,7 +1405,7 @@ body.home-active{overflow-y:auto}
 
 /* ALPHA 0.16.1 — Canvas indépendant pour l'Accueil uniquement.
    Les autres rubriques conservent leurs dispositions et leurs clés existantes. */
-#homeView.home-free-ready #homeCanvas{position:relative;width:100%;min-height:330px;overflow:visible}
+#homeView.home-free-ready #homeCanvas{position:relative;width:100%;min-height:0;overflow:visible}
 #homeView.home-free-ready #homeCanvas>.desk-top-row,
 #homeView.home-free-ready #homeShortcutShelf{display:contents}
 #homeView.home-free-ready #homeBudgetWidget,
