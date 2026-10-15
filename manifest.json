@@ -5,7 +5,7 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "c7a7b19640c15aafa1b33cd7adef4e982512bba7c26b1858a68c8e59a51e736d"
+      "sha256": "2c04169a963c70b038f25d6f4cee6035d6add26a05321f02809b50c182edfeda"
     },
     {
       "path": "VERSION",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "4a054ad40ebb014879eb47a2a66ea6ffa200e1ad5d6912e9c13e814496f9721e"
+      "sha256": "d0beb9ff6fada5f1835aecd597cb67f433293874d1604fa1567ee19aec2ef948"
     },
     {
       "path": "public/index.html",
-      "sha256": "d51c5bc5baa99eac31264fcf324253ceb8d1731cba61ac2d926195f2db080685"
+      "sha256": "4a7a47c0dc478007cf106a59c13f5f881a7b27c963a37842fc675f729584a76e"
     },
     {
       "path": "public/styles.css",
-      "sha256": "23f4e97d90ce81a5d1906a6d86b4e2b1e9e572107d188c1e95b74504bd9520f7"
+      "sha256": "4ede395be655ee72916682ae536fcfd9c4c886e8c97a24c8bcbe2d949e5cc828"
     }
   ],
-  "notes": "ALPHA 0.16.3 — hauteur de l’Accueil ajustée au contenu visible, défilement temporaire pendant Modifier, disparition de la barre inutile après Terminer sans réinitialisation des positions."
+  "notes": "ALPHA 0.16.3 — hauteur d’Accueil ajustée, défilement seulement si utile hors édition ; ajout de modules en haut au centre avec ouverture automatique du mode Modifier ; contrôles À venir lisibles ; bouton Accueil explicite."
 }
