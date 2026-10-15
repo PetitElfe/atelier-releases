@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.16.4</title>
+  <title>L’Atelier — Alpha 0.17.0</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Retour à l’accueil"><svg class="home-shortcut-symbol" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="home-shortcut-text">Accueil</span></button>
-      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.16.4</div><h1 id="pageTitle">Accueil</h1></div>
+      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.17.0</div><h1 id="pageTitle">Accueil</h1></div>
     </div>
     <div class="top-date-wrap">
       <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
@@ -126,7 +126,7 @@
         <div class="view-head">
           <button id="prevMonth" aria-label="Mois précédent">‹</button>
           <h2 id="monthTitle"></h2>
-          <button id="nextMonth" aria-label="Mois suivant">›</button>
+          <button id="nextMonth" aria-label="Mois suivant">›</button><button id="calendarToday" type="button" class="atelier-today-button">Aujourd’hui</button>
         </div>
         <div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
         <div id="monthGrid" class="month-grid"></div>
@@ -136,7 +136,7 @@
         <div class="week-layout">
           <aside class="mini-panel">
             <div class="view-head compact">
-              <button id="prevWeek">‹</button><h2 id="weekTitle"></h2><button id="nextWeek">›</button>
+              <button id="prevWeek">‹</button><h2 id="weekTitle"></h2><button id="nextWeek">›</button><button id="weekToday" type="button" class="atelier-today-button">Aujourd’hui</button>
             </div>
             <div id="miniMonth" class="mini-month"></div>
             <button id="addEventWeek" class="primary wide">+ Rendez-vous</button>
@@ -149,7 +149,7 @@
     </section>
 
     <section id="tasksView" class="view">
-      <div class="panel-head"><h2>Tâches</h2><button id="addTask" class="primary">+ Ajouter une tâche</button></div>
+      <div class="panel-head"><div><h2>Tâches</h2><p id="taskSummary" class="muted" aria-live="polite"></p></div><div class="atelier-inline-actions"><label for="taskFilter">Afficher</label><select id="taskFilter"><option value="all">Toutes</option><option value="active">À faire</option><option value="done">Terminées</option></select><button id="addTask" class="primary">+ Ajouter une tâche</button></div></div>
       <div id="taskList" class="task-list"></div>
     </section>
 
@@ -242,13 +242,13 @@
 
     <section id="remindersView" class="view">
       <div class="panel-head"><h2>Rappels non traités</h2><button id="addStandaloneReminder" class="primary" type="button">+ Ajouter un rappel</button></div>
-      <p class="muted">Tu peux créer un rappel indépendant, ou laisser un rendez-vous / une tâche créer ses propres rappels.</p>
+      <p class="muted">Tu peux créer un rappel indépendant, ou laisser un rendez-vous / une tâche créer ses propres rappels.</p><p id="reminderSummary" class="atelier-list-summary" aria-live="polite"></p>
       <div id="reminderList" class="reminder-list"></div>
     </section>
 
 
     <section id="budgetView" class="view">
-      <div class="panel-head"><h2>Budget et dépenses</h2><label>Mois <input type="month" id="budgetMonth" /></label></div>
+      <div class="panel-head"><h2>Budget et dépenses</h2><div class="atelier-inline-actions budget-month-nav"><button id="budgetPrevMonth" type="button" aria-label="Mois précédent">‹</button><label for="budgetMonth">Mois</label><input type="month" id="budgetMonth"/><button id="budgetNextMonth" type="button" aria-label="Mois suivant">›</button><button id="budgetCurrentMonth" type="button">Ce mois-ci</button></div></div>
       <p class="muted">Prévisions, opérations comptabilisées et historique : les montants sont des suivis manuels, sans connexion bancaire.</p>
       <div class="budget-summary" id="budgetSummaryPanel">
         <article><span>Solde réel suivi</span><strong id="budgetBalance">—</strong><small>Confirmé et prélèvements présumés</small></article>
@@ -294,7 +294,7 @@
             <label>Objectif hebdomadaire <input id="habitTarget" type="number" min="1" max="7" value="7" required></label>
             <button type="submit">+ Ajouter</button>
           </form>
-          <div id="habitList" class="organisation-list"></div>
+          <p id="habitsSummary" class="atelier-list-summary" aria-live="polite"></p><div id="habitList" class="organisation-list"></div>
         </section>
         <section class="organisation-module cycle-module">
           <h3>Suivi du cycle menstruel</h3>
@@ -316,15 +316,15 @@
       <div class="kitchen-grid">
         <section id="shoppingPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Prépare la liste, coche ce que tu prends, puis valide.</p></div><div class="kitchen-head-actions"><button id="addShopping">+ Article</button><button id="validateShopping" class="primary">✓ Valider les achats</button></div></div>
-          <div id="shoppingList" class="kitchen-list"></div>
+          <p id="shoppingSummary" class="atelier-list-summary" aria-live="polite"></p><div id="shoppingList" class="kitchen-list"></div>
         </section>
         <section id="foodPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Aliments à la maison</h3><p>Avec leur date de péremption.</p></div><button id="addFood" class="primary">+ Aliment</button></div>
-          <div id="foodList" class="kitchen-list"></div>
+          <p id="foodSummary" class="atelier-list-summary" aria-live="polite"></p><div id="foodList" class="kitchen-list"></div>
         </section>
         <section id="mealPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Idées de repas</h3><p>Choisies dans ta bibliothèque de recettes.</p></div><button id="chooseMealIdea" class="primary">+ Choisir</button></div>
-          <div id="mealList" class="kitchen-list"></div>
+          <p id="mealSummary" class="atelier-list-summary" aria-live="polite"></p><div id="mealList" class="kitchen-list"></div>
         </section>
       </div>
     </section>
@@ -421,7 +421,7 @@
             <button id="settingsNavReset" type="button">Remettre le tiroir à droite</button>
           </section>
 
-          <section class="settings-card settings-card-muted">
+          <section class="settings-card"><div class="settings-card-title"><span class="settings-card-icon">⌨</span><div><h3>Raccourcis pratiques</h3><p>Quelques commandes utiles de L’Atelier.</p></div></div><div class="atelier-settings-shortcuts"><span>Feuilleter un carnet en lecture</span><strong>← / →</strong><span>Rechercher dans un carnet</span><strong>Ctrl + F</strong><span>Placement précis sur l’Accueil</span><strong>Flèches · Maj + flèche · Échap</strong></div></section><section class="settings-card settings-card-muted">
             <div class="settings-card-title">
               <span class="settings-card-icon">✦</span>
               <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
