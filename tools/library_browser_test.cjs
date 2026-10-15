@@ -681,6 +681,18 @@ async function api(path,method='GET',body){
   await page.waitForTimeout(260);
   assert.equal(await page.locator('#homeView').evaluate(el=>getComputedStyle(el).maxHeight),'none','Home height must be extensible on desktop');
   assert.equal(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'auto','Home must remain vertically scrollable');
+  // ALPHA 0.16.3 — icône maison accompagnée d'un libellé explicite.
+  assert.equal(await page.locator('#globalHomeShortcut .home-shortcut-text').innerText(),'Accueil',
+    'Le raccourci maison doit être compréhensible sans deviner son symbole');
+  // Les contrôles d’édition de « À venir » ne doivent plus cacher le titre.
+  await page.locator('#globalLayoutEdit').click();
+  assert.ok(await page.locator('#homeUpcomingWidget').evaluate(el=>{
+    const title=el.querySelector('#upcomingTitle')?.getBoundingClientRect();
+    const rename=el.querySelector('.layout-rename-handle')?.getBoundingClientRect();
+    const move=el.querySelector('.layout-move-handle')?.getBoundingClientRect();
+    return title&&rename&&move&&title.top>=Math.max(rename.bottom,move.bottom)-1;
+  }),'Les contrôles de « À venir » doivent être au-dessus de son titre');
+  await page.locator('#globalLayoutEdit').click();
   await page.locator('#openHomeModuleLibrary').click();
   const picker=page.locator('#homeModulePicker');
   await picker.waitFor({state:'visible'});
@@ -690,12 +702,26 @@ async function api(path,method='GET',body){
   await picker.locator('button[type="submit"]').click();
   assert.ok(await page.locator('#homeShortcut_tasks').isVisible(),'Tasks shortcut can be added');
   assert.ok(!(await page.locator('#homeUpcomingWidget').isVisible()),'Upcoming widget can be hidden without deleting it');
-  await page.locator('#globalLayoutEdit').click();
+  assert.ok(await page.locator('#homeView').evaluate(el=>el.classList.contains('layout-editing')),
+    'Ajouter un module doit activer automatiquement Modifier');
+  const newTaskPosition=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')));
+  assert.equal(newTaskPosition.y,12,'Le module ajouté arrive en haut de la page');
+  assert.ok(await page.locator('#homeShortcut_tasks').evaluate(el=>{
+    const c=document.querySelector('#homeCanvas').getBoundingClientRect();
+    const r=el.getBoundingClientRect();
+    return Math.abs((r.left+r.right)/2-(c.left+c.right)/2)<4;
+  }),'Le module ajouté est centré dans l’Accueil');
   const shortcut=page.locator('#homeShortcut_tasks');
-  // ALPHA 0.16.2 : un raccourci ajouté très bas peut être remonté sans être
-  // limité par la hauteur de la fenêtre. C'est le bug observé chez Léo.
+  // ALPHA 0.16.2 : un raccourci peut être remonté manuellement depuis le bas.
+  // Le scénario démarre par un ajout en haut (0.16.3), puis simule un rangement
+  // en bas pour vérifier le défilement automatique de la 0.16.2.
+  await page.evaluate(()=>{
+    const item=globalLayoutItems.find(x=>x.id==='homeShortcut_tasks'&&isHomeCanvasItem(x));
+    const d=readGlobalLayout(item);
+    d.y=1020;saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+  });
   const taskStart=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y);
-  assert.ok(taskStart>500,'Le raccourci de test doit commencer sous la zone visible');
+  assert.ok(taskStart>500,'Le raccourci de test doit se trouver sous la zone visible');
   await shortcut.scrollIntoViewIfNeeded();
   const handle=shortcut.locator(':scope > .layout-controls .layout-move-handle');
   const handleRect=await handle.boundingBox();
@@ -740,6 +766,9 @@ async function api(path,method='GET',body){
   await page.locator('#homeModulePicker input[data-module="upcoming"]').check();
   await page.locator('#homeModulePicker button[type="submit"]').click();
   assert.ok(await page.locator('#homeUpcomingWidget').isVisible(),'Hidden original widget can be restored');
+  assert.ok(await page.locator('#homeView').evaluate(el=>el.classList.contains('layout-editing')),
+    'Réafficher À venir doit proposer immédiatement le mode Modifier');
+  await page.locator('#globalLayoutEdit').click();
 
 
 
