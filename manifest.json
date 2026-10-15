@@ -1,15 +1,15 @@
 {
-  "version": "0.16.4",
+  "version": "0.17.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "52f7354b25e9836b43a65649cf99c6c06c9913c9ca8c554933c550ccd8eb24d0"
+      "sha256": "57ca379606c6acf035f3664de84f493e4974c4f949b61d275173dcd4d4b53db7"
     },
     {
       "path": "VERSION",
-      "sha256": "847324a68830675cce5a5bc9d6ba97b4158043077a15ea88a819ba89fc10721e"
+      "sha256": "02d38e98e88f4a8dc2ea40dbb769338601066fc94920b52882a14f21ad97f7ee"
     },
     {
       "path": "app.py",
@@ -33,20 +33,20 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "f1d8d2fdc395cc9b5aa472706989f61ef7ee36eca59caefcd552926ccfa657dd"
+      "sha256": "e7aca421d5f313b703c9d5f9a7ad10f0c4998fca35da9e0cf007c4c08a7beb95"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "7be5fa55300cad22337cf68aef3bd879b20bce7cde35fba645c60d95a19c377d"
+      "sha256": "d7751dc6b7c1223c54d9c4c26352f1a885952a5602dde2932a71e23dfabd3b49"
     },
     {
       "path": "public/index.html",
-      "sha256": "13b36388f39b9cb88b5ffa89b47ca2cfe01c76f00635b1379889d0047fbd1107"
+      "sha256": "1c03ca1abed007577b568c984313b721cca2de9aba67b0b199ced0bf54e576a2"
     },
     {
       "path": "public/styles.css",
-      "sha256": "ec1c745422f37e1a1b837ccfffbdcf25352bdf749898eb504a6dcc8e1643997b"
+      "sha256": "ac9f16bbb8bf8f1548e6f5cb5f51bd6ed35979759d317d8d0446315a3ef135c4"
     }
   ],
-  "notes": "ALPHA 0.16.4 — édition fluide : sélection unique, déplacement direct, poignées discrètes, Journal groupé, alignements aimantés, ajustements au clavier, sauvegarde intacte."
+  "notes": "ALPHA 0.17.0 — BIG BLOC transversal : Calendrier aujourd’hui, filtres tâches, rappels, budget, cuisine, habitudes, Bibliothèque clavier et Paramètres."
 }
