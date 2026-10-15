@@ -1426,3 +1426,26 @@ body.home-active{overflow-y:auto}
 #homeView .home-shortcut-card .layout-rename-handle{left:6px;top:38px}
 #homeView .home-shortcut-card .layout-settings-handle{left:auto;right:6px;top:38px;bottom:auto}
 #homeView .home-shortcut-card .layout-controls>.layout-scale-value{right:6px;top:6px;bottom:auto}
+
+/* ALPHA 0.16.3 — commandes des cartes compactes et navigation compréhensible. */
+.top-brand #globalHomeShortcut{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  width:auto;min-width:0;min-height:36px;height:auto;padding:6px 11px;
+  font-size:12px;font-weight:600;white-space:nowrap;
+}
+.top-brand #globalHomeShortcut .home-shortcut-symbol{display:block;flex:none}
+.top-brand #globalHomeShortcut .home-shortcut-text{display:inline}
+@media(max-width:550px){
+  .top-brand #globalHomeShortcut{width:36px;padding:6px}
+  .top-brand #globalHomeShortcut .home-shortcut-text{display:none}
+}
+/* Une ligne pour les commandes de déplacement, une deuxième pour les réglages :
+   ni le titre ni les événements « À venir » ne sont masqués en mode Modifier. */
+#homeView.layout-editing #homeUpcomingWidget{
+  padding-top:78px;
+  min-height:166px;
+}
+#homeView #homeUpcomingWidget .layout-rename-handle{left:6px;top:39px}
+#homeView #homeUpcomingWidget .layout-settings-handle{left:auto;right:6px;top:39px;bottom:auto}
+#homeView #homeUpcomingWidget .layout-controls>.layout-scale-value{top:6px;right:6px;bottom:auto}
+#homeView.layout-editing .home-module-new{z-index:9}
