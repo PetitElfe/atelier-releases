@@ -1,15 +1,15 @@
 {
-  "version": "0.16.3",
+  "version": "0.16.4",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
     {
       "path": "README.md",
-      "sha256": "2c04169a963c70b038f25d6f4cee6035d6add26a05321f02809b50c182edfeda"
+      "sha256": "52f7354b25e9836b43a65649cf99c6c06c9913c9ca8c554933c550ccd8eb24d0"
     },
     {
       "path": "VERSION",
-      "sha256": "8e726b6201ad80a36dce40cb5b37bd834a34fd1b936d222912ca6302ae028f12"
+      "sha256": "847324a68830675cce5a5bc9d6ba97b4158043077a15ea88a819ba89fc10721e"
     },
     {
       "path": "app.py",
@@ -37,16 +37,16 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "d0beb9ff6fada5f1835aecd597cb67f433293874d1604fa1567ee19aec2ef948"
+      "sha256": "7be5fa55300cad22337cf68aef3bd879b20bce7cde35fba645c60d95a19c377d"
     },
     {
       "path": "public/index.html",
-      "sha256": "4a7a47c0dc478007cf106a59c13f5f881a7b27c963a37842fc675f729584a76e"
+      "sha256": "13b36388f39b9cb88b5ffa89b47ca2cfe01c76f00635b1379889d0047fbd1107"
     },
     {
       "path": "public/styles.css",
-      "sha256": "4ede395be655ee72916682ae536fcfd9c4c886e8c97a24c8bcbe2d949e5cc828"
+      "sha256": "ec1c745422f37e1a1b837ccfffbdcf25352bdf749898eb504a6dcc8e1643997b"
     }
   ],
-  "notes": "ALPHA 0.16.3 — hauteur d’Accueil ajustée, défilement seulement si utile hors édition ; ajout de modules en haut au centre avec ouverture automatique du mode Modifier ; contrôles À venir lisibles ; bouton Accueil explicite."
+  "notes": "ALPHA 0.16.4 — édition fluide : sélection unique, déplacement direct, poignées discrètes, Journal groupé, alignements aimantés, ajustements au clavier, sauvegarde intacte."
 }
