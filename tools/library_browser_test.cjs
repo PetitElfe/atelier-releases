@@ -583,7 +583,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('library'));
   assert.ok(await page.locator('#libraryView .library-side-module.layout-object').count()>=2,'Library side modules can be moved');
   await page.evaluate(()=>showView('home'));
-  assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Home journal submodules can be moved');
+  assert.ok(await page.locator('#homeView .journal-section.layout-object').count()>=4,'Les réglages historiques du Journal restent conservés');
 
   // ALPHA 0.15.2 : carte Budget compacte sur l'accueil.
   // Attendre la fin du chargement : le placement libre n'est activé qu'après les données.
@@ -598,11 +598,16 @@ async function api(path,method='GET',body){
   // Pendant Modifier, cliquer sur le mini-calendrier NE doit PAS ouvrir Calendrier.
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'home','Edit mode protects calendar card navigation');
-  // Le clic sur une poignée ne doit pas remonter au bouton Calendrier.
-  await page.locator('#openCalendarCard > .layout-controls .layout-move-handle').click();
-  assert.equal(await page.evaluate(()=>state.view),'home','Calendar move handle cannot activate card');
-  await page.locator('#openCalendarCard > .layout-controls .layout-height-handle').click();
-  assert.equal(await page.evaluate(()=>state.view),'home','Calendar height handle cannot activate card');
+  // ALPHA 0.16.4 : sélectionner ne déclenche aucune navigation.
+  assert.ok(await page.locator('#openCalendarCard').evaluate(el=>el.classList.contains('layout-selected')),
+    'Un clic sélectionne le calendrier sans naviguer');
+  await homeCard.click({position:{x:40,y:40}});
+  assert.ok(await homeCard.evaluate(el=>el.classList.contains('layout-selected')),
+    'Cliquer sur le Budget le sélectionne');
+  assert.ok(!(await page.locator('#openCalendarCard').evaluate(el=>el.classList.contains('layout-selected'))),
+    'Un seul module de l’Accueil doit être sélectionné');
+  assert.ok(!(await page.locator('#journalBook .journal-section .layout-controls').first().isVisible()),
+    'Les nombreuses poignées intérieures du Journal sont masquées');
   const widthHandle=homeCard.locator(':scope > .layout-controls .layout-width-handle');
   const wr=await widthHandle.boundingBox();
   assert.ok(wr,'Width handle appears during editing');
@@ -650,15 +655,16 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.16.3'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.16.4'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
   await page.locator('#globalLayoutEdit').click();
-  const canvasGrip=await canvasCalendar.locator(':scope > .layout-controls .layout-move-handle').boundingBox();
-  await page.mouse.move(canvasGrip.x+canvasGrip.width/2,canvasGrip.y+canvasGrip.height/2);
+  // Déplacement directement par la carte, sans devoir viser une minuscule poignée.
+  const dragX=beforeCanvasMove.x+75,dragY=beforeCanvasMove.y+100;
+  await page.mouse.move(dragX,dragY);
   await page.mouse.down();
-  await page.mouse.move(canvasGrip.x+canvasGrip.width/2-45,canvasGrip.y+canvasGrip.height/2+35,{steps:5});
+  await page.mouse.move(dragX-45,dragY+35,{steps:5});
   await page.mouse.up();
   const afterCanvasMove=await canvasCalendar.boundingBox();
   const afterOtherCanvas=await page.locator('#journalBook').boundingBox();
@@ -688,10 +694,9 @@ async function api(path,method='GET',body){
   await page.locator('#globalLayoutEdit').click();
   assert.ok(await page.locator('#homeUpcomingWidget').evaluate(el=>{
     const title=el.querySelector('#upcomingTitle')?.getBoundingClientRect();
-    const rename=el.querySelector('.layout-rename-handle')?.getBoundingClientRect();
-    const move=el.querySelector('.layout-move-handle')?.getBoundingClientRect();
-    return title&&rename&&move&&title.top>=Math.max(rename.bottom,move.bottom)-1;
-  }),'Les contrôles de « À venir » doivent être au-dessus de son titre');
+    const controls=el.querySelector(':scope > .layout-controls');
+    return title&&controls&&getComputedStyle(controls).display==='none';
+  }),'À venir n’est plus recouvert par des commandes lorsqu’il n’est pas sélectionné');
   await page.locator('#globalLayoutEdit').click();
   await page.locator('#openHomeModuleLibrary').click();
   const picker=page.locator('#homeModulePicker');
@@ -723,21 +728,21 @@ async function api(path,method='GET',body){
   const taskStart=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y);
   assert.ok(taskStart>500,'Le raccourci de test doit se trouver sous la zone visible');
   await shortcut.scrollIntoViewIfNeeded();
-  const handle=shortcut.locator(':scope > .layout-controls .layout-move-handle');
-  const handleRect=await handle.boundingBox();
-  await page.mouse.move(handleRect.x+handleRect.width/2,handleRect.y+handleRect.height/2);
+  const shortcutRect=await shortcut.boundingBox();
+  const dragShortcutX=shortcutRect.x+50,dragShortcutY=shortcutRect.y+105;
+  await page.mouse.move(dragShortcutX,dragShortcutY);
   await page.mouse.down();
-  await page.mouse.move(handleRect.x+handleRect.width/2,20,{steps:8});
+  await page.mouse.move(dragShortcutX,20,{steps:8});
   await page.waitForFunction(()=>window.scrollY<10,null,{timeout:12000});
   await page.mouse.up();
   const taskTop=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_homeShortcut_tasks')).y);
   assert.ok(taskTop<taskStart-350,'Le raccourci doit pouvoir remonter sur plusieurs écrans : '+JSON.stringify({taskStart,taskTop}));
-  // Les petits modules ont un espace d'édition dédié pour les poignées.
+  // Une seule commande discrète est affichée en dehors de la carte sélectionnée.
   assert.ok(await shortcut.evaluate(el=>{
     const title=el.querySelector('h3')?.getBoundingClientRect();
-    const rename=el.querySelector('.layout-rename-handle')?.getBoundingClientRect();
-    return title&&rename&&title.top>=rename.bottom-1;
-  }),'Le titre d’un raccourci ne doit pas être recouvert par Renommer');
+    const settings=el.querySelector('.layout-settings-handle')?.getBoundingClientRect();
+    return title&&settings&&settings.bottom<=title.top;
+  }),'Les réglages ne recouvrent pas le titre du raccourci');
   assert.ok(await shortcut.locator(':scope > .layout-controls .layout-settings-handle').isVisible(),'New module has an individual settings button');
   await shortcut.locator(':scope > .layout-controls .layout-settings-handle').click();
   await page.locator('#layoutModuleSettingsForm').waitFor({state:'visible'});
@@ -748,11 +753,11 @@ async function api(path,method='GET',body){
   await page.locator('#layoutModuleSettingsForm input[name="name"]').fill('Mes tâches rapides');
   await page.locator('#layoutModuleSettingsForm button[type="submit"]').click();
   assert.equal(await shortcut.locator('h3').innerText(),'Mes tâches rapides','Individual settings rename module');
-  await shortcut.locator('p').dblclick();
-  assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click opens individual settings');
+  await shortcut.dblclick({position:{x:70,y:100}});
+  assert.ok(await page.locator('#layoutModuleSettingsForm').isVisible(),'Edit-mode double-click on a selected card opens individual settings');
   await page.locator('#layoutSettingsCancel').click();
-  await shortcut.locator('button[data-home-open]').click();
-  assert.equal(await page.evaluate(()=>state.view),'home','Module link must not navigate during edit mode');
+  await shortcut.click({position:{x:70,y:100}});
+  assert.equal(await page.evaluate(()=>state.view),'home','Module click selects it without navigating during edit mode');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok(await page.locator('#homeShortcut_tasks').isVisible(),'Home library selection persists after reload');

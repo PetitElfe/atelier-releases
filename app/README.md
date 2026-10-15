@@ -1,6 +1,8 @@
-# L’Atelier 0.16.3 — Défilement automatique de l’Accueil
+# L’Atelier 0.16.4 — Éditeur visuel de l’Accueil
 
-Cette version adapte automatiquement la hauteur de l’Accueil aux modules réellement visibles, sans migration SQLite ni modification des données ou des carnets.
+Cette version modernise le mode Modifier de l’Accueil sans migration SQLite ni modification des données ou des carnets.
+
+**ALPHA 0.16.4 :** sur l’Accueil uniquement, un clic sélectionne un module et un glissement depuis son corps le déplace librement ; les commandes n’apparaissent que sur le module sélectionné et restent hors du contenu. Une poignée d'angle et deux poignées discrètes de bord permettent de redimensionner. Les sections internes du Journal ne montrent plus une multitude de contrôles ; le Journal est manipulé comme un ensemble. Aides à l'alignement magnétique avec guides discrets (touche Alt pendant le déplacement pour désactiver), touches fléchées pour ajuster la sélection (Maj + flèche pour 10 px), Échap pour désélectionner. La position est enregistrée comme avant, et les réglages individuels restent accessibles. L’éditeur des autres rubriques ne change pas.
 
 **ALPHA 0.16.3 :** hors mode Modifier, l’espace réservé artificiellement sous l’Accueil disparaît, ainsi que la barre de défilement si les modules tiennent à l’écran. Le mode Modifier conserve une zone temporaire pour déplacer les modules plus bas ; cette zone se retire dès « Terminer ». Si un module descend réellement sous la fenêtre, le défilement reste disponible. À l'ajout depuis la bibliothèque, les modules arrivent en haut au centre (espacés si plusieurs), et le mode Modifier s'active immédiatement ; seules les positions des modules ajoutés changent. Les commandes de « À venir » sont réparties sur deux rangées pour ne plus recouvrir les informations. Le raccourci Accueil est identifié par un pictogramme de maison et un libellé visible. Aucun réglage préexistant des autres modules n'est réinitialisé.
 

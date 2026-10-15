@@ -728,6 +728,7 @@ function initHomeModuleLibrary(){
           saveGlobalLayout(item,d);
           applyGlobalLayout(item,d);
           item.el.classList.add('home-module-new');
+          selectHomeCanvasItem(item);
           cursorY+=Math.ceil(Math.max(120,bounds.height))+18;
         }
         globalLayoutEditing=true;
@@ -992,6 +993,11 @@ function activateHomeCanvas(){
   const journal=$('#journalBook'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
   for(const element of [budget,row,journal,shelf,empty])if(element)canvas.appendChild(element);
   homeCanvas=canvas;
+  canvas.insertAdjacentHTML('beforeend','<div id="homeAlignmentGuideX" class="home-alignment-guide vertical" aria-hidden="true"></div><div id="homeAlignmentGuideY" class="home-alignment-guide horizontal" aria-hidden="true"></div>');
+  canvas.addEventListener('pointerdown',event=>{
+    if(globalLayoutEditing&&state.view==='home'&&!event.target.closest('[data-home-module]'))
+      clearHomeCanvasSelection();
+  });
   for(const m of measurements){
     const item=m.item;
     const key=homeCanvasStorageKey(item);
@@ -1021,6 +1027,74 @@ function activateHomeCanvas(){
   requestHomeCanvasMeasure();
 }
 
+/* ALPHA 0.16.4 — édition visuelle de l'Accueil : une sélection à la fois.
+   Ne modifie ni les clés localStorage ni les contenus des modules. */
+let selectedHomeCanvasItem=null;
+function selectHomeCanvasItem(item){
+  for(const other of globalLayoutItems.filter(isHomeCanvasItem))
+    other.el.classList.toggle('layout-selected',other===item);
+  selectedHomeCanvasItem=item;
+}
+function clearHomeCanvasSelection(){
+  selectedHomeCanvasItem=null;
+  for(const item of globalLayoutItems.filter(isHomeCanvasItem))
+    item.el.classList.remove('layout-selected');
+  clearHomeCanvasGuides();
+}
+function clearHomeCanvasGuides(){
+  homeCanvas?.querySelectorAll('.home-alignment-guide').forEach(el=>el.classList.remove('is-visible'));
+}
+function homeCanvasMagnet(item,x,y,event){
+  clearHomeCanvasGuides();
+  if(!homeCanvas||event?.altKey)return {x,y};
+  const rect=item.el.getBoundingClientRect(),w=rect.width,h=rect.height;
+  const candidatesX=[{value:(homeCanvas.clientWidth-w)/2,line:homeCanvas.clientWidth/2}];
+  const candidatesY=[];
+  for(const other of globalLayoutItems.filter(isHomeCanvasItem)){
+    if(other===item||other.el.classList.contains('home-module-off'))continue;
+    const r=other.el.getBoundingClientRect();
+    if(!r.width||!r.height)continue;
+    const left=readGlobalLayout(other).x,top=readGlobalLayout(other).y;
+    candidatesX.push({value:left,line:left},{value:left+r.width-w,line:left+r.width},
+      {value:left+(r.width-w)/2,line:left+r.width/2});
+    candidatesY.push({value:top,line:top},{value:top+r.height-h,line:top+r.height},
+      {value:top+(r.height-h)/2,line:top+r.height/2});
+  }
+  function closest(value,candidates,guide){
+    let nearest=null,dist=8;
+    for(const candidate of candidates){
+      const delta=Math.abs(value-candidate.value);
+      if(delta<dist){dist=delta;nearest=candidate}
+    }
+    if(nearest){
+      const line=homeCanvas.querySelector(guide);
+      if(line){line.style[guide.endsWith('X')?'left':'top']=nearest.line+'px';line.classList.add('is-visible')}
+      return nearest.value;
+    }
+    return value;
+  }
+  return {x:closest(x,candidatesX,'#homeAlignmentGuideX'),
+    y:closest(y,candidatesY,'#homeAlignmentGuideY')};
+}
+function setupHomeCanvasKeyboard(){
+  window.addEventListener('keydown',event=>{
+    if(!homeCanvasReady||!globalLayoutEditing||state.view!=='home')return;
+    if(event.target.closest?.('input,textarea,select,[contenteditable="true"],.modal'))return;
+    if(event.key==='Escape'){clearHomeCanvasSelection();return}
+    if(!selectedHomeCanvasItem||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;
+    event.preventDefault();
+    const item=selectedHomeCanvasItem,d=readGlobalLayout(item),step=event.shiftKey?10:1;
+    const w=item.el.getBoundingClientRect().width;
+    if(event.key==='ArrowLeft')d.x-=step;
+    if(event.key==='ArrowRight')d.x+=step;
+    if(event.key==='ArrowUp')d.y-=step;
+    if(event.key==='ArrowDown')d.y+=step;
+    d.x=Math.round(Math.max(0,Math.min(homeCanvas.clientWidth-w,d.x)));
+    d.y=Math.round(Math.max(0,d.y));
+    saveGlobalLayout(item,d);applyGlobalLayout(item,d);
+  });
+}
+
 /* ALPHA 0.16.2 — glisser sur plusieurs écrans avec défilement automatique.
    La coordonnée sauvegardée est indépendante du défilement de la page.
    Les dispositions des autres rubriques ne sont pas modifiées. */
@@ -1029,21 +1103,25 @@ function beginHomeCanvasDrag(event,item){
   const handle=event.currentTarget;
   const pointerId=event.pointerId;
   try{handle.setPointerCapture?.(pointerId)}catch(_){}
+  selectHomeCanvasItem(item);
   const d=readGlobalLayout(item);
   const initial={x:d.x,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
-  let clientX=event.clientX,clientY=event.clientY,active=true,frameId=0;
+  let clientX=event.clientX,clientY=event.clientY,altHeld=event.altKey,active=true,frameId=0;
   item.el.classList.add('layout-selected');
   function updatePosition(){
     if(!active||!homeCanvas)return;
     const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width);
-    d.x=Math.round(Math.max(0,Math.min(maxX,initial.x+clientX-initial.clientX)));
-    d.y=Math.round(Math.max(0,initial.y+clientY-initial.clientY+window.scrollY-initial.scrollY));
+    let x=Math.max(0,Math.min(maxX,initial.x+clientX-initial.clientX));
+    let y=Math.max(0,initial.y+clientY-initial.clientY+window.scrollY-initial.scrollY);
+    const positioned=homeCanvasMagnet(item,x,y,{altKey:altHeld});
+    d.x=Math.round(Math.max(0,Math.min(maxX,positioned.x)));
+    d.y=Math.round(Math.max(0,positioned.y));
     applyGlobalLayout(item,d);
     saveGlobalLayout(item,d);
   }
   function move(e){
     if(e.pointerId!==pointerId)return;
-    clientX=e.clientX;clientY=e.clientY;
+    clientX=e.clientX;clientY=e.clientY;altHeld=e.altKey;
     updatePosition();
   }
   function finish(){
@@ -1055,7 +1133,7 @@ function beginHomeCanvasDrag(event,item){
     window.removeEventListener('pointercancel',finish);
     window.removeEventListener('blur',finish);
     try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
-    item.el.classList.remove('layout-selected');
+    clearHomeCanvasGuides();
     saveGlobalLayout(item,d);
     item.el.classList.remove('home-module-new');
     requestHomeCanvasMeasure();
@@ -1158,6 +1236,7 @@ function applyGlobalLayout(item,d){
 }
 function layoutUndoKey(view){return 'atelierLayoutResetUndo_'+view}
 function syncGlobalLayoutEditing(){
+  if(!globalLayoutEditing||state.view!=='home')clearHomeCanvasSelection();
   if(!globalLayoutEditing)$$('#homeView .home-module-new').forEach(el=>el.classList.remove('home-module-new'));
   $$('.view').forEach(v=>v.classList.remove('layout-editing'));
   if(globalLayoutEditing){
@@ -1179,6 +1258,7 @@ function syncGlobalLayoutEditing(){
 }
 function initGlobalLayoutEditor(){
   globalLayoutItems=getGlobalLayoutSpecs();
+  setupHomeCanvasKeyboard();
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   // Le clic normal d'un encadré (notamment le mini-calendrier) ne doit PAS
   // activer ses boutons et liens pendant la manipulation de la disposition.
@@ -1214,6 +1294,7 @@ function initGlobalLayoutEditor(){
     settings?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openLayoutModuleSettings(item)});
     item.el.addEventListener('dblclick',event=>{
       if(!globalLayoutEditing||state.view!==item.view)return;
+      if(state.view==='home'&&!isHomeCanvasItem(item))return;
       if(event.target.closest('.layout-controls, input, textarea, select, button, a, [contenteditable="true"]'))return;
       event.preventDefault();event.stopPropagation();openLayoutModuleSettings(item);
     });
@@ -1228,11 +1309,18 @@ function initGlobalLayoutEditor(){
     function finishInteraction(d,move,up,cancel){
       if(!item.el.classList.contains('layout-selected'))return;
       saveGlobalLayout(item,d);
-      item.el.classList.remove('layout-selected');
+      if(!(homeCanvasReady&&isHomeCanvasItem(item)))item.el.classList.remove('layout-selected');
       window.removeEventListener('pointermove',move);
       window.removeEventListener('pointerup',up);
       window.removeEventListener('pointercancel',cancel);
       applyGlobalLayout(item,d);
+    }
+    if(isHomeCanvasItem(item)){
+      item.el.addEventListener('pointerdown',event=>{
+        if(!homeCanvasReady||!globalLayoutEditing||state.view!=='home'||event.button!==0)return;
+        if(event.target.closest('.layout-controls'))return;
+        beginHomeCanvasDrag(event,item);
+      });
     }
     const beginMove=event=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
@@ -1273,7 +1361,8 @@ function initGlobalLayoutEditor(){
       const minHeight=isSmallCard?90:item.el.id==='openCalendarCard'?130:105;
       const maxHeight=1600;
       d.scale=1;
-      item.el.classList.add('layout-selected');
+      if(homeCanvasReady&&isHomeCanvasItem(item))selectHomeCanvasItem(item);
+      else item.el.classList.add('layout-selected');
       const move=ev=>{
         if(axis!=='height')d.width=clamp(baseWidth+ev.clientX-sx,minWidth,maxWidth);
         if(axis!=='width')d.height=clamp(baseHeight+ev.clientY-sy,minHeight,maxHeight);
