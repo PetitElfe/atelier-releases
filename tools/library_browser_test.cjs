@@ -650,7 +650,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.16.2'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.16.3'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
@@ -741,6 +741,54 @@ async function api(path,method='GET',body){
   await page.locator('#homeModulePicker button[type="submit"]').click();
   assert.ok(await page.locator('#homeUpcomingWidget').isVisible(),'Hidden original widget can be restored');
 
+
+
+  // ALPHA 0.16.3 — la barre n'existe que si un module déborde réellement.
+  // Les coordonnées sont modifiées uniquement dans cette base navigateur isolée.
+  await page.setViewportSize({width:1280,height:900});
+  await page.evaluate(()=>{showView('home');setSideNavCollapsed(true)});
+  await page.waitForFunction(()=>homeCanvasReady);
+  await page.evaluate(()=>{
+    for(const item of globalLayoutItems.filter(isHomeCanvasItem)){
+      if(item.el.classList.contains('home-module-off'))continue;
+      const d=readGlobalLayout(item);
+      d.y=12;
+      saveGlobalLayout(item,d);
+      applyGlobalLayout(item,d);
+    }
+    requestHomeCanvasMeasure();
+  });
+  await page.waitForFunction(()=>document.documentElement.scrollHeight<=window.innerHeight+2);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2),
+    'Aucun défilement en lecture quand tous les modules tiennent à l’écran');
+  await page.locator('#globalLayoutEdit').click();
+  await page.waitForFunction(()=>document.documentElement.scrollHeight>window.innerHeight+150);
+  await page.evaluate(()=>{
+    const item=globalLayoutItems.find(x=>x.id==='homeShortcut_tasks'&&isHomeCanvasItem(x));
+    const d=readGlobalLayout(item);
+    d.y=window.innerHeight+260;
+    saveGlobalLayout(item,d);
+    applyGlobalLayout(item,d);
+  });
+  await page.locator('#globalLayoutEdit').click();
+  await page.waitForFunction(()=>document.documentElement.scrollHeight>window.innerHeight+100);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>window.innerHeight+100),
+    'Le défilement apparaît après Terminer lorsqu’un module est placé plus bas');
+  await page.evaluate(()=>{
+    const item=globalLayoutItems.find(x=>x.id==='homeShortcut_tasks'&&isHomeCanvasItem(x));
+    const d=readGlobalLayout(item);
+    d.y=12;
+    saveGlobalLayout(item,d);
+    applyGlobalLayout(item,d);
+  });
+  await page.waitForFunction(()=>document.documentElement.scrollHeight<=window.innerHeight+2);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2),
+    'La barre disparaît à nouveau quand le module revient en haut');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>homeCanvasReady);
+  await page.waitForFunction(()=>document.documentElement.scrollHeight<=window.innerHeight+2);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2),
+    'Absence de barre inutile conservée après rechargement');
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');
