@@ -655,7 +655,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.16.4'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.17.0'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
@@ -823,6 +823,40 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.documentElement.scrollHeight<=window.innerHeight+2);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2),
     'Absence de barre inutile conservée après rechargement');
+
+  // ALPHA 0.17.0 — tests transversaux en instance temporaire.
+  await page.evaluate(()=>showView('calendar'));
+  await page.locator('#calendarToday').click();
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode mois');
+  await page.evaluate(()=>setCalendarMode('week'));
+  await page.locator('#weekToday').click();
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode semaine');
+  await page.evaluate(()=>showView('tasks'));
+  assert.ok(await page.locator('#taskSummary').isVisible(),'Tâches : le récapitulatif est visible');
+  await page.locator('#taskFilter').selectOption('active');
+  assert.equal(await page.locator('#taskList .task-row.done').count(),0,'Tâches : filtre à faire');
+  await page.locator('#taskFilter').selectOption('done');
+  assert.equal(await page.locator('#taskList .task-row:not(.done)').count(),0,'Tâches : filtre terminées');
+  await page.locator('#taskFilter').selectOption('all');
+  await page.evaluate(()=>showView('reminders'));
+  assert.ok((await page.locator('#reminderSummary').innerText()).length>4,'Rappels : compteur visible');
+  await page.evaluate(()=>showView('kitchen'));
+  for(const selector of ['#shoppingSummary','#foodSummary','#mealSummary']){
+    assert.ok((await page.locator(selector).innerText()).length>4,'Cuisine : récapitulatif '+selector);
+  }
+  await page.evaluate(()=>showView('organisation'));
+  await page.waitForFunction(()=>document.querySelector('#habitsSummary')?.textContent.length>2);
+  await page.evaluate(()=>showView('budget'));
+  await page.waitForFunction(()=>document.querySelector('#budgetMonth')?.value.length===7);
+  const originalBudgetMonth=await page.locator('#budgetMonth').inputValue();
+  await page.locator('#budgetPrevMonth').click();
+  await page.waitForFunction(prev=>document.querySelector('#budgetMonth')?.value!==prev,originalBudgetMonth);
+  await page.locator('#budgetNextMonth').click();
+  await page.waitForFunction(prev=>document.querySelector('#budgetMonth')?.value===prev,originalBudgetMonth);
+  await page.locator('#budgetCurrentMonth').click();
+  assert.equal(await page.locator('#budgetMonth').inputValue(),await page.evaluate(()=>ymd(new Date()).slice(0,7)),'Budget : mois courant');
+  await page.evaluate(()=>showView('settings'));
+  assert.ok(await page.locator('.atelier-settings-shortcuts').isVisible(),'Paramètres : aide aux raccourcis');
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
   console.log('OK — editor saves across navigation, immediate exit and restart');

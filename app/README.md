@@ -1,3 +1,21 @@
+# L’Atelier 0.17.0 — BIG BLOC utilitaire transversal
+
+Pas de nouveau compte, pas d'accès de Nathan, pas de synchronisation ou partage, pas de migration SQLite.
+
+- **Calendrier** : boutons « Aujourd’hui » en vue Mois et Semaine.
+- **Tâches** : filtre Toutes / À faire / Terminées, bilan de progression et signalement des tâches en retard.
+- **Rappels** : synthèse, signalement des retards et ordre chronologique, sans changement des données.
+- **Budget** : navigation mois précédent / suivant / courant.
+- **Courses / aliments / repas** : compteurs et nombre d'aliments à surveiller.
+- **Habitudes** : bilan des objectifs de la semaine et jours explicités.
+- **Bibliothèque** : flèches de direction pour feuilleter les carnets en mode lecture, désactivées pendant la saisie ou la recherche.
+- **Paramètres** : rappels des raccourcis utiles.
+- **Accueil** : aucune modification de l'éditeur visuel 0.16.4 déjà validé.
+
+Les personnalisations locales du navigateur sont conservées. Aucun dossier local `data` ou `user` n'est modifié par la livraison.
+
+---
+
 # L’Atelier 0.16.4 — Éditeur visuel de l’Accueil
 
 Cette version modernise le mode Modifier de l’Accueil sans migration SQLite ni modification des données ou des carnets.
