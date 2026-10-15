@@ -465,6 +465,8 @@ $('#libraryNotebookDelete').onclick=()=>{const n=(libraryNotebookState.sections|
 const addCurrentLibraryPage=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)createLibraryPage(n)};
 $('#addLibraryPage').onclick=addCurrentLibraryPage;
 $('#addLibraryPageSmall').onclick=addCurrentLibraryPage;
+$('#calendarToday').onclick=()=>{state.cursor=new Date();refresh()};
+$('#weekToday').onclick=()=>{state.cursor=new Date();refresh()};
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 const DATE_FORMAT_OPTIONS={
@@ -1467,11 +1469,17 @@ function renderOrganisation(){
   if(habits){
     const week=monday(new Date()),days=Array.from({length:7},(_,i)=>ymd(new Date(week.getFullYear(),week.getMonth(),week.getDate()+i)));
     habits.innerHTML=organisationState.habits.length?'':'<p class="muted">Aucune habitude enregistrée pour le moment.</p>';
+    const completed=organisationState.habits.filter(habit=>{
+      const checked=new Set(habit.checked_dates||[]);
+      return days.filter(day=>checked.has(day)).length>=habit.target_per_week;
+    }).length;
+    const summary=$('#habitsSummary');
+    if(summary)summary.textContent=organisationState.habits.length?completed+' objectif'+(completed>1?'s':'')+' hebdomadaire'+(completed>1?'s':'')+' atteint'+(completed>1?'s':'')+' sur '+organisationState.habits.length+' habitude'+(organisationState.habits.length>1?'s':''):'Aucune habitude à suivre.';
     for(const habit of organisationState.habits){
       const checked=new Set(habit.checked_dates||[]);
       const count=days.filter(day=>checked.has(day)).length;
       const card=document.createElement('article');card.className='habit-card';
-      card.innerHTML='<div class="habit-card-head"><strong>'+esc(habit.title)+'</strong><small>'+count+' / '+habit.target_per_week+' cette semaine</small><button type="button" class="habit-archive" title="Archiver cette habitude">Archiver</button></div><div class="habit-week">'+days.map((day,i)=>'<label><input type="checkbox" data-day="'+day+'" '+(checked.has(day)?'checked':'')+'><span>'+['L','M','M','J','V','S','D'][i]+'</span></label>').join('')+'</div>';
+      card.innerHTML='<div class="habit-card-head"><strong>'+esc(habit.title)+'</strong><small>'+count+' / '+habit.target_per_week+' cette semaine</small><button type="button" class="habit-archive" title="Archiver cette habitude">Archiver</button></div><div class="habit-week">'+days.map((day,i)=>'<label title="'+['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]+'"><input type="checkbox" aria-label="'+esc(habit.title)+' — '+['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]+'" data-day="'+day+'" '+(checked.has(day)?'checked':'')+'><span>'+['L','M','M','J','V','S','D'][i]+'</span></label>').join('')+'</div>';
       card.querySelectorAll('[data-day]').forEach(input=>input.onchange=async()=>{
         const ok=await runUiAction('Enregistrer cette journée',()=>api('/api/habits/'+habit.id+'/check',{method:'PUT',body:JSON.stringify({date:input.dataset.day,done:input.checked})}));
         if(!ok.ok)input.checked=!input.checked;
@@ -1555,9 +1563,10 @@ async function budgetRequest(url,method,body,label){
   return result.ok;
 }
 async function loadBudget(month=budgetSelectedMonth){
+  const previous=budgetSelectedMonth;
   budgetSelectedMonth=month;
   const result=await runUiAction('Impossible de charger le Budget',()=>api('/api/budget?month='+encodeURIComponent(month)));
-  if(!result.ok)return;
+  if(!result.ok){budgetSelectedMonth=previous;if($('#budgetMonth'))$('#budgetMonth').value=previous;return;}
   budgetData=result.value;
   renderBudget();
   renderHomeBudgetWidget();
@@ -1744,10 +1753,18 @@ function openBudgetEditor(){
     if(document.contains(save))save.disabled=false;
   };
 }
+function shiftBudgetMonth(delta){
+  const parts=budgetSelectedMonth.split('-').map(Number);
+  const shifted=new Date(parts[0],parts[1]-1+delta,1);
+  return loadBudget(ymd(shifted).slice(0,7));
+}
 function initBudget(){
   const month=$('#budgetMonth');if(!month)return;
   month.value=budgetSelectedMonth;
-  month.onchange=()=>loadBudget(month.value);
+  month.onchange=()=>{if(/^\d{4}-\d{2}$/.test(month.value))loadBudget(month.value)};
+  $('#budgetPrevMonth').onclick=()=>shiftBudgetMonth(-1);
+  $('#budgetNextMonth').onclick=()=>shiftBudgetMonth(1);
+  $('#budgetCurrentMonth').onclick=()=>loadBudget(ymd(new Date()).slice(0,7));
   $('#homeBudgetOpen').onclick=()=>showView('budget');
   $('#budgetAddOperation').onclick=openBudgetEditor;
   $('#budgetSettingsForm').addEventListener('submit',async ev=>{
