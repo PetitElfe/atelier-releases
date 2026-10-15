@@ -706,10 +706,35 @@ function initHomeModuleLibrary(){
     $('#homeModuleAll').onclick=()=>form.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=true);
     form.onsubmit=event=>{
       event.preventDefault();
-      form.querySelectorAll('input[data-module]').forEach(input=>localStorage.setItem(homeModuleVisibilityKey(input.dataset.module),input.checked?'1':'0'));
+      const inputs=[...form.querySelectorAll('input[data-module]')];
+      // Distinguer un module réellement ajouté d’un module simplement conservé
+      // ou masqué. Ne toucher ni aux coordonnées ni aux dimensions des autres.
+      const additions=inputs.filter(input=>input.checked&&!homeModuleIsVisible(input.dataset.module));
+      for(const input of inputs){
+        localStorage.setItem(homeModuleVisibilityKey(input.dataset.module),input.checked?'1':'0');
+      }
       syncHomeModuleVisibility();
+      if(additions.length){
+        // Chaque ajout arrive dans la zone haute de l'Accueil et au milieu,
+        // sans écraser les positions sauvegardées des autres modules.
+        let cursorY=12;
+        for(const input of additions){
+          const item=globalLayoutItems.find(entry=>entry.view==='home'&&entry.el.dataset.homeModule===input.dataset.module);
+          if(!item||!homeCanvasReady)continue;
+          const d=readGlobalLayout(item);
+          const bounds=item.el.getBoundingClientRect();
+          d.x=Math.max(0,Math.round((homeCanvas.clientWidth-bounds.width)/2));
+          d.y=cursorY;
+          saveGlobalLayout(item,d);
+          applyGlobalLayout(item,d);
+          item.el.classList.add('home-module-new');
+          cursorY+=Math.ceil(Math.max(120,bounds.height))+18;
+        }
+        globalLayoutEditing=true;
+      }
       syncGlobalLayoutEditing();
       closeModal();
+      if(additions.length)window.scrollTo({top:0,behavior:'instant'});
     };
   };
 }
@@ -1032,6 +1057,7 @@ function beginHomeCanvasDrag(event,item){
     try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
     item.el.classList.remove('layout-selected');
     saveGlobalLayout(item,d);
+    item.el.classList.remove('home-module-new');
     requestHomeCanvasMeasure();
   }
   function autoScroll(){
@@ -1132,6 +1158,7 @@ function applyGlobalLayout(item,d){
 }
 function layoutUndoKey(view){return 'atelierLayoutResetUndo_'+view}
 function syncGlobalLayoutEditing(){
+  if(!globalLayoutEditing)$$('#homeView .home-module-new').forEach(el=>el.classList.remove('home-module-new'));
   $$('.view').forEach(v=>v.classList.remove('layout-editing'));
   if(globalLayoutEditing){
     const view=$('#'+state.view+'View');if(view)view.classList.add('layout-editing');
