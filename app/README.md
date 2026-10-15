@@ -1,6 +1,8 @@
-# L’Atelier 0.16.2 — Déplacement des raccourcis et ergonomie
+# L’Atelier 0.16.3 — Défilement automatique de l’Accueil
 
-Cette version améliore l’ergonomie du placement des modules sans migration SQLite ni modification des données ou des carnets.
+Cette version adapte automatiquement la hauteur de l’Accueil aux modules réellement visibles, sans migration SQLite ni modification des données ou des carnets.
+
+**ALPHA 0.16.3 :** hors mode Modifier, l’espace réservé artificiellement sous l’Accueil disparaît, ainsi que la barre de défilement si les modules tiennent à l’écran. Le mode Modifier conserve une zone temporaire pour déplacer les modules plus bas ; cette zone se retire dès « Terminer ». Si un module descend réellement sous la fenêtre, le défilement reste disponible. Aucun réglage enregistré n'est réinitialisé.
 
 **ALPHA 0.16.2** : déplacement des modules sur plusieurs écrans avec défilement automatique de l'Accueil au bord de la fenêtre. L'éditeur enregistre les coordonnées corrigées de la distance de défilement. Dans « ⋯ » → réglages, le bouton « Remonter en haut de l’Accueil » permet de récupérer immédiatement un module placé trop bas. Les contrôles des petits raccourcis ne recouvrent plus leur contenu en mode Modifier. Toutes les positions et dimensions existantes sont conservées.
 
