@@ -156,11 +156,16 @@ function renderWeek(){
 }
 
 function renderTasks(){
-  const root=$('#taskList'); root.innerHTML=''; if(!state.tasks.length){root.innerHTML='<div class="empty">Le petit carnet est vide pour le moment.</div>';return}
-  const sorted=[...state.tasks].sort((a,b)=>a.completed-b.completed || b.important-a.important || (a.order_index-b.order_index));
+  const root=$('#taskList'),summary=$('#taskSummary'),filter=$('#taskFilter');
+  const done=state.tasks.filter(t=>t.completed).length;
+  if(summary)summary.textContent=(state.tasks.length-done)+' à faire · '+done+' terminée'+(done>1?'s':'');
+  root.innerHTML='';
+  const visible=state.tasks.filter(t=>filter?.value==='active'?!t.completed:filter?.value==='done'?!!t.completed:true);
+  if(!visible.length){root.innerHTML='<div class="empty">'+(state.tasks.length?'Aucune tâche dans ce filtre.':'Le petit carnet est vide pour le moment.')+'</div>';return}
+  const sorted=[...visible].sort((a,b)=>a.completed-b.completed || b.important-a.important || (a.order_index-b.order_index));
   sorted.forEach(t=>{
     const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'');
-    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(t.due_date):'Sans date'}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
+    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(fmtFrenchDate(parseYMD(t.due_date))):'Sans date'}${!t.completed&&t.due_date&&t.due_date<ymd(new Date())?' · En retard':''}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
     row.querySelector('input').addEventListener('change',async e=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({completed:e.target.checked})});await refresh()});
     row.querySelector('.edit').addEventListener('click',()=>openTaskModal(t));
     row.querySelector('.archive').addEventListener('click',async()=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
@@ -168,6 +173,8 @@ function renderTasks(){
   });
 }
 async function moveTask(t,dir){ const active=state.tasks.filter(x=>!x.completed).sort((a,b)=>a.order_index-b.order_index); const i=active.findIndex(x=>x.id===t.id), j=i+dir;if(i<0||j<0||j>=active.length)return; const a=active[i],b=active[j]; await Promise.all([api(`/api/tasks/${a.id}`,{method:'PUT',body:JSON.stringify({order_index:b.order_index})}),api(`/api/tasks/${b.id}`,{method:'PUT',body:JSON.stringify({order_index:a.order_index})})]); await refresh(); }
+
+$('#taskFilter')?.addEventListener('change',renderTasks);
 
 function reminderKindLabel(r){
   return r.entity_type==='standalone'?'Rappel indépendant':r.entity_type==='event'?'Lié à un rendez-vous':'Lié à une tâche';
@@ -184,17 +191,21 @@ function formatReminderMoment(raw){
 function renderReminders(){
   const root=$('#reminderList');
   root.innerHTML='';
+  const now=new Date(),nowLocal=ymd(now)+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+  const overdue=state.reminders.filter(r=>{const date=(r.snoozed_until||r.remind_at||'').slice(0,16);return !!date&&date<nowLocal}).length;
+  const summary=$('#reminderSummary');
+  if(summary)summary.textContent=state.reminders.length?state.reminders.length+' rappel'+(state.reminders.length>1?'s':'')+' en attente'+(overdue?' · '+overdue+' en retard':''):'Aucun rappel en attente.';
   if(!state.reminders.length){
     root.innerHTML='<div class="empty">Aucun rappel non traité. Tu peux en créer un avec « + Ajouter un rappel ».</div>';
     return;
   }
-  state.reminders.forEach(r=>{
+  [...state.reminders].sort((a,b)=>(a.snoozed_until||a.remind_at||'9999').localeCompare(b.snoozed_until||b.remind_at||'9999')).forEach(r=>{
     const row=document.createElement('div');
     row.className='reminder-row'+(r.entity_type==='standalone'?' reminder-standalone':'');
     const title=r.title||r.entity_title||`${r.entity_type==='event'?'Rendez-vous':r.entity_type==='task'?'Tâche':'Rappel'} #${r.id}`;
     const kind=reminderKindLabel(r);
     const when=formatReminderMoment(r.snoozed_until||r.remind_at);
-    row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div></div><div class="reminder-actions">
+    row.innerHTML=`<span>🔔</span><div><strong>${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}${(r.snoozed_until||r.remind_at||'').slice(0,16)<nowLocal?' · En retard':''}</div></div><div class="reminder-actions">
       <button class="done reminder-icon-action" type="button" title="Fini" aria-label="Fini">✓</button>
       <button class="snooze reminder-icon-action" type="button" title="Reporter" aria-label="Reporter">↪</button>
       <button class="edit reminder-icon-action" type="button" title="Modifier" aria-label="Modifier">✎</button>
@@ -374,6 +385,9 @@ function renderKitchen(){
   const shopping=$('#shoppingList'), foods=$('#foodList'), meals=$('#mealList');
   if(!shopping||!foods||!meals) return;
 
+  const shopDone=state.shopping.filter(item=>item.checked).length;
+  const shopSummary=$('#shoppingSummary');
+  if(shopSummary)shopSummary.textContent=state.shopping.length?state.shopping.length+' article'+(state.shopping.length>1?'s':'')+' · '+shopDone+' coché'+(shopDone>1?'s':''):'Aucun article à acheter.';
   shopping.innerHTML='';
   if(!state.shopping.length) shopping.innerHTML='<div class="kitchen-empty">La liste de courses est vide.</div>';
   state.shopping.forEach(item=>{
@@ -402,6 +416,10 @@ function renderKitchen(){
     shopping.appendChild(row);
   });
 
+  const nowDay=ymd(new Date());
+  const watch=state.foods.filter(item=>item.expiry_mode==='date'&&item.expiry_date&&Math.round((parseYMD(item.expiry_date)-parseYMD(nowDay))/86400000)<=3).length;
+  const foodSummary=$('#foodSummary');
+  if(foodSummary)foodSummary.textContent=state.foods.length?state.foods.length+' aliment'+(state.foods.length>1?'s':'')+(watch?' · '+watch+' date'+(watch>1?'s':'')+' à surveiller':''):'Aucun aliment enregistré.';
   foods.innerHTML='';
   if(!state.foods.length) foods.innerHTML='<div class="kitchen-empty">Aucun aliment enregistré.</div>';
   state.foods.forEach(item=>{
@@ -423,6 +441,8 @@ function renderKitchen(){
     foods.appendChild(row);
   });
 
+  const mealSummary=$('#mealSummary');
+  if(mealSummary)mealSummary.textContent=state.mealIdeas.length?state.mealIdeas.length+' idée'+(state.mealIdeas.length>1?'s':'')+' de repas':'Aucun repas sélectionné.';
   meals.innerHTML='';
   if(!state.mealIdeas.length) meals.innerHTML='<div class="kitchen-empty">Aucune idée de repas choisie pour le moment.</div>';
   state.mealIdeas.forEach(item=>{
@@ -1563,6 +1583,22 @@ async function flushLibraryPageSave(notebook,page){
   const snapshot=libraryEditorSnapshot(page);
   return saveLibraryPageInline(notebook,page,++libraryAutosaveToken,snapshot);
 }
+/* ALPHA 0.17.0 : flèches utilisables pour feuilleter les carnets en lecture.
+   Aucun raccourci actif dans la recherche, les champs ou les fenêtres. */
+document.addEventListener('keydown',event=>{
+  if(state.view!=='library'||libraryEditorMode!=='read'||!['ArrowLeft','ArrowRight'].includes(event.key))return;
+  if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+  if(!$('#modalBackdrop')?.classList.contains('hidden'))return;
+  if(event.target.closest?.('input,textarea,select,[contenteditable="true"],button'))return;
+  if($('#libraryFindBar')&&!$('#libraryFindBar').classList.contains('hidden'))return;
+  const notebook=libraryPageNotebook(librarySelectedPageId);
+  if(!notebook||!(notebook.entries||[]).length)return;
+  const index=libraryNotebookPageIndex(notebook,librarySelectedPageId);
+  const next=index+(event.key==='ArrowRight'?1:-1);
+  if(next<0||next>=notebook.entries.length)return;
+  event.preventDefault();
+  goLibraryReaderPage(notebook,next);
+});
 async function createLibraryPage(notebook){
   const result=await runUiAction('Impossible de créer la page',()=>api('/api/objective-library-entries',{method:'POST',body:JSON.stringify({section_id:notebook.id,title:'Nouvelle page',notes:'',url:'',done:false})}));
   if(!result.ok)return;
