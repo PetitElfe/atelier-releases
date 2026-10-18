@@ -63,6 +63,19 @@ class AutomaticTests(unittest.TestCase):
         self.db.execute("UPDATE objective_library_entries SET done=1 WHERE id=2")
         self.assertEqual(maps.reconcile_automatic(self.db,progression,"2026-10-18"),[4])
 
+    def test_sequential_order_and_dependencies(self):
+        maps.set_ordering(self.db,1,"sequential")
+        self.assertFalse(maps.can_complete(self.db,4))
+        self.assertTrue(maps.can_complete(self.db,2))
+        self.db.execute("UPDATE objective_nodes SET status='done' WHERE id=2")
+        self.assertTrue(maps.can_complete(self.db,3))
+        self.assertFalse(maps.can_complete(self.db,4))
+        self.db.execute("UPDATE objective_nodes SET status='done' WHERE id=3")
+        self.assertTrue(maps.can_complete(self.db,4))
+        maps.add_edge(self.db,4,3)
+        self.assertTrue(maps.can_complete(self.db,4))
+        self.assertFalse(maps.can_complete(self.db,3))
+
     def test_unplaced_node_stays_unplaced_when_mode_changes(self):
         maps.set_validation(self.db,3,"tasks")
         node=next(n for n in maps.get_map(self.db,1)["nodes"] if n["id"]==3)
