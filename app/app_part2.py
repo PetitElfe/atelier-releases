@@ -530,6 +530,7 @@ class Handler(BaseHTTPRequestHandler):
                         objective_maps.set_position(c,node_id,float(body['x']),float(body['y']))
                     if 'validation_mode' in body:
                         objective_maps.set_validation(c,node_id,str(body['validation_mode']))
+                    objective_maps.reconcile_automatic(c,progression,ts)
                     c.commit()
                 return self._json({'ok':True})
             except (KeyError,TypeError,ValueError) as ex:
@@ -646,6 +647,8 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE objective_nodes SET parent_id=?,node_type=?,title=?,description=?,status=?,progress=?,order_index=?,updated_at=?
                              WHERE id=?''',
                           (parent_id,node_type,title,d.get('description',''),status,progress,int_or_none(d.get('order_index')) or 0,ts,oid))
+                if status!='done':
+                    objective_maps.reconcile_automatic(c,progression,ts)
                 if status=='done' and old['status']!='done':
                     progression.award(c,source_kind='objective_step' if node_type!='objective' else 'objective_complete',source_id=oid)
                 c.commit(); return self._json({'ok':True})
@@ -666,6 +669,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not title: return self._json({'error':'Le titre est requis.'},400)
                 c.execute('''UPDATE objective_library_entries SET title=?,url=?,notes=?,done=?,order_index=?,updated_at=? WHERE id=?''',
                           (title,d.get('url',''),d.get('notes',''),1 if d.get('done') else 0,int_or_none(d.get('order_index')) or 0,ts,eid))
+                objective_maps.reconcile_automatic(c,progression,ts)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
@@ -925,6 +929,7 @@ class Handler(BaseHTTPRequestHandler):
                         if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                objective_maps.reconcile_automatic(c,progression,ts)
                 if d.get('completed') and not old['completed']:
                     progression.award(c,source_kind='task',source_id=tid)
                 c.commit(); return self._json({'ok':True})
