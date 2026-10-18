@@ -646,6 +646,8 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE objective_nodes SET parent_id=?,node_type=?,title=?,description=?,status=?,progress=?,order_index=?,updated_at=?
                              WHERE id=?''',
                           (parent_id,node_type,title,d.get('description',''),status,progress,int_or_none(d.get('order_index')) or 0,ts,oid))
+                if status=='done' and old['status']!='done':
+                    progression.award(c,source_kind='objective_step' if node_type!='objective' else 'objective_complete',source_id=oid)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-sections':
                 sid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_sections WHERE id=?',(sid,)).fetchone()
@@ -923,6 +925,8 @@ class Handler(BaseHTTPRequestHandler):
                         if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                if d.get('completed') and not old['completed']:
+                    progression.award(c,source_kind='task',source_id=tid)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping' and parts[2]=='validate':
                 rows=c.execute('SELECT * FROM shopping_items WHERE archived=0 AND checked=1 ORDER BY id').fetchall()
