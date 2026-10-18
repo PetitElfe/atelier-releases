@@ -52,4 +52,6 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - name: Reproduce save / Accueil / return
-        run: node tools/library_browser_test.cjs
+        run: |
+          node tools/library_browser_test.cjs
+          node tools/objective_map_browser_test.cjs
