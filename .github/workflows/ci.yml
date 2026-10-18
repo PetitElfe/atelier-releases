@@ -27,6 +27,11 @@ jobs:
           node --check app/public/app_part1.js
           node --check app/public/app_part2.js
           node --check app/public/app_part3.js
+          node --check app/public/objective_map.js
+          node --check app/public/progression_view.js
+
+      - name: Vérifier les tests des nouveaux modules
+        run: python -m unittest discover -s tests -p 'test_*.py'
 
       - name: Vérifier la release et démarrer L'Atelier
         run: python tools/release_smoke.py
