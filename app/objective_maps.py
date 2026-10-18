@@ -21,8 +21,8 @@ def initialise(conn: sqlite3.Connection) -> None:
         );
         CREATE TABLE IF NOT EXISTS objective_map_nodes (
             node_id INTEGER PRIMARY KEY REFERENCES objective_nodes(id) ON DELETE CASCADE,
-            x REAL NOT NULL DEFAULT 0,
-            y REAL NOT NULL DEFAULT 0,
+            x REAL,
+            y REAL,
             validation_mode TEXT NOT NULL DEFAULT 'manual'
                 CHECK(validation_mode IN ('manual','tasks','resources')),
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -136,3 +136,41 @@ def add_edge(conn: sqlite3.Connection, from_id: int, to_id: int) -> None:
 
 def remove_edge(conn: sqlite3.Connection, from_id: int, to_id: int) -> None:
     conn.execute("DELETE FROM objective_map_edges WHERE from_id=? AND to_id=?",(from_id,to_id))
+
+
+def reconcile_automatic(conn: sqlite3.Connection, progression_module, now: str) -> list[int]:
+    """Complete only genuinely satisfied auto-validation nodes.
+
+    Zero tasks or zero resources never imply completion. Already complete nodes
+    stay complete if source records are later edited; earned XP is immutable.
+    The caller owns the transaction and commits changes atomically.
+    """
+    completed = []
+    rows = conn.execute("""
+        SELECT n.id, p.validation_mode
+        FROM objective_nodes n
+        JOIN objective_map_nodes p ON p.node_id=n.id
+        WHERE n.status!='done' AND p.validation_mode IN ('tasks','resources')
+        ORDER BY n.id
+    """).fetchall()
+    for item in rows:
+        node_id = int(item["id"])
+        if item["validation_mode"] == "tasks":
+            progress = conn.execute("""
+                SELECT COUNT(*) total, SUM(CASE WHEN completed=1 THEN 1 ELSE 0 END) done
+                FROM tasks WHERE objective_node_id=? AND archived=0
+            """, (node_id,)).fetchone()
+        else:
+            progress = conn.execute("""
+                SELECT COUNT(*) total, SUM(CASE WHEN e.done=1 THEN 1 ELSE 0 END) done
+                FROM objective_library_entries e
+                JOIN objective_library_sections s ON s.id=e.section_id
+                WHERE s.node_id=?
+            """, (node_id,)).fetchone()
+        total, done = int(progress["total"]), int(progress["done"] or 0)
+        if total > 0 and done == total:
+            conn.execute("UPDATE objective_nodes SET status='done',progress=100,updated_at=? WHERE id=?",(now,node_id))
+            kind = conn.execute("SELECT node_type FROM objective_nodes WHERE id=?",(node_id,)).fetchone()["node_type"]
+            progression_module.award(conn,source_kind="objective_complete" if kind=="objective" else "objective_step",source_id=node_id)
+            completed.append(node_id)
+    return completed
