@@ -643,6 +643,8 @@ class Handler(BaseHTTPRequestHandler):
                 progress=max(0,min(100,int_or_none(d.get('progress')) or 0))
                 status=(d.get('status') or 'active').strip()
                 if status not in ('active','paused','done'): status='active'
+                if status=='done' and old['status']!='done' and not objective_maps.can_complete(c,oid):
+                    return self._json({'error':'Termine d’abord les étapes précédentes.'},409)
                 if status=='done': progress=100
                 c.execute('''UPDATE objective_nodes SET parent_id=?,node_type=?,title=?,description=?,status=?,progress=?,order_index=?,updated_at=?
                              WHERE id=?''',
