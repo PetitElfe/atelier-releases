@@ -138,6 +138,35 @@ def remove_edge(conn: sqlite3.Connection, from_id: int, to_id: int) -> None:
     conn.execute("DELETE FROM objective_map_edges WHERE from_id=? AND to_id=?",(from_id,to_id))
 
 
+
+def can_complete(conn: sqlite3.Connection, node_id: int) -> bool:
+    """Enforce connected prerequisites and optional sequential sibling ordering."""
+    node = _node(conn,node_id)
+    if node["node_type"] == "domain":
+        return True
+    pending = conn.execute("""
+        SELECT 1 FROM objective_map_edges e
+        JOIN objective_nodes predecessor ON predecessor.id=e.from_id
+        WHERE e.to_id=? AND predecessor.status!='done' LIMIT 1
+    """,(node_id,)).fetchone()
+    if pending:
+        return False
+    root_id = _root(conn,node_id)
+    setting=conn.execute("SELECT ordering FROM objective_map_settings WHERE root_id=?",(root_id,)).fetchone()
+    if setting and setting["ordering"]=="sequential":
+        earlier=conn.execute("""
+            SELECT 1 FROM objective_nodes previous
+            JOIN objective_nodes current ON current.id=?
+            WHERE previous.parent_id IS current.parent_id
+              AND previous.id != current.id AND previous.status!='done'
+              AND (previous.order_index < current.order_index OR
+                   (previous.order_index=current.order_index AND previous.id<current.id))
+            LIMIT 1
+        """,(node_id,)).fetchone()
+        if earlier:
+            return False
+    return True
+
 def reconcile_automatic(conn: sqlite3.Connection, progression_module, now: str) -> list[int]:
     """Complete only genuinely satisfied auto-validation nodes.
 
@@ -168,7 +197,7 @@ def reconcile_automatic(conn: sqlite3.Connection, progression_module, now: str) 
                 WHERE s.node_id=?
             """, (node_id,)).fetchone()
         total, done = int(progress["total"]), int(progress["done"] or 0)
-        if total > 0 and done == total:
+        if total > 0 and done == total and can_complete(conn,node_id):
             conn.execute("UPDATE objective_nodes SET status='done',progress=100,updated_at=? WHERE id=?",(now,node_id))
             kind = conn.execute("SELECT node_type FROM objective_nodes WHERE id=?",(node_id,)).fetchone()["node_type"]
             progression_module.award(conn,source_kind="objective_complete" if kind=="objective" else "objective_step",source_id=node_id)
