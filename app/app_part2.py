@@ -208,6 +208,16 @@ class Handler(BaseHTTPRequestHandler):
                                     WHERE t.archived=0
                                     ORDER BY t.completed,t.important DESC,COALESCE(t.due_date,'9999-12-31'),t.order_index,t.id''').fetchall()
                 return self._json([dict(r) for r in rows])
+            if p == '/api/progression':
+                return self._json(progression.summary(c))
+            if p == '/api/progression/history':
+                return self._json(progression.history(c))
+            if p == '/api/objective-map':
+                try:
+                    root_id=int(q.get('domain_id',['0'])[0])
+                    return self._json(objective_maps.get_map(c,root_id))
+                except (ValueError,TypeError) as ex:
+                    return self._json({'error':str(ex)},400)
             if p == '/api/objective-nodes':
                 rows=c.execute('''SELECT o.*,
                                          (SELECT COUNT(*) FROM objective_nodes ch WHERE ch.parent_id=o.id) AS child_count,
@@ -396,6 +406,12 @@ class Handler(BaseHTTPRequestHandler):
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
                 c.commit(); return self._json({'id':eid},201)
+            if p == '/api/objective-map/edges':
+                try:
+                    objective_maps.add_edge(c,int(body['from_id']),int(body['to_id']))
+                    c.commit(); return self._json({'ok':True},201)
+                except (ValueError,KeyError,TypeError,sqlite3.IntegrityError) as ex:
+                    return self._json({'error':str(ex)},400)
             if p == '/api/objective-nodes':
                 title=(body.get('title') or '').strip()
                 node_type=(body.get('node_type') or 'objective').strip()
@@ -504,6 +520,28 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if p == '/api/objective-map/node':
+            try:
+                with conn() as c:
+                    node_id=int(body['node_id'])
+                    if 'x' in body or 'y' in body:
+                        if not ('x' in body and 'y' in body):
+                            raise ValueError('Les deux coordonnées sont requises')
+                        objective_maps.set_position(c,node_id,float(body['x']),float(body['y']))
+                    if 'validation_mode' in body:
+                        objective_maps.set_validation(c,node_id,str(body['validation_mode']))
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,TypeError,ValueError) as ex:
+                return self._json({'error':str(ex)},400)
+        if p == '/api/objective-map/settings':
+            try:
+                with conn() as c:
+                    objective_maps.set_ordering(c,int(body['domain_id']),str(body['ordering']))
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,TypeError,ValueError) as ex:
+                return self._json({'error':str(ex)},400)
         if p == '/api/budget/settings':
             try:
                 opening=budget_amount(abs(float(str(body.get('opening_balance','0')).replace(',','.'))))
@@ -962,6 +1000,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        if p == '/api/objective-map/edges':
+            q=parse_qs(u.query)
+            try:
+                with conn() as c:
+                    objective_maps.remove_edge(c,int(q['from_id'][0]),int(q['to_id'][0]))
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,IndexError,ValueError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
         with conn() as c:
             if len(parts)==3 and parts[:2]==['api','events']:
                 eid=int(parts[2])
