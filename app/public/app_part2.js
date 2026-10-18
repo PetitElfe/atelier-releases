@@ -1445,6 +1445,7 @@ function renderLibraryOverview(domain){
   }else{
     mainGoals.forEach(node=>tree.appendChild(renderLibrarySubgoalBranch(node,0)));
   }
+  if(typeof renderObjectiveMap==='function')renderObjectiveMap(domain.id);
   const ids=libraryDomainNodeIds(domain.id);
   const tasks=state.tasks.filter(t=>t.objective_node_id&&ids.has(Number(t.objective_node_id))).sort((a,b)=>a.completed-b.completed||(a.due_date||'9999').localeCompare(b.due_date||'9999'));
   const taskRoot=$('#libraryDomainTasks');taskRoot.innerHTML='';
