@@ -71,6 +71,18 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(result["level"], 10)
         self.assertTrue(result["milestone"])
 
+    def test_recurring_activity_can_reward_each_day_but_not_twice_a_day(self):
+        now = date(2026, 10, 18)
+        yesterday = (now - timedelta(days=1)).isoformat()
+        today = now.isoformat()
+        first = progression.award(self.db, source_kind="habit", source_id=7, earned_on=yesterday, today=now)
+        second = progression.award(self.db, source_kind="habit", source_id=7, earned_on=today, today=now)
+        repeated = progression.award(self.db, source_kind="habit", source_id=7, earned_on=today, today=now)
+        self.assertTrue(first["awarded"])
+        self.assertTrue(second["awarded"])
+        self.assertFalse(repeated["awarded"])
+        self.assertEqual(progression.summary(self.db)["events"], 2)
+
     def test_summary_and_history(self):
         progression.award(self.db, source_kind="objective_step", source_id="42")
         self.assertEqual(progression.summary(self.db)["total_xp"], 18)
