@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>L’Atelier — Alpha 0.17.0</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/objective_map.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -209,6 +210,7 @@
                   <button id="addLibraryTask" type="button">+ Tâche</button>
                 </div>
               </div>
+              <div id="objectiveMapRoot" class="objective-map-root" aria-label="Carte interactive des objectifs"></div>
               <div id="librarySubgoalTree" class="library-subgoal-tree"></div>
               <section class="library-tasks-module">
                 <div class="library-module-head"><div><span class="library-module-kicker">À FAIRE</span><strong>Tâches du domaine</strong></div></div>
@@ -480,5 +482,6 @@
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/app_part3.js"></script>
+  <script src="/objective_map.js"></script>
 </body>
 </html>
