@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "8cf2d124a14ef4015428c42d1e54928394be3a2ce3be36ca046cb4cfc3154d30"
+      "sha256": "15257729c5963b6dd9d6d85bab1f89ce823de196f43d221279b4de7a71057586"
     },
     {
       "path": "app_part2.py",
-      "sha256": "17b5b6eb61df64571d26d35571becdc82dfc323c66f562d3a7d27dfb39bea3d8"
+      "sha256": "c8a07df3d8fcf175fab9e15406b4b40300f29c273f0a619ccbf324b62b4da349"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "e7aca421d5f313b703c9d5f9a7ad10f0c4998fca35da9e0cf007c4c08a7beb95"
+      "sha256": "3c78e6c88914305e5aa87055836d5ad71bb3140e0d9d4354155cee83013aa565"
     },
     {
       "path": "public/app_part3.js",
@@ -41,12 +41,32 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "1c03ca1abed007577b568c984313b721cca2de9aba67b0b199ced0bf54e576a2"
+      "sha256": "808cf4ea556842a6c274fbfdbae62f103baf395c6a23d39c0a458a8b71c9ce04"
     },
     {
       "path": "public/styles.css",
       "sha256": "ac9f16bbb8bf8f1548e6f5cb5f51bd6ed35979759d317d8d0446315a3ef135c4"
+    },
+    {
+      "path": "progression.py",
+      "sha256": "51bf30a47a3beca8a20c80e203686f4c89a9d646d22397337a0893d0304cb371"
+    },
+    {
+      "path": "objective_maps.py",
+      "sha256": "6103b24e66ca3952f89509e30c427bbf7643aee2ef2010b38b83716312fe47ca"
+    },
+    {
+      "path": "public/objective_map.js",
+      "sha256": "90c0c7d539370275d8b7363d5622e513a7f38d6160588bb7000f70ef7c9e5a89"
+    },
+    {
+      "path": "public/objective_map.css",
+      "sha256": "bab5297a2fbd79ba6a480524afe1e2ce3f17774670f70cbabe01476ac7a5340f"
+    },
+    {
+      "path": "public/progression_view.js",
+      "sha256": "392c2f91083441140c62d20b1b12d555622318b38f41cac25c6d233a11fffde0"
     }
   ],
-  "notes": "ALPHA 0.17.0 — BIG BLOC transversal : Calendrier aujourd’hui, filtres tâches, rappels, budget, cuisine, habitudes, Bibliothèque clavier et Paramètres."
+  "notes": "Brouillon 0.18.0 — fichiers de développement. Ne pas fusionner avant validation des migrations, des tests et de la publication."
 }
