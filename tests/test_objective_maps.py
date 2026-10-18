@@ -34,7 +34,7 @@ class MapTests(unittest.TestCase):
 
     def test_additive_and_idempotent(self):
         maps.initialise(self.db)
-        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM objective_nodes").fetchone()[0],5)
+        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM objective_nodes").fetchone()[0],6)
 
     def test_map_is_scoped_to_domain(self):
         g=maps.get_map(self.db,1)
