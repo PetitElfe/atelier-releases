@@ -24,6 +24,7 @@ XP_RULES = {
 # Further distinct completions yield progressively less, without ever
 # becoming negative. Duplicates of the same source receive zero.
 DECAY_PERCENT = (100, 70, 40, 20)
+RECURRING_KINDS = frozenset(("study", "habit", "routine", "rest"))
 
 
 def initialise(conn: sqlite3.Connection) -> None:
@@ -92,6 +93,12 @@ def award(
     day = date.fromisoformat(earned_on) if earned_on else current_day
     if day > current_day or day < current_day - timedelta(days=7):
         raise ValueError("Activity date must be within the last seven days")
+
+    # A recurring action earns XP once per activity/date, while completed
+    # tasks and objective steps earn XP only once for their lifetime.
+    # The DB UNIQUE constraint remains unchanged for existing installations.
+    if source_kind in RECURRING_KINDS:
+        action_key = day.isoformat() + ":" + action_key
 
     existing = conn.execute("""
         SELECT id, xp FROM progression_xp_events
