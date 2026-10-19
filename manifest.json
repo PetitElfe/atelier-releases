@@ -53,7 +53,7 @@
     },
     {
       "path": "objective_maps.py",
-      "sha256": "dffbd33b1c2402c41ec13b1685f14c9e7bc14e6bc256f01cf20d820a4bee50e2"
+      "sha256": "ae71f0538c3a9ff7b14a047196395c33b4bcbf01990728e939b83fc89edb2e3d"
     },
     {
       "path": "public/objective_map.js",
