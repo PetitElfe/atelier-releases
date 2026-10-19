@@ -42,7 +42,7 @@ async function api(path,method='GET',body){
   assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
   await root.locator('[data-node="'+a.id+'"]').click();
   await root.locator('[data-action="validation"]').selectOption('tasks');
-  assert.equal((await api('/api/objective-map?domain_id='+domain.id)).nodes.find(x=>x.id===a.id).validation_mode,'tasks');
+  await page.waitForFunction(async({domainId,nodeId})=>{const response=await fetch('/api/objective-map?domain_id='+domainId);const map=await response.json();return map.nodes.find(x=>x.id===nodeId)?.validation_mode==='tasks'},{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
