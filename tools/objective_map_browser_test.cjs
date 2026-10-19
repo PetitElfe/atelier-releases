@@ -32,8 +32,7 @@ async function api(path,method='GET',body){
   assert.equal(await root.locator('.objective-map-node').count(),2);
   assert.ok(await root.locator('[data-action="ordering"]').isVisible());
   await root.locator('[data-action="ordering"]').selectOption('sequential');
-  const config=await api('/api/objective-map?domain_id='+domain.id);
-  assert.equal(config.ordering,'sequential');
+  await page.waitForFunction(async id=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).ordering==='sequential'},domain.id,{timeout:10000});
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
   await root.locator('[data-action="link"]').click();
