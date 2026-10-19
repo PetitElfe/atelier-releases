@@ -173,8 +173,10 @@ def can_complete(conn: sqlite3.Connection, node_id: int) -> bool:
         earlier=conn.execute("""
             SELECT 1 FROM objective_nodes previous
             JOIN objective_nodes current ON current.id=?
+            LEFT JOIN objective_map_nodes settings ON settings.node_id=previous.id
             WHERE previous.parent_id IS current.parent_id
               AND previous.id != current.id AND previous.status!='done'
+              AND COALESCE(settings.required,1)=1
               AND (previous.order_index < current.order_index OR
                    (previous.order_index=current.order_index AND previous.id<current.id))
             LIMIT 1
