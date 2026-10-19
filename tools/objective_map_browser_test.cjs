@@ -49,6 +49,14 @@ async function api(path,method='GET',body){
   await root.locator('.objective-map-node').first().waitFor();
   assert.equal(await root.locator('[data-action="ordering"]').inputValue(),'sequential');
   assert.ok(await root.locator('path[marker-end]').count()>0);
+  await root.locator('[data-action="from"]').selectOption(String(a.id));
+  await root.locator('[data-action="to"]').selectOption(String(b.id));
+  await root.locator('[data-action="unlink"]').click();
+  await page.waitForFunction(async id=>{
+    const response=await fetch('/api/objective-map?domain_id='+id);
+    return (await response.json()).edges.length===0;
+  },domain.id,{timeout:10000});
+  assert.equal((await api('/api/objective-map?domain_id='+domain.id)).edges.length,0);
   assert.deepEqual(errors,[]);
   console.log('PASS: objective map integration, links, validation and reload persistence');
  }finally{
