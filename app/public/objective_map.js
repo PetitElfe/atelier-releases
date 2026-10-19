@@ -35,7 +35,7 @@
     const opts=nodes.map(n=>'<option value="'+n.id+'">'+escapeText(n.title)+'</option>').join('');
     root.innerHTML='<div class="objective-map-toolbar"><button type="button" data-action="toggle">'+(mode==='map'?'Voir la liste':'Voir la carte')+'</button><button type="button" data-action="zoomout" aria-label="Dézoomer">−</button><span>'+Math.round(scale*100)+' %</span><button type="button" data-action="zoomin" aria-label="Zoomer">+</button><button type="button" data-action="reset">Recentrer</button><label>Ordre <select data-action="ordering"><option value="free" '+(graph.ordering==='free'?'selected':'')+'>Libre</option><option value="sequential" '+(graph.ordering==='sequential'?'selected':'')+'>Dans l’ordre</option></select></label></div>'+
        (mode==='map'?'<div class="objective-map-viewport" tabindex="0" aria-label="Carte des objectifs, déplaçable"><div class="objective-map-canvas" style="transform:translate('+panX+'px,'+panY+'px) scale('+scale+')"><svg class="objective-map-lines" width="2600" height="2400" viewBox="0 0 2600 2400" aria-hidden="true"><defs><marker id="objective-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="#B39870"/></marker></defs>'+edges+'</svg>'+allNodes+'</div></div>':'<p class="muted">La liste originale est conservée sous la carte.</p>')+
-       '<div class="objective-map-edit"><strong>Relier deux étapes</strong><select data-action="from" aria-label="Départ">'+opts+'</select><span>→</span><select data-action="to" aria-label="Arrivée">'+opts+'</select><button type="button" data-action="link">Relier</button></div>'+
+       '<div class="objective-map-edit"><strong>Relier deux étapes</strong><select data-action="from" aria-label="Départ">'+opts+'</select><span>→</span><select data-action="to" aria-label="Arrivée">'+opts+'</select><button type="button" data-action="link">Relier</button><button type="button" data-action="unlink">Supprimer le lien</button></div>'+
        '<p class="muted">Glisse les cartes pour les déplacer, ou le fond pour naviguer. Clique sur une étape pour régler sa validation.</p>'+
        '<div class="objective-map-inspector" id="objectiveMapInspector"></div>';
     root.querySelector('[data-action="toggle"]').onclick=()=>{mode=mode==='map'?'list':'map';draw()};
@@ -53,6 +53,12 @@
       const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
       try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
       catch(err){alert('Liaison impossible : '+err.message)}
+    };
+    root.querySelector('[data-action="unlink"]').onclick=async()=>{
+      const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
+      if(!(graph.edges||[]).some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))return;
+      try{await call('/api/objective-map/edges?from_id='+from_id+'&to_id='+to_id,{method:'DELETE'});await refreshMap(activeDomain)}
+      catch(err){alert('Suppression du lien impossible : '+err.message)}
     };
     const viewport=root.querySelector('.objective-map-viewport');
     if(viewport){
