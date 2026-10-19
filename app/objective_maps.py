@@ -25,6 +25,7 @@ def initialise(conn: sqlite3.Connection) -> None:
             y REAL,
             validation_mode TEXT NOT NULL DEFAULT 'manual'
                 CHECK(validation_mode IN ('manual','tasks','resources')),
+            required INTEGER NOT NULL DEFAULT 1 CHECK(required IN (0,1)),
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS objective_map_edges (
@@ -34,6 +35,10 @@ def initialise(conn: sqlite3.Connection) -> None:
             CHECK(from_id <> to_id)
         );
     """)
+    # Works both on a fresh database and an older 0.18 draft database.
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(objective_map_nodes)")}
+    if "required" not in cols:
+        conn.execute("ALTER TABLE objective_map_nodes ADD COLUMN required INTEGER NOT NULL DEFAULT 1")
 
 
 def _node(conn: sqlite3.Connection, node_id: int) -> sqlite3.Row:
@@ -69,7 +74,8 @@ def get_map(conn: sqlite3.Connection, root_id: int) -> dict:
         )
         SELECT n.id, n.parent_id, n.node_type, n.title, n.description,
                n.status, n.progress, n.order_index,
-               p.x, p.y, COALESCE(p.validation_mode,'manual') AS validation_mode
+               p.x, p.y, COALESCE(p.validation_mode,'manual') AS validation_mode,
+               COALESCE(p.required,1) AS required
         FROM objective_nodes n JOIN descendants d ON d.id=n.id
         LEFT JOIN objective_map_nodes p ON p.node_id=n.id
         ORDER BY n.order_index,n.id
@@ -106,6 +112,16 @@ def set_validation(conn: sqlite3.Connection, node_id: int, mode: str) -> None:
         ON CONFLICT(node_id) DO UPDATE SET validation_mode=excluded.validation_mode,
             updated_at=CURRENT_TIMESTAMP
     """, (node_id,mode))
+
+
+def set_required(conn: sqlite3.Connection, node_id: int, required: bool) -> None:
+    if _node(conn,node_id)["node_type"] not in NODE_TYPES:
+        raise ValueError("Seules les étapes peuvent être facultatives")
+    conn.execute("""
+        INSERT INTO objective_map_nodes(node_id,required) VALUES(?,?)
+        ON CONFLICT(node_id) DO UPDATE SET required=excluded.required,
+            updated_at=CURRENT_TIMESTAMP
+    """,(node_id,1 if required else 0))
 
 
 def set_ordering(conn: sqlite3.Connection, root_id: int, ordering: str) -> None:
