@@ -101,8 +101,13 @@
     const inspector=root.querySelector('#objectiveMapInspector');
     const node=nodes.find(n=>Number(n.id)===selected);
     if(node){
-      inspector.innerHTML='<strong>'+escapeText(node.title)+'</strong><label>Validation <select data-action="validation"><option value="manual">Manuelle</option><option value="tasks">Tâches terminées</option><option value="resources">Ressources terminées</option></select></label>';
+      inspector.innerHTML='<strong>'+escapeText(node.title)+'</strong><label>Validation <select data-action="validation"><option value="manual">Manuelle</option><option value="tasks">Tâches terminées</option><option value="resources">Ressources terminées</option></select></label><label><input type="checkbox" data-action="required" '+(node.required?'checked':'')+'>Étape obligatoire</label>';
       const select=inspector.querySelector('select');select.value=node.validation_mode||'manual';
+      inspector.querySelector('[data-action="required"]').onchange=async e=>{
+        const required=e.target.checked;
+        try{await call('/api/objective-map/node',{method:'PUT',body:JSON.stringify({node_id:node.id,required})});node.required=required?1:0}
+        catch(err){alert('Statut non enregistré : '+err.message);e.target.checked=!!node.required}
+      };
       select.onchange=async e=>{
         try{await call('/api/objective-map/node',{method:'PUT',body:JSON.stringify({node_id:node.id,validation_mode:e.target.value})});node.validation_mode=e.target.value}
         catch(err){alert('Réglage non enregistré : '+err.message);select.value=node.validation_mode||'manual'}
