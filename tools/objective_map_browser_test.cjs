@@ -42,6 +42,11 @@ async function api(path,method='GET',body){
   await root.locator('[data-node="'+a.id+'"]').click();
   await root.locator('[data-action="validation"]').selectOption('tasks');
   await page.waitForFunction(async({domainId,nodeId})=>{const response=await fetch('/api/objective-map?domain_id='+domainId);const map=await response.json();return map.nodes.find(x=>x.id===nodeId)?.validation_mode==='tasks'},{domainId:domain.id,nodeId:a.id},{timeout:10000});
+  await root.locator('[data-action="required"]').uncheck();
+  await page.waitForFunction(async({domainId,nodeId})=>{
+    const response=await fetch('/api/objective-map?domain_id='+domainId);
+    return (await response.json()).nodes.find(x=>x.id===nodeId)?.required===0;
+  },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
