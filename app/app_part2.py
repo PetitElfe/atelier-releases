@@ -530,6 +530,9 @@ class Handler(BaseHTTPRequestHandler):
                         objective_maps.set_position(c,node_id,float(body['x']),float(body['y']))
                     if 'validation_mode' in body:
                         objective_maps.set_validation(c,node_id,str(body['validation_mode']))
+                    if 'required' in body:
+                        if not isinstance(body['required'],bool): raise ValueError('Statut obligatoire invalide')
+                        objective_maps.set_required(c,node_id,body['required'])
                     objective_maps.reconcile_automatic(c,progression,ts)
                     c.commit()
                 return self._json({'ok':True})
