@@ -18,6 +18,20 @@ async function api(path,method='GET',body){
  let browser;
  try{
   await ready();
+  // End-to-end habit reward: one XP event per day, even if unchecked/rechecked.
+  const habit=await api('/api/habits','POST',{title:'Habitude XP E2E',frequency:'daily',target_per_week:7});
+  const today=new Date().toISOString().slice(0,10);
+  const check='/api/habits/'+habit.id+'/check';
+  await api(check,'PUT',{date:today,done:true});
+  assert.equal((await api('/api/progression')).total_xp,5);
+  await api(check,'PUT',{date:today,done:true});
+  assert.equal((await api('/api/progression')).total_xp,5);
+  await api(check,'PUT',{date:today,done:false});
+  await api(check,'PUT',{date:today,done:true});
+  assert.equal((await api('/api/progression')).total_xp,5);
+  const tooOld=new Date(Date.now()-9*86400000).toISOString().slice(0,10);
+  await api(check,'PUT',{date:tooOld,done:true});
+  assert.equal((await api('/api/progression')).total_xp,5);
   const domain=await api('/api/objective-nodes','POST',{node_type:'domain',title:'Cartes E2E'});
   const a=await api('/api/objective-nodes','POST',{node_type:'step',parent_id:domain.id,title:'Étape initiale'});
   const b=await api('/api/objective-nodes','POST',{node_type:'step',parent_id:domain.id,title:'Étape finale'});
