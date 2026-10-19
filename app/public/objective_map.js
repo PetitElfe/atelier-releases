@@ -107,7 +107,12 @@
   window.renderObjectiveMap=function(domainId){
     const root=$map();
     if(!root)return;
-    if(activeDomain!==Number(domainId)||!graph)refreshMap(domainId);
-    else draw();
+    if(activeDomain!==Number(domainId)){
+      selected=null;scale=1;panX=0;panY=0;
+      graph=null;
+    }
+    // Re-fetch after edits to objective titles, steps or completion state.
+    // The previous cached graph could keep deleted/renamed nodes onscreen.
+    refreshMap(domainId);
   };
 })();
