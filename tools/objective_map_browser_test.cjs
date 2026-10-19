@@ -53,6 +53,8 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
   await root.locator('.objective-map-node').first().waitFor();
   assert.equal(await root.locator('[data-action="ordering"]').inputValue(),'sequential');
+  assert.equal((await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id).required,0);
+
   assert.ok(await root.locator('path[marker-end]').count()>0);
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
