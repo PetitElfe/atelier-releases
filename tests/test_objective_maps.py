@@ -50,6 +50,15 @@ class MapTests(unittest.TestCase):
         self.assertEqual((node["x"],node["y"],node["validation_mode"]),(23.5,-50.0,"resources"))
         self.assertEqual(g["ordering"],"sequential")
 
+    def test_optional_step_setting_and_additive_migration(self):
+        maps.set_required(self.db,3,False)
+        node=next(x for x in maps.get_map(self.db,1)["nodes"] if x["id"]==3)
+        self.assertEqual(node["required"],0)
+        maps.initialise(self.db)
+        self.assertEqual(next(x for x in maps.get_map(self.db,1)["nodes"] if x["id"]==3)["required"],0)
+        with self.assertRaises(ValueError):
+            maps.set_required(self.db,1,False)
+
     def test_bad_coordinates_and_modes(self):
         for bad in (float("nan"),float("inf"),100001):
             with self.assertRaises(ValueError): maps.set_position(self.db,3,bad,0)
