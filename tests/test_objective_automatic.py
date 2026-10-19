@@ -86,6 +86,19 @@ class AutomaticTests(unittest.TestCase):
         maps.add_edge(self.db,3,4)
         self.assertFalse(maps.can_complete(self.db,4))
 
+    def test_reverse_dependency_cascade_in_one_pass(self):
+        # Higher-ID first prerequisite: the first pass cannot finish the
+        # successor, so a second pass must unlock and complete it.
+        maps.set_validation(self.db,3,"tasks")
+        maps.set_validation(self.db,4,"tasks")
+        self.db.executemany("INSERT INTO tasks(id,objective_node_id,completed) VALUES(?,?,1)",
+                            [(31,3),(41,4)])
+        maps.add_edge(self.db,4,3)
+        completed=maps.reconcile_automatic(self.db,progression,"2026-10-20")
+        self.assertEqual(completed,[4,3])
+        self.assertEqual(maps.reconcile_automatic(self.db,progression,"2026-10-20"),[])
+        self.assertEqual(progression.summary(self.db)["events"],2)
+
     def test_unplaced_node_stays_unplaced_when_mode_changes(self):
         maps.set_validation(self.db,3,"tasks")
         node=next(n for n in maps.get_map(self.db,1)["nodes"] if n["id"]==3)
