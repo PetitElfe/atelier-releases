@@ -599,7 +599,11 @@ class Handler(BaseHTTPRequestHandler):
                 except (ValueError,TypeError): return self._json({'error':'Date invalide.'},400)
                 if not c.execute('SELECT 1 FROM habits WHERE id=? AND archived=0',(hid,)).fetchone():return self._json({'error':'Habitude introuvable.'},404)
                 if body.get('done',True):
-                    c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
+                    inserted=c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
+                    # Older history is preserved, but only the 7-day window
+                    # earns XP. A repeat check never awards a second time.
+                    if inserted.rowcount and date.today()-timedelta(days=7)<=when<=date.today():
+                        progression.award(c,source_kind='habit',source_id=hid,earned_on=when.isoformat())
                 else:c.execute('DELETE FROM habit_checks WHERE habit_id=? AND checked_date=?',(hid,when.isoformat()))
                 c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','habits']:
