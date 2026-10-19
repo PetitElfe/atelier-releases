@@ -24,7 +24,7 @@
     const root=$map(); if(!root||!graph||isRendering)return;
     isRendering=true;
     const nodes=graph.nodes||[], coords=new Map(nodes.map((n,i)=>[Number(n.id),position(n,i)]));
-    const allNodes=nodes.map(n=>{
+        const allNodes=nodes.map(n=>{
       const p=coords.get(Number(n.id)),status=n.status==='done'?' done':'';
       return '<button type="button" class="objective-map-node'+status+(selected===Number(n.id)?' selected':'')+'" data-node="'+n.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><small>'+escapeText(n.node_type)+'</small><strong>'+escapeText(n.title)+'</strong></button>';
     }).join('');
