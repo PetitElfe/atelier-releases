@@ -76,6 +76,16 @@ class AutomaticTests(unittest.TestCase):
         self.assertTrue(maps.can_complete(self.db,4))
         self.assertFalse(maps.can_complete(self.db,3))
 
+    def test_optional_sibling_does_not_block_sequential_path(self):
+        maps.set_ordering(self.db,1,"sequential")
+        self.db.execute("UPDATE objective_nodes SET status='done' WHERE id=2")
+        self.assertFalse(maps.can_complete(self.db,4))
+        maps.set_required(self.db,3,False)
+        self.assertTrue(maps.can_complete(self.db,4))
+        # An explicit path dependency remains mandatory until cleared.
+        maps.add_edge(self.db,3,4)
+        self.assertFalse(maps.can_complete(self.db,4))
+
     def test_unplaced_node_stays_unplaced_when_mode_changes(self):
         maps.set_validation(self.db,3,"tasks")
         node=next(n for n in maps.get_map(self.db,1)["nodes"] if n["id"]==3)
