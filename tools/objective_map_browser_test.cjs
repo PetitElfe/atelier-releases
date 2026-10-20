@@ -53,6 +53,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id,fromId,toId})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.some(e=>e.from_id===fromId&&e.to_id===toId)},{id:domain.id,fromId:a.id,toId:b.id});
   const map=await api('/api/objective-map?domain_id='+domain.id);
   assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
+  await root.locator('path[marker-end]').first().waitFor({state:'attached',timeout:10000});
+  await root.locator('[data-node="'+a.id+'"]').hover();
   const dragRequests=[];
   page.on('request',request=>{if(request.url().includes('/api/objective-map/node'))dragRequests.push({method:request.method(),body:request.postData()})});
   const events=[];
