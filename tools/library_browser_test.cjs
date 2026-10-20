@@ -328,6 +328,13 @@ async function api(path,method='GET',body){
     const rows=await response.json();
     return rows.some(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
   },null,{timeout:12000});
+  // Rendering a detached recurrence instance is asynchronous: await the
+  // distinct exception ID, not merely the title displayed for that date.
+  await page.waitForFunction(async masterId=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-27');
+    const rows=await response.json();
+    return rows.some(e=>e.id!==masterId&&e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
+  },recurring.id,{timeout:12000});
   const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
   const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
