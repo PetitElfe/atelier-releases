@@ -67,6 +67,7 @@ async function api(path,method='GET',body){
     return (await response.json()).nodes.some(n=>n.id===nodeId&&n.x!==null&&n.y!==null);
   },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   const savedCoords=(await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id);
+  console.log('DRAG E2E COORDINATES:',JSON.stringify(savedCoords),'PAGE ERRORS:',JSON.stringify(errors));
   assert.ok(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y));
 
   await root.locator('[data-node="'+a.id+'"]').click();
