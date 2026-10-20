@@ -50,7 +50,7 @@ async function api(path,method='GET',body){
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
   await root.locator('[data-action="link"]').click();
-  await page.waitForFunction(async({id})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.some(e=>e.from_id===fromId&&e.to_id===toId)},{id:domain.id,fromId:a.id,toId:b.id});
+  await page.waitForFunction(async({id,fromId,toId})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.some(e=>e.from_id===fromId&&e.to_id===toId)},{id:domain.id,fromId:a.id,toId:b.id});
   const map=await api('/api/objective-map?domain_id='+domain.id);
   assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
   const dragRequests=[];
