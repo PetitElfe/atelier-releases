@@ -53,6 +53,10 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.length===1},{id:domain.id});
   const map=await api('/api/objective-map?domain_id='+domain.id);
   assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
+  const dragRequests=[];
+  page.on('request',request=>{if(request.url().includes('/api/objective-map/node'))dragRequests.push({method:request.method(),body:request.postData()})});
+  const events=[];
+  await page.evaluate(()=>{window.__mapEvents=[];for(const type of ['pointerdown','pointermove','pointerup'])document.addEventListener(type,e=>{if(e.target.closest?.('#objectiveMapRoot'))window.__mapEvents.push({type,target:e.target.tagName,node:e.target.closest('[data-node]')?.dataset.node,x:e.clientX,y:e.clientY})},true)});
   // Persist a real pointer drag and verify that coordinates survive refresh.
   const firstNode=root.locator('[data-node="'+a.id+'"]');
   const beforeDrag=await firstNode.boundingBox();
@@ -68,7 +72,7 @@ async function api(path,method='GET',body){
     if(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y))break;
     await page.waitForTimeout(150);
   }
-  console.log('DRAG E2E COORDINATES:',JSON.stringify(savedCoords),'PAGE ERRORS:',JSON.stringify(errors));
+  console.log('DRAG E2E COORDINATES:',JSON.stringify(savedCoords),'PAGE ERRORS:',JSON.stringify(errors),'DRAG REQUESTS:',JSON.stringify(dragRequests),'POINTERS:',JSON.stringify((await page.evaluate(()=>window.__mapEvents)).filter(e=>e.type!=='pointermove').slice(-10)));
   assert.ok(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y));
 
   await root.locator('[data-node="'+a.id+'"]').click();
