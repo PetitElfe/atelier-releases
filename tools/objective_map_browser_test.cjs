@@ -64,7 +64,7 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   await page.waitForFunction(async ({domainId,nodeId})=>{
     const response=await fetch('/api/objective-map?domain_id='+domainId);
-    return (await response.json()).nodes.some(n=>n.id===nodeId&&n.x!==null&&n.y!==null);
+    return (await response.json()).nodes.some(n=>n.id===nodeId&&Number.isFinite(n.x)&&Number.isFinite(n.y));
   },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   const savedCoords=(await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id);
   console.log('DRAG E2E COORDINATES:',JSON.stringify(savedCoords),'PAGE ERRORS:',JSON.stringify(errors));
