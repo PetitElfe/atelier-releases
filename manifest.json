@@ -1,5 +1,5 @@
 {
-  "version": "0.17.0",
+  "version": "0.18.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "02d38e98e88f4a8dc2ea40dbb769338601066fc94920b52882a14f21ad97f7ee"
+      "sha256": "f5e9382967c9833066a55808829f3750fc8e1181b170cafd222c37048bb49a77"
     },
     {
       "path": "app.py",
@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "808cf4ea556842a6c274fbfdbae62f103baf395c6a23d39c0a458a8b71c9ce04"
+      "sha256": "9d8664e77ae8bf5dda27251ae3c74453f900f0e7c556ab0862157707b75ab90b"
     },
     {
       "path": "public/styles.css",
@@ -68,5 +68,5 @@
       "sha256": "392c2f91083441140c62d20b1b12d555622318b38f41cac25c6d233a11fffde0"
     }
   ],
-  "notes": "Brouillon 0.18.0 — fichiers de développement. Ne pas fusionner avant validation des migrations, des tests et de la publication."
+  "notes": "Candidat 0.18.0 en branche isolée : installation interdite avant sauvegarde vérifiée, tests et publication approuvée."
 }
