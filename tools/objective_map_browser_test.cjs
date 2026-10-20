@@ -62,11 +62,12 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(px+48,py+22,{steps:6});
   await page.mouse.up();
-  await page.waitForFunction(async ({domainId,nodeId})=>{
-    const response=await fetch('/api/objective-map?domain_id='+domainId);
-    return (await response.json()).nodes.some(n=>n.id===nodeId&&Number.isFinite(n.x)&&Number.isFinite(n.y));
-  },{domainId:domain.id,nodeId:a.id},{timeout:10000});
-  const savedCoords=(await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id);
+  let savedCoords;
+  for(let attempt=0;attempt<60;attempt++){
+    savedCoords=(await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id);
+    if(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y))break;
+    await page.waitForTimeout(150);
+  }
   console.log('DRAG E2E COORDINATES:',JSON.stringify(savedCoords),'PAGE ERRORS:',JSON.stringify(errors));
   assert.ok(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y));
 
