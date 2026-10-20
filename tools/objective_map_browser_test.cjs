@@ -53,6 +53,22 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.length===1},{id:domain.id});
   const map=await api('/api/objective-map?domain_id='+domain.id);
   assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
+  // Persist a real pointer drag and verify that coordinates survive refresh.
+  const firstNode=root.locator('[data-node="'+a.id+'"]');
+  const beforeDrag=await firstNode.boundingBox();
+  assert.ok(beforeDrag,'Map node must have a visible bounding box');
+  const px=beforeDrag.x+beforeDrag.width/2,py=beforeDrag.y+beforeDrag.height/2;
+  await page.mouse.move(px,py);
+  await page.mouse.down();
+  await page.mouse.move(px+48,py+22,{steps:6});
+  await page.mouse.up();
+  await page.waitForFunction(async ({domainId,nodeId})=>{
+    const response=await fetch('/api/objective-map?domain_id='+domainId);
+    return (await response.json()).nodes.some(n=>n.id===nodeId&&n.x!==null&&n.y!==null);
+  },{domainId:domain.id,nodeId:a.id},{timeout:10000});
+  const savedCoords=(await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id);
+  assert.ok(Number.isFinite(savedCoords.x)&&Number.isFinite(savedCoords.y));
+
   await root.locator('[data-node="'+a.id+'"]').click();
   await root.locator('[data-action="validation"]').selectOption('tasks');
   await page.waitForFunction(async({domainId,nodeId})=>{const response=await fetch('/api/objective-map?domain_id='+domainId);const map=await response.json();return map.nodes.find(x=>x.id===nodeId)?.validation_mode==='tasks'},{domainId:domain.id,nodeId:a.id},{timeout:10000});
