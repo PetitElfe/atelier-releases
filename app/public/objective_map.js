@@ -69,7 +69,7 @@
         const button=e.target.closest('[data-node]');
         pointer={startX:e.clientX,startY:e.clientY,oldX:panX,oldY:panY,
                  nodeId:button?Number(button.dataset.node):null,moved:false};
-        viewport.setPointerCapture(e.pointerId);
+        (button || viewport).setPointerCapture(e.pointerId);
       };
       viewport.onpointermove=e=>{
         if(!pointer)return;
