@@ -394,16 +394,9 @@ function applySideNavPosition(pos=null){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
   const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
-  // Les anciennes positions enregistrées au milieu de l'écran sont réinitialisées.
-  // Seuls les emplacements à proximité d'un bord restent personnalisés.
-  const width=nav.offsetWidth||220;
-  const candidate=Number(saved?.left);
-  const edgeThreshold=Math.max(90,width*0.55);
-  const validEdge=Number.isFinite(candidate)&&(candidate<=edgeThreshold||candidate>=window.innerWidth-width-edgeThreshold);
-  if(saved&&!validEdge){
-    saved=null;
-    localStorage.removeItem('atelierSideNavPosition');
-  }
+  // Une position intermédiaire est valide pendant le glisser : ne jamais
+  // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
+  // Le clamp suivant suffit à garder le tiroir visible à l'écran.
   const next=clampSideNavPosition(saved&&Number.isFinite(Number(saved.left))?Number(saved.left):fallback.left,saved&&Number.isFinite(Number(saved.top))?Number(saved.top):fallback.top);
   nav.style.left=next.left+'px';
   nav.style.right='auto';
@@ -541,6 +534,55 @@ function renderSettings(){
     permission.disabled=granted||!('Notification' in window);
   }
 }
+
+/* ALPHA 0.18.0 : consultation volontaire des versions stables, sans installation. */
+function atelierCompareVersions(a,b){
+  const valid=v=>/^\d+\.\d+\.\d+$/.test(String(v||''))?String(v).split('.').map(Number):null;
+  const first=valid(a),second=valid(b);
+  if(!first||!second)return null;
+  for(let i=0;i<3;i++)if(first[i]!==second[i])return first[i]>second[i]?1:-1;
+  return 0;
+}
+$('#settingsCheckUpdates').onclick=async()=>{
+  const button=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
+  button.disabled=true;
+  message.textContent='Vérification de la dernière version stable…';
+  try{
+    const runtime=await fetch('/api/runtime-version',{cache:'no-store'});
+    if(!runtime.ok)throw Error('Le serveur ne donne pas sa version');
+    const installed=(await runtime.json()).version;
+    $('#settingsInstalledVersion').textContent=installed;
+    const response=await fetch('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json',{cache:'no-store'});
+    if(!response.ok)throw Error('GitHub indisponible ('+response.status+')');
+    const published=await response.json();
+    if(!Array.isArray(published.files)||published.files.length===0)throw Error('Manifeste invalide');
+    const comparison=atelierCompareVersions(published.version,installed);
+    if(comparison===null)throw Error('Version illisible');
+    if(comparison>0)message.textContent='Version '+published.version+' publiée. L’installation en un clic reste désactivée en attendant les tests des sauvegardes.';
+    else if(comparison<0)message.textContent='Cette version de test ('+installed+') est plus récente que la version stable publiée ('+published.version+').';
+    else message.textContent='L’Atelier '+installed+' est à jour par rapport à la version stable publiée.';
+  }catch(error){
+    message.textContent='Impossible de vérifier les mises à jour : '+(error?.message||'erreur réseau')+'. Rien n’a été modifié.';
+  }finally{button.disabled=false;}
+};
+$('#settingsExportBrowserData').onclick=()=>{
+  const message=$('#settingsUpdateMessage');
+  try{
+    const settings={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(/^atelier/i.test(key))settings[key]=localStorage.getItem(key);
+    }
+    const backup={format:'atelier-browser-backup-v1',origin:location.origin,exported_at:new Date().toISOString(),settings};
+    const data=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const fileUrl=URL.createObjectURL(data),link=document.createElement('a');
+    link.href=fileUrl;link.download='atelier-reglages-navigateur-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(fileUrl),2000);
+    message.textContent='Les réglages du navigateur ont été téléchargés. Conserve ce fichier dans un endroit privé.';
+  }catch(error){message.textContent='Sauvegarde des réglages impossible : '+(error?.message||'erreur inconnue');}
+};
+
 function openSettings(){
   if(state.view!=='settings'&&state.view!=='recipe')settingsReturnView=state.view;
   showView('settings');
@@ -695,6 +737,7 @@ function initHomeModuleLibrary(){
   empty.textContent='Aucun module affiché. Utilise « Bibliothèque de modules » pour en ajouter.';
   shelf.after(empty);
   syncHomeModuleVisibility();
+  $('#quickAddHomeModule').onclick=()=>$('#openHomeModuleLibrary').click();
   $('#openHomeModuleLibrary').onclick=()=>{
     const controls=homeModuleOrder.map(([id,label])=>{
       const el=$('#homeView [data-home-module="'+id+'"]');
@@ -1003,7 +1046,13 @@ function activateHomeCanvas(){
   for(const m of measurements){
     const item=m.item;
     const key=homeCanvasStorageKey(item);
-    if(!m.persisted){
+    // Only migrate a card once. A saved canvas position always wins over
+    // measurements from the responsive legacy layout after F5/reopening.
+    const saved=(()=>{try{
+      const v=JSON.parse(m.persisted);
+      return v&&Number.isFinite(v.x)&&Number.isFinite(v.y)&&v.x>=0&&v.y>=0;
+    }catch(_){return false}})();
+    if(!saved){
       let next;
       if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
         next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};

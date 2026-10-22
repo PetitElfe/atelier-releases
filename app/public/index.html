@@ -3,19 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.17.0</title>
+  <title>L’Atelier — Alpha 0.18.0</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/objective_map.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Retour à l’accueil"><svg class="home-shortcut-symbol" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="home-shortcut-text">Accueil</span></button>
-      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.17.0</div><h1 id="pageTitle">Accueil</h1></div>
+      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.18.0</div><h1 id="pageTitle">Accueil</h1></div><div class="top-xp-level" id="topXpLevel" aria-label="Niveau de progression" title="XP gagnée grâce à tes accomplissements">Niv. 1 · 0 XP</div>
     </div>
     <div class="top-date-wrap">
       <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
+      <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil">＋</button>
       <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙</button>
       <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
@@ -209,6 +211,7 @@
                   <button id="addLibraryTask" type="button">+ Tâche</button>
                 </div>
               </div>
+              <div id="objectiveMapRoot" class="objective-map-root" aria-label="Carte interactive des objectifs"></div>
               <div id="librarySubgoalTree" class="library-subgoal-tree"></div>
               <section class="library-tasks-module">
                 <div class="library-module-head"><div><span class="library-module-kicker">À FAIRE</span><strong>Tâches du domaine</strong></div></div>
@@ -370,6 +373,19 @@
         </div>
 
         <div class="settings-grid">
+
+          <section class="settings-card" id="settingsUpdatesCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">↻</span>
+              <div><h3>Mises à jour</h3><p>Vérifier les versions publiées, sans modifier les fichiers.</p></div>
+            </div>
+            <div class="settings-status-row"><span>Version installée</span><strong id="settingsInstalledVersion">—</strong></div>
+            <button id="settingsCheckUpdates" type="button">↻ Vérifier les mises à jour</button>
+            <p id="settingsUpdateMessage" class="muted" role="status" aria-live="polite">Aucune vérification effectuée.</p>
+            <button id="settingsExportBrowserData" type="button">↓ Sauvegarder les réglages du navigateur</button>
+            <p class="muted">Ce téléchargement reste privé sur ton ordinateur et peut contenir des brouillons. Il ne remplace pas une sauvegarde des carnets et de la base de données.</p>
+            <p class="muted">L’installation en un clic sera activée après validation de la sauvegarde et de la restauration. Aucune installation ne démarre depuis cette carte.</p>
+          </section>
           <section class="settings-card">
             <div class="settings-card-title">
               <span class="settings-card-icon">◷</span>
@@ -480,5 +496,7 @@
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/app_part3.js"></script>
+  <script src="/objective_map.js"></script>
+  <script src="/progression_view.js"></script>
 </body>
 </html>

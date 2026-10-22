@@ -208,6 +208,16 @@ class Handler(BaseHTTPRequestHandler):
                                     WHERE t.archived=0
                                     ORDER BY t.completed,t.important DESC,COALESCE(t.due_date,'9999-12-31'),t.order_index,t.id''').fetchall()
                 return self._json([dict(r) for r in rows])
+            if p == '/api/progression':
+                return self._json(progression.summary(c))
+            if p == '/api/progression/history':
+                return self._json(progression.history(c))
+            if p == '/api/objective-map':
+                try:
+                    root_id=int(q.get('domain_id',['0'])[0])
+                    return self._json(objective_maps.get_map(c,root_id))
+                except (ValueError,TypeError) as ex:
+                    return self._json({'error':str(ex)},400)
             if p == '/api/objective-nodes':
                 rows=c.execute('''SELECT o.*,
                                          (SELECT COUNT(*) FROM objective_nodes ch WHERE ch.parent_id=o.id) AS child_count,
@@ -396,6 +406,12 @@ class Handler(BaseHTTPRequestHandler):
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
                 c.commit(); return self._json({'id':eid},201)
+            if p == '/api/objective-map/edges':
+                try:
+                    objective_maps.add_edge(c,int(body['from_id']),int(body['to_id']))
+                    c.commit(); return self._json({'ok':True},201)
+                except (ValueError,KeyError,TypeError,sqlite3.IntegrityError) as ex:
+                    return self._json({'error':str(ex)},400)
             if p == '/api/objective-nodes':
                 title=(body.get('title') or '').strip()
                 node_type=(body.get('node_type') or 'objective').strip()
@@ -504,6 +520,32 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if p == '/api/objective-map/node':
+            try:
+                with conn() as c:
+                    node_id=int(body['node_id'])
+                    if 'x' in body or 'y' in body:
+                        if not ('x' in body and 'y' in body):
+                            raise ValueError('Les deux coordonnées sont requises')
+                        objective_maps.set_position(c,node_id,float(body['x']),float(body['y']))
+                    if 'validation_mode' in body:
+                        objective_maps.set_validation(c,node_id,str(body['validation_mode']))
+                    if 'required' in body:
+                        if not isinstance(body['required'],bool): raise ValueError('Statut obligatoire invalide')
+                        objective_maps.set_required(c,node_id,body['required'])
+                    objective_maps.reconcile_automatic(c,progression,ts)
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,TypeError,ValueError) as ex:
+                return self._json({'error':str(ex)},400)
+        if p == '/api/objective-map/settings':
+            try:
+                with conn() as c:
+                    objective_maps.set_ordering(c,int(body['domain_id']),str(body['ordering']))
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,TypeError,ValueError) as ex:
+                return self._json({'error':str(ex)},400)
         if p == '/api/budget/settings':
             try:
                 opening=budget_amount(abs(float(str(body.get('opening_balance','0')).replace(',','.'))))
@@ -557,7 +599,11 @@ class Handler(BaseHTTPRequestHandler):
                 except (ValueError,TypeError): return self._json({'error':'Date invalide.'},400)
                 if not c.execute('SELECT 1 FROM habits WHERE id=? AND archived=0',(hid,)).fetchone():return self._json({'error':'Habitude introuvable.'},404)
                 if body.get('done',True):
-                    c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
+                    inserted=c.execute('INSERT OR IGNORE INTO habit_checks(habit_id,checked_date,completed_at) VALUES(?,?,?)',(hid,when.isoformat(),ts))
+                    # Older history is preserved, but only the 7-day window
+                    # earns XP. A repeat check never awards a second time.
+                    if inserted.rowcount and date.today()-timedelta(days=7)<=when<=date.today():
+                        progression.award(c,source_kind='habit',source_id=hid,earned_on=when.isoformat())
                 else:c.execute('DELETE FROM habit_checks WHERE habit_id=? AND checked_date=?',(hid,when.isoformat()))
                 c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','habits']:
@@ -604,10 +650,16 @@ class Handler(BaseHTTPRequestHandler):
                 progress=max(0,min(100,int_or_none(d.get('progress')) or 0))
                 status=(d.get('status') or 'active').strip()
                 if status not in ('active','paused','done'): status='active'
+                if status=='done' and old['status']!='done' and not objective_maps.can_complete(c,oid):
+                    return self._json({'error':'Termine d’abord les étapes précédentes.'},409)
                 if status=='done': progress=100
                 c.execute('''UPDATE objective_nodes SET parent_id=?,node_type=?,title=?,description=?,status=?,progress=?,order_index=?,updated_at=?
                              WHERE id=?''',
                           (parent_id,node_type,title,d.get('description',''),status,progress,int_or_none(d.get('order_index')) or 0,ts,oid))
+                if status!='done':
+                    objective_maps.reconcile_automatic(c,progression,ts)
+                if status=='done' and old['status']!='done':
+                    progression.award(c,source_kind='objective_step' if node_type!='objective' else 'objective_complete',source_id=oid)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-sections':
                 sid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_sections WHERE id=?',(sid,)).fetchone()
@@ -626,6 +678,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not title: return self._json({'error':'Le titre est requis.'},400)
                 c.execute('''UPDATE objective_library_entries SET title=?,url=?,notes=?,done=?,order_index=?,updated_at=? WHERE id=?''',
                           (title,d.get('url',''),d.get('notes',''),1 if d.get('done') else 0,int_or_none(d.get('order_index')) or 0,ts,eid))
+                objective_maps.reconcile_automatic(c,progression,ts)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
@@ -885,6 +938,9 @@ class Handler(BaseHTTPRequestHandler):
                         if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                objective_maps.reconcile_automatic(c,progression,ts)
+                if d.get('completed') and not old['completed']:
+                    progression.award(c,source_kind='task',source_id=tid)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping' and parts[2]=='validate':
                 rows=c.execute('SELECT * FROM shopping_items WHERE archived=0 AND checked=1 ORDER BY id').fetchall()
@@ -962,6 +1018,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        if p == '/api/objective-map/edges':
+            q=parse_qs(u.query)
+            try:
+                with conn() as c:
+                    objective_maps.remove_edge(c,int(q['from_id'][0]),int(q['to_id'][0]))
+                    c.commit()
+                return self._json({'ok':True})
+            except (KeyError,IndexError,ValueError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
         with conn() as c:
             if len(parts)==3 and parts[:2]==['api','events']:
                 eid=int(parts[2])

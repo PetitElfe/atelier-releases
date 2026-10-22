@@ -30,6 +30,25 @@ async function api(path,method='GET',body){
   const pageErrors=[];
   page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
+
+  // ALPHA 0.18 — le bouton vérifie uniquement les publications stables.
+  await page.route('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    headers:{'Access-Control-Allow-Origin':'*'},
+    body:JSON.stringify({version:'0.19.0',files:[{path:'VERSION',sha256:'test'}]})
+  }));
+  await page.evaluate(()=>showView('settings'));
+  await page.locator('#settingsCheckUpdates').click();
+  await page.waitForFunction(()=>document.querySelector('#settingsUpdateMessage')?.textContent.includes('0.19.0'));
+  assert.match(await page.locator('#settingsUpdateMessage').innerText(),/reste désactivée/,'Alpha updater must never self-install');
+  assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0');
+  await page.evaluate(()=>localStorage.setItem('atelierUpdateSmoke','test'));
+  const browserBackup=page.waitForEvent('download');
+  await page.locator('#settingsExportBrowserData').click();
+  assert.match((await browserBackup).suggestedFilename(),/^atelier-reglages-navigateur-.*\.json$/);
+  await page.unroute('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json');
+  await page.evaluate(()=>showView('home'));
+
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
@@ -328,6 +347,13 @@ async function api(path,method='GET',body){
     const rows=await response.json();
     return rows.some(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
   },null,{timeout:12000});
+  // Rendering a detached recurrence instance is asynchronous: await the
+  // distinct exception ID, not merely the title displayed for that date.
+  await page.waitForFunction(async masterId=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-27');
+    const rows=await response.json();
+    return rows.some(e=>e.id!==masterId&&e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
+  },recurring.id,{timeout:12000});
   const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
   const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
@@ -347,6 +373,11 @@ async function api(path,method='GET',body){
     const r=await fetch('/api/events?start=2026-10-20&end=2026-10-21');
     const items=await r.json();
     return items.some(e=>e.id===id&&e.instance_date==='2026-10-21')&&!items.some(e=>e.id===id&&e.instance_date==='2026-10-20');
+  },movable.id,{timeout:12000});
+  await page.waitForFunction(async id=>{
+    const response=await fetch('/api/reminders');
+    const reminders=await response.json();
+    return reminders.some(r=>r.entity_type==='event'&&r.entity_id===id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
   },movable.id,{timeout:12000});
   const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E');
   assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
@@ -655,7 +686,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.17.0'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.18.0'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();

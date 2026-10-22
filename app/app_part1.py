@@ -5,6 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
 from datetime import datetime, date, timedelta
+import progression, objective_maps
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -297,6 +298,8 @@ _backup_db_before_migration()
 with conn() as c:
     c.execute('PRAGMA journal_mode = WAL')
     c.executescript(SCHEMA)
+    progression.initialise(c)
+    objective_maps.initialise(c)
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
