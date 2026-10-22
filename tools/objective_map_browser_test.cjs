@@ -103,7 +103,7 @@ async function api(path,method='GET',body){
   },domain.id,{timeout:10000});
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).edges.length,0);
   // Wait for the previous asynchronous UI refresh before starting a new gesture.
-  await page.waitForFunction(()=>document.querySelectorAll('#objectiveMapRoot .objective-map-edge').length===0);
+  await page.waitForFunction(()=>document.querySelectorAll('#objectiveMapRoot .objective-map-edge').length===0,null,{timeout:10000});
   // Visual handle linking, then right-click on the line to remove it.
   const handle=root.locator('[data-node="'+a.id+'"] .objective-map-handle');
   const targetNode=root.locator('[data-node="'+b.id+'"]');
