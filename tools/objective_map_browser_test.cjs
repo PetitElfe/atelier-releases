@@ -102,7 +102,7 @@ async function api(path,method='GET',body){
     const response=await fetch('/api/objective-map?domain_id='+id);
     return (await response.json()).edges.length===0;
   },domain.id,{timeout:10000});
-  assert.equal((await api('/api/objective-map?domain_id='+domain.id)).edges.length,0);
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
   // Wait for the previous asynchronous UI refresh before starting a new gesture.
   await page.waitForFunction(element=>!element.isConnected,beforeUnlinkCanvas,{timeout:10000});
   await page.waitForFunction(()=>document.querySelectorAll('#objectiveMapRoot .objective-map-edge').length===0,null,{timeout:10000});
