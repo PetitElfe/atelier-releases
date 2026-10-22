@@ -1533,3 +1533,16 @@ body.home-active{overflow-y:auto}
  .atelier-settings-shortcuts{grid-template-columns:1fr}
  .atelier-settings-shortcuts>strong{text-align:left}
 }
+
+/* ALPHA 0.18 — keep home cards stationary when edit mode toggles.
+   Selected-card tools float outside instead of taking up card content space. */
+#homeView.home-free-ready.layout-editing #homeUpcomingWidget,
+#homeView.home-free-ready.layout-editing .home-shortcut-card{
+  box-sizing:border-box;
+}
+#homeView.home-free-ready.layout-editing #homeUpcomingWidget.layout-selected>.layout-controls .layout-settings-handle{
+  top:-39px;left:0;right:auto;bottom:auto;
+}
+#homeView.home-free-ready.layout-editing [data-home-module].layout-object>.layout-controls{
+  height:0;inset:0 0 auto 0;overflow:visible;
+}
