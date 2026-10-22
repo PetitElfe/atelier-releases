@@ -113,6 +113,7 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===1,domain.id,{timeout:10000});
   const edge=root.locator('.objective-map-edge').first();
+  console.log('EDGE DEBUG',JSON.stringify(await root.evaluate(el=>({edges:el.querySelectorAll('.objective-map-edge').length,html:el.querySelector('.objective-map-canvas')?.innerHTML.slice(0,700)}))),JSON.stringify(await api('/api/objective-map?domain_id='+domain.id)));
   await edge.click({button:'right',force:true});
   await root.locator('.objective-map-context').click();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
