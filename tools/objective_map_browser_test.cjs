@@ -102,6 +102,20 @@ async function api(path,method='GET',body){
     return (await response.json()).edges.length===0;
   },domain.id,{timeout:10000});
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).edges.length,0);
+  // Visual handle linking, then right-click on the line to remove it.
+  const handle=root.locator('[data-node="'+a.id+'"] .objective-map-handle');
+  const targetNode=root.locator('[data-node="'+b.id+'"]');
+  const h=await handle.boundingBox(), t=await targetNode.boundingBox();
+  assert.ok(h&&t,'Both connection endpoints should be visible');
+  await page.mouse.move(h.x+h.width/2,h.y+h.height/2);
+  await page.mouse.down();
+  await page.mouse.move(t.x+t.width/2,t.y+t.height/2,{steps:8});
+  await page.mouse.up();
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===1,domain.id,{timeout:10000});
+  const edge=root.locator('.objective-map-edge').first();
+  await edge.click({button:'right',force:true});
+  await root.locator('.objective-map-context').click();
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
   assert.deepEqual(errors,[]);
   console.log('PASS: objective map integration, links, validation and reload persistence');
  }finally{
