@@ -3,6 +3,7 @@
   let activeDomain=null, graph=null, scale=1, panX=0, panY=0, selected=null, mode='map', isRendering=false;
   const $map=()=>document.getElementById('objectiveMapRoot');
   const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const typeLabel={domain:'Domaine',objective:'Objectif',milestone:'Étape',step:'Étape',subobjective:'Sous-objectif'};
   const position=(node,index)=>{
     if(node.x!==null && node.y!==null)return {x:Number(node.x),y:Number(node.y)};
     return {x:100+(index%4)*210,y:100+Math.floor(index/4)*140};
@@ -20,13 +21,21 @@
       graph=incoming;draw();
     }catch(err){const root=$map();if(root)root.innerHTML='<p class="muted">Carte indisponible : '+escapeText(err.message)+'</p>'}
   }
+  function showMapError(message){
+    const root=$map();if(!root)return;
+    const old=root.querySelector('.objective-map-error');if(old)old.remove();
+    const notice=document.createElement('div');notice.className='objective-map-error';notice.setAttribute('role','alert');
+    const label=document.createElement('span');label.textContent=message;
+    const close=document.createElement('button');close.type='button';close.textContent='Fermer';close.onclick=()=>notice.remove();
+    notice.append(label,close);root.prepend(notice);
+  }
   function draw(){
     const root=$map(); if(!root||!graph||isRendering)return;
     isRendering=true;
     const nodes=graph.nodes||[], coords=new Map(nodes.map((n,i)=>[Number(n.id),position(n,i)]));
         const allNodes=nodes.map(n=>{
       const p=coords.get(Number(n.id)),status=n.status==='done'?' done':'';
-      return '<button type="button" class="objective-map-node'+status+(selected===Number(n.id)?' selected':'')+'" data-node="'+n.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><small>'+escapeText(n.node_type)+'</small><strong>'+escapeText(n.title)+'</strong></button>';
+      return '<button type="button" class="objective-map-node'+status+(selected===Number(n.id)?' selected':'')+'" data-node="'+n.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><small>'+escapeText(typeLabel[n.node_type]||'Étape')+'</small><strong>'+escapeText(n.title)+'</strong></button>';
     }).join('');
     const edges=(graph.edges||[]).map(e=>{
       const a=coords.get(Number(e.from_id)),b=coords.get(Number(e.to_id));if(!a||!b)return '';
@@ -47,22 +56,22 @@
     }
     root.querySelector('[data-action="ordering"]').onchange=async e=>{
       try{await call('/api/objective-map/settings',{method:'PUT',body:JSON.stringify({domain_id:activeDomain,ordering:e.target.value})});graph.ordering=e.target.value}
-      catch(err){alert('Ordre non enregistré : '+err.message)}
+      catch(err){showMapError('Ordre non enregistré : '+err.message)}
     };
     root.querySelector('[data-action="link"]').onclick=async()=>{
       const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
       try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
-      catch(err){alert('Liaison impossible : '+err.message)}
+      catch(err){showMapError('Liaison impossible : '+err.message)}
     };
     root.querySelector('[data-action="unlink"]').onclick=async()=>{
       const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
       if(!(graph.edges||[]).some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))return;
       try{await call('/api/objective-map/edges?from_id='+from_id+'&to_id='+to_id,{method:'DELETE'});await refreshMap(activeDomain)}
-      catch(err){alert('Suppression du lien impossible : '+err.message)}
+      catch(err){showMapError('Suppression du lien impossible : '+err.message)}
     };
     const viewport=root.querySelector('.objective-map-viewport');
     if(viewport){
-      viewport.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));draw()},{passive:false});
+      viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));draw()},{passive:false});
       let pointer=null;
       viewport.onpointerdown=e=>{
         if(e.button!==0)return;
@@ -93,7 +102,7 @@
           const node=nodes.find(n=>Number(n.id)===current.nodeId),p=coords.get(current.nodeId);
           const x=p.x+dx/scale,y=p.y+dy/scale;
           try{await call('/api/objective-map/node',{method:'PUT',body:JSON.stringify({node_id:node.id,x,y})});node.x=x;node.y=y;draw()}
-          catch(err){alert('Position non enregistrée : '+err.message);draw()}
+          catch(err){showMapError('Position non enregistrée : '+err.message);draw()}
         }else {panX=current.oldX+dx;panY=current.oldY+dy}
       };
       viewport.onpointercancel=()=>{pointer=null;draw()};
@@ -106,11 +115,11 @@
       inspector.querySelector('[data-action="required"]').onchange=async e=>{
         const required=e.target.checked;
         try{await call('/api/objective-map/node',{method:'PUT',body:JSON.stringify({node_id:node.id,required})});node.required=required?1:0}
-        catch(err){alert('Statut non enregistré : '+err.message);e.target.checked=!!node.required}
+        catch(err){showMapError('Statut non enregistré : '+err.message);e.target.checked=!!node.required}
       };
       select.onchange=async e=>{
         try{await call('/api/objective-map/node',{method:'PUT',body:JSON.stringify({node_id:node.id,validation_mode:e.target.value})});node.validation_mode=e.target.value}
-        catch(err){alert('Réglage non enregistré : '+err.message);select.value=node.validation_mode||'manual'}
+        catch(err){showMapError('Réglage non enregistré : '+err.message);select.value=node.validation_mode||'manual'}
       };
     }
     isRendering=false;
