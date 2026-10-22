@@ -61,7 +61,7 @@
     };
     root.querySelector('[data-action="link"]').onclick=async()=>{
       const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
-      try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
+      try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});graph.edges=graph.edges||[];if(!graph.edges.some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))graph.edges.push({from_id,to_id});draw();await refreshMap(activeDomain)}
       catch(err){showMapError('Liaison impossible : '+err.message)}
     };
     root.querySelector('[data-action="unlink"]').onclick=async()=>{
@@ -135,7 +135,7 @@
           const to_id=target?Number(target.dataset.node):null;
           connection=null;draft?.remove();draft=null;
           if(to_id!==null&&to_id!==from_id){
-            try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
+            try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});graph.edges=graph.edges||[];if(!graph.edges.some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))graph.edges.push({from_id,to_id});draw();await refreshMap(activeDomain)}
             catch(err){showMapError('Liaison impossible : '+err.message)}
           }else if(to_id===from_id)showMapError('Choisis une autre étape pour créer la liaison.');
           return;
