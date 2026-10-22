@@ -1544,5 +1544,5 @@ body.home-active{overflow-y:auto}
   top:-39px;left:0;right:auto;bottom:auto;
 }
 #homeView.home-free-ready.layout-editing [data-home-module].layout-object>.layout-controls{
-  height:0;inset:0 0 auto 0;overflow:visible;
+  inset:0;height:auto;overflow:visible;
 }
