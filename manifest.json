@@ -57,11 +57,11 @@
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "9fe820783081aebf20298b4c2b2649d2ef13046c9bde86ed767bc89e9d76fda2"
+      "sha256": "e0b76ca964159c69b57ce2f9c03f90c6fc12e42c0a5fccc7e07756f4cdc414a9"
     },
     {
       "path": "public/objective_map.css",
-      "sha256": "bab5297a2fbd79ba6a480524afe1e2ce3f17774670f70cbabe01476ac7a5340f"
+      "sha256": "042fc221bc09f16c3c57c83f48d61b188f5905844c96246b5bb548ef24c4c75b"
     },
     {
       "path": "public/progression_view.js",
