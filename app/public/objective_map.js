@@ -131,7 +131,13 @@
       viewport.onpointerup=async e=>{
         if(connection!==null){
           const from_id=connection;
-          const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-node]');
+          // Pointer capture and SVG overlays can retarget elementFromPoint.
+          // Resolve the drop against visible node rectangles instead.
+          const target=[...viewport.querySelectorAll('[data-node]')].find(el=>{
+            const rect=el.getBoundingClientRect();
+            return e.clientX>=rect.left&&e.clientX<=rect.right&&
+                   e.clientY>=rect.top&&e.clientY<=rect.bottom;
+          });
           const to_id=target?Number(target.dataset.node):null;
           connection=null;draft?.remove();draft=null;
           if(to_id!==null&&to_id!==from_id){
