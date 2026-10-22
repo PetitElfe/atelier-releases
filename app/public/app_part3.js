@@ -695,6 +695,7 @@ function initHomeModuleLibrary(){
   empty.textContent='Aucun module affiché. Utilise « Bibliothèque de modules » pour en ajouter.';
   shelf.after(empty);
   syncHomeModuleVisibility();
+  $('#quickAddHomeModule').onclick=()=>$('#openHomeModuleLibrary').click();
   $('#openHomeModuleLibrary').onclick=()=>{
     const controls=homeModuleOrder.map(([id,label])=>{
       const el=$('#homeView [data-home-module="'+id+'"]');
