@@ -35,11 +35,11 @@
     const nodes=graph.nodes||[], coords=new Map(nodes.map((n,i)=>[Number(n.id),position(n,i)]));
         const allNodes=nodes.map(n=>{
       const p=coords.get(Number(n.id)),status=n.status==='done'?' done':'';
-      return '<button type="button" class="objective-map-node'+status+(selected===Number(n.id)?' selected':'')+'" data-node="'+n.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><small>'+escapeText(typeLabel[n.node_type]||'Étape')+'</small><strong>'+escapeText(n.title)+'</strong></button>';
+      return '<button type="button" class="objective-map-node'+status+(selected===Number(n.id)?' selected':'')+'" data-node="'+n.id+'" style="left:'+p.x+'px;top:'+p.y+'px"><small>'+escapeText(typeLabel[n.node_type]||'Étape')+'</small><strong>'+escapeText(n.title)+'</strong><span class="objective-map-handle" data-connect="'+n.id+'" title="Tirer vers une autre étape pour relier"></span></button>';
     }).join('');
     const edges=(graph.edges||[]).map(e=>{
       const a=coords.get(Number(e.from_id)),b=coords.get(Number(e.to_id));if(!a||!b)return '';
-      return '<path d="M'+(a.x+76)+' '+(a.y+25)+' L'+(b.x+76)+' '+(b.y+25)+'" stroke="#B39870" stroke-width="3" fill="none" marker-end="url(#objective-arrow)"/>';
+      return '<path class="objective-map-edge" data-from="'+e.from_id+'" data-to="'+e.to_id+'" d="M'+(a.x+76)+' '+(a.y+25)+' L'+(b.x+76)+' '+(b.y+25)+'" stroke="#829b78" stroke-width="3" fill="none" marker-end="url(#objective-arrow)"/>';
     }).join('');
     const opts=nodes.map(n=>'<option value="'+n.id+'">'+escapeText(n.title)+'</option>').join('');
     root.innerHTML='<div class="objective-map-toolbar"><button type="button" data-action="toggle">'+(mode==='map'?'Voir la liste':'Voir la carte')+'</button><button type="button" data-action="zoomout" aria-label="Dézoomer">−</button><span>'+Math.round(scale*100)+' %</span><button type="button" data-action="zoomin" aria-label="Zoomer">+</button><button type="button" data-action="reset">Recentrer</button><label>Ordre <select data-action="ordering"><option value="free" '+(graph.ordering==='free'?'selected':'')+'>Libre</option><option value="sequential" '+(graph.ordering==='sequential'?'selected':'')+'>Dans l’ordre</option></select></label></div>'+
@@ -72,15 +72,49 @@
     const viewport=root.querySelector('.objective-map-viewport');
     if(viewport){
       viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));draw()},{passive:false});
-      let pointer=null;
+      let pointer=null,connection=null,draft=null;
+      viewport.oncontextmenu=e=>{
+        const path=e.target.closest('.objective-map-edge');
+        if(!path)return;
+        e.preventDefault();
+        viewport.querySelector('.objective-map-context')?.remove();
+        const menu=document.createElement('button');
+        menu.type='button';menu.className='objective-map-context';menu.textContent='Supprimer la liaison';
+        const rect=viewport.getBoundingClientRect();
+        menu.style.left=Math.max(0,Math.min(viewport.clientWidth-180,e.clientX-rect.left))+'px';
+        menu.style.top=Math.max(0,Math.min(viewport.clientHeight-46,e.clientY-rect.top))+'px';
+        menu.onclick=async()=>{
+          menu.remove();
+          try{await call('/api/objective-map/edges?from_id='+Number(path.dataset.from)+'&to_id='+Number(path.dataset.to),{method:'DELETE'});await refreshMap(activeDomain)}
+          catch(err){showMapError('Suppression impossible : '+err.message)}
+        };
+        viewport.append(menu);menu.focus();
+      };
+      viewport.onkeydown=e=>{if(e.key==='Escape')viewport.querySelector('.objective-map-context')?.remove();};
       viewport.onpointerdown=e=>{
         if(e.button!==0)return;
+        const handle=e.target.closest('[data-connect]');
+        if(handle){
+          e.preventDefault();connection=Number(handle.dataset.connect);
+          const p=coords.get(connection);
+          draft=document.createElementNS('http://www.w3.org/2000/svg','path');
+          draft.setAttribute('class','objective-map-preview');
+          draft.setAttribute('d','M'+(p.x+152)+' '+(p.y+25)+' L'+(p.x+152)+' '+(p.y+25));
+          root.querySelector('.objective-map-lines').append(draft);
+          viewport.setPointerCapture(e.pointerId);return;
+        }
         const button=e.target.closest('[data-node]');
         pointer={startX:e.clientX,startY:e.clientY,oldX:panX,oldY:panY,
                  nodeId:button?Number(button.dataset.node):null,moved:false};
         (button || viewport).setPointerCapture(e.pointerId);
       };
       viewport.onpointermove=e=>{
+        if(connection!==null&&draft){
+          const p=coords.get(connection),rect=viewport.getBoundingClientRect();
+          const x=(e.clientX-rect.left-panX)/scale,y=(e.clientY-rect.top-panY)/scale;
+          draft.setAttribute('d','M'+(p.x+152)+' '+(p.y+25)+' L'+x+' '+y);
+          return;
+        }
         if(!pointer)return;
         const dx=e.clientX-pointer.startX,dy=e.clientY-pointer.startY;
         if(Math.abs(dx)+Math.abs(dy)>5)pointer.moved=true;
@@ -94,6 +128,17 @@
         }
       };
       viewport.onpointerup=async e=>{
+        if(connection!==null){
+          const from_id=connection;
+          const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-node]');
+          const to_id=target?Number(target.dataset.node):null;
+          connection=null;draft?.remove();draft=null;
+          if(to_id!==null&&to_id!==from_id){
+            try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
+            catch(err){showMapError('Liaison impossible : '+err.message)}
+          }else if(to_id===from_id)showMapError('Choisis une autre étape pour créer la liaison.');
+          return;
+        }
         if(!pointer)return;
         const current=pointer;pointer=null;
         const dx=e.clientX-current.startX,dy=e.clientY-current.startY;
@@ -105,7 +150,7 @@
           catch(err){showMapError('Position non enregistrée : '+err.message);draw()}
         }else {panX=current.oldX+dx;panY=current.oldY+dy}
       };
-      viewport.onpointercancel=()=>{pointer=null;draw()};
+      viewport.onpointercancel=()=>{pointer=null;connection=null;draft?.remove();draft=null;draw()};
     }
     const inspector=root.querySelector('#objectiveMapInspector');
     const node=nodes.find(n=>Number(n.id)===selected);
