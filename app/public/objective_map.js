@@ -75,7 +75,27 @@
       viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));draw()},{passive:false});
       let pointer=null,connection=null,draft=null;
       viewport.oncontextmenu=e=>{
-        const path=e.target.closest('.objective-map-edge');
+        // SVG strokes are thin; allow a small contextual hit area around each
+        // connection without making the entire map intercept right-clicks.
+        let path=e.target.closest('.objective-map-edge');
+        if(!path){
+          const canvas=viewport.querySelector('.objective-map-canvas');
+          const bounds=canvas?.getBoundingClientRect();
+          if(bounds){
+            const x=(e.clientX-bounds.left)/scale,y=(e.clientY-bounds.top)/scale;
+            const distanceToSegment=(px,py,ax,ay,bx,by)=>{
+              const dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;
+              const t=den?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/den)):0;
+              return Math.hypot(px-ax-t*dx,py-ay-t*dy);
+            };
+            for(const candidate of viewport.querySelectorAll('.objective-map-edge')){
+              const start=coords.get(Number(candidate.dataset.from)),end=coords.get(Number(candidate.dataset.to));
+              if(start&&end&&distanceToSegment(x,y,start.x+76,start.y+25,end.x+76,end.y+25)<=12/scale){
+                path=candidate;break;
+              }
+            }
+          }
+        }
         if(!path)return;
         e.preventDefault();
         viewport.querySelector('.objective-map-context')?.remove();
