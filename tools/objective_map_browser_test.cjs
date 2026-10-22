@@ -119,7 +119,12 @@ async function api(path,method='GET',body){
   console.log('AFTER VISUAL LINK',JSON.stringify(await root.evaluate(el=>({edges:el.querySelectorAll('.objective-map-edge').length,handles:el.querySelectorAll('.objective-map-handle').length,notices:[...el.querySelectorAll('[role=alert]')].map(x=>x.textContent)}))),JSON.stringify((await api('/api/objective-map?domain_id='+domain.id)).edges));
   const edge=root.locator('.objective-map-edge').first();
   await edge.waitFor({state:'attached',timeout:10000});
-  await edge.click({button:'right',force:true,timeout:10000});
+  const midpoint=await edge.evaluate(path=>{
+    const p=path.getPointAtLength(path.getTotalLength()/2);
+    const point=new DOMPoint(p.x,p.y).matrixTransform(path.getScreenCTM());
+    return {x:point.x,y:point.y};
+  });
+  await page.mouse.click(midpoint.x,midpoint.y,{button:'right'});
   await root.locator('.objective-map-context').click();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
   assert.deepEqual(errors,[]);
