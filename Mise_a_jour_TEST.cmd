@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 title L'Atelier - Mise a jour TEST 0.18
-set "ROOT=%~dp0"
+set "ROOT=E:\LATELIER_TEST_0180\code_0180\"
 set "ALLOWED=E:\LATELIER_TEST_0180\code_0180\"
 set "TEST_DATA=E:\LATELIER_TEST_0180\data"
 set "BRANCH=feature/0180-progression-foundations"
