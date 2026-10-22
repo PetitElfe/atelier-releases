@@ -534,6 +534,55 @@ function renderSettings(){
     permission.disabled=granted||!('Notification' in window);
   }
 }
+
+/* ALPHA 0.18.0 : consultation volontaire des versions stables, sans installation. */
+function atelierCompareVersions(a,b){
+  const valid=v=>/^\d+\.\d+\.\d+$/.test(String(v||''))?String(v).split('.').map(Number):null;
+  const first=valid(a),second=valid(b);
+  if(!first||!second)return null;
+  for(let i=0;i<3;i++)if(first[i]!==second[i])return first[i]>second[i]?1:-1;
+  return 0;
+}
+$('#settingsCheckUpdates').onclick=async()=>{
+  const button=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
+  button.disabled=true;
+  message.textContent='Vérification de la dernière version stable…';
+  try{
+    const runtime=await fetch('/api/runtime-version',{cache:'no-store'});
+    if(!runtime.ok)throw Error('Le serveur ne donne pas sa version');
+    const installed=(await runtime.json()).version;
+    $('#settingsInstalledVersion').textContent=installed;
+    const response=await fetch('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json',{cache:'no-store'});
+    if(!response.ok)throw Error('GitHub indisponible ('+response.status+')');
+    const published=await response.json();
+    if(!Array.isArray(published.files)||published.files.length===0)throw Error('Manifeste invalide');
+    const comparison=atelierCompareVersions(published.version,installed);
+    if(comparison===null)throw Error('Version illisible');
+    if(comparison>0)message.textContent='Version '+published.version+' publiée. L’installation en un clic reste désactivée en attendant les tests des sauvegardes.';
+    else if(comparison<0)message.textContent='Cette version de test ('+installed+') est plus récente que la version stable publiée ('+published.version+').';
+    else message.textContent='L’Atelier '+installed+' est à jour par rapport à la version stable publiée.';
+  }catch(error){
+    message.textContent='Impossible de vérifier les mises à jour : '+(error?.message||'erreur réseau')+'. Rien n’a été modifié.';
+  }finally{button.disabled=false;}
+};
+$('#settingsExportBrowserData').onclick=()=>{
+  const message=$('#settingsUpdateMessage');
+  try{
+    const settings={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(/^atelier/i.test(key))settings[key]=localStorage.getItem(key);
+    }
+    const backup={format:'atelier-browser-backup-v1',origin:location.origin,exported_at:new Date().toISOString(),settings};
+    const data=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const fileUrl=URL.createObjectURL(data),link=document.createElement('a');
+    link.href=fileUrl;link.download='atelier-reglages-navigateur-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(fileUrl),2000);
+    message.textContent='Les réglages du navigateur ont été téléchargés. Conserve ce fichier dans un endroit privé.';
+  }catch(error){message.textContent='Sauvegarde des réglages impossible : '+(error?.message||'erreur inconnue');}
+};
+
 function openSettings(){
   if(state.view!=='settings'&&state.view!=='recipe')settingsReturnView=state.view;
   showView('settings');
