@@ -1004,7 +1004,13 @@ function activateHomeCanvas(){
   for(const m of measurements){
     const item=m.item;
     const key=homeCanvasStorageKey(item);
-    if(!m.persisted){
+    // Only migrate a card once. A saved canvas position always wins over
+    // measurements from the responsive legacy layout after F5/reopening.
+    const saved=(()=>{try{
+      const v=JSON.parse(m.persisted);
+      return v&&Number.isFinite(v.x)&&Number.isFinite(v.y)&&v.x>=0&&v.y>=0;
+    }catch(_){return false}})();
+    if(!saved){
       let next;
       if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
         next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};
