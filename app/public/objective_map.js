@@ -90,7 +90,7 @@
             };
             for(const candidate of viewport.querySelectorAll('.objective-map-edge')){
               const start=coords.get(Number(candidate.dataset.from)),end=coords.get(Number(candidate.dataset.to));
-              if(start&&end&&distanceToSegment(x,y,start.x+76,start.y+25,end.x+76,end.y+25)<=12/scale){
+              if(start&&end&&distanceToSegment(x,y,start.x+152,start.y+25,end.x,end.y+25)<=12/scale){
                 path=candidate;break;
               }
             }
