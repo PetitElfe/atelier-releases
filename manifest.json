@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "1360aaf9b6a1022cc8e616fa3286115b31c8b41f99260a923a6610d96c277a9e"
+      "sha256": "46fa2dc63c52e3b8d62a1b850692e8b074058c310cd2c2ad879abb9a0916551c"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "e0c6ac5ebd2022472743c7bd965ac5fa70512d1c46827f619c7c9f345808c4c6"
+      "sha256": "d3825dc0d7c8d16c4727c07b224ce23985b4b0e5d2062cc055e6e172538ab125"
     },
     {
       "path": "progression.py",
