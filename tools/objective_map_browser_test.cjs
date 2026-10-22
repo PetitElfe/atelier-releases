@@ -96,6 +96,7 @@ async function api(path,method='GET',body){
   assert.ok(await root.locator('path[marker-end]').count()>0);
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
+  const beforeUnlinkCanvas=await root.locator('.objective-map-canvas').elementHandle();
   await root.locator('[data-action="unlink"]').click();
   await page.waitForFunction(async id=>{
     const response=await fetch('/api/objective-map?domain_id='+id);
@@ -103,6 +104,7 @@ async function api(path,method='GET',body){
   },domain.id,{timeout:10000});
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).edges.length,0);
   // Wait for the previous asynchronous UI refresh before starting a new gesture.
+  await page.waitForFunction(element=>!element.isConnected,beforeUnlinkCanvas,{timeout:10000});
   await page.waitForFunction(()=>document.querySelectorAll('#objectiveMapRoot .objective-map-edge').length===0,null,{timeout:10000});
   // Visual handle linking, then right-click on the line to remove it.
   const handle=root.locator('[data-node="'+a.id+'"] .objective-map-handle');
