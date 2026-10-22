@@ -355,6 +355,11 @@ async function api(path,method='GET',body){
     const items=await r.json();
     return items.some(e=>e.id===id&&e.instance_date==='2026-10-21')&&!items.some(e=>e.id===id&&e.instance_date==='2026-10-20');
   },movable.id,{timeout:12000});
+  await page.waitForFunction(async id=>{
+    const response=await fetch('/api/reminders');
+    const reminders=await response.json();
+    return reminders.some(r=>r.entity_type==='event'&&r.entity_id===id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
+  },movable.id,{timeout:12000});
   const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E');
   assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
   // ALPHA 0.14.5 : créer un rappel sans taper d'heure ne doit pas l'effacer.
