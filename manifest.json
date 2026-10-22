@@ -37,11 +37,11 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "9a91f9fc80bd2f402740b1de1c8a55edc9e4f21af0ef9fa8b6ab6dda6b7c8338"
+      "sha256": "3354961832bdc69fc3d31d4e899ffa30bfd64f0bddbe0de06aa52ba1c09af58b"
     },
     {
       "path": "public/index.html",
-      "sha256": "11a5607b5833c31a3687395ca04f12322bb71f047310ccd915e307b054545aa2"
+      "sha256": "b8463a28d02c05f0073c981ed31a5c6ad036fd05fe2d0bc41233290725853ae7"
     },
     {
       "path": "public/styles.css",
