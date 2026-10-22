@@ -394,16 +394,9 @@ function applySideNavPosition(pos=null){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
   const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
-  // Les anciennes positions enregistrées au milieu de l'écran sont réinitialisées.
-  // Seuls les emplacements à proximité d'un bord restent personnalisés.
-  const width=nav.offsetWidth||220;
-  const candidate=Number(saved?.left);
-  const edgeThreshold=Math.max(90,width*0.55);
-  const validEdge=Number.isFinite(candidate)&&(candidate<=edgeThreshold||candidate>=window.innerWidth-width-edgeThreshold);
-  if(saved&&!validEdge){
-    saved=null;
-    localStorage.removeItem('atelierSideNavPosition');
-  }
+  // Une position intermédiaire est valide pendant le glisser : ne jamais
+  // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
+  // Le clamp suivant suffit à garder le tiroir visible à l'écran.
   const next=clampSideNavPosition(saved&&Number.isFinite(Number(saved.left))?Number(saved.left):fallback.left,saved&&Number.isFinite(Number(saved.top))?Number(saved.top):fallback.top);
   nav.style.left=next.left+'px';
   nav.style.right='auto';
