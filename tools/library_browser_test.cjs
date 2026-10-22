@@ -30,6 +30,25 @@ async function api(path,method='GET',body){
   const pageErrors=[];
   page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
+
+  // ALPHA 0.18 — le bouton vérifie uniquement les publications stables.
+  await page.route('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    headers:{'Access-Control-Allow-Origin':'*'},
+    body:JSON.stringify({version:'0.19.0',files:[{path:'VERSION',sha256:'test'}]})
+  }));
+  await page.evaluate(()=>showView('settings'));
+  await page.locator('#settingsCheckUpdates').click();
+  await page.waitForFunction(()=>document.querySelector('#settingsUpdateMessage')?.textContent.includes('0.19.0'));
+  assert.match(await page.locator('#settingsUpdateMessage').innerText(),/reste désactivée/,'Alpha updater must never self-install');
+  assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0');
+  await page.evaluate(()=>localStorage.setItem('atelierUpdateSmoke','test'));
+  const browserBackup=page.waitForEvent('download');
+  await page.locator('#settingsExportBrowserData').click();
+  assert.match((await browserBackup).suggestedFilename(),/^atelier-reglages-navigateur-.*\.json$/);
+  await page.unroute('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json');
+  await page.evaluate(()=>showView('home'));
+
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
