@@ -117,7 +117,8 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===1,domain.id,{timeout:10000});
   const edge=root.locator('.objective-map-edge').first();
-  await edge.click({button:'right',force:true});
+  await edge.waitFor({state:'attached',timeout:10000});
+  await edge.click({button:'right',force:true,timeout:10000});
   await root.locator('.objective-map-context').click();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
   assert.deepEqual(errors,[]);
