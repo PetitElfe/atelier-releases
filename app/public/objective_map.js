@@ -1,6 +1,6 @@
 /* ALPHA 0.18 — progressive objective map; existing tree is preserved. */
 (function(){
-  let activeDomain=null, graph=null, scale=1, panX=0, panY=0, selected=null, mode='map', isRendering=false;
+  let activeDomain=null, graph=null, scale=1, panX=0, panY=0, selected=null, mode='map', isRendering=false, requestVersion=0;
   const $map=()=>document.getElementById('objectiveMapRoot');
   const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const typeLabel={domain:'Domaine',objective:'Objectif',milestone:'Étape',step:'Étape',subobjective:'Sous-objectif'};
@@ -15,11 +15,12 @@
   async function refreshMap(domainId){
     if(!domainId || !document.getElementById('objectiveMapRoot'))return;
     activeDomain=Number(domainId);
+    const version=++requestVersion;
     try{
       const incoming=await call('/api/objective-map?domain_id='+encodeURIComponent(domainId));
-      if(activeDomain!==Number(domainId))return;
+      if(activeDomain!==Number(domainId)||version!==requestVersion)return;
       graph=incoming;draw();
-    }catch(err){const root=$map();if(root)root.innerHTML='<p class="muted">Carte indisponible : '+escapeText(err.message)+'</p>'}
+    }catch(err){if(version!==requestVersion)return;const root=$map();if(root)root.innerHTML='<p class="muted">Carte indisponible : '+escapeText(err.message)+'</p>'}
   }
   function showMapError(message){
     const root=$map();if(!root)return;
