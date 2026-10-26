@@ -33,6 +33,9 @@ jobs:
       - name: Vérifier les tests des nouveaux modules
         run: python -m unittest discover -s tests -p 'test_*.py'
 
+      - name: Vérifier la sauvegarde et l'installateur TEST isolé
+        run: python tools/update_smoke.py
+
       - name: Vérifier la release et démarrer L'Atelier
         run: python tools/release_smoke.py
 
