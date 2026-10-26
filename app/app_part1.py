@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater
+import progression, objective_maps, updater, desktop_postits
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -251,6 +251,14 @@ CREATE TABLE IF NOT EXISTS home_postits (
  archived INTEGER NOT NULL DEFAULT 0,
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
+);
+-- Positions des fenêtres Post-it sur le Bureau Windows : sauvegardées avec SQLite.
+CREATE TABLE IF NOT EXISTS desktop_postit_layout(
+ note_id INTEGER PRIMARY KEY REFERENCES home_postits(id) ON DELETE CASCADE,
+ x INTEGER NOT NULL,
+ y INTEGER NOT NULL,
+ width INTEGER NOT NULL,
+ height INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_home_postits_archived ON home_postits(archived,id);
 CREATE INDEX IF NOT EXISTS idx_budget_entries_date ON budget_entries(scheduled_date);
