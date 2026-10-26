@@ -397,7 +397,14 @@ function applySideNavPosition(pos=null){
   // Une position intermédiaire est valide pendant le glisser : ne jamais
   // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
   // Le clamp suivant suffit à garder le tiroir visible à l'écran.
-  const next=clampSideNavPosition(saved&&Number.isFinite(Number(saved.left))?Number(saved.left):fallback.left,saved&&Number.isFinite(Number(saved.top))?Number(saved.top):fallback.top);
+  // null/chaîne vide ne doivent jamais être interprétés comme une coordonnée zéro.
+  // Sinon un réglage partiel replaçait silencieusement le tiroir à gauche.
+  const coordinate=(value,defaultValue)=>{
+    if(value===null||value===undefined||value==='')return defaultValue;
+    const numeric=Number(value);
+    return Number.isFinite(numeric)?numeric:defaultValue;
+  };
+  const next=clampSideNavPosition(coordinate(saved?.left,fallback.left),coordinate(saved?.top,fallback.top));
   nav.style.left=next.left+'px';
   nav.style.right='auto';
   nav.style.top=next.top+'px';
