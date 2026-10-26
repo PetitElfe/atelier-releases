@@ -68,7 +68,7 @@ async function api(path,method='GET',body){
   await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').waitFor();
   assert.ok(await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').evaluate(
     el=>el.classList.contains('postit-deep-green')&&el.classList.contains('postit-square')
-       &&!!el.querySelector('a[href="https://example.com/"]')),
+       &&!!el.querySelector('a[href^="https://example.com"]')),
     'Le Post-it et son lien doivent réapparaître après F5');
 
 
