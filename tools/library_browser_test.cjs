@@ -344,6 +344,8 @@ async function api(path,method='GET',body){
 
 
   // Répartition horizontale des rendez-vous chevauchants et durée proportionnelle.
+  await page.evaluate(()=>{showView('calendar');setCalendarMode('week');renderWeek()});
+  await page.waitForFunction(()=>document.querySelector('.week-day-layer[data-date="2026-10-20"]')?.getBoundingClientRect().width>10);
   const compactWeek=await page.evaluate(()=>{
     const day=document.querySelector('.week-day-layer[data-date="2026-10-20"]');
     const cards=[...day.querySelectorAll('.week-timed-event')];
