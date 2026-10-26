@@ -394,12 +394,12 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/events':
                 vals = (
                     body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
-                    1 if body.get('all_day') else 0, body.get('category','general'), body.get('location',''), body.get('notes',''),
+                    1 if body.get('all_day') else 0, body.get('category','general'), body.get('color','auto'), body.get('location',''), body.get('notes',''),
                     body.get('contact',''), body.get('travel_time',''), body.get('url',''), body.get('status','planned'), body.get('recurrence','none'),
                     1 if body.get('show_in_month', True) else 0, ts, ts)
                 if not vals[0] or not vals[1]: return self._json({'error':'title and event_date required'},400)
-                cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
-                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,color,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                 eid=cur.lastrowid
                 for ra in body.get('reminders',[]) or []:
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
@@ -747,10 +747,10 @@ class Handler(BaseHTTPRequestHandler):
                             moved_event_id=None
 
                     if not moved_event_id:
-                        vals=(old['title'],new_date,None if old['all_day'] else new_time,new_end,old['all_day'],old['category'],old['location'],old['notes'],
+                        vals=(old['title'],new_date,None if old['all_day'] else new_time,new_end,old['all_day'],old['category'],old['color'],old['location'],old['notes'],
                               old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
-                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
-                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,color,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                         moved_event_id=cur.lastrowid
 
                     if old['recurrence']=='none':
@@ -833,10 +833,10 @@ class Handler(BaseHTTPRequestHandler):
                             new_end=f'{end_minutes//60:02d}:{end_minutes%60:02d}'
                         except Exception:
                             new_end=None
-                    vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['location'],old['notes'],
+                    vals=(old['title'],new_date,new_time,new_end,0,old['category'],old['color'],old['location'],old['notes'],
                           old['contact'],old['travel_time'],old['url'],'planned','none',old['show_in_month'],ts,ts)
-                    cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
-                                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
+                    cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,color,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                     moved_event_id=cur.lastrowid
 
                 if old['recurrence']=='none':
@@ -882,15 +882,15 @@ class Handler(BaseHTTPRequestHandler):
                     if moved_id and not c.execute('SELECT id FROM events WHERE id=?',(moved_id,)).fetchone():
                         moved_id=None
                     vals=(title,event_day,body.get('start_time') or None,body.get('end_time') or None,
-                          1 if body.get('all_day') else 0,body.get('category','general'),body.get('location',''),
+                          1 if body.get('all_day') else 0,body.get('category','general'),body.get('color','auto'),body.get('location',''),
                           body.get('notes',''),body.get('contact',''),body.get('travel_time',''),body.get('url',''),
                           body.get('status','planned'),'none',1 if body.get('show_in_month',True) else 0,ts)
                     if moved_id:
-                        c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
+                        c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,color=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
                                   vals+(moved_id,))
                     else:
-                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
-                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals+(ts,))
+                        cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,color,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
+                                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals+(ts,))
                         moved_id=cur.lastrowid
                     c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(moved_id,))
                     for ra in body.get('reminders',[]) or []:
@@ -926,8 +926,8 @@ class Handler(BaseHTTPRequestHandler):
                         reminder_delta=after-before
                     except (ValueError, TypeError):
                         return self._json({'error':'Date ou heure du rendez-vous invalide.'},400)
-                c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
-                          (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('travel_time',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
+                c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,color=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
+                          (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('color','auto'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('travel_time',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
                 if reminder_delta:
                     pending=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
                     for reminder in pending:
