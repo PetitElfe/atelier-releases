@@ -156,6 +156,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        if p == '/api/postits':
+            archived=1 if q.get('archived',['0'])[0]=='1' else 0
+            with conn() as c:
+                return self._json([dict(row) for row in c.execute(
+                    'SELECT * FROM home_postits WHERE archived=? ORDER BY id',(archived,)).fetchall()])
         if p == '/api/update/status':
             try:
                 updater.guard()
@@ -341,6 +346,22 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._json({'error':'Mise à jour impossible : '+str(exc)},502)
 
+        if p == '/api/postits':
+            if not isinstance(body,dict):return self._json({'error':'Données incorrectes.'},400)
+            title=str(body.get('title','')).strip()[:120] or 'Sans titre'
+            content=str(body.get('body',''))
+            colors={'sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'}
+            color=str(body.get('color','gold'))
+            shape=str(body.get('shape','rounded'))
+            if len(content)>20000 or color not in colors or shape not in ('square','rounded','pill'):
+                return self._json({'error':'Texte, couleur ou forme incorrects.'},400)
+            with conn() as c:
+                count=c.execute('SELECT COUNT(*) FROM home_postits WHERE archived=0').fetchone()[0]
+                if count>=100:return self._json({'error':'Archive quelques notes avant d’en ajouter.'},409)
+                cur=c.execute('INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,?,?,0,?,?)',
+                              (title,content,color,shape,ts,ts))
+                c.commit()
+                return self._json({'id':cur.lastrowid},201)
         if p == '/api/recipe-import-url':
             try:
                 return self._json(import_recipe_from_url(body.get('url','')))
@@ -547,6 +568,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==3 and parts[:2]==['api','postits']:
+            if not isinstance(body,dict):return self._json({'error':'Données incorrectes.'},400)
+            try:note_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Note invalide.'},400)
+            with conn() as c:
+                old=c.execute('SELECT * FROM home_postits WHERE id=?',(note_id,)).fetchone()
+                if not old:return self._json({'error':'Post-it introuvable.'},404)
+                title=str(body.get('title',old['title'])).strip()[:120] or 'Sans titre'
+                content=str(body.get('body',old['body']))
+                color=str(body.get('color',old['color']))
+                shape=str(body.get('shape',old['shape']))
+                archived=int(bool(body.get('archived',old['archived'])))
+                colors={'sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'}
+                if len(content)>20000 or color not in colors or shape not in ('square','rounded','pill'):
+                    return self._json({'error':'Texte, couleur ou forme incorrects.'},400)
+                c.execute('UPDATE home_postits SET title=?,body=?,color=?,shape=?,archived=?,updated_at=? WHERE id=?',
+                          (title,content,color,shape,archived,ts,note_id))
+                c.commit()
+                return self._json({'ok':True,'id':note_id})
         if p == '/api/objective-map/node':
             try:
                 with conn() as c:
