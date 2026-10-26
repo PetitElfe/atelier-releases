@@ -595,7 +595,7 @@ $('#settingsCheckUpdates').onclick=async()=>{
   message.textContent='Recherche de la dernière révision TEST sur GitHub…';
   try{
     const result=await atelierUpdateRequest('/api/update/check');
-    $('#settingsInstalledVersion').textContent=result.installed_version+' · TEST';
+    $('#settingsInstalledVersion').textContent=result.installed_version+' · TEST'+(result.installed_build?' · build '+result.installed_build:'');
     if(result.available){
       atelierUpdateCandidate=result.revision;
       message.textContent='Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données TEST sera créée avant le redémarrage.';
