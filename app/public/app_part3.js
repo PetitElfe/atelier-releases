@@ -543,35 +543,89 @@ function renderSettings(){
   }
 }
 
-/* ALPHA 0.18.0 : consultation volontaire des versions stables, sans installation. */
-function atelierCompareVersions(a,b){
-  const valid=v=>/^\d+\.\d+\.\d+$/.test(String(v||''))?String(v).split('.').map(Number):null;
-  const first=valid(a),second=valid(b);
-  if(!first||!second)return null;
-  for(let i=0;i<3;i++)if(first[i]!==second[i])return first[i]>second[i]?1:-1;
-  return 0;
+/* ALPHA 0.18.0 — mises à jour TEST : même écran, assistant externe sécurisé. */
+let atelierUpdateCandidate=null,atelierUpdatePolling=false;
+async function atelierUpdateRequest(url,opts={}){
+  const response=await fetch(url,{cache:'no-store',...opts});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'Serveur indisponible');
+  return result;
+}
+async function atelierPollUpdate(){
+  if(atelierUpdatePolling)return;
+  atelierUpdatePolling=true;
+  const message=$('#settingsUpdateMessage'),install=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
+  const started=Date.now();
+  let lastPhase='';
+  while(Date.now()-started<15*60*1000){
+    try{
+      const state=await atelierUpdateRequest('/api/update/status');
+      if(state.phase==='success'){
+        message.textContent='Mise à jour installée ! Rechargement de L’Atelier…';
+        window.location.reload();
+        return;
+      }
+      if(state.phase==='error'){
+        message.textContent='Mise à jour interrompue : '+state.detail;
+        check.disabled=false;install.disabled=false;
+        atelierUpdatePolling=false;return;
+      }
+      if(state.detail)message.textContent=state.detail;
+      lastPhase=state.phase;
+    }catch(error){
+      // Le serveur s'arrête temporairement; c'est normal.
+      if(lastPhase==='stopping'||lastPhase==='backup'||lastPhase==='installing'){
+        message.textContent='Redémarrage de L’Atelier TEST… La page se reconnecte automatiquement.';
+      }else{
+        message.textContent='Connexion au serveur TEST interrompue. Nouvelle tentative…';
+      }
+    }
+    await new Promise(resolve=>setTimeout(resolve,1600));
+  }
+  message.textContent='Le redémarrage prend plus de temps que prévu. Vérifie la fenêtre TEST et la sauvegarde avant de recommencer.';
+  atelierUpdatePolling=false;check.disabled=false;
 }
 $('#settingsCheckUpdates').onclick=async()=>{
   const button=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
+  const install=$('#settingsInstallUpdate');
+  if(atelierUpdatePolling)return;
+  atelierUpdateCandidate=null;
+  install.hidden=true;install.disabled=true;
   button.disabled=true;
-  message.textContent='Vérification de la dernière version stable…';
+  message.textContent='Recherche de la dernière révision TEST sur GitHub…';
   try{
-    const runtime=await fetch('/api/runtime-version',{cache:'no-store'});
-    if(!runtime.ok)throw Error('Le serveur ne donne pas sa version');
-    const installed=(await runtime.json()).version;
-    $('#settingsInstalledVersion').textContent=installed;
-    const response=await fetch('https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/manifest.json',{cache:'no-store'});
-    if(!response.ok)throw Error('GitHub indisponible ('+response.status+')');
-    const published=await response.json();
-    if(!Array.isArray(published.files)||published.files.length===0)throw Error('Manifeste invalide');
-    const comparison=atelierCompareVersions(published.version,installed);
-    if(comparison===null)throw Error('Version illisible');
-    if(comparison>0)message.textContent='Version '+published.version+' publiée. L’installation en un clic reste désactivée en attendant les tests des sauvegardes.';
-    else if(comparison<0)message.textContent='Cette version de test ('+installed+') est plus récente que la version stable publiée ('+published.version+').';
-    else message.textContent='L’Atelier '+installed+' est à jour par rapport à la version stable publiée.';
+    const result=await atelierUpdateRequest('/api/update/check');
+    $('#settingsInstalledVersion').textContent=result.installed_version+' · TEST';
+    if(result.available){
+      atelierUpdateCandidate=result.revision;
+      message.textContent='Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données TEST sera créée avant le redémarrage.';
+      install.hidden=false;install.disabled=false;
+    }else{
+      message.textContent='L’Atelier TEST est à jour ('+result.revision.slice(0,8)+').';
+    }
   }catch(error){
-    message.textContent='Impossible de vérifier les mises à jour : '+(error?.message||'erreur réseau')+'. Rien n’a été modifié.';
-  }finally{button.disabled=false;}
+    message.textContent='Vérification impossible : '+(error?.message||'réseau indisponible')+'. Aucun fichier modifié.';
+  }finally{button.disabled=false}
+};
+$('#settingsInstallUpdate').onclick=async()=>{
+  if(!atelierUpdateCandidate||atelierUpdatePolling)return;
+  const message=$('#settingsUpdateMessage'),button=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
+  const accepted=await askUiConfirm('Installer la mise à jour TEST',
+    'L’Atelier enregistrera une sauvegarde, s’arrêtera brièvement, puis redémarrera seul. La version habituelle ne sera pas touchée.',
+    'Installer et redémarrer');
+  if(!accepted)return;
+  button.disabled=true;check.disabled=true;
+  message.textContent='Démarrage de l’assistant de mise à jour…';
+  try{
+    await atelierUpdateRequest('/api/update/start',{
+      method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Update':'1'},
+      body:JSON.stringify({revision:atelierUpdateCandidate})
+    });
+    atelierPollUpdate();
+  }catch(error){
+    message.textContent='Impossible de commencer : '+(error?.message||'erreur inconnue');
+    button.disabled=false;check.disabled=false;
+  }
 };
 $('#settingsExportBrowserData').onclick=()=>{
   const message=$('#settingsUpdateMessage');
