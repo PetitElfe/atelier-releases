@@ -914,8 +914,26 @@ class Handler(BaseHTTPRequestHandler):
                 eid=int(parts[2]); old=c.execute('SELECT * FROM events WHERE id=?',(eid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
                 d=dict(old); d.update(body)
+                # Déplacer la date ou l'heure d'un rendez-vous déplace aussi ses
+                # rappels existants du même intervalle, sauf si le formulaire
+                # fournit explicitement une nouvelle liste de rappels.
+                reminder_delta=None
+                if 'reminders' not in body and (d['event_date']!=old['event_date'] or
+                        (d.get('start_time') or None)!=(old['start_time'] or None)):
+                    try:
+                        before=datetime.fromisoformat(f"{old['event_date']}T{old['start_time'] or '00:00'}")
+                        after=datetime.fromisoformat(f"{d['event_date']}T{d.get('start_time') or '00:00'}")
+                        reminder_delta=after-before
+                    except (ValueError, TypeError):
+                        return self._json({'error':'Date ou heure du rendez-vous invalide.'},400)
                 c.execute('''UPDATE events SET title=?,event_date=?,start_time=?,end_time=?,all_day=?,category=?,location=?,notes=?,contact=?,travel_time=?,url=?,status=?,recurrence=?,show_in_month=?,updated_at=? WHERE id=?''',
                           (d['title'],d['event_date'],d.get('start_time') or None,d.get('end_time') or None,1 if d.get('all_day') else 0,d.get('category','general'),d.get('location',''),d.get('notes',''),d.get('contact',''),d.get('travel_time',''),d.get('url',''),d.get('status','planned'),d.get('recurrence','none'),1 if d.get('show_in_month',1) else 0,ts,eid))
+                if reminder_delta:
+                    pending=c.execute("SELECT * FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,)).fetchall()
+                    for reminder in pending:
+                        shifted=(datetime.fromisoformat(reminder['remind_at'])+reminder_delta).replace(microsecond=0).isoformat()
+                        snoozed=(datetime.fromisoformat(reminder['snoozed_until'])+reminder_delta).replace(microsecond=0).isoformat() if reminder['snoozed_until'] else None
+                        c.execute("UPDATE reminders SET remind_at=?,snoozed_until=? WHERE id=?",(shifted,snoozed,reminder['id']))
                 if 'reminders' in body:
                     c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
                     for ra in body.get('reminders',[]) or []:
