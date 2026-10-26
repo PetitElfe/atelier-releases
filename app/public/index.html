@@ -47,7 +47,7 @@
 
   <main>
     <section id="homeView" class="view active-view">
-      <div class="home-module-toolbar"><button id="homeNewPostit" type="button" class="secondary">＋ Post-it</button><button id="openHomeModuleLibrary" type="button" class="secondary">＋ Bibliothèque de modules</button><span class="muted">Choisis les éléments visibles, puis place-les avec « Modifier ».</span></div>
+      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary">＋ Bibliothèque de modules</button><span class="muted">Choisis les éléments visibles, puis place-les avec « Modifier ».</span></div>
       <section id="homeBudgetWidget" data-home-module="budget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
         <div class="budget-home-title"><strong>Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
         <div id="homeBudgetContent" class="muted">Chargement des échéances…</div>
@@ -107,14 +107,6 @@
           </div>
         </section>
       </div>
-
-      <section id="homePostitBoard" data-home-module="postits" class="home-postit-board" aria-label="Mes Post-it">
-        <div class="home-postit-heading">
-          <strong>Mes Post-it</strong>
-          <div><button id="postitShowOnDesktop" type="button" class="secondary" title="Afficher les notes sur le Bureau Windows">▧ Bureau Windows</button><button id="postitArchiveList" type="button" class="secondary">Archives</button><button id="postitAdd" type="button">＋ Post-it</button></div>
-        </div>
-        <div id="homePostitList" class="home-postit-list" aria-live="polite"></div>
-      </section>
 
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
@@ -401,12 +393,13 @@
               <div><h3>Post-it sur le Bureau Windows</h3><p>De vraies notes indépendantes, même lorsque L’Atelier du Goblin est fermé.</p></div>
             </div>
             <button id="settingsOpenDesktopPostits" class="primary" type="button">▧ Afficher mes Post-it sur le Bureau</button>
+            <button id="settingsNewDesktopPostit" type="button">＋ Nouveau Post-it sur le Bureau</button>
             <label class="settings-field" for="settingsDesktopPostitStartup">
               <span>Retrouver mes notes au démarrage de Windows</span>
               <input id="settingsDesktopPostitStartup" type="checkbox">
             </label>
             <p id="settingsDesktopPostitsStatus" class="muted" role="status" aria-live="polite">Vérification du compagnon Windows…</p>
-            <p class="muted">Notes, couleurs et positions sauvegardées dans les données TEST. Fermer la fenêtre principale n’arrête pas les notes du Bureau. Les notes ne restent pas forcément au premier plan.</p>
+            <p class="muted">Post-it uniquement sur le Bureau Windows, jamais dans l’Accueil. Déplace une note, puis clique sur son cadenas 🔓 pour verrouiller sa position et sa taille. Le texte reste modifiable.</p>
           </section>
           <section class="settings-card">
             <div class="settings-card-title">
