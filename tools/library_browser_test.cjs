@@ -284,6 +284,59 @@ async function api(path,method='GET',body){
   const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
   assert.ok(savedAppointments.some(e=>e.title==='Rendez-vous persistant E2E'),'Appointment must exist in SQLite after saving');
   assert.equal(await page.locator('#calendarView').evaluate(el=>el.classList.contains('active-view')),true,'Saving appointment must keep calendar visible');
+
+  // ALPHA 0.18.0 : le mensuel conserve 42 cases égales même si le titre est long.
+  // Le choix de couleur est indépendant de la catégorie du rendez-vous.
+  const longEvent=await api('/api/events','POST',{
+    title:'Un rendez-vous médical dont le titre dépasse très largement la largeur de la case',
+    event_date:'2026-10-20',start_time:'10:15',end_time:'13:15',
+    category:'medical',color:'mauve',show_in_month:true
+  });
+  const allDayEvent=await api('/api/events','POST',{
+    title:'Événement toute la journée E2E',event_date:'2026-10-21',all_day:true,
+    color:'pink',show_in_month:true
+  });
+  const savedColors=await api('/api/events?start=2026-10-20&end=2026-10-21');
+  assert.equal(savedColors.find(e=>e.id===longEvent.id)?.color,'mauve',
+    'La couleur mauve doit rester enregistrée indépendamment de la catégorie médicale');
+  assert.equal(savedColors.find(e=>e.id===allDayEvent.id)?.color,'pink');
+  await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
+  const monthGeometry=await page.evaluate(()=>{
+    const cells=[...document.querySelectorAll('#monthGrid .day-cell')];
+    const heights=cells.map(c=>Math.round(c.getBoundingClientRect().height));
+    const widths=cells.map(c=>Math.round(c.getBoundingClientRect().width));
+    const pill=[...document.querySelectorAll('#monthGrid .event-pill')].find(b=>b.textContent.includes('rendez-vous médical dont'));
+    return {count:cells.length,heights:[...new Set(heights)],widths:[...new Set(widths)],
+      clipped:!!pill&&pill.scrollWidth>pill.clientWidth,fullTitle:pill?.title,
+      pastel:!!pill&&pill.classList.contains('event-color-mauve')};
+  });
+  assert.equal(monthGeometry.count,42,'Le mensuel doit garder ses 42 cases');
+  assert.equal(monthGeometry.heights.length,1,'Toutes les cases doivent garder la même hauteur : '+JSON.stringify(monthGeometry));
+  assert.equal(monthGeometry.widths.length,1,'Toutes les cases doivent garder la même largeur : '+JSON.stringify(monthGeometry));
+  assert.ok(monthGeometry.clipped&&monthGeometry.pastel&&monthGeometry.fullTitle.includes('médical'),
+    'Le titre long doit être tronqué sans perdre son contenu ni sa couleur : '+JSON.stringify(monthGeometry));
+  await page.evaluate(()=>renderWeek());
+  const weekDuration=await page.evaluate(()=>{
+    const grid=document.querySelector('#weekGrid');
+    const at=(dayIndex,hour)=>grid.children[8+(hour-7)*8+1+dayIndex];
+    const atTen=at(1,10),atEleven=at(1,11),atTwelve=at(1,12),atThirteen=at(1,13);
+    const wedHead=grid.children[3],wedSeven=at(2,7),wedTwentyTwo=at(2,22);
+    return {
+      hasDuration:[atTen,atEleven,atTwelve,atThirteen].map(c=>c.classList.contains('week-duration')),
+      started:atTen.classList.contains('week-duration-begin'),
+      mauve:!!atTen.querySelector('.event-color-mauve'),
+      allDayHeader:wedHead.classList.contains('week-all-day-header')&&!!wedHead.querySelector('.event-color-pink'),
+      sticky:getComputedStyle(wedHead).position==='sticky',
+      notAtSeven:!wedSeven.textContent.includes('Événement toute la journée'),
+      allDayLine:wedSeven.classList.contains('week-duration-all-day')&&wedTwentyTwo.classList.contains('week-duration-all-day')
+    };
+  });
+  assert.ok(weekDuration.hasDuration.every(Boolean)&&weekDuration.started&&weekDuration.mauve,
+    'Le rendez-vous 10h15–13h15 doit traverser toutes les cases correspondantes : '+JSON.stringify(weekDuration));
+  assert.ok(weekDuration.allDayHeader&&weekDuration.sticky&&weekDuration.notAtSeven&&weekDuration.allDayLine,
+    'Un événement toute la journée doit rester en en-tête collant, pas dans la case 7h : '+JSON.stringify(weekDuration));
+
+
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
