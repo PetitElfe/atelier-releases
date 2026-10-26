@@ -29,15 +29,15 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "fb80d3e0834a8b8e02eba8ebea0b7192eedd3351e9c2af1cceb8dedbfa09e38f"
+      "sha256": "bf935d0c60a34952b01a64a930171e25ba17228dd78c6ca654cb81df25a3999e"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "ee21ad09d0cd531f9042e1044c8398d9f2c305b6064c8a6f3a8986380cc2ce8c"
+      "sha256": "1b77418ed4737673aceab24a3c96c16e1c492ab9ee1a7e106b454f7dabcfe504"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "152a9a1994feb47aef3a97e9f3a7d1e16c5a279554ca7ba0cbe3af94544982fd"
+      "sha256": "8287eda455e2d5c36636c7bcee04d4f0b3bc1160b527b9ade6cbdb153d050d22"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "a9cca64af962832e2aab2ccb64d7652c673020d96b033df91ee29f25ca4caf10"
+      "sha256": "c2475eb14f05fe8df1dcd987d0f47f5f134c29ed242e285495c7910a66c33304"
     },
     {
       "path": "progression.py",
