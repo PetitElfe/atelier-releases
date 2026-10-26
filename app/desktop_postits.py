@@ -7,6 +7,7 @@ All note contents, sizes and positions are stored in the TEST SQLite database.
 from __future__ import annotations
 
 import datetime as dt
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -56,11 +57,25 @@ def _guard():
             raise RuntimeError("Dossier TEST redirigé, Post-it refusés.")
 
 
+@contextmanager
 def _db(db_path=DB):
     connection = sqlite3.connect(db_path, timeout=12)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA busy_timeout=12000")
-    return connection
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
+
+
+def _update_in_progress():
+    try:
+        status = json.loads((DATA / "updater-state.json").read_text(encoding="utf-8"))
+        return status.get("phase") in (
+            "starting", "download", "stopping", "backup", "installing")
+    except (OSError, ValueError):
+        return False
 
 
 def create_layout_table(db_path=DB):
@@ -301,6 +316,10 @@ def _run_gui():
             self.pending = None
             if not self.dirty:
                 return True
+            if _update_in_progress():
+                self.hint.config(text="● Mise à jour en cours — sauvegarde après redémarrage")
+                self.pending = root.after(1700, self._save)
+                return False
             title = self.title.get().strip() or "Sans titre"
             body = self.body.get("1.0", "end-1c")
             color = self.color.get()
@@ -359,6 +378,9 @@ def _run_gui():
             self.geo_pending = None
             if not self.window.winfo_exists():
                 return
+            if _update_in_progress():
+                self.geo_pending = root.after(1700, self._save_geometry)
+                return
             try:
                 save_layout(self.note["id"], self.window.winfo_x(),
                             self.window.winfo_y(), self.window.winfo_width(),
@@ -367,6 +389,9 @@ def _run_gui():
                 pass
 
         def _archive(self):
+            if _update_in_progress():
+                self.hint.config(text="● Termine d’abord la mise à jour")
+                return
             if not messagebox.askyesno("Archiver", "Archiver ce Post-it ?", parent=self.window):
                 return
             if self.pending:
@@ -394,6 +419,9 @@ def _run_gui():
 
     def sync():
         nonlocal wake_value
+        if _update_in_progress():
+            root.after(1700, sync)
+            return
         try:
             current_wake = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
             if current_wake != wake_value:
