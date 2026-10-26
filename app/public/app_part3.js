@@ -764,13 +764,13 @@ const homeShortcutDefs=[
   {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
 ];
 const homeModuleOrder=[
-  ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],
+  ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],['postits','Post-it'],
   ...homeShortcutDefs.map(item=>[item.id,item.title])
 ];
 const homeModuleVisibilityKey=id=>'atelierHomeModuleVisible_'+id;
 function homeModuleIsVisible(id){
   const stored=localStorage.getItem(homeModuleVisibilityKey(id));
-  return stored===null?['budget','calendar','upcoming','journal'].includes(id):stored==='1';
+  return stored===null?['budget','calendar','upcoming','journal','postits'].includes(id):stored==='1';
 }
 function syncHomeModuleVisibility(){
   const sections=[...document.querySelectorAll('#homeView [data-home-module]')];
@@ -855,6 +855,7 @@ function getGlobalLayoutSpecs(){
     {view:'home',id:'calendar',el:$('#openCalendarCard'),key:'atelierLayout_calendar'},
     {view:'home',id:'upcoming',el:$('.desk-top-row .desk-note:nth-child(2)'),key:'atelierLayout_upcoming'},
     {view:'home',id:'journal',el:$('#journalBook'),key:'atelierLayout_journal'},
+    {view:'home',id:'postits',el:$('#homePostitBoard'),key:'atelierLayout_postits'},
     {view:'calendar',id:'month',el:$('#monthPanel'),key:'atelierViewLayout_calendar_month'},
     {view:'calendar',id:'week',el:$('#weekPanel'),key:'atelierViewLayout_calendar_week'},
     {view:'tasks',id:'tasks',el:$('#taskList'),key:'atelierViewLayout_tasks_list'},
@@ -1071,7 +1072,8 @@ function homeSuggestedLayout(item){
     homeBudgetWidget:[left,12],
     upcoming:[left,narrow?220:210],
     journal:[narrow?left:center,narrow?465:12],
-    calendar:[narrow?left:right,narrow?800:12]
+    calendar:[narrow?left:right,narrow?800:12],
+    postits:[left,narrow?1140:920]
   };
   const shortcutIndex=homeShortcutDefs.findIndex(entry=>entry.id===item.id.replace(/^homeShortcut_/,''));
   const x=shortcutIndex<0?0:narrow?left:12+(shortcutIndex%3)*Math.max(210,Math.floor((width-34)/3));
@@ -1097,8 +1099,8 @@ function activateHomeCanvas(){
   canvas.id='homeCanvas';
   toolbar.after(canvas);
   const budget=$('#homeBudgetWidget'),row=home.querySelector('.desk-top-row');
-  const journal=$('#journalBook'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
-  for(const element of [budget,row,journal,shelf,empty])if(element)canvas.appendChild(element);
+  const journal=$('#journalBook'),postits=$('#homePostitBoard'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
+  for(const element of [budget,row,journal,postits,shelf,empty])if(element)canvas.appendChild(element);
   homeCanvas=canvas;
   canvas.insertAdjacentHTML('beforeend','<div id="homeAlignmentGuideX" class="home-alignment-guide vertical" aria-hidden="true"></div><div id="homeAlignmentGuideY" class="home-alignment-guide horizontal" aria-hidden="true"></div>');
   canvas.addEventListener('pointerdown',event=>{
