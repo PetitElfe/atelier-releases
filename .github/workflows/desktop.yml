@@ -46,6 +46,9 @@ jobs:
           $ico = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path "dist/LAtelier_TEST.exe"))
           if ($null -eq $ico) { throw "The executable icon is missing." }
           Write-Host "PASS: native Windows executable and icon"
+      - name: Test executable auto-install and real Windows Desktop shortcut
+        shell: pwsh
+        run: ./tools/windows_desktop_test.ps1
       - name: Prepare use instructions
         shell: pwsh
         run: |
