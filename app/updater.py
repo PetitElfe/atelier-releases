@@ -123,6 +123,12 @@ def _port():
 
 def _stop():
     if not _port(): raise RuntimeError('Le serveur TEST ne répond plus.')
+    # Check ownership BEFORE requesting a shutdown: never stop a foreign server.
+    with urlopen('http://127.0.0.1:'+str(PORT)+'/api/runtime-version',timeout=3) as probe:
+        if not probe.headers.get('Server','').startswith('AtelierLocal/'):
+            raise RuntimeError('Le port 8876 appartient à une autre application.')
+        if json.load(probe).get('version')!='0.18.0':
+            raise RuntimeError('Serveur de test inattendu sur le port 8876.')
     req=Request('http://127.0.0.1:'+str(PORT)+'/api/shutdown',
                 data=b'{}',method='POST',headers={'Content-Type':'application/json'})
     with urlopen(req,timeout=4) as r:
@@ -150,8 +156,7 @@ def _backup(backup):
 def _start():
     env=dict(os.environ)
     env.update(ATELIER_DATA_DIR=str(DATA),ATELIER_PORT=str(PORT),ATELIER_NO_BROWSER='1')
-    flags=(getattr(subprocess,'DETACHED_PROCESS',0) |
-           getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
+    flags=(getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
            getattr(subprocess,'CREATE_NO_WINDOW',0))
     with open(LOG,'ab',buffering=0) as out:
         child=subprocess.Popen([sys.executable,'-u',str(CODE/'app'/'app.py')],
@@ -204,8 +209,17 @@ def worker(revision):
                 message+=' Ancienne version TEST restaurée.'
             except Exception as rollback:
                 message+=' ATTENTION : restauration à contrôler : '+str(rollback)
+        if not stopped and not _port():
+            try:
+                _start()
+                message+=' Serveur TEST relancé.'
+            except Exception as restart_error:
+                message+=' Serveur à relancer manuellement : '+str(restart_error)
         _status('error',message,revision)
     finally:
+        if stage and stage.is_dir():
+            try: shutil.rmtree(stage)
+            except OSError: pass
         if lock is not None:
             os.close(lock)
             try:LOCK.unlink(missing_ok=True)
@@ -220,8 +234,7 @@ def begin(revision):
     if current['revision']!=revision or not current['available']:
         raise RuntimeError('Révision modifiée : effectue une nouvelle vérification.')
     _status('starting','Préparation de la mise à jour…',revision)
-    flags=(getattr(subprocess,'DETACHED_PROCESS',0) |
-           getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
+    flags=(getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
            getattr(subprocess,'CREATE_NO_WINDOW',0))
     try:
         with open(LOG,'ab',buffering=0) as output:
