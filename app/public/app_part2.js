@@ -122,7 +122,7 @@ function renderMonth(){
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
-      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); cell.appendChild(b);
+      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; cell.appendChild(b);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
     cell.title='Double-clique pour ajouter un rendez-vous';
@@ -137,20 +137,93 @@ function renderMiniMonth(){
   const first=new Date(y,m,1), offset=(first.getDay()+6)%7; for(let i=0;i<offset;i++) root.appendChild(document.createElement('div'));
   const n=new Date(y,m+1,0).getDate(); for(let i=1;i<=n;i++){ const d=new Date(y,m,i), el=document.createElement('button'); el.className='mday'+(typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ymd(d))?' cycle-recorded':'')+(ymd(d)===ymd(new Date())?' today':'')+(ymd(d)===ymd(state.cursor)?' selected':'');el.textContent=i;el.addEventListener('click',()=>{state.cursor=d;renderWeek();renderMonth();});root.appendChild(el); }
 }
+
 function renderWeek(){
-  const start=monday(state.cursor), end=sunday(state.cursor); $('#weekTitle').textContent=`${start.getDate()} ${months[start.getMonth()].slice(0,3)} — ${end.getDate()} ${months[end.getMonth()].slice(0,3)}`; renderMiniMonth();
-  const grid=$('#weekGrid'); grid.innerHTML=''; const blank=document.createElement('div'); blank.className='week-head'; grid.appendChild(blank);
-  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const h=document.createElement('div');h.className='week-head';h.innerHTML=`<strong>${days[i]}</strong><br>${d.getDate()}/${pad(d.getMonth()+1)}`;grid.appendChild(h)}
+  const start=monday(state.cursor),end=sunday(state.cursor);
+  $('#weekTitle').textContent=start.getDate()+' '+months[start.getMonth()].slice(0,3)+' — '+end.getDate()+' '+months[end.getMonth()].slice(0,3);
+  renderMiniMonth();
+  const grid=$('#weekGrid'); grid.innerHTML='';
+  const blank=document.createElement('div');blank.className='week-head';grid.appendChild(blank);
+  const clockMinutes=time=>{
+    if(!time||!/^\d\d:\d\d/.test(time))return null;
+    const parts=time.split(':').map(Number);
+    return parts[0]*60+parts[1];
+  };
+  const isAllDay=e=>!!e.all_day||!e.start_time;
+  const makeEventButton=(e,allDay)=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.className=(allDay?'week-item week-all-day-item ':'week-item ')+eventClass(e)+(eventInstanceClosed(e)?' event-instance-closed':'');
+    const mark=eventInstanceIcon(e);
+    button.textContent=(mark?mark+' ':'')+(allDay?'':fmtTime(e.start_time)+' ')+e.title;
+    button.title=(allDay?'Toute la journée · ':'')+e.title;
+    button.addEventListener('click',()=>openEventModal(e));
+    bindCalendarEventActions(button,e);
+    return button;
+  };
+  const dates=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const ds=ymd(d);dates.push(ds);
+    const h=document.createElement('div');h.className='week-head';
+    h.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
+    const allDay=state.events.filter(e=>e.instance_date===ds&&isAllDay(e));
+    if(allDay.length){
+      h.classList.add('week-all-day-header');
+      allDay.slice(0,2).forEach(e=>h.appendChild(makeEventButton(e,true)));
+      if(allDay.length>2){
+        const more=document.createElement('button');more.type='button';more.className='week-all-day-more';
+        more.textContent='+'+(allDay.length-2)+' autre(s)';
+        more.onclick=()=>openDayList(ds,allDay);
+        h.appendChild(more);
+      }
+    }
+    grid.appendChild(h);
+  }
   for(let hour=7;hour<=22;hour++){
-    const tl=document.createElement('div');tl.className='time-label';tl.textContent=`${pad(hour)}:00`;grid.appendChild(tl);
+    const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
     for(let i=0;i<7;i++){
-      const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d);const cell=document.createElement('div');cell.className='week-slot';bindCalendarDropTarget(cell,ds,`${pad(hour)}:00`);
-      const events=state.events.filter(e=>e.instance_date===ds && (e.all_day || !e.start_time ? hour===7 : Number(e.start_time.slice(0,2))===hour));
-      const tasks=state.tasks.filter(t=>!t.completed && t.due_date===ds && t.due_time && Number(t.due_time.slice(0,2))===hour);
-      if(events.length+tasks.length>2) cell.classList.add('has-many');
-      events.forEach(e=>{const b=document.createElement('button');b.className=`week-item ${eventClass(e.category)}${eventInstanceClosed(e)?' event-instance-closed':''}`;const mark=eventInstanceIcon(e);b.textContent=`${mark?mark+' ':''}${e.all_day?'Toute la journée':fmtTime(e.start_time)} ${e.title}`;b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e);cell.appendChild(b)});
-      tasks.forEach(t=>{const b=document.createElement('button');b.className='week-item week-task';b.textContent=`☐ ${t.title}`;b.addEventListener('click',()=>openTaskModal(t));cell.appendChild(b)});
-      cell.addEventListener('dblclick',()=>openEventModal(null,ds,`${pad(hour)}:00`)); grid.appendChild(cell);
+      const ds=dates[i],cell=document.createElement('div');cell.className='week-slot';
+      bindCalendarDropTarget(cell,ds,pad(hour)+':00');
+      const dayEvents=state.events.filter(e=>e.instance_date===ds);
+      const events=dayEvents.filter(e=>!isAllDay(e)&&Math.max(7,Number(e.start_time.slice(0,2)))===hour);
+      const tasks=state.tasks.filter(t=>!t.completed&&t.due_date===ds&&t.due_time&&Number(t.due_time.slice(0,2))===hour);
+      if(events.length+tasks.length>2)cell.classList.add('has-many');
+      // Le repère de durée occupe les cases concernées sans modifier la grille horaire.
+      const segments=[];
+      let begins=false,allDayVisible=false;
+      for(const e of dayEvents){
+        if(eventInstanceClosed(e))continue;
+        if(isAllDay(e)){
+          segments.push([0,60]);
+          allDayVisible=true;
+          continue;
+        }
+        const from=clockMinutes(e.start_time),rawEnd=clockMinutes(e.end_time);
+        if(from===null||rawEnd===null||rawEnd===from)continue;
+        const to=rawEnd<from?1440:rawEnd;
+        const overlapFrom=Math.max(hour*60,from);
+        const overlapTo=Math.min((hour+1)*60,to);
+        if(overlapTo<=overlapFrom)continue;
+        segments.push([overlapFrom-hour*60,overlapTo-hour*60]);
+        if(from>=hour*60&&from<(hour+1)*60)begins=true;
+      }
+      if(segments.length){
+        cell.classList.add('week-duration');
+        if(allDayVisible)cell.classList.add('week-duration-all-day');
+        if(begins)cell.classList.add('week-duration-begin');
+        cell.style.setProperty('--week-duration-top',Math.min(...segments.map(s=>s[0]))/60*100+'%');
+        cell.style.setProperty('--week-duration-bottom',(60-Math.max(...segments.map(s=>s[1])))/60*100+'%');
+      }
+      events.forEach(e=>cell.appendChild(makeEventButton(e,false)));
+      tasks.forEach(t=>{
+        const button=document.createElement('button');button.className='week-item week-task';button.type='button';
+        button.textContent='☐ '+t.title;button.title=t.title;
+        button.addEventListener('click',()=>openTaskModal(t));
+        cell.appendChild(button);
+      });
+      cell.addEventListener('dblclick',()=>openEventModal(null,ds,pad(hour)+':00'));
+      grid.appendChild(cell);
     }
   }
 }
@@ -288,7 +361,7 @@ function openReminderModal(reminder=null){
   };
 }
 
-function openDayList(ds,items){ openModal(`<h2>${ds}</h2><div class="task-list">${items.map(e=>`<button class="event-pill ${eventClass(e.category)}" data-eid="${e.id}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`).join('')}</div>`); $$('#modalBody [data-eid]').forEach(b=>b.addEventListener('click',()=>{const e=state.events.find(x=>x.id===Number(b.dataset.eid));openEventModal(e)})); }
+function openDayList(ds,items){ openModal(`<h2>${ds}</h2><div class="task-list">${items.map(e=>`<button class="event-pill ${eventClass(e)}" data-eid="${e.id}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`).join('')}</div>`); $$('#modalBody [data-eid]').forEach(b=>b.addEventListener('click',()=>{const e=state.events.find(x=>x.id===Number(b.dataset.eid));openEventModal(e)})); }
 function openModal(html){
   const modal=document.querySelector('.modal');
   if(modal)modal.className='modal';
