@@ -28,6 +28,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='atelier-updater-e2e-') as location:
         root=Path(location)
         code=root/'code_0180';app=code/'app';app.mkdir(parents=True)
+        (app/'app.py').write_text('# Original server fixture',encoding='utf-8')
         data=root/'data';data.mkdir()
         with sqlite3.connect(data/'atelier.db') as c:
             c.execute('CREATE TABLE protected (text TEXT NOT NULL)')
@@ -91,6 +92,45 @@ def main():
             try:updater._stage(revision)
             except RuntimeError as exc:assert 'SHA-256' in str(exc)
             else:raise AssertionError('Altered remote content was accepted')
+
+            # Simulate a failure of the newly installed server. The worker
+            # must restore both the old executable tree and modified data.
+            updater.STATUS=data/'updater-state.json'
+            updater.LOCK=data/'updater.lock'
+            updater.LOG=data/'updater-worker.log'
+            original_guard=updater.guard
+            original_stage=updater._stage
+            original_stop=updater._stop
+            original_start=updater._start
+            original_port=updater._port
+            updater.guard=lambda:None
+            updater._stage=lambda rev:staged
+            updater._stop=lambda:None
+            updater._port=lambda:False
+            calls=[0]
+            def simulated_boot():
+                calls[0]+=1
+                if calls[0]==1:
+                    (data/'notes.txt').write_text('Damaged by failed boot',encoding='utf-8')
+                    raise RuntimeError('Intentional simulated startup failure')
+            updater._start=simulated_boot
+            try:
+                updater.worker(revision)
+                outcome=updater.status()
+                assert outcome['phase']=='error',outcome
+                assert 'restaurée' in outcome['detail']
+                assert calls[0]==2,'Old server was not restarted'
+                assert (code/'app'/'app.py').read_text()=='# Original server fixture'
+                assert (data/'notes.txt').read_text()=='Ne jamais perdre ce texte'
+                with sqlite3.connect(data/'atelier.db') as c:
+                    assert c.execute('SELECT text FROM protected').fetchone()[0]=='Ceci est une donnée privée fictive'
+            finally:
+                updater.guard=original_guard
+                updater._stage=original_stage
+                updater._stop=original_stop
+                updater._start=original_start
+                updater._port=original_port
+
         finally:
             updater._get=original_get
     print('PASS: updater guard, pinned archive staging, path validation, backup integrity')
