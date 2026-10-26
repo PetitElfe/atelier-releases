@@ -173,3 +173,69 @@ function initPostits(){
   $('#homeNewPostit')?.addEventListener('click',addHomePostit);
 }
 initPostits();
+
+
+/* 0.18.0 — compagnon de bureau Windows : survit à la fermeture du serveur.
+   Le choix de lancement automatique appartient toujours à l'utilisatrice. */
+async function getDesktopPostitsStatus(){
+  return await api('/api/desktop-postits/status');
+}
+function displayDesktopPostitsStatus(info){
+  const status=$('#settingsDesktopPostitsStatus'),launch=$('#settingsOpenDesktopPostits');
+  const checkbox=$('#settingsDesktopPostitStartup');
+  if(!status||!checkbox||!launch)return;
+  const available=!!info?.available;
+  launch.disabled=!available;checkbox.disabled=!available;
+  checkbox.checked=available&&!!info.startup;
+  if(!available){
+    status.textContent=info?.error||'Compagnon disponible uniquement dans L’Atelier du Goblin TEST sous Windows.';
+  }else{
+    status.textContent=(info.running?'✓ Post-it de bureau en cours d’exécution.':'Post-it de bureau actuellement fermés.')+
+      (info.startup?' Ils reviendront au démarrage Windows.':' Démarrage Windows désactivé.');
+  }
+}
+async function refreshDesktopPostitsStatus(){
+  try{displayDesktopPostitsStatus(await getDesktopPostitsStatus())}
+  catch(error){
+    const status=$('#settingsDesktopPostitsStatus');
+    if(status)status.textContent='État du compagnon inaccessible.';
+  }
+}
+async function desktopPostitsCommand(action, body={}){
+  return await api('/api/desktop-postits/'+action,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Atelier-Desktop':'1'},
+    body:JSON.stringify(body)
+  });
+}
+async function startDesktopPostits(){
+  const btn=$('#settingsOpenDesktopPostits');
+  if(btn)btn.disabled=true;
+  try{
+    await desktopPostitsCommand('start');
+    const status=$('#settingsDesktopPostitsStatus');
+    if(status)status.textContent='Ouverture demandée : les Post-it apparaîtront sur le Bureau Windows.';
+    // La fenêtre native démarre dans un processus indépendant.
+    setTimeout(refreshDesktopPostitsStatus,1700);
+  }catch(error){showUiError(error,'Impossible d’ouvrir les Post-it Windows');await refreshDesktopPostitsStatus()}
+  finally{if(btn)btn.disabled=false}
+}
+function initDesktopPostitsControls(){
+  const launch=$('#settingsOpenDesktopPostits');
+  const quick=$('#postitShowOnDesktop');
+  const startup=$('#settingsDesktopPostitStartup');
+  if(launch)launch.onclick=startDesktopPostits;
+  if(quick)quick.onclick=startDesktopPostits;
+  if(startup)startup.onchange=async()=>{
+    const enabled=startup.checked;startup.disabled=true;
+    try{
+      await desktopPostitsCommand('startup',{enabled});
+      await refreshDesktopPostitsStatus();
+    }catch(error){
+      showUiError(error,'Démarrage Windows des Post-it');
+      await refreshDesktopPostitsStatus();
+    }finally{startup.disabled=false}
+  };
+  refreshDesktopPostitsStatus();
+}
+initDesktopPostitsControls();
