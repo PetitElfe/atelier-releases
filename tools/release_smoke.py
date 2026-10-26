@@ -404,12 +404,42 @@ def check_server(version: str) -> None:
             status, events_after = request("GET", "/api/events?start=2027-03-20&end=2027-03-20")
             if not any(e.get("id") == linked_event["id"] for e in events_after):
                 fail("Supprimer un rappel lié ne doit pas supprimer son rendez-vous.")
+            # Post-it : notes en base, pas uniquement dans le navigateur.
+            status, notes = request("GET", "/api/postits")
+            if status != 200 or not any(n['title'] == "Aujourd'hui" for n in notes):
+                fail("Le Post-it par défaut n'a pas été créé.")
+            status, created = request("POST", "/api/postits", {
+                "title": "Courses à prévoir", "body": "Pense au lait", "color": "sage", "shape": "square"
+            })
+            if status != 201 or not created.get("id"):
+                fail("Impossible de créer un Post-it.")
+            note_id=created["id"]
+            status, _ = request("PUT", f"/api/postits/{note_id}", {
+                "title": "Courses et idées", "body": "Lien https://example.com",
+                "color": "deep-blue", "shape": "pill"
+            })
+            if status != 200:
+                fail("Impossible de modifier un Post-it.")
+            status, notes = request("GET", "/api/postits")
+            saved=next((n for n in notes if n['id'] == note_id), None)
+            if not saved or saved['color'] != "deep-blue" or saved['shape'] != "pill" or "example.com" not in saved['body']:
+                fail("Texte ou apparence du Post-it non persistés.")
+            status, _ = request("PUT", f"/api/postits/{note_id}", {"archived": True})
+            if status != 200 or any(n['id'] == note_id for n in request("GET", "/api/postits")[1]):
+                fail("La note archivée doit disparaître de l'Accueil.")
+            archived=request("GET", "/api/postits?archived=1")[1]
+            if not any(n['id']==note_id for n in archived):
+                fail("Le Post-it archivé doit rester récupérable.")
+            status, _=request("PUT", f"/api/postits/{note_id}", {"archived": False})
+            if status != 200:
+                fail("Restauration du Post-it impossible.")
+
         finally:
             stop_server(proc)
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 4:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 5:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             c.execute("PRAGMA user_version = 0")
             c.commit()
