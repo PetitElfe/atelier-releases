@@ -37,12 +37,12 @@ async function api(path,method='GET',body){
   await page.route('**/api/update/check',route=>route.fulfill({
     status:200,contentType:'application/json',
     body:JSON.stringify({version:'0.18.0',installed_version:'0.18.0',
-      available:true,channel:'TEST',revision:'a'.repeat(40)})
+      available:true,channel:'TEST',revision:'a'.repeat(40),installed_build:'b23f591a'})
   }));
   await page.evaluate(()=>showView('settings'));
   await page.locator('#settingsCheckUpdates').click();
   await page.waitForFunction(()=>document.querySelector('#settingsUpdateMessage')?.textContent.includes('Nouvelle révision 0.18.0 disponible'));
-  assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0 · TEST');
+  assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0 · TEST · build b23f591a');
   assert.ok(await page.locator('#settingsInstallUpdate').isVisible(),'Le bouton Installer doit apparaître quand une révision TEST est disponible');
   assert.ok(await page.locator('#settingsInstallUpdate').isEnabled(),'Le bouton Installer doit être utilisable');
   await page.evaluate(()=>localStorage.setItem('atelierUpdateSmoke','test'));
