@@ -1,4 +1,4 @@
-name: Windows desktop TEST app
+name: L’Atelier du Goblin — Windows TEST
 
 on:
   pull_request:
@@ -6,6 +6,8 @@ on:
     paths:
       - "app/desktop_shell.py"
       - "tools/create_desktop_icon.py"
+      - "tools/windows_version_info.txt"
+      - "tools/windows_desktop_test.ps1"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -34,18 +36,22 @@ jobs:
       - name: Package real Windows EXE without browser chrome
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name LAtelier_TEST --icon build/atelier.ico --hidden-import webview.platforms.winforms app/desktop_shell.py
-          if (-not (Test-Path dist/LAtelier_TEST.exe)) { throw "Windows executable missing" }
-          if ((Get-Item dist/LAtelier_TEST.exe).Length -lt 1000000) { throw "Executable unexpectedly small" }
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name LAtelierDuGoblin_TEST --version-file tools/windows_version_info.txt --icon build/atelier.ico --hidden-import webview.platforms.winforms app/desktop_shell.py
+          if (-not (Test-Path dist/LAtelierDuGoblin_TEST.exe)) { throw "Windows executable missing" }
+          if ((Get-Item dist/LAtelierDuGoblin_TEST.exe).Length -lt 1000000) { throw "Executable unexpectedly small" }
       - name: Verify executable entrypoint
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath "dist/LAtelier_TEST.exe" -ArgumentList "--self-test" -Wait -PassThru
+          $p = Start-Process -FilePath "dist/LAtelierDuGoblin_TEST.exe" -ArgumentList "--self-test" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "The packaged EXE fails its self-test: $($p.ExitCode)" }
           Add-Type -AssemblyName System.Drawing
-          $ico = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path "dist/LAtelier_TEST.exe"))
+          $ico = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path "dist/LAtelierDuGoblin_TEST.exe"))
           if ($null -eq $ico) { throw "The executable icon is missing." }
-          Write-Host "PASS: native Windows executable and icon"
+          $exe = Get-Item "dist/LAtelierDuGoblin_TEST.exe"
+          if ($exe.VersionInfo.CompanyName -ne "Petit Goblin") { throw "CompanyName must be Petit Goblin" }
+          if ($exe.VersionInfo.ProductName -ne "L'Atelier du Goblin") { throw "ProductName does not match" }
+          if ($exe.VersionInfo.FileDescription -notlike "L'Atelier du Goblin*") { throw "FileDescription does not match" }
+          Write-Host "PASS: native Windows executable, icon and Petit Goblin version metadata"
       - name: Test executable auto-install and real Windows Desktop shortcut
         shell: pwsh
         run: ./tools/windows_desktop_test.ps1
@@ -53,31 +59,34 @@ jobs:
         shell: pwsh
         run: |
           @'
-          L'ATELIER WINDOWS TEST 0.18.0
+          L'ATELIER DU GOBLIN — WINDOWS TEST 0.18.0
 
           1. Keep your existing TEST installation in E:\LATELIER_TEST_0180.
-          2. Double-click LAtelier_TEST.exe once from the extracted ZIP.
+          2. Close the previous LAtelier_TEST window, then double-click LAtelierDuGoblin_TEST.exe.
           3. It checks your TEST data, installs itself under
-             E:\LATELIER_TEST_0180\desktop\LAtelier_TEST.exe,
-             creates "L'Atelier TEST" on your Windows Desktop and opens
+             E:\LATELIER_TEST_0180\desktop\LAtelierDuGoblin_TEST.exe,
+             creates "L'Atelier du Goblin TEST" on your Windows Desktop and opens
              L'Atelier in its own WebView2 window (no Brave tab).
           4. The current TEST Python server and its updates are reused.
           5. Your old Brave localStorage (interface preferences) is not
              automatically transferred into the new WebView2 profile.
              All SQLite application data remains in the TEST data folder.
 
-          This build is unsigned: Windows may display a SmartScreen warning.
+          Metadata CompanyName=Petit Goblin does not constitute a digital signature.
+          This build remains UNSIGNED; SmartScreen may show Unknown Publisher.
           Download only from this project's verified CI build.
           NEVER use it with E:\00_LATELIER (stable 0.17.0).
 
+          Existing LAtelier_TEST.exe and its shortcut are intentionally left untouched.
+          After validating the new shortcut, you may delete the older shortcut by hand.
           Post-it on the Windows Desktop is a separate feature, not included
           in this first native-window shell.
           '@ | Set-Content build/LIRE_AVANT_INSTALLATION.txt -Encoding UTF8
       - uses: actions/upload-artifact@v4
         with:
-          name: LAtelier_TEST_Windows_EXE_icone
+          name: LAtelierDuGoblin_TEST_Windows_EXE_icone
           path: |
-            dist/LAtelier_TEST.exe
+            dist/LAtelierDuGoblin_TEST.exe
             build/atelier.ico
             build/LIRE_AVANT_INSTALLATION.txt
           if-no-files-found: error
