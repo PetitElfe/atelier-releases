@@ -108,6 +108,14 @@
         </section>
       </div>
 
+      <section id="homePostitBoard" data-home-module="postits" class="home-postit-board" aria-label="Mes Post-it">
+        <div class="home-postit-heading">
+          <strong>Mes Post-it</strong>
+          <div><button id="postitArchiveList" type="button" class="secondary">Archives</button><button id="postitAdd" type="button">＋ Post-it</button></div>
+        </div>
+        <div id="homePostitList" class="home-postit-list" aria-live="polite"></div>
+      </section>
+
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
 
@@ -496,6 +504,7 @@
   <div id="toastArea" class="toast-area" aria-live="polite"></div>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
+  <script src="/postits.js"></script>
   <script src="/app_part3.js"></script>
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
