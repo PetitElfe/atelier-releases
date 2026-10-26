@@ -1546,3 +1546,25 @@ body.home-active{overflow-y:auto}
 #homeView.home-free-ready.layout-editing [data-home-module].layout-object>.layout-controls{
   inset:0;height:auto;overflow:visible;
 }
+
+
+/* ALPHA 0.18 — le mini-calendrier grandit avec SA carte, et non avec la fenêtre.
+   Les autres modules gardent leurs dimensions enregistrées. */
+#homeView.home-free-ready #openCalendarCard{
+  container-type:inline-size;
+}
+#homeView.home-free-ready #homeMiniCalendar{
+  grid-template-columns:repeat(7,minmax(0,1fr));
+}
+@container (min-width:260px){
+  #homeMiniCalendar{gap:4px}
+  #homeMiniCalendar .dow{font-size:12px}
+  #homeMiniCalendar .hday{min-height:30px;padding:5px 2px;font-size:13px}
+  .pinned-calendar-head{font-size:13px;margin-bottom:8px}
+}
+@container (min-width:360px){
+  #homeMiniCalendar{gap:6px}
+  #homeMiniCalendar .dow{font-size:14px}
+  #homeMiniCalendar .hday{min-height:39px;padding:7px 3px;font-size:15px}
+  .pinned-calendar-head{font-size:15px;margin-bottom:10px}
+}
