@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS events (
   end_time TEXT,
   all_day INTEGER NOT NULL DEFAULT 0,
   category TEXT NOT NULL DEFAULT 'general',
+  color TEXT NOT NULL DEFAULT 'auto',
   location TEXT DEFAULT '',
   notes TEXT DEFAULT '',
   contact TEXT DEFAULT '',
@@ -329,6 +330,8 @@ with conn() as c:
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
+    if 'color' not in event_cols:
+        c.execute("ALTER TABLE events ADD COLUMN color TEXT NOT NULL DEFAULT 'auto'")
     shopping_cols = {r['name'] for r in c.execute('PRAGMA table_info(shopping_items)').fetchall()}
     if 'purchase_count' not in shopping_cols:
         c.execute("ALTER TABLE shopping_items ADD COLUMN purchase_count INTEGER NOT NULL DEFAULT 1")
