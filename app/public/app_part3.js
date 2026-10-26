@@ -31,7 +31,8 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid event-form-compact">
     <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
-    <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général · blanc</option><option value="medical">Médical · vert</option><option value="important">Important · rouge</option></select></div>
+    <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général</option><option value="medical">Médical</option><option value="important">Important / deadline</option></select></div>
+    <div class="field"><label>Couleur</label><select name="color"><option value="auto">Automatique (catégorie)</option><option value="sage">Vert sauge</option><option value="mauve">Mauve pastel</option><option value="gold">Doré doux</option><option value="red">Rouge pastel</option><option value="pink">Rose poudré</option><option value="blue">Bleu grisé</option><option value="peach">Pêche</option><option value="cream">Jaune crème</option></select></div>
     <div class="field"><label>Début</label><input name="start_time" type="time" value="${esc(e?.start_time||presetTime||'')}"></div>
     <div class="field"><label>Fin</label><input name="end_time" type="time" value="${esc(e?.end_time||'')}"></div>
     <div class="field"><label>Lieu</label><input name="location" value="${esc(e?.location||'')}"></div>
@@ -47,7 +48,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
-  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
+  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
   $('#eventMore')?.addEventListener('click',ev=>showAtelierContextMenu(ev.currentTarget,[
     {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
     ...(e?.url?[{label:'Ouvrir le lien',run:()=>window.open(e.url,'_blank','noopener,noreferrer')}]:[]),
