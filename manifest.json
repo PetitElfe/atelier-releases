@@ -69,7 +69,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "61b00ff6d4e9d5c780340ddbe22d66ce441942c48117d33bcf976e1113fc6e06"
+      "sha256": "2ed0ddd5f05800cf6f8fa0766d9e8c23caaaa575a907b55019c2635d9b732497"
     },
     {
       "path": "public/postits.js",
@@ -81,7 +81,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "88379eee0123d20d4cba893baf5dd991a2af33962f30a85925fc3844d044681a"
+      "sha256": "66cd3ddbab21efe78364e9d4f01e3df90afd8f0b69a554f08dd1dba26c9ae2b0"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
