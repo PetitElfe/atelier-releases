@@ -22,15 +22,15 @@ from urllib.request import urlopen
 TEST_ROOT = Path(r"E:\LATELIER_TEST_0180")
 CODE = TEST_ROOT / "code_0180"
 DATA = TEST_ROOT / "data"
-DESKTOP_APP = TEST_ROOT / "desktop" / "LAtelier_TEST.exe"
+DESKTOP_APP = TEST_ROOT / "desktop" / "LAtelierDuGoblin_TEST.exe"
 PROFILE = TEST_ROOT / "desktop-profile"
 URL = "http://127.0.0.1:8876/"
 PORT = 8876
-WINDOW_TITLE = "L'Atelier — TEST 0.18.0"
+WINDOW_TITLE = "L'Atelier du Goblin — TEST 0.18.0"
 
 
 def _message(text: str, error: bool = False) -> None:
-    ctypes.windll.user32.MessageBoxW(0, str(text), "L'Atelier TEST",
+    ctypes.windll.user32.MessageBoxW(0, str(text), "L'Atelier du Goblin TEST",
                                      0x10 if error else 0x40)
 
 
@@ -83,11 +83,11 @@ def _shortcut(target: Path) -> None:
         "$ErrorActionPreference='Stop';"
         "$shell=New-Object -ComObject WScript.Shell;"
         "$desktop=$shell.SpecialFolders.Item('Desktop');"
-        "$link=Join-Path $desktop 'L''Atelier TEST.lnk';"
+        "$link=Join-Path $desktop 'L''Atelier du Goblin TEST.lnk';"
         "$shortcut=$shell.CreateShortcut($link);"
         "$shortcut.TargetPath='" + exe + "';"
         "$shortcut.WorkingDirectory='" + quoted(target.parent) + "';"
-        "$shortcut.Description='L''Atelier — application Windows TEST';"
+        "$shortcut.Description='L''Atelier du Goblin — application Windows TEST';"
         "$shortcut.IconLocation='" + exe + ",0';"
         "$shortcut.Save();"
         "if(-not(Test-Path $link)){throw 'Raccourci introuvable.'}"
@@ -222,7 +222,7 @@ def _stop_own_server(child) -> None:
 def main():
     if "--self-test" in sys.argv:
         assert PORT == 8876 and "LATELIER_TEST_0180" in str(TEST_ROOT)
-        assert DESKTOP_APP.name == "LAtelier_TEST.exe"
+        assert DESKTOP_APP.name == "LAtelierDuGoblin_TEST.exe"
         print("PASS: desktop entrypoint and TEST isolation")
         return
     try:
