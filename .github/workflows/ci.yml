@@ -50,7 +50,9 @@ jobs:
       - name: Install browser automation
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          # Les bibliothèques graphiques de l'agent Ubuntu suffisent pour l'exécution headless.
+          # Éviter apt-get --with-deps (très lent, timeout de 10 min avant les tests).
+          npx playwright install --only-shell chromium
       - name: Reproduce save / Accueil / return
         run: |
           node tools/objective_map_browser_test.cjs
