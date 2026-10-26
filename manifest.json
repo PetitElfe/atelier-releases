@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "15257729c5963b6dd9d6d85bab1f89ce823de196f43d221279b4de7a71057586"
+      "sha256": "a69ebfebf9e811cf127fa2856988906048e7be5521bc074913fe80891a070c15"
     },
     {
       "path": "app_part2.py",
-      "sha256": "95a26f003a2e3afe12f0be891c0d233f7d3673573846770e9778ea7c2831a669"
+      "sha256": "77561d70a54545822a95190599b7df600ba02877f0dab3896eb01f2879f38690"
     },
     {
       "path": "app_part3.py",
@@ -29,15 +29,15 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "ed2a5dfad8b62846bbfadfa5e52e97aa4aeb775ef3c1ff8b4596ecdf91dac491"
+      "sha256": "fb80d3e0834a8b8e02eba8ebea0b7192eedd3351e9c2af1cceb8dedbfa09e38f"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "3c78e6c88914305e5aa87055836d5ad71bb3140e0d9d4354155cee83013aa565"
+      "sha256": "ee21ad09d0cd531f9042e1044c8398d9f2c305b6064c8a6f3a8986380cc2ce8c"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "001f249cf8207169215664c764b8d1aa096265cde5501cef1a25a31b4f94a7f4"
+      "sha256": "152a9a1994feb47aef3a97e9f3a7d1e16c5a279554ca7ba0cbe3af94544982fd"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "145f0a08ffa310ca9a9fe5b1a10ce6df0db5d32ecf3086f272d2e36a7260d7dd"
+      "sha256": "a9cca64af962832e2aab2ccb64d7652c673020d96b033df91ee29f25ca4caf10"
     },
     {
       "path": "progression.py",
