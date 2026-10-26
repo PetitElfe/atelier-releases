@@ -1589,3 +1589,41 @@ body.home-active{overflow-y:auto}
 }
 #weekPanel .mini-panel #prevWeek,
 #weekPanel .mini-panel #nextWeek{width:30px;padding:6px 0}
+
+/* ALPHA 0.18.0 — des jours identiques, même avec de longs rendez-vous. */
+#monthGrid.month-grid{grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:clamp(116px,16vh,180px)}
+#monthGrid .day-cell{height:100%;min-width:0;min-height:0;overflow:hidden}
+#monthGrid .event-pill{min-width:0;max-width:100%;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+@media(max-width:800px){#monthGrid.month-grid{grid-auto-rows:94px}}
+
+/* Couleurs pastorales/pastel communes, indépendantes de la catégorie d'un RDV. */
+.event-color-sage{background:#78977D!important;color:#1A231C!important}
+.event-color-mauve{background:#AA91BE!important;color:#2D2233!important}
+.event-color-gold{background:#C39B69!important;color:#342718!important}
+.event-color-red{background:#B9756B!important;color:#291B19!important}
+.event-color-pink{background:#D6A3B3!important;color:#38252B!important}
+.event-color-blue{background:#8FAAC4!important;color:#213040!important}
+.event-color-peach{background:#D8AD83!important;color:#392B1F!important}
+.event-color-cream{background:#DDC88B!important;color:#382F1C!important}
+
+/* L'horaire du RDV commence au niveau de l'étiquette et descend sur
+   les heures réellement couvertes, sans allonger les cases de la grille. */
+#weekGrid .week-slot{position:relative;min-width:0;overflow:hidden}
+#weekGrid .week-slot.week-duration{padding-left:11px}
+#weekGrid .week-slot.week-duration::before{
+  content:'';position:absolute;pointer-events:none;
+  left:3px;top:var(--week-duration-top,0%);bottom:var(--week-duration-bottom,0%);
+  width:3px;border-radius:2px;background:#B9756B;z-index:1
+}
+#weekGrid .week-slot.week-duration-begin::after{
+  content:'';position:absolute;pointer-events:none;
+  left:3px;top:var(--week-duration-top,0%);width:12px;height:2px;
+  background:#B9756B;z-index:1
+}
+#weekGrid .week-head.week-all-day-header{box-shadow:inset 3px 0 #B9756B}
+#weekGrid .week-head .week-all-day-item{
+  margin:5px 0 0;display:block;width:100%;max-width:100%;
+  text-overflow:ellipsis;white-space:nowrap;overflow:hidden;
+  padding:3px 4px;font-size:11px
+}
+#weekGrid .week-all-day-more{display:block;padding:1px 4px;margin-top:2px;font-size:10px;width:100%}
