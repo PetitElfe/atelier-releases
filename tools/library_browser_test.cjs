@@ -686,11 +686,13 @@ async function api(path,method='GET',body){
   // ALPHA 0.18 : emplacement du tiroir à gauche après un vrai glisser et F5.
   await page.evaluate(()=>{showView('home');setSideNavCollapsed(false)});
   const sideGrip=page.locator('#sideNavDragHandle');
+  // Attendre la fin de l'animation d'ouverture avant de commencer à saisir
+  // le menu : une coordonnée prise pendant la transition manque la poignée.
+  await sideGrip.hover({timeout:10000});
   const gripRect=await sideGrip.boundingBox();
   assert.ok(gripRect,'La poignée du tiroir est accessible');
-  await page.mouse.move(gripRect.x+gripRect.width/2,gripRect.y+gripRect.height/2);
   await page.mouse.down();
-  await page.mouse.move(35,gripRect.y+gripRect.height/2,{steps:12});
+  await page.mouse.move(35,gripRect.y+gripRect.height/2,{steps:24});
   await page.mouse.up();
   const storedLeft=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierSideNavPosition'))?.left);
   assert.ok(Number.isFinite(storedLeft)&&storedLeft<100,'Le tiroir doit pouvoir aller à gauche: '+storedLeft);
