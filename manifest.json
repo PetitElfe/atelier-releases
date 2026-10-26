@@ -69,7 +69,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "743b5c558a115765752324b8bd2107e32017649a1a4708b8a9b3f27174899116"
+      "sha256": "980c9078ad35051f9f6c1e4f660f16ac21e71b69a2df34b65c1563de754f542d"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
