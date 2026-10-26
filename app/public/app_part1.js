@@ -38,7 +38,7 @@ function eventClass(event){
   const category=typeof event==='string'?event:(event?.category||'general');
   const color=typeof event==='string'?'auto':(event?.color||'auto');
   const categoryClass=category==='medical'?'event-medical':category==='important'?'event-important':'event-general';
-  const allowed=['sage','mauve','gold','red','pink','blue','peach','cream'];
+  const allowed=['sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'];
   return categoryClass+(allowed.includes(color)?' event-color-'+color:'');
 }
 function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled' || e.status==='done' || e.status==='cancelled'; }
