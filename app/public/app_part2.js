@@ -3089,6 +3089,9 @@ function renderLibraryPageEditor(notebook,page){
       if(e.shiftKey)libraryRedo();else libraryUndo();
     }else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){
       e.preventDefault();libraryRedo();
+    }else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'&&!e.altKey){
+      // Raccourci francophone demandé : Ctrl+G / Cmd+G = Gras.
+      e.preventDefault();libraryCommand('bold');
     }
   });
   body.addEventListener('blur',()=>scheduleLibraryAutosave(page,{immediate:true}));
@@ -3192,6 +3195,43 @@ function renderLibraryNotebookContent(domain){
   }
   if(!librarySelectedPageId||!libraryPageById(librarySelectedPageId))librarySelectedPageId=Number(notebook.entries[0].id);
   renderLibraryPageEditor(notebook,libraryPageById(librarySelectedPageId));
+  renderLibraryCompactPagePicker(notebook,domain);
+}
+
+/* 0.18.0 — navigation des pages sur la feuille beige, sans barre latérale. */
+function renderLibraryCompactPagePicker(notebook,domain){
+  const header=$('#libraryNotebookPages .library-writing-topbar');
+  if(!header)return; // Le mode lecture possède déjà sa pagination.
+  header.querySelector('.library-compact-page-picker')?.remove();
+  const label=document.createElement('label');
+  label.className='library-compact-page-picker';
+  const title=document.createElement('span');title.textContent='PAGES DU CARNET';
+  const select=document.createElement('select');
+  select.id='libraryCompactPageSelect';
+  select.setAttribute('aria-label','Choisir une page du carnet');
+  (notebook.entries||[]).forEach((entry,index)=>{
+    const option=document.createElement('option');
+    option.value=String(entry.id);
+    option.textContent=(index+1)+' · '+entry.title+(entry.done?' ✓':'');
+    option.selected=Number(entry.id)===Number(librarySelectedPageId);
+    select.appendChild(option);
+  });
+  select.onchange=async()=>{
+    const target=Number(select.value);
+    if(target===Number(librarySelectedPageId))return;
+    const ok=await flushLibraryAutosave();
+    if(ok===false){select.value=String(librarySelectedPageId);return}
+    librarySelectedPageId=target;
+    libraryEditorMode='write';
+    renderLibraryNotebookContent(domain);
+  };
+  const add=document.createElement('button');
+  add.type='button';add.className='library-compact-page-add';
+  add.textContent='＋';add.title='Ajouter une page au carnet';
+  add.setAttribute('aria-label','Ajouter une page');
+  add.onclick=()=>createLibraryPage(notebook);
+  label.append(title,select,add);
+  header.insertBefore(label,header.firstChild);
 }
 
 
