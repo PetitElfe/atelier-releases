@@ -88,7 +88,7 @@ def main():
                                b'altered' if path=='VERSION' else value)
             tampered_bytes=tampered_archive.getvalue()
             updater._get=lambda url,limit=80000000:(manifest_bytes if url.endswith('/manifest.json') else tampered_bytes)
-            try:updater._archive(revision)
+            try:updater._stage(revision)
             except RuntimeError as exc:assert 'SHA-256' in str(exc)
             else:raise AssertionError('Altered remote content was accepted')
         finally:
