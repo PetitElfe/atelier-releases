@@ -156,6 +156,20 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        if p == '/api/update/status':
+            try:
+                updater.guard()
+                return self._json(updater.status())
+            except RuntimeError as exc:
+                return self._json({'error':str(exc)},403)
+        if p == '/api/update/check':
+            try:
+                return self._json(updater.check())
+            except RuntimeError as exc:
+                return self._json({'error':str(exc)},403)
+            except Exception as exc:
+                return self._json({'error':'GitHub ou manifeste indisponible : '+str(exc)},502)
+
         with conn() as c:
             if p == '/api/budget':
                 try: return self._json(budget_snapshot(c,budget_month(q.get('month',[date.today().strftime('%Y-%m')])[0]),now_iso()))
@@ -314,6 +328,19 @@ class Handler(BaseHTTPRequestHandler):
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
+        if p == '/api/update/start':
+            # A deliberate button click from the localhost UI is required;
+            # foreign websites cannot issue a cross-origin custom-header POST.
+            if (self.headers.get('Origin') != 'http://127.0.0.1:8876'
+                    or self.headers.get('X-Atelier-Update') != '1'):
+                return self._json({'error':'Action réservée aux Paramètres de L’Atelier TEST.'},403)
+            try:
+                return self._json(updater.begin(str(body.get('revision',''))))
+            except RuntimeError as exc:
+                return self._json({'error':str(exc)},409)
+            except Exception as exc:
+                return self._json({'error':'Mise à jour impossible : '+str(exc)},502)
+
         if p == '/api/recipe-import-url':
             try:
                 return self._json(import_recipe_from_url(body.get('url','')))
