@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], postits:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -61,6 +61,7 @@ async function refresh(){
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
     ['tasks',api('/api/tasks')],
     ['reminders',api('/api/reminders')],
+    ['postits',api('/api/postits')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],
     ['recipeBooks',api('/api/recipe-books')],
@@ -72,7 +73,7 @@ async function refresh(){
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
   render();
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function'&&state.view==='library'&&!window.__atelierLibraryViewRestoring)renderLibrary(); updateClock(); }
+function render(){ renderHome(); if(typeof renderHomePostits==='function')renderHomePostits(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function'&&state.view==='library'&&!window.__atelierLibraryViewRestoring)renderLibrary(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
