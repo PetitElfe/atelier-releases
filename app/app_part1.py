@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -241,6 +241,18 @@ CREATE TABLE IF NOT EXISTS budget_entries (
 CREATE TABLE IF NOT EXISTS budget_month_notes (
  month TEXT PRIMARY KEY, notes TEXT NOT NULL DEFAULT ''
 );
+-- Notes de l'Accueil : texte dans SQLite pour les sauvegardes, pas dans localStorage.
+CREATE TABLE IF NOT EXISTS home_postits (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ body TEXT NOT NULL DEFAULT '',
+ color TEXT NOT NULL DEFAULT 'gold',
+ shape TEXT NOT NULL DEFAULT 'rounded',
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_home_postits_archived ON home_postits(archived,id);
 CREATE INDEX IF NOT EXISTS idx_budget_entries_date ON budget_entries(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_menstrual_period_start ON menstrual_periods(start_date);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
@@ -301,6 +313,14 @@ with conn() as c:
     c.executescript(SCHEMA)
     progression.initialise(c)
     objective_maps.initialise(c)
+    # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
+    # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
+    if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():
+        first_time = c.execute('PRAGMA user_version').fetchone()[0] < 5
+        if first_time:
+            timestamp = datetime.now().replace(microsecond=0).isoformat()
+            c.execute('INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,?,?,0,?,?)',
+                      ("Aujourd'hui", '', 'gold', 'rounded', timestamp, timestamp))
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
