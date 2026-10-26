@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "50b4e500cf7d0f531e099f0607937b9bb50502b4ce5a68d719f0ad206b4dc8be"
+      "sha256": "813a2fba02b44c9b1d230bad2b0c69a7cdcaf671e6253b01a8ae52a399f2ac19"
     },
     {
       "path": "public/styles.css",
@@ -77,7 +77,7 @@
     },
     {
       "path": "desktop_shell.py",
-      "sha256": "afb33b76f624700278ef0ff14755b9707264ef862b7b04d7f0bfbb7911d847cd"
+      "sha256": "bfce1e85056311eef14188ca3e12323babde666941f8295666081adc81650b2f"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
