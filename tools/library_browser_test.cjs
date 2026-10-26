@@ -52,6 +52,26 @@ async function api(path,method='GET',body){
   await page.unroute('**/api/update/check');
   await page.evaluate(()=>showView('home'));
 
+  // Post-it : création, auto-sauvegarde en SQLite, couleur et forme après F5.
+  await page.locator('#homeNewPostit').click();
+  await page.locator('#postitEditForm').waitFor();
+  await page.locator('#postitEditForm input[name="title"]').fill('Mon Post-it de test');
+  await page.locator('#postitEditForm textarea[name="body"]').fill('Un rappel important avec https://example.com');
+  await page.locator('#postitEditForm select[name="color"]').selectOption('deep-green');
+  await page.locator('#postitEditForm select[name="shape"]').selectOption('square');
+  await page.locator('#postitEditorClose').click();
+  await page.locator('#postitEditForm').waitFor({state:'detached'});
+  const savedPostit=(await api('/api/postits')).find(n=>n.title==='Mon Post-it de test');
+  assert.ok(savedPostit&&savedPostit.color==='deep-green'&&savedPostit.shape==='square'&&savedPostit.body.includes('example.com'),
+    'Les modifications doivent être sauvegardées dans la base SQLite, pas seulement le navigateur');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').waitFor();
+  assert.ok(await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').evaluate(
+    el=>el.classList.contains('postit-deep-green')&&el.classList.contains('postit-square')
+       &&!!el.querySelector('a[href="https://example.com/"]')),
+    'Le Post-it et son lien doivent réapparaître après F5');
+
+
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
