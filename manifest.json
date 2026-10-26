@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "df21c6826ab83c18a8c1e8bae0a8f3f67fdc6da8dd949e4b2b103e408107be58"
+      "sha256": "50e1cf112b1e32f6223bca721a8d2cac7bfb0dbe9ba7066d83b47fa28498529a"
     },
     {
       "path": "app_part2.py",
-      "sha256": "e8ed3db3fa8cb354527ca7ca1dbe5aa1c702d6f511584604a0cc40ae2076249b"
+      "sha256": "625b6b621de66dbf7295004a48645d4f5a06e8e84825c66a57b91bb7d498234d"
     },
     {
       "path": "app_part3.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "bf935d0c60a34952b01a64a930171e25ba17228dd78c6ca654cb81df25a3999e"
+      "sha256": "57948433baf786df8c6530c257ec7622c96e406cf5b340a60ff981d0f3f793f8"
     },
     {
       "path": "public/app_part2.js",
@@ -37,15 +37,15 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "61e5e8c78192f68e13416fcd505818a49e66f1a4ab3b52f8c488717e65d8de97"
+      "sha256": "64527b1d2794b5a3c204d708308fe43b43baf2cb3c339016471fb389fc48b66e"
     },
     {
       "path": "public/index.html",
-      "sha256": "ca4ed085c77d4f24be919165ec9e05c48251c69538c64167414b43ca3ffb33ac"
+      "sha256": "50b4e500cf7d0f531e099f0607937b9bb50502b4ce5a68d719f0ad206b4dc8be"
     },
     {
       "path": "public/styles.css",
-      "sha256": "a78f33b18fbeeeb67d88576040cbb77280b73ee5fb65cbee271de77b906ee1c0"
+      "sha256": "b42d270fc8369ff55566733d1c3320e194e48c3721d648218bc80c50336e87f8"
     },
     {
       "path": "progression.py",
@@ -70,6 +70,10 @@
     {
       "path": "updater.py",
       "sha256": "61b00ff6d4e9d5c780340ddbe22d66ce441942c48117d33bcf976e1113fc6e06"
+    },
+    {
+      "path": "public/postits.js",
+      "sha256": "f414404398854045add481e43d1571c2f6c6f5af5786038b33c1063a241e9469"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
