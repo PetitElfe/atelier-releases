@@ -361,7 +361,12 @@ async function api(path,method='GET',body){
       cardHeight:Math.round(r1?.height||0),hourHeight:hour,
       viewport:window.innerHeight,
       weekHeight:scroll.getBoundingClientRect().height,
-      noVerticalOverflow:scroll.scrollHeight<=scroll.clientHeight+3
+      scrollBottom:Math.round(scroll.getBoundingClientRect().bottom),
+      scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,
+      overflowY:getComputedStyle(scroll).overflowY,
+      noVerticalOverflow:(getComputedStyle(scroll).overflowY==='visible'&&
+        scroll.getBoundingClientRect().bottom<=window.innerHeight+10)||
+        scroll.scrollHeight<=scroll.clientHeight+3
     };
   });
   assert.ok(compactWeek.overlapping&&compactWeek.adjacent&&compactWeek.blue,
