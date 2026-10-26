@@ -111,7 +111,7 @@
       <section id="homePostitBoard" data-home-module="postits" class="home-postit-board" aria-label="Mes Post-it">
         <div class="home-postit-heading">
           <strong>Mes Post-it</strong>
-          <div><button id="postitArchiveList" type="button" class="secondary">Archives</button><button id="postitAdd" type="button">＋ Post-it</button></div>
+          <div><button id="postitShowOnDesktop" type="button" class="secondary" title="Afficher les notes sur le Bureau Windows">▧ Bureau Windows</button><button id="postitArchiveList" type="button" class="secondary">Archives</button><button id="postitAdd" type="button">＋ Post-it</button></div>
         </div>
         <div id="homePostitList" class="home-postit-list" aria-live="polite"></div>
       </section>
@@ -394,6 +394,19 @@
             <button id="settingsExportBrowserData" type="button">↓ Sauvegarder les réglages du navigateur</button>
             <p class="muted">Ce téléchargement reste privé sur ton ordinateur et peut contenir des brouillons. Il ne remplace pas une sauvegarde des carnets et de la base de données.</p>
             <p class="muted">Sur la version TEST uniquement : sauvegarde de secours, installation et redémarrage automatique. La fenêtre du navigateur se reconnecte sans intervention. La version stable reste protégée.</p>
+          </section>
+          <section class="settings-card" id="settingsDesktopPostitsCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">▧</span>
+              <div><h3>Post-it sur le Bureau Windows</h3><p>De vraies notes indépendantes, même lorsque L’Atelier du Goblin est fermé.</p></div>
+            </div>
+            <button id="settingsOpenDesktopPostits" class="primary" type="button">▧ Afficher mes Post-it sur le Bureau</button>
+            <label class="settings-field" for="settingsDesktopPostitStartup">
+              <span>Retrouver mes notes au démarrage de Windows</span>
+              <input id="settingsDesktopPostitStartup" type="checkbox">
+            </label>
+            <p id="settingsDesktopPostitsStatus" class="muted" role="status" aria-live="polite">Vérification du compagnon Windows…</p>
+            <p class="muted">Notes, couleurs et positions sauvegardées dans les données TEST. Fermer la fenêtre principale n’arrête pas les notes du Bureau. Les notes ne restent pas forcément au premier plan.</p>
           </section>
           <section class="settings-card">
             <div class="settings-card-title">
