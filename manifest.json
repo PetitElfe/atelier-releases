@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "a69ebfebf9e811cf127fa2856988906048e7be5521bc074913fe80891a070c15"
+      "sha256": "df21c6826ab83c18a8c1e8bae0a8f3f67fdc6da8dd949e4b2b103e408107be58"
     },
     {
       "path": "app_part2.py",
-      "sha256": "77561d70a54545822a95190599b7df600ba02877f0dab3896eb01f2879f38690"
+      "sha256": "e8ed3db3fa8cb354527ca7ca1dbe5aa1c702d6f511584604a0cc40ae2076249b"
     },
     {
       "path": "app_part3.py",
@@ -37,11 +37,11 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "8287eda455e2d5c36636c7bcee04d4f0b3bc1160b527b9ade6cbdb153d050d22"
+      "sha256": "345b98e1ac813c29ea03c50cc6dc0cd6510892c329bb3668ca404a222b454dac"
     },
     {
       "path": "public/index.html",
-      "sha256": "b8463a28d02c05f0073c981ed31a5c6ad036fd05fe2d0bc41233290725853ae7"
+      "sha256": "ca4ed085c77d4f24be919165ec9e05c48251c69538c64167414b43ca3ffb33ac"
     },
     {
       "path": "public/styles.css",
@@ -66,7 +66,11 @@
     {
       "path": "public/progression_view.js",
       "sha256": "392c2f91083441140c62d20b1b12d555622318b38f41cac25c6d233a11fffde0"
+    },
+    {
+      "path": "updater.py",
+      "sha256": "743b5c558a115765752324b8bd2107e32017649a1a4708b8a9b3f27174899116"
     }
   ],
-  "notes": "Candidat 0.18.0 en branche isolée : installation interdite avant sauvegarde vérifiée, tests et publication approuvée."
+  "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
 }
