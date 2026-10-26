@@ -113,6 +113,42 @@ function bindCalendarDropTarget(cell,date,time=null){
   });
 }
 
+
+function addCalendarHoverActions(wrapper,event){
+  // La validation/annulation ne concerne que la date affichée. Le modèle
+  // d'une série récurrente et ses autres occurrences restent intacts.
+  if(eventInstanceClosed(event))return;
+  const actions=document.createElement('div');
+  actions.className='calendar-hover-actions';
+  const instanceDate=event.instance_date||event.event_date;
+  const action=(symbol,label,cssName,run)=>{
+    const button=document.createElement('button');
+    button.type='button';button.className='calendar-hover-action '+cssName;
+    button.textContent=symbol;button.title=label;button.setAttribute('aria-label',label+' : '+event.title);
+    button.addEventListener('click',async ev=>{
+      ev.stopPropagation();ev.preventDefault();
+      button.disabled=true;
+      try{await run()}catch(err){showUiError(err,'Impossible de modifier le rendez-vous')}
+      finally{if(button.isConnected)button.disabled=false}
+    });
+    actions.appendChild(button);
+  };
+  action('×','Annuler','cancel',async()=>{
+    const ok=await askUiConfirm('Annuler ce rendez-vous',
+      'Annuler « '+event.title+' » le '+instanceDate+' ?'+(event.recurrence!=='none'?' Les autres occurrences resteront inchangées.':''),
+      'Annuler le rendez-vous',true);
+    if(!ok)return;
+    await api('/api/events/'+event.id+'/cancel-instance',{method:'PUT',body:JSON.stringify({instance_date:instanceDate})});
+    await refresh();
+  });
+  action('✓','Effectué','done',async()=>{
+    await api('/api/events/'+event.id+'/complete-instance',{method:'PUT',body:JSON.stringify({instance_date:instanceDate,done:true})});
+    await refresh();
+  });
+  action('↪','Reporter','postpone',async()=>openPostponeEventModal(event));
+  wrapper.appendChild(actions);
+}
+
 function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
@@ -122,7 +158,7 @@ function renderMonth(){
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
-      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; cell.appendChild(b);
+      const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; const wrap=document.createElement('div');wrap.className='calendar-month-event';wrap.appendChild(b);addCalendarHoverActions(wrap,e);cell.appendChild(wrap);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
     cell.title='Double-clique pour ajouter un rendez-vous';
@@ -138,72 +174,63 @@ function renderMiniMonth(){
   const n=new Date(y,m+1,0).getDate(); for(let i=1;i<=n;i++){ const d=new Date(y,m,i), el=document.createElement('button'); el.className='mday'+(typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ymd(d))?' cycle-recorded':'')+(ymd(d)===ymd(new Date())?' today':'')+(ymd(d)===ymd(state.cursor)?' selected':'');el.textContent=i;el.addEventListener('click',()=>{state.cursor=d;renderWeek();renderMonth();});root.appendChild(el); }
 }
 
+
 function renderWeek(){
   const start=monday(state.cursor),end=sunday(state.cursor);
   $('#weekTitle').textContent=start.getDate()+' '+months[start.getMonth()].slice(0,3)+' — '+end.getDate()+' '+months[end.getMonth()].slice(0,3);
   renderMiniMonth();
-  const grid=$('#weekGrid'); grid.innerHTML='';
+  const grid=$('#weekGrid');grid.innerHTML='';
   const blank=document.createElement('div');blank.className='week-head';grid.appendChild(blank);
+  const firstMinute=7*60,lastMinute=23*60,spanMinutes=lastMinute-firstMinute;
   const clockMinutes=time=>{
-    if(!time||!/^\d\d:\d\d/.test(time))return null;
+    if(!time||!/^([01]\d|2[0-3]):[0-5]\d/.test(time))return null;
     const parts=time.split(':').map(Number);
     return parts[0]*60+parts[1];
   };
   const isAllDay=e=>!!e.all_day||!e.start_time;
-  const makeEventButton=(e,allDay)=>{
-    const button=document.createElement('button');
-    button.type='button';
-    button.className=(allDay?'week-item week-all-day-item ':'week-item ')+eventClass(e)+(eventInstanceClosed(e)?' event-instance-closed':'');
-    const mark=eventInstanceIcon(e);
-    button.textContent=(mark?mark+' ':'')+(allDay?'':fmtTime(e.start_time)+' ')+e.title;
-    button.title=(allDay?'Toute la journée · ':'')+e.title;
-    button.addEventListener('click',()=>openEventModal(e));
-    bindCalendarEventActions(button,e);
-    return button;
-  };
   const dates=[];
   for(let i=0;i<7;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);
     const ds=ymd(d);dates.push(ds);
-    const h=document.createElement('div');h.className='week-head';
-    h.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
+    const head=document.createElement('div');head.className='week-head';
+    head.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
     const allDay=state.events.filter(e=>e.instance_date===ds&&isAllDay(e));
     if(allDay.length){
-      h.classList.add('week-all-day-header');
-      allDay.slice(0,2).forEach(e=>h.appendChild(makeEventButton(e,true)));
+      head.classList.add('week-all-day-header');
+      allDay.slice(0,2).forEach(e=>{
+        const wrap=document.createElement('div');wrap.className='calendar-month-event week-all-day-wrap';
+        const button=document.createElement('button');button.className='week-item week-all-day-item '+eventClass(e)+(eventInstanceClosed(e)?' event-instance-closed':'');
+        button.type='button';
+        button.textContent=(eventInstanceIcon(e)?eventInstanceIcon(e)+' ':'')+e.title;
+        button.title=e.title;button.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(button,e);
+        wrap.appendChild(button);addCalendarHoverActions(wrap,e);head.appendChild(wrap);
+      });
       if(allDay.length>2){
         const more=document.createElement('button');more.type='button';more.className='week-all-day-more';
         more.textContent='+'+(allDay.length-2)+' autre(s)';
-        more.onclick=()=>openDayList(ds,allDay);
-        h.appendChild(more);
+        more.onclick=()=>openDayList(ds,allDay);head.appendChild(more);
       }
     }
-    grid.appendChild(h);
+    grid.appendChild(head);
   }
+  // Les 16 heures sont des lignes de hauteur FIXE. Les rendez-vous sont
+  // dessinés ensuite au-dessus, sans modifier ni déplacer la grille.
   for(let hour=7;hour<=22;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');cell.className='week-slot';
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);
-      const events=dayEvents.filter(e=>!isAllDay(e)&&Math.max(7,Number(e.start_time.slice(0,2)))===hour);
       const tasks=state.tasks.filter(t=>!t.completed&&t.due_date===ds&&t.due_time&&Number(t.due_time.slice(0,2))===hour);
-      if(events.length+tasks.length>2)cell.classList.add('has-many');
-      // Le repère de durée occupe les cases concernées sans modifier la grille horaire.
-      const segments=[];
-      let begins=false,allDayVisible=false;
+      // Le trait pastel vertical relie l'heure de départ à la fin du RDV.
+      const segments=[];let begins=false,allDayVisible=false;
       for(const e of dayEvents){
         if(eventInstanceClosed(e))continue;
-        if(isAllDay(e)){
-          segments.push([0,60]);
-          allDayVisible=true;
-          continue;
-        }
+        if(isAllDay(e)){segments.push([0,60]);allDayVisible=true;continue}
         const from=clockMinutes(e.start_time),rawEnd=clockMinutes(e.end_time);
         if(from===null||rawEnd===null||rawEnd===from)continue;
         const to=rawEnd<from?1440:rawEnd;
-        const overlapFrom=Math.max(hour*60,from);
-        const overlapTo=Math.min((hour+1)*60,to);
+        const overlapFrom=Math.max(hour*60,from),overlapTo=Math.min((hour+1)*60,to);
         if(overlapTo<=overlapFrom)continue;
         segments.push([overlapFrom-hour*60,overlapTo-hour*60]);
         if(from>=hour*60&&from<(hour+1)*60)begins=true;
@@ -215,16 +242,68 @@ function renderWeek(){
         cell.style.setProperty('--week-duration-top',Math.min(...segments.map(s=>s[0]))/60*100+'%');
         cell.style.setProperty('--week-duration-bottom',(60-Math.max(...segments.map(s=>s[1])))/60*100+'%');
       }
-      events.forEach(e=>cell.appendChild(makeEventButton(e,false)));
+      // Une tâche avec heure reste un petit rappel, elle n'invente pas de durée.
       tasks.forEach(t=>{
-        const button=document.createElement('button');button.className='week-item week-task';button.type='button';
+        const button=document.createElement('button');button.type='button';button.className='week-item week-task';
         button.textContent='☐ '+t.title;button.title=t.title;
-        button.addEventListener('click',()=>openTaskModal(t));
-        cell.appendChild(button);
+        button.addEventListener('click',()=>openTaskModal(t));cell.appendChild(button);
       });
-      cell.addEventListener('dblclick',()=>openEventModal(null,ds,pad(hour)+':00'));
-      grid.appendChild(cell);
+      cell.addEventListener('dblclick',()=>openEventModal(null,ds,pad(hour)+':00'));grid.appendChild(cell);
     }
+  }
+  // Chaque colonne a une couche indépendante et les rendez-vous simultanés
+  // partagent son espace horizontal (2 événements : 50 % chacun).
+  for(let i=0;i<7;i++){
+    const ds=dates[i],layer=document.createElement('div');
+    layer.className='week-day-layer';layer.style.gridColumn=String(i+2);layer.style.gridRow='2 / 18';
+    layer.dataset.date=ds;
+    const appointments=state.events.filter(e=>e.instance_date===ds&&!isAllDay(e)).map(e=>{
+      const from=clockMinutes(e.start_time),rawEnd=clockMinutes(e.end_time);
+      if(from===null)return null;
+      const naturalEnd=rawEnd===null?from+60:(rawEnd<=from?rawEnd+1440:rawEnd);
+      const to=Math.max(from+15,naturalEnd);
+      return {event:e,start:Math.max(from,firstMinute),end:Math.min(to,lastMinute)};
+    }).filter(x=>x&&x.end>x.start).sort((a,b)=>a.start-b.start||a.end-b.end);
+    let cluster=[],clusterEnd=-1;
+    const paintCluster=()=>{
+      if(!cluster.length)return;
+      const laneEnds=[];
+      for(const item of cluster){
+        let lane=laneEnds.findIndex(end=>end<=item.start);
+        if(lane<0){lane=laneEnds.length;laneEnds.push(item.end)}else laneEnds[lane]=item.end;
+        item.lane=lane;
+      }
+      const lanes=laneEnds.length;
+      for(const item of cluster){
+        const event=item.event;
+        const card=document.createElement('div');
+        card.className='week-timed-event '+eventClass(event)+(eventInstanceClosed(event)?' event-instance-closed':'');
+        card.dataset.eventId=String(event.id);
+        card.dataset.instanceDate=event.instance_date||event.event_date;
+        card.style.top=((item.start-firstMinute)/spanMinutes*100)+'%';
+        card.style.height=((item.end-item.start)/spanMinutes*100)+'%';
+        card.style.left='calc('+(100*item.lane/lanes)+'% + 2px)';
+        card.style.width='calc('+(100/lanes)+'% - 4px)';
+        if(item.end-item.start<45)card.classList.add('week-short-event');
+        const open=document.createElement('button');open.type='button';open.className='week-card-open';
+        open.title=(event.start_time||'')+(event.end_time?'–'+event.end_time:'')+' '+event.title;
+        open.setAttribute('aria-label',open.title);
+        const hours=document.createElement('span');hours.className='week-card-time';
+        hours.textContent=fmtTime(event.start_time)+(event.end_time?'–'+fmtTime(event.end_time):'');
+        const title=document.createElement('span');title.className='week-card-title';
+        title.textContent=(eventInstanceIcon(event)?eventInstanceIcon(event)+' ':'')+event.title;
+        open.append(hours,title);
+        open.addEventListener('click',()=>openEventModal(event));bindCalendarEventActions(open,event);
+        card.appendChild(open);addCalendarHoverActions(card,event);layer.appendChild(card);
+      }
+      cluster=[];clusterEnd=-1;
+    };
+    for(const item of appointments){
+      if(cluster.length&&item.start>=clusterEnd)paintCluster();
+      cluster.push(item);clusterEnd=Math.max(clusterEnd,item.end);
+    }
+    paintCluster();
+    grid.appendChild(layer);
   }
 }
 
