@@ -104,7 +104,7 @@ def _shortcut(target: Path) -> None:
                            (run.stderr or run.stdout)[-350:])
 
 
-def _install_self() -> bool:
+def _install_self(launch: bool = True) -> bool:
     """Copy the first launch to its permanent directory and run that copy.
 
     Return True only for the temporary executable that has passed control to
@@ -113,6 +113,7 @@ def _install_self() -> bool:
     source = Path(sys.executable).resolve()
     destination = DESKTOP_APP
     if source == destination.resolve():
+        _shortcut(destination)
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists() and not _same_file(source, destination):
@@ -130,9 +131,10 @@ def _install_self() -> bool:
             raise RuntimeError("La copie du fichier .exe n'a pas passé sa vérification.")
         staging.rename(destination)
     _shortcut(destination)
-    subprocess.Popen([str(destination)], cwd=str(destination.parent),
-                     close_fds=True,
-                     creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+    if launch:
+        subprocess.Popen([str(destination)], cwd=str(destination.parent),
+                         close_fds=True,
+                         creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     return True
 
 
@@ -225,6 +227,11 @@ def main():
         return
     try:
         guard()
+        if "--install-only" in sys.argv:
+            if not getattr(sys, "frozen", False):
+                raise RuntimeError("L’installation nécessite le fichier .exe Windows.")
+            _install_self(launch=False)
+            return
         if getattr(sys, "frozen", False) and _install_self():
             return
         import webview
