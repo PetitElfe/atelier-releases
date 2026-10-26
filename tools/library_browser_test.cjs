@@ -682,6 +682,51 @@ async function api(path,method='GET',body){
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
 
+
+  // ALPHA 0.18 : emplacement du tiroir à gauche après un vrai glisser et F5.
+  await page.evaluate(()=>{showView('home');setSideNavCollapsed(false)});
+  const sideGrip=page.locator('#sideNavDragHandle');
+  const gripRect=await sideGrip.boundingBox();
+  assert.ok(gripRect,'La poignée du tiroir est accessible');
+  await page.mouse.move(gripRect.x+gripRect.width/2,gripRect.y+gripRect.height/2);
+  await page.mouse.down();
+  await page.mouse.move(35,gripRect.y+gripRect.height/2,{steps:12});
+  await page.mouse.up();
+  const storedLeft=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierSideNavPosition'))?.left);
+  assert.ok(Number.isFinite(storedLeft)&&storedLeft<100,'Le tiroir doit pouvoir aller à gauche: '+storedLeft);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>setSideNavCollapsed(false));
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.getBoundingClientRect().left<100),
+    'Le tiroir doit rester à gauche après F5');
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.classList.contains('side-nav-on-left')),
+    'Le bouton du tiroir doit basculer du bon côté');
+  // Une ancienne préférence partielle ne doit pas être interprétée comme x=0.
+  await page.evaluate(()=>{localStorage.setItem('atelierSideNavPosition',JSON.stringify({left:null,top:96}));applySideNavPosition()});
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.getBoundingClientRect().left>window.innerWidth/2),
+    'Une position latérale null doit reprendre le défaut à droite');
+  await page.evaluate(()=>{localStorage.removeItem('atelierSideNavPosition');applySideNavPosition();setSideNavCollapsed(true)});
+  // Agrandir le mini-calendrier doit rendre ses cases et son texte plus grands.
+  await page.evaluate(()=>showView('home'));
+  await page.waitForFunction(()=>homeCanvasReady);
+  const calendarAdaptive=await page.evaluate(()=>{
+    const item=globalLayoutItems.find(x=>x.id==='calendar'&&isHomeCanvasItem(x));
+    const original=readGlobalLayout(item);
+    const getMetrics=()=>{
+      const cell=document.querySelector('#homeMiniCalendar .hday');
+      return {font:parseFloat(getComputedStyle(cell).fontSize),height:cell.getBoundingClientRect().height};
+    };
+    const before=getMetrics();
+    const updated={...original,width:400};
+    applyGlobalLayout(item,updated);
+    const after=getMetrics();
+    applyGlobalLayout(item,original);
+    return {before,after};
+  });
+  assert.ok(calendarAdaptive.after.font>calendarAdaptive.before.font,
+    'Le texte du mini-calendrier doit s’adapter à la largeur: '+JSON.stringify(calendarAdaptive));
+  assert.ok(calendarAdaptive.after.height>calendarAdaptive.before.height+8,
+    'Les cases du calendrier doivent grandir avec la carte: '+JSON.stringify(calendarAdaptive));
+
   // ALPHA 0.16.1 — Canvas libre : les positions absolues survivent à un rechargement.
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
