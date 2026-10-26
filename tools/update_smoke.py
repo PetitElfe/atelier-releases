@@ -80,8 +80,17 @@ def main():
             else:
                 # Valid-looking SHA is accepted by schema; archive verification must reject it.
                 pass
-            tampered=zip_bytes.replace(contents['VERSION'],b'CHANGED VERSION')
-            assert zip_bytes!=tampered
+            tampered_archive=io.BytesIO()
+            with ZipFile(tampered_archive,'w') as z:
+                z.writestr('atelier-fixture/manifest.json',manifest_bytes)
+                for path,value in contents.items():
+                    z.writestr('atelier-fixture/app/'+path,
+                               b'altered' if path=='VERSION' else value)
+            tampered_bytes=tampered_archive.getvalue()
+            updater._get=lambda url,limit=80000000:(manifest_bytes if url.endswith('/manifest.json') else tampered_bytes)
+            try:updater._archive(revision)
+            except RuntimeError as exc:assert 'SHA-256' in str(exc)
+            else:raise AssertionError('Altered remote content was accepted')
         finally:
             updater._get=original_get
     print('PASS: updater guard, pinned archive staging, path validation, backup integrity')
