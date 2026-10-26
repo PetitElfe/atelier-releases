@@ -102,11 +102,14 @@ def check():
     guard()
     revision=_latest_revision()
     remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
-    installed=_manifest((CODE/'manifest.json').read_bytes())
+    local_manifest=(CODE/'manifest.json').read_bytes()
+    installed=_manifest(local_manifest)
+    installed_build=_sha(local_manifest.replace(b'\r\n',b'\n'))[:8]
     old={x['path']:x['sha256'] for x in installed['files']}
     new={x['path']:x['sha256'] for x in remote['files']}
     return {'version':'0.18.0','channel':'TEST','revision':revision,
-            'available':old!=new,'installed_version':installed['version']}
+            'available':old!=new,'installed_version':installed['version'],
+            'installed_build':installed_build}
 
 def _stage(revision):
     raw=_get('https://codeload.github.com/'+REPO+'/zip/'+revision)
