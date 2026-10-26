@@ -34,7 +34,13 @@ function parseYMD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,
 function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
 function esc(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function eventClass(c){ return c==='medical'?'event-medical':c==='important'?'event-important':'event-general'; }
+function eventClass(event){
+  const category=typeof event==='string'?event:(event?.category||'general');
+  const color=typeof event==='string'?'auto':(event?.color||'auto');
+  const categoryClass=category==='medical'?'event-medical':category==='important'?'event-important':'event-general';
+  const allowed=['sage','mauve','gold','red','pink','blue','peach','cream'];
+  return categoryClass+(allowed.includes(color)?' event-color-'+color:'');
+}
 function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled' || e.status==='done' || e.status==='cancelled'; }
 function eventInstanceIcon(e){ return (e.instance_done||e.status==='done')?'✓':e.instance_action==='postponed'?'↪':(e.instance_action==='cancelled'||e.status==='cancelled')?'×':''; }
 function fmtTime(t){ return t ? t.replace(':','h') : ''; }
