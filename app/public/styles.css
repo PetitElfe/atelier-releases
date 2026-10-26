@@ -1631,8 +1631,8 @@ body.home-active{overflow-y:auto}
 
 /* 0.18.0 — semainier compact, inspiré de la DISPOSITION Cherry Latte.
    Couleurs et texture L'Atelier inchangées. */
-.event-color-deep-blue{background:#6F8FA8!important;color:#15242D!important}
-.event-color-deep-green{background:#658C78!important;color:#15251E!important}
+.event-color-deep-blue{background:#506F89!important;color:#F9F5ED!important}
+.event-color-deep-green{background:#4D705D!important;color:#F9F5ED!important}
 #weekPanel .week-grid{
   --week-hour-height:clamp(22px,calc((100dvh - 285px) / 16),48px);
   --week-header-height:66px;
