@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "345b98e1ac813c29ea03c50cc6dc0cd6510892c329bb3668ca404a222b454dac"
+      "sha256": "61e5e8c78192f68e13416fcd505818a49e66f1a4ab3b52f8c488717e65d8de97"
     },
     {
       "path": "public/index.html",
@@ -69,7 +69,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "980c9078ad35051f9f6c1e4f660f16ac21e71b69a2df34b65c1563de754f542d"
+      "sha256": "61b00ff6d4e9d5c780340ddbe22d66ce441942c48117d33bcf976e1113fc6e06"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
