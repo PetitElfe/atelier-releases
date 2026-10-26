@@ -36,7 +36,7 @@ try {
   if(-not $ready){throw 'Initial test server did not start.'}
   $check=Invoke-RestMethod "$base/api/update/check" -TimeoutSec 30
   if(-not $check.available){throw 'Outdated test manifest not detected.'}
-  if($check.installed_build -notmatch '^[0-9a-f]{8}
+  if($check.installed_build -notmatch '^[0-9a-f]{8}$'){throw 'Installed build fingerprint not reported.'}
   Write-Host ('Candidate GitHub revision: '+$check.revision)
   $body=@{revision=$check.revision} | ConvertTo-Json
   $start=Invoke-RestMethod "$base/api/update/start" -Method Post -Body $body -ContentType 'application/json' -Headers @{'Origin'=$base;'X-Atelier-Update'='1'} -TimeoutSec 30
@@ -57,42 +57,6 @@ try {
   $current=Invoke-RestMethod "$base/api/update/check" -TimeoutSec 20
   if($current.available){throw 'Update completed but manifest remains outdated.'}
   if($check.installed_build -eq $current.installed_build){throw 'Installed build fingerprint did not change.'}
-  $backups=@(Get-ChildItem $root -Directory -Filter 'SAUVEGARDE_AUTO_TEST_*')
-  if($backups.Count -ne 1){throw ('Expected one validated backup, got '+$backups.Count)}
-  if(-not (Test-Path (Join-Path $backups[0].FullName 'data\atelier.db'))){throw 'Database backup missing.'}
-  $note=Get-Content (Join-Path $data 'note_test.txt') -Raw
-  if($note -notmatch 'Donnée fictive préservée'){throw 'User test data changed.'}
-  Write-Host 'PASS: full Windows in-app update, local backup, automatic restart, preserved data.'
-  try{Invoke-RestMethod "$base/api/shutdown" -Method Post -Body '{}' -ContentType 'application/json' -TimeoutSec 3 | Out-Null}catch{}
-} catch {
-  Write-Error $_
-  $log='E:\LATELIER_TEST_0180\data\updater-worker.log'
-  if(Test-Path $log){Get-Content $log -Tail 70 | Write-Host}
-  throw
-} finally {
-  Start-Sleep -Seconds 1
-  if($mapped){ & subst.exe E: /D }
-}
-){throw 'Installed build fingerprint not reported.'}
-  Write-Host ('Candidate GitHub revision: '+$check.revision)
-  $body=@{revision=$check.revision} | ConvertTo-Json
-  $start=Invoke-RestMethod "$base/api/update/start" -Method Post -Body $body -ContentType 'application/json' -Headers @{'Origin'=$base;'X-Atelier-Update'='1'} -TimeoutSec 30
-  if(-not $start.ok){throw 'Updater did not start.'}
-  $ok=$false
-  for($i=0;$i -lt 150;$i++){
-    Start-Sleep -Seconds 2
-    try{
-      $progress=Invoke-RestMethod "$base/api/update/status" -TimeoutSec 2
-      if($progress.phase -eq 'error'){throw ('UPDATE FAILED: '+$progress.detail)}
-      if($progress.phase -eq 'success'){$ok=$true;break}
-    }catch{
-      if($_.Exception.Message -like '*UPDATE FAILED*'){throw}
-      # Expected while the local server is restarting.
-    }
-  }
-  if(-not $ok){throw 'TEST updater did not reconnect before timeout.'}
-  $current=Invoke-RestMethod "$base/api/update/check" -TimeoutSec 20
-  if($current.available){throw 'Update completed but manifest remains outdated.'}
   $backups=@(Get-ChildItem $root -Directory -Filter 'SAUVEGARDE_AUTO_TEST_*')
   if($backups.Count -ne 1){throw ('Expected one validated backup, got '+$backups.Count)}
   if(-not (Test-Path (Join-Path $backups[0].FullName 'data\atelier.db'))){throw 'Database backup missing.'}
