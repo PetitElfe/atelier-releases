@@ -390,6 +390,8 @@ async function api(path,method='GET',body){
   await page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve .calendar-hover-action.done').waitFor({state:'detached',timeout:10000});
   assert.ok(await page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve.event-instance-closed').count(),
     'La coche doit marquer uniquement cette occurrence et fermer ses actions');
+  // Les scénarios historiques qui suivent opèrent volontairement sur le mois.
+  await page.evaluate(()=>setCalendarMode('month'));
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
