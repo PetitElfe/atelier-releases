@@ -17,16 +17,17 @@ try {
   Set-Content (Join-Path $data 'atelier.db') 'dummy database placeholder'
   Set-Content (Join-Path $data 'test_important.txt') 'Ne jamais écraser mes données'
   $shell=New-Object -ComObject WScript.Shell
-  $link=Join-Path $shell.SpecialFolders.Item('Desktop') "L'Atelier TEST.lnk"
+  $link=Join-Path $shell.SpecialFolders.Item('Desktop') "L'Atelier du Goblin TEST.lnk"
   if(Test-Path $link) {throw 'Unexpected existing shortcut on isolated runner.'}
-  $p=Start-Process -FilePath (Resolve-Path 'dist/LAtelier_TEST.exe') -ArgumentList '--install-only' -Wait -PassThru
+  $p=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_TEST.exe') -ArgumentList '--install-only' -Wait -PassThru
   if($p.ExitCode -ne 0) {throw "The launcher installation failed (exit code $($p.ExitCode))."}
-  $target=Join-Path $root 'desktop\LAtelier_TEST.exe'
+  $target=Join-Path $root 'desktop\LAtelierDuGoblin_TEST.exe'
+  if(Test-Path (Join-Path $root 'desktop\LAtelier_TEST.exe')){throw 'Old desktop EXE should never be replaced by renamed app.'}
   if(-not(Test-Path $target)) {throw 'Installed EXE missing.'}
   if(-not(Test-Path $link)) {throw 'The Windows Desktop shortcut was not created.'}
   $shortcut=$shell.CreateShortcut($link)
   if($shortcut.TargetPath -ine $target) {throw "Shortcut points to wrong executable: $($shortcut.TargetPath)"}
-  $sourceHash=(Get-FileHash 'dist/LAtelier_TEST.exe' -Algorithm SHA256).Hash
+  $sourceHash=(Get-FileHash 'dist/LAtelierDuGoblin_TEST.exe' -Algorithm SHA256).Hash
   $installedHash=(Get-FileHash $target -Algorithm SHA256).Hash
   if($sourceHash -ne $installedHash) {throw 'Installed EXE checksum changed.'}
   if((Get-Content (Join-Path $data 'test_important.txt') -Raw) -notmatch 'Ne jamais écraser') {
