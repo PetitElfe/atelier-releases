@@ -83,15 +83,19 @@ def create_layout_table(db_path=DB):
         c.execute("""CREATE TABLE IF NOT EXISTS desktop_postit_layout(
             note_id INTEGER PRIMARY KEY REFERENCES home_postits(id) ON DELETE CASCADE,
             x INTEGER NOT NULL, y INTEGER NOT NULL,
-            width INTEGER NOT NULL, height INTEGER NOT NULL
+            width INTEGER NOT NULL, height INTEGER NOT NULL,
+            locked INTEGER NOT NULL DEFAULT 0 CHECK(locked IN (0,1))
         )""")
+        columns = {r["name"] for r in c.execute("PRAGMA table_info(desktop_postit_layout)")}
+        if "locked" not in columns:
+            c.execute("ALTER TABLE desktop_postit_layout ADD COLUMN locked INTEGER NOT NULL DEFAULT 0")
         c.commit()
 
 
 def note_rows(db_path=DB):
     with _db(db_path) as c:
         return [dict(r) for r in c.execute(
-            """SELECT p.*,l.x,l.y,l.width,l.height
+            """SELECT p.*,l.x,l.y,l.width,l.height,l.locked
                FROM home_postits p LEFT JOIN desktop_postit_layout l ON p.id=l.note_id
                WHERE p.archived=0 ORDER BY p.id"""
         )]
@@ -122,9 +126,31 @@ def save_layout(note_id, x, y, width, height, db_path=DB):
             """INSERT INTO desktop_postit_layout(note_id,x,y,width,height)
                SELECT id,?,?,?,? FROM home_postits WHERE id=? AND archived=0
                ON CONFLICT(note_id) DO UPDATE SET
-                 x=excluded.x,y=excluded.y,width=excluded.width,height=excluded.height""",
+                 x=excluded.x,y=excluded.y,width=excluded.width,height=excluded.height
+               WHERE desktop_postit_layout.locked=0""",
             (x, y, width, height, note_id))
         c.commit()
+
+
+def set_layout_lock(note_id, locked, db_path=DB):
+    with _db(db_path) as c:
+        changed = c.execute(
+            "UPDATE desktop_postit_layout SET locked=? WHERE note_id=?",
+            (int(bool(locked)), int(note_id)))
+        if not changed.rowcount:
+            raise ValueError("La position de cette note doit être enregistrée avant verrouillage.")
+
+
+def create_note(db_path=DB):
+    with _db(db_path) as c:
+        count=c.execute("SELECT COUNT(*) FROM home_postits WHERE archived=0").fetchone()[0]
+        if count>=100:
+            raise ValueError("Archive quelques Post-it avant d'en ajouter.")
+        stamp=dt.datetime.now().isoformat(timespec="microseconds")
+        cur=c.execute("""INSERT INTO home_postits
+            (title,body,color,shape,archived,created_at,updated_at)
+            VALUES('Nouveau Post-it','','gold','rounded',0,?,?)""", (stamp,stamp))
+        return cur.lastrowid
 
 
 def _pythonw():
@@ -249,12 +275,24 @@ def _run_gui():
             w, h = note["width"] or 300, note["height"] or 260
             self.window.geometry(f"{w}x{h}+{x}+{y}")
             self.window.minsize(240, 175)
+            self.locked = bool(note["locked"])
+            self.fixed_geometry = (int(x),int(y),int(w),int(h))
+            self.window.resizable(not self.locked, not self.locked)
             self.header = tk.Frame(self.window, bg=paper)
             self.header.pack(fill="x", padx=10, pady=(9, 1))
             self.title = tk.Entry(self.header, relief="flat", bg=paper, fg=ink,
                                   font=("Segoe UI", 12, "bold"), insertbackground=ink)
             self.title.pack(side="left", fill="x", expand=True)
             self.title.insert(0, note["title"])
+            self.new_button = tk.Button(self.header, text="＋", relief="flat",
+                                        font=("Segoe UI", 12, "bold"), bg=paper, fg=ink,
+                                        command=self._new_note, cursor="hand2")
+            self.new_button.pack(side="right", padx=(5, 0))
+            self.lock_button = tk.Button(self.header, relief="flat",
+                                        bg=paper, fg=ink, cursor="hand2",
+                                        command=self._toggle_lock)
+            self.lock_button.pack(side="right", padx=(5, 0))
+            self._refresh_lock_button()
             self.color = tk.StringVar(value=note["color"])
             self.palette = tk.OptionMenu(self.header, self.color, *COLORS.keys(),
                                          command=lambda _: self._change_color())
@@ -272,6 +310,9 @@ def _run_gui():
                                  anchor="w", padx=10)
             self.hint.pack(fill="x", pady=(0, 5))
             self.menu = tk.Menu(self.window, tearoff=0)
+            self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
+            self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
+            self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
             self.menu.add_command(label="Fermer cette note (session)", command=self._close)
             self.window.bind("<Button-3>", self._menu)
@@ -282,6 +323,56 @@ def _run_gui():
             self.body.edit_modified(False)
             self.window.bind("<Configure>", self._geometry_changed)
             self.window.protocol("WM_DELETE_WINDOW", self._close)
+
+        def _refresh_lock_button(self):
+            self.lock_button.configure(text="🔒" if self.locked else "🔓")
+            self.lock_button.bind("<Enter>", lambda _: self.hint.config(
+                text="Position verrouillée : le texte reste modifiable" if self.locked
+                else "Cliquer sur le cadenas pour bloquer la position"))
+            self.lock_button.bind("<Leave>", lambda _: self.hint.config(
+                text="● Enregistré · Post-it indépendant" if not self.dirty
+                else "● Modification…"))
+
+        def _toggle_lock(self):
+            if _update_in_progress():
+                self.hint.config(text="● Mise à jour en cours — réessaie après")
+                return
+            if self.geo_pending:
+                root.after_cancel(self.geo_pending)
+                self.geo_pending = None
+            self.window.update_idletasks()
+            geometry=(self.window.winfo_x(),self.window.winfo_y(),
+                      self.window.winfo_width(),self.window.winfo_height())
+            try:
+                if not self.locked:
+                    save_layout(self.note["id"], *geometry)
+                else:
+                    # Existing frozen coordinates must not move when unlocking.
+                    geometry=self.fixed_geometry
+                set_layout_lock(self.note["id"], not self.locked)
+            except (sqlite3.Error,OSError,ValueError):
+                self.hint.config(text="● Impossible de modifier le verrouillage")
+                return
+            self.locked = not self.locked
+            self.fixed_geometry = geometry
+            self.window.resizable(not self.locked, not self.locked)
+            if self.locked:
+                x,y,w,h=self.fixed_geometry
+                self.window.geometry(f"{w}x{h}+{x}+{y}")
+            self.note["locked"]=int(self.locked)
+            self._refresh_lock_button()
+            self.hint.config(text="🔒 Position et taille verrouillées" if self.locked
+                             else "🔓 Position et taille modifiables")
+
+        def _new_note(self):
+            if _update_in_progress():
+                self.hint.config(text="● Patiente jusqu’à la fin de la mise à jour")
+                return
+            try:
+                create_note()
+                wake()
+            except (sqlite3.Error,OSError,ValueError) as error:
+                messagebox.showerror("Post-it", str(error), parent=self.window)
 
         def _menu(self, event):
             try:
@@ -370,13 +461,20 @@ def _run_gui():
         def _geometry_changed(self, event):
             if event.widget != self.window or self.window.state() != "normal":
                 return
+            if self.locked:
+                x,y,w,h=self.fixed_geometry
+                real=(self.window.winfo_x(),self.window.winfo_y(),
+                      self.window.winfo_width(),self.window.winfo_height())
+                if real!=(x,y,w,h):
+                    self.window.geometry(f"{w}x{h}+{x}+{y}")
+                return
             if self.geo_pending:
                 root.after_cancel(self.geo_pending)
             self.geo_pending = root.after(1200, self._save_geometry)
 
         def _save_geometry(self):
             self.geo_pending = None
-            if not self.window.winfo_exists():
+            if self.locked or not self.window.winfo_exists():
                 return
             if _update_in_progress():
                 self.geo_pending = root.after(1700, self._save_geometry)
@@ -475,6 +573,27 @@ def _self_test():
         row = note_rows(db)[0]
         assert (row["title"], row["body"], row["x"], row["width"]) == (
             "Nouvelle note", "Bonsoir", 123, 320)
+        set_layout_lock(1, True, db)
+        assert note_rows(db)[0]["locked"]==1
+        save_layout(1,500,600,500,500,db)
+        assert (note_rows(db)[0]["x"],note_rows(db)[0]["width"])==(123,320)
+        assert save_edit(1,note_rows(db)[0],"Verrouillée","texte éditable","blue","rounded",db)
+        set_layout_lock(1,False,db)
+        save_layout(1,321,432,350,275,db)
+        assert (note_rows(db)[0]["x"],note_rows(db)[0]["width"])==(321,350)
+        fresh=create_note(db)
+        assert any(row["id"]==fresh for row in note_rows(db))
+        # Ancienne base v6 : ajouter une colonne locked sans perte de géométrie.
+        with sqlite3.connect(db) as c:
+            c.execute("ALTER TABLE desktop_postit_layout RENAME TO old_layout")
+            c.execute("""CREATE TABLE desktop_postit_layout(
+                note_id INTEGER PRIMARY KEY,x INTEGER NOT NULL,y INTEGER NOT NULL,
+                width INTEGER NOT NULL,height INTEGER NOT NULL)""")
+            c.execute("""INSERT INTO desktop_postit_layout
+                SELECT note_id,x,y,width,height FROM old_layout""")
+            c.execute("DROP TABLE old_layout")
+        create_layout_table(db)
+        assert note_rows(db)[0]["x"]==321 and note_rows(db)[0]["locked"]==0
         assert not any(note["title"] == "Archivée" for note in note_rows(db))
         with sqlite3.connect(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
