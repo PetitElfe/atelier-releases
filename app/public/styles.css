@@ -1642,6 +1642,7 @@ body.home-active{overflow-y:auto}
 }
 #weekPanel .week-scroll{
   max-height:none;
+  overflow:visible;
   scrollbar-gutter:auto;
 }
 #weekGrid .week-head{
