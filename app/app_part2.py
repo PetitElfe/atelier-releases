@@ -156,6 +156,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        if p == '/api/desktop-postits/status':
+            try:
+                desktop_postits._guard()
+                return self._json({'available':True,
+                                   'running':desktop_postits.is_running(),
+                                   'startup':desktop_postits.startup_enabled()})
+            except (RuntimeError,OSError) as exc:
+                return self._json({'available':False,'error':str(exc)})
         if p == '/api/postits':
             archived=1 if q.get('archived',['0'])[0]=='1' else 0
             with conn() as c:
@@ -346,6 +354,20 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._json({'error':'Mise à jour impossible : '+str(exc)},502)
 
+        if p in ('/api/desktop-postits/start','/api/desktop-postits/startup'):
+            # Explicit action inside L'Atelier TEST, never a cross-origin web request.
+            if (self.headers.get('Origin') != 'http://127.0.0.1:8876'
+                    or self.headers.get('X-Atelier-Desktop') != '1'):
+                return self._json({'error':'Action réservée à L’Atelier du Goblin TEST.'},403)
+            try:
+                if p.endswith('/startup'):
+                    if not isinstance(body,dict) or not isinstance(body.get('enabled'),bool):
+                        return self._json({'error':'Réglage incorrect.'},400)
+                    enabled=desktop_postits.set_startup(body['enabled'])
+                    return self._json({'ok':True,'startup':enabled})
+                return self._json(desktop_postits.launch())
+            except (RuntimeError,OSError) as exc:
+                return self._json({'error':str(exc)},409)
         if p == '/api/postits':
             if not isinstance(body,dict):return self._json({'error':'Données incorrectes.'},400)
             title=str(body.get('title','')).strip()[:120] or 'Sans titre'
