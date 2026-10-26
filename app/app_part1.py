@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -258,7 +258,8 @@ CREATE TABLE IF NOT EXISTS desktop_postit_layout(
  x INTEGER NOT NULL,
  y INTEGER NOT NULL,
  width INTEGER NOT NULL,
- height INTEGER NOT NULL
+ height INTEGER NOT NULL,
+ locked INTEGER NOT NULL DEFAULT 0 CHECK(locked IN (0,1))
 );
 CREATE INDEX IF NOT EXISTS idx_home_postits_archived ON home_postits(archived,id);
 CREATE INDEX IF NOT EXISTS idx_budget_entries_date ON budget_entries(scheduled_date);
@@ -329,6 +330,9 @@ with conn() as c:
             timestamp = datetime.now().replace(microsecond=0).isoformat()
             c.execute('INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,?,?,0,?,?)',
                       ("Aujourd'hui", '', 'gold', 'rounded', timestamp, timestamp))
+    layout_cols = {r['name'] for r in c.execute('PRAGMA table_info(desktop_postit_layout)').fetchall()}
+    if 'locked' not in layout_cols:
+        c.execute('ALTER TABLE desktop_postit_layout ADD COLUMN locked INTEGER NOT NULL DEFAULT 0')
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
