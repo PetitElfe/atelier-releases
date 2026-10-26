@@ -296,10 +296,16 @@ async function api(path,method='GET',body){
     title:'Événement toute la journée E2E',event_date:'2026-10-21',all_day:true,
     color:'pink',show_in_month:true
   });
+  const overlapEvent=await api('/api/events','POST',{
+    title:'Deuxième rendez-vous simultané E2E',event_date:'2026-10-20',
+    start_time:'11:00',end_time:'12:45',category:'general',
+    color:'deep-blue',show_in_month:true
+  });
   const savedColors=await api('/api/events?start=2026-10-20&end=2026-10-21');
   assert.equal(savedColors.find(e=>e.id===longEvent.id)?.color,'mauve',
     'La couleur mauve doit rester enregistrée indépendamment de la catégorie médicale');
   assert.equal(savedColors.find(e=>e.id===allDayEvent.id)?.color,'pink');
+  assert.equal(savedColors.find(e=>e.id===overlapEvent.id)?.color,'deep-blue');
   await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
   const monthGeometry=await page.evaluate(()=>{
     const cells=[...document.querySelectorAll('#monthGrid .day-cell')];
@@ -324,7 +330,7 @@ async function api(path,method='GET',body){
     return {
       hasDuration:[atTen,atEleven,atTwelve,atThirteen].map(c=>c.classList.contains('week-duration')),
       started:atTen.classList.contains('week-duration-begin'),
-      mauve:!!atTen.querySelector('.event-color-mauve'),
+      mauve:!!grid.querySelector('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve'),
       allDayHeader:wedHead.classList.contains('week-all-day-header')&&!!wedHead.querySelector('.event-color-pink'),
       sticky:getComputedStyle(wedHead).position==='sticky',
       notAtSeven:!wedSeven.textContent.includes('Événement toute la journée'),
@@ -337,6 +343,45 @@ async function api(path,method='GET',body){
     'Un événement toute la journée doit rester en en-tête collant, pas dans la case 7h : '+JSON.stringify(weekDuration));
 
 
+  // Répartition horizontale des rendez-vous chevauchants et durée proportionnelle.
+  const compactWeek=await page.evaluate(()=>{
+    const day=document.querySelector('.week-day-layer[data-date="2026-10-20"]');
+    const cards=[...day.querySelectorAll('.week-timed-event')];
+    const mauve=cards.find(c=>c.classList.contains('event-color-mauve'));
+    const blue=cards.find(c=>c.classList.contains('event-color-deep-blue'));
+    const r1=mauve?.getBoundingClientRect(),r2=blue?.getBoundingClientRect();
+    const scroll=document.querySelector('#weekPanel .week-scroll');
+    const hour=document.querySelector('#weekGrid .week-slot').getBoundingClientRect().height;
+    return {
+      overlapping:!!r1&&!!r2&&r1.bottom>r2.top&&r2.bottom>r1.top,
+      adjacent:!!r1&&!!r2&&Math.abs(r1.right-r2.left)<8,
+      blue:!!blue,dayWidth:day.getBoundingClientRect().width,
+      cardHeight:Math.round(r1?.height||0),hourHeight:hour,
+      viewport:window.innerHeight,
+      weekHeight:scroll.getBoundingClientRect().height,
+      noVerticalOverflow:scroll.scrollHeight<=scroll.clientHeight+3
+    };
+  });
+  assert.ok(compactWeek.overlapping&&compactWeek.adjacent&&compactWeek.blue,
+    'Deux rendez-vous simultanés doivent tenir côte à côte : '+JSON.stringify(compactWeek));
+  assert.ok(compactWeek.cardHeight>compactWeek.hourHeight*2.7,
+    'La hauteur du rendez-vous doit représenter sa durée : '+JSON.stringify(compactWeek));
+  assert.ok(compactWeek.noVerticalOverflow,
+    'La grille hebdomadaire compacte doit tenir sans défilement interne : '+JSON.stringify(compactWeek));
+  const timedCard=page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve');
+  await timedCard.hover();
+  assert.ok(await timedCard.locator('.calendar-hover-action.done').isVisible(),
+    'Les actions rapides doivent apparaître au survol du rendez-vous');
+  assert.ok((await timedCard.locator('.week-card-open').getAttribute('title')).includes('rendez-vous médical'),
+    'Un titre complet doit rester consultable comme une infobulle');
+  await timedCard.locator('.calendar-hover-action.done').click();
+  await page.waitForFunction(async({id})=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-20');
+    const events=await response.json();
+    return events.some(e=>e.id===id&&e.instance_done);
+  },{id:longEvent.id});
+  assert.ok(!(await page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve .calendar-hover-action.done').count()),
+    'La coche doit marquer uniquement cette occurrence, sans laisser des commandes actives');
   await page.reload({waitUntil:'domcontentloaded'});
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
