@@ -170,10 +170,26 @@ def _stop():
     raise RuntimeError('Le serveur ne s’est pas arrêté proprement.')
 
 def _backup(backup):
-    omit={'updater-state.json','updater.lock','updater-worker.log'}
-    shutil.copytree(DATA,backup/'data',ignore=lambda _,names:omit & set(names))
+    # Native desktop Post-its can own SQLite connections even after the main
+    # server stops. Never copy a live WAL-mode database byte-by-byte.
+    ephemeral={'updater-state.json','updater.lock','updater-worker.log',
+               'desktop-postits.lock','desktop-postits-wake.txt',
+               'desktop-postits.log','desktop-launch.log','desktop-server.log'}
+    database_files={'atelier.db','atelier.db-wal','atelier.db-shm'}
+    ignored=ephemeral|database_files
+    shutil.copytree(DATA,backup/'data',
+                    ignore=lambda parent,names:ignored & set(names)
+                    if Path(parent).resolve()==DATA.resolve() else set())
+    source=sqlite3.connect(DATA/'atelier.db',timeout=15)
+    destination=sqlite3.connect(backup/'data'/'atelier.db',timeout=15)
+    try:
+        source.backup(destination, pages=64, sleep=0.05)
+    finally:
+        destination.close()
+        source.close()
     for item in DATA.rglob('*'):
-        if not item.is_file() or item.name in omit or item.name.startswith('updater-state-'):continue
+        if not item.is_file() or item.name in ignored or item.name.startswith('updater-state-'):
+            continue
         saved=backup/'data'/item.relative_to(DATA)
         if not saved.is_file() or _sha(item.read_bytes())!=_sha(saved.read_bytes()):
             raise RuntimeError('Sauvegarde non conforme : '+str(item))
@@ -181,6 +197,17 @@ def _backup(backup):
         with sqlite3.connect(item) as c:
             if c.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
                 raise RuntimeError('Base sauvegardée invalide.')
+
+def _restore_database_from_snapshot(snapshot, target):
+    # SQLite online backup is atomic against another connected client. Do not
+    # overwrite an open .db while its WAL/SHM files still exist.
+    source=sqlite3.connect(snapshot,timeout=15)
+    destination=sqlite3.connect(target,timeout=15)
+    try:
+        source.backup(destination,pages=64,sleep=0.05)
+    finally:
+        destination.close()
+        source.close()
 
 def _start():
     env=dict(os.environ)
@@ -230,10 +257,12 @@ def worker(revision):
                     (backup/'code_avant').rename(CODE)
                 if backup and (backup/'data'/'atelier.db').is_file():
                     for saved in (backup/'data').rglob('*'):
-                        if saved.is_file():
+                        if saved.is_file() and saved.name!='atelier.db':
                             dest=DATA/saved.relative_to(backup/'data')
                             dest.parent.mkdir(parents=True,exist_ok=True)
                             shutil.copy2(saved,dest)
+                    _restore_database_from_snapshot(backup/'data'/'atelier.db',
+                                                    DATA/'atelier.db')
                 if (CODE/'app'/'app.py').is_file():_start()
                 message+=' Ancienne version TEST restaurée.'
             except Exception as rollback:
