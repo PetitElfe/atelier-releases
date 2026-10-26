@@ -1568,3 +1568,24 @@ body.home-active{overflow-y:auto}
   #homeMiniCalendar .hday{min-height:39px;padding:7px 3px;font-size:15px}
   .pinned-calendar-head{font-size:15px;margin-bottom:10px}
 }
+
+/* ALPHA 0.18.0 — le bouton Aujourd'hui du mini-semainier ne doit jamais
+   déborder sur la grille voisine et devenir impossible à cliquer. */
+#weekPanel .mini-panel .view-head.compact{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 30px;
+  gap:5px;
+  align-items:center;
+}
+#weekPanel .mini-panel #prevWeek{grid-column:1;grid-row:1}
+#weekPanel .mini-panel #weekTitle{
+  grid-column:2;grid-row:1;min-width:0;
+  overflow-wrap:anywhere;text-align:center;font-size:12px;
+}
+#weekPanel .mini-panel #nextWeek{grid-column:3;grid-row:1}
+#weekPanel .mini-panel #weekToday{
+  grid-column:1/-1;grid-row:2;
+  justify-self:stretch;width:100%;min-width:0;
+}
+#weekPanel .mini-panel #prevWeek,
+#weekPanel .mini-panel #nextWeek{width:30px;padding:6px 0}
