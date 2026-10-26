@@ -409,7 +409,7 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 3:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 4:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             c.execute("PRAGMA user_version = 0")
             c.commit()
