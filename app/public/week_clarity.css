@@ -1,0 +1,169 @@
+/* ALPHA 0.18 — semainier lisible sans mini-calendrier ni colonne vide.
+   Les couleurs des rendez-vous restent celles choisies dans L'Atelier. */
+#weekPanel{width:100%!important;max-width:none!important;margin:0!important}
+#weekPanel .week-layout.week-layout-clean{
+  display:flex!important;flex-direction:column!important;
+  gap:10px!important;width:100%;max-width:none!important;
+  align-items:stretch!important;justify-content:stretch!important;
+}
+#weekPanel .week-topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;padding:0 2px 2px;
+}
+#weekPanel .week-navigation{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#weekPanel .week-navigation h3{
+  margin:0 5px;min-width:145px;text-align:center;
+  font-size:clamp(14px,1.05vw,18px);line-height:1.25;color:var(--text)
+}
+#weekPanel .week-navigation button{min-height:34px}
+#weekPanel .week-topbar>.primary{min-height:34px;white-space:nowrap}
+#weekPanel .week-scroll{
+  width:100%!important;max-width:none!important;max-height:none!important;
+  margin:0!important;overflow-x:auto!important;overflow-y:visible!important;
+  scrollbar-gutter:auto!important;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel);
+}
+#weekPanel .week-grid{
+  --week-hour-height:clamp(30px,calc((100dvh - 300px)/16),39px);
+  --week-header-height:86px;
+  display:grid;grid-template-columns:62px repeat(7,minmax(156px,1fr))!important;
+  grid-template-rows:var(--week-header-height) repeat(16,var(--week-hour-height))!important;
+  grid-auto-rows:0!important;
+  min-width:1160px!important;width:100%!important;
+  align-items:stretch;
+}
+#weekGrid .week-head{
+  position:sticky;top:0;z-index:6;min-width:0;
+  height:var(--week-header-height)!important;
+  padding:6px 7px!important;line-height:1.2!important;
+  font-size:13px!important;background:#231d19;
+  border-bottom:2px solid #6a5746;
+}
+#weekGrid .week-head strong{font-size:14px;display:inline-block;margin:1px 0 3px}
+#weekGrid .week-head.week-current-day{
+  color:#f7e2ad!important;background:#44351f!important;
+  border-bottom:3px solid #e6bf65!important;
+  box-shadow:inset 0 0 0 1px #c9a15b!important;
+}
+#weekGrid .week-today-label{
+  display:block;margin:0 auto 3px;padding:2px 5px;
+  max-width:max-content;border-radius:4px;
+  font:700 10px/1.2 sans-serif;letter-spacing:.06em;
+  background:#e7c678;color:#2c2117;
+}
+#weekGrid .week-slot.week-current-day{
+  background:linear-gradient(90deg,rgba(207,171,92,.095),rgba(207,171,92,.045));
+  box-shadow:inset 1px 0 rgba(217,181,112,.24),inset -1px 0 rgba(217,181,112,.24);
+}
+#weekGrid .week-slot,#weekGrid .time-label{
+  height:var(--week-hour-height)!important;min-height:0!important;
+  padding:4px 5px!important;
+}
+#weekGrid .time-label{
+  font-size:12px!important;line-height:1.25!important;
+  padding:7px 9px 0 3px!important;
+  text-align:right;font-variant-numeric:tabular-nums;
+  position:sticky;left:0;z-index:4;background:#201b17;
+}
+#weekGrid .week-head:first-child{position:sticky;top:0;left:0;z-index:8}
+#weekGrid .week-day-layer{z-index:5}
+#weekGrid .week-timed-event{
+  min-height:0!important;overflow:hidden;
+  border-radius:6px;box-shadow:0 1px 3px #0003;
+}
+#weekGrid .week-timed-event .week-card-open{
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:2px;padding:4px 6px!important;
+  height:100%;min-height:0;
+  font-size:12px!important;line-height:1.23!important;
+  overflow:hidden;
+}
+#weekGrid .week-card-time{
+  flex:0 0 auto;max-width:100%;
+  font:700 10px/1.2 sans-serif!important;letter-spacing:.005em;
+  opacity:.83;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#weekGrid .week-card-title{
+  max-width:100%;min-width:0;
+  font-size:12px;line-height:1.22;
+  overflow:hidden;white-space:normal!important;
+  overflow-wrap:break-word!important;word-break:normal!important;
+  hyphens:auto;
+}
+#weekGrid .week-short-event .week-card-open{
+  flex-direction:row;align-items:center;gap:4px;
+  padding:2px 5px!important;
+}
+#weekGrid .week-short-event .week-card-time{display:none}
+#weekGrid .week-short-event .week-card-title{
+  white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;
+}
+#weekGrid .week-medium-event .week-card-time{font-size:9px!important}
+#weekGrid .week-overlap-event .week-card-open{padding:3px 4px!important}
+#weekGrid .week-overlap-event .week-card-title{font-size:11px}
+#weekGrid .week-timed-event:hover,
+#weekGrid .week-timed-event:focus-within{
+  overflow:visible!important;z-index:20!important;
+  box-shadow:0 7px 18px #0009;
+}
+#weekGrid .week-timed-event:hover .week-card-open,
+#weekGrid .week-timed-event:focus-within .week-card-open{
+  position:relative;z-index:2;
+  min-height:max(100%,74px)!important;height:auto!important;
+  width:max(100%,180px);max-width:min(290px,calc(100vw - 25px));
+  overflow:visible!important;
+  padding:26px 9px 10px!important;
+  border-radius:6px;
+  background:inherit!important;box-shadow:0 6px 18px #0008;
+}
+#weekGrid .week-timed-event:hover .week-card-title,
+#weekGrid .week-timed-event:focus-within .week-card-title{
+  overflow:visible!important;white-space:normal!important;
+  font-size:13px!important;line-height:1.35!important;
+}
+#weekGrid .week-timed-event:hover .week-card-time,
+#weekGrid .week-timed-event:focus-within .week-card-time{display:block!important}
+#weekGrid .week-timed-event .calendar-hover-actions{z-index:22}
+#weekGrid .week-timed-event .week-all-day-item{font-size:11px}
+#weekGrid .week-all-day-wrap{margin-top:3px}
+#weekGrid .week-all-day-item{
+  display:block;min-width:0;max-width:100%;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+  padding:3px 5px!important;font-size:11px!important;
+}
+#weekGrid .week-all-day-item:hover,
+#weekGrid .week-all-day-item:focus{white-space:normal;overflow:visible;position:relative;z-index:15}
+#weekGrid .week-slot.cycle-forecast{
+  background:linear-gradient(90deg,rgba(181,77,89,.065),rgba(181,77,89,.025));
+}
+#weekGrid .week-head.cycle-forecast:not(.week-current-day){
+  background:linear-gradient(180deg,rgba(155,66,76,.20),#231d19 80%);
+  border-bottom:2px dashed rgba(205,112,118,.50);
+}
+#monthGrid .day-cell.cycle-forecast{
+  background:linear-gradient(135deg,rgba(168,67,79,.10),rgba(168,67,79,.025));
+  box-shadow:inset 0 0 0 1px rgba(205,109,118,.24);
+}
+#monthGrid .day-cell.cycle-forecast-start{
+  box-shadow:inset 0 0 0 1px rgba(205,109,118,.45);
+  border-top:2px dashed rgba(209,124,130,.65);
+}
+#monthGrid .day-cell.cycle-forecast.today{
+  outline:2px solid var(--gold);outline-offset:-2px;
+}
+#monthGrid .day-cell.cycle-recorded{
+  background:linear-gradient(135deg,rgba(167,58,73,.18),rgba(167,58,73,.075));
+  box-shadow:inset 0 0 0 1px rgba(207,93,107,.4);
+}
+@media(max-width:900px){
+  #weekPanel .week-grid{min-width:1140px!important}
+  #weekPanel .week-scroll{overflow-x:auto!important}
+}
+@media(max-height:680px){
+  #weekPanel .week-grid{--week-hour-height:30px}
+}
+@media(hover:none){
+  #weekGrid .week-timed-event .calendar-hover-actions{opacity:0;pointer-events:none}
+  #weekGrid .week-timed-event:focus-within .calendar-hover-actions{opacity:1;pointer-events:auto}
+}
