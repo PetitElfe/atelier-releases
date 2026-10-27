@@ -742,7 +742,7 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
   }
   function setScale(item,next){
-    const d=read(item.id); d.scale=clamp(next,.45,1.6); save(item.id,d); apply(item,d);
+    const d=read(item.id); d.scale=clamp(next,.45,3.5); save(item.id,d); apply(item,d);
   }
   function beginMove(e,item){
     if(!view.classList.contains('layout-editing')||e.button!==0)return;
@@ -759,10 +759,28 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     e.preventDefault();e.stopPropagation();
     const d=read(item.id), startScale=d.scale||1, sx=e.clientX, sy=e.clientY;
     item.el.classList.add('layout-selected');
-    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,1.6);apply(item,d)};
+    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,3.5);apply(item,d)};
     const up=()=>{save(item.id,d);item.el.classList.remove('layout-selected');document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
     document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
   }
+
+  // Reposition the modules proportionally after moving between screens.
+  let previousViewport={width:window.innerWidth,height:window.innerHeight};
+  window.addEventListener('resize',()=>{
+    const current={width:window.innerWidth,height:window.innerHeight};
+    if(current.width===previousViewport.width&&current.height===previousViewport.height)return;
+    const rx=current.width/Math.max(1,previousViewport.width);
+    const ry=current.height/Math.max(1,previousViewport.height);
+    specs.forEach(item=>{
+      const d=read(item.id);
+      if(!d.x&&!d.y)return;
+      d.x=Math.round(d.x*rx);
+      d.y=Math.round(d.y*ry);
+      save(item.id,d);
+      apply(item,d);
+    });
+    previousViewport=current;
+  });
 
   specs.forEach(item=>{
     item.el.classList.add('layout-object');

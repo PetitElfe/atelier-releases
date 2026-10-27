@@ -1,0 +1,62 @@
+name: Nathan in-app update verification
+on:
+  push:
+    branches: [feature/nathan-inapp-update-responsive-20261027]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check app/public/app_part3.js
+          node --check app/public/app_part1.js
+          node --check app/public/app_part2.js
+      - name: Verify every update manifest hash
+        shell: pwsh
+        run: |
+          @'
+          import json,hashlib,pathlib
+          root=pathlib.Path("app")
+          manifest=json.loads(pathlib.Path("manifest.json").read_text(encoding="utf-8"))
+          assert manifest["version"]=="0.18.0"
+          for item in manifest["files"]:
+              path=root/item["path"]
+              assert path.is_file(),path
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest==item["sha256"],f"{path}: {digest} != {item['sha256']}"
+          print("PASS: all manifest hashes match release files")
+          '@ | python -
+      - name: Python compile and update entrypoint verification
+        shell: pwsh
+        run: |
+          python -m compileall -q app tools
+          python -c "import ast,pathlib; a=ast.parse(pathlib.Path('app/nathan_updater.py').read_text(encoding='utf-8')); assert any(isinstance(n,ast.FunctionDef) and n.name=='check' for n in a.body); assert any(isinstance(n,ast.FunctionDef) and n.name=='begin' for n in a.body); print('PASS: updater entrypoints')"
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Audit raw release hashes
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          for item in json.loads(pathlib.Path('manifest.json').read_text())['files']:
+              print('RAW_HASH',item['path'],hashlib.sha256((pathlib.Path('app')/item['path']).read_bytes()).hexdigest())
+          PY
+      - name: Run release smoke tests
+        run: python tools/release_smoke.py
+      - name: Run Python regression suite
+        run: python -m unittest discover -s tests -p 'test_*.py'
