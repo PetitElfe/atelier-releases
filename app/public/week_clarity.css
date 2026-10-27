@@ -19,12 +19,12 @@
 #weekPanel .week-topbar>.primary{min-height:34px;white-space:nowrap}
 #weekPanel .week-scroll{
   width:100%!important;max-width:none!important;max-height:none!important;
-  margin:0!important;overflow-x:auto!important;overflow-y:visible!important;
+  margin:0!important;overflow-x:auto!important;overflow-y:clip!important;
   scrollbar-gutter:auto!important;border:1px solid var(--line);
   border-radius:10px;background:var(--panel);
 }
 #weekPanel .week-grid{
-  --week-hour-height:clamp(30px,calc((100dvh - 300px)/16),39px);
+  --week-hour-height:clamp(25px,calc((100dvh - 270px)/16),38px);
   --week-header-height:86px;
   display:grid;grid-template-columns:62px repeat(7,minmax(156px,1fr))!important;
   grid-template-rows:var(--week-header-height) repeat(16,var(--week-hour-height))!important;
@@ -161,7 +161,7 @@
   #weekPanel .week-scroll{overflow-x:auto!important}
 }
 @media(max-height:680px){
-  #weekPanel .week-grid{--week-hour-height:30px}
+  #weekPanel .week-grid{--week-hour-height:25px}
 }
 @media(hover:none){
   #weekGrid .week-timed-event .calendar-hover-actions{opacity:0;pointer-events:none}
