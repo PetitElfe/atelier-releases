@@ -711,9 +711,20 @@ def _run_gui():
         root.after(1700, sync)
 
     sync()
+    # Raccourci Windows disponible même après fermeture de la fenêtre de
+    # L'Atelier, tant que le compagnon est actif près de l'horloge.
+    hotkey_cleanup = None
+    try:
+        import quick_capture_native
+        hotkey_cleanup = quick_capture_native.install(root, DATA, DB, on_postit=wake)
+    except (OSError, RuntimeError, AttributeError, ImportError) as exc:
+        print("Capture globale indisponible:", str(exc), flush=True)
     try:
         root.mainloop()
     finally:
+        if hotkey_cleanup:
+            try:hotkey_cleanup()
+            except OSError:pass
         for widget in list(windows.values()):
             widget._save()
             widget._save_geometry()
