@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "273f414d1d5878fd16f026635eae04a59db4e5ab9fb88082341e5d1323ed7897"
+      "sha256": "7583688c7bec96f658af9c217f8184a19716073bddeafd1c98d586c9a9f34c0b"
     },
     {
       "path": "app_part2.py",
-      "sha256": "2abd09c8e9b92748805d0a57ef101389cd61458bdb154c4788fbb45a6dc01557"
+      "sha256": "09388f1f4a90813e404aa44b1f7b52fd0294c200c43f695e2b5f4ada4e3a1c2a"
     },
     {
       "path": "app_part3.py",
@@ -29,19 +29,19 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "bf935d0c60a34952b01a64a930171e25ba17228dd78c6ca654cb81df25a3999e"
+      "sha256": "5549ed8f11df2ebc1afd1216ef67de29f7e85e30c5fb87d8f5e8c27d6bf3711e"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "aaa500fa78dc055b0c1bcd845a46fb17996a61927796323cde0e61e6b2f2d0ee"
+      "sha256": "0737cdc11b68bacc0ebba4d285d2b37ac4e0ef90aa5e1756e1bd2ad7bc8a94f0"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "853d96b4ce519cdd91a7b0596476c94f63057ef7dcb9bec5652f09f1b455c784"
+      "sha256": "19b198d031f4054a9c116f6d2a1d02a962e2d77a44969d78865cae9fd8ec3d2f"
     },
     {
       "path": "public/index.html",
-      "sha256": "4be2f0dc99963a837448e457d0bc463ed42368f64d6d625f35654890596e0b63"
+      "sha256": "217d7f3fba6d62e445a172eeef2fc6c957eb439ebef4f47d38b9f4d6a1b96d2a"
     },
     {
       "path": "public/styles.css",
@@ -86,7 +86,19 @@
     {
       "path": "windows_tray.py",
       "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
+    },
+    {
+      "path": "event_preparations.py",
+      "sha256": "2b812c7a1f3e2bfd4f0626327c0f3b4bfbe2e0543364aa1bfdb2d53dee036624"
+    },
+    {
+      "path": "public/event_preparations.js",
+      "sha256": "11e83eb006ecba1072c0701ee31e3d5c24944fb40c7b4f82ba000010afc15e04"
+    },
+    {
+      "path": "public/event_preparations.css",
+      "sha256": "17d64e2034a689bfe155e6f06ec2d2cc0f37fd365817db4250080a2b883de458"
     }
   ],
-  "notes": "ALPHA 0.18.0 — édition TEST/Nathan : mise à jour intégrée, accueil adaptatif 2K et carnet redimensionnable."
+  "notes": "ALPHA 0.18.0 — TEST + Nathan : accueil adaptatif 2K, préparatifs de rendez-vous récurrents par occurrence, tiroir calendrier et compteur J−1. Données séparées par installation."
 }
