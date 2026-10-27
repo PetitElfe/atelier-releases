@@ -258,6 +258,7 @@ async function checkDue(){
 const shown=new Set();
 function notifyReminder(r){
   if(shown.has(r.id))return;
+  if(typeof lifeReminderChime==='function')lifeReminderChime();
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
   const when=formatReminderMoment(r.snoozed_until||r.remind_at);
@@ -325,10 +326,11 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
+  if(['trackers','admin','captures'].includes(view)&&typeof loadLifeTools==='function')loadLifeTools();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -541,6 +543,7 @@ function renderSettings(){
   if(persistent)persistent.checked=notificationPersistentPreference();
   if(status)status.textContent=notificationPermissionLabel();
   if(typeof renderCycleSettings==='function')renderCycleSettings();
+  if(typeof lifeRenderSettings==='function')lifeRenderSettings();
   if(permission){
     const granted=('Notification' in window)&&Notification.permission==='granted';
     permission.textContent=granted?'Notifications autorisées':'Autoriser les notifications';
