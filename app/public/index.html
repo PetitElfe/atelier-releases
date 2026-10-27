@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/event_preparations.css" />
   <link rel="stylesheet" href="/calendar_cycle_compact.css" />
   <link rel="stylesheet" href="/week_clarity.css" />
+  <link rel="stylesheet" href="/life_tools.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -41,6 +42,9 @@
       <button data-view="library">Bibliothèque</button>
       <button data-view="reminders">Rappels</button>
       <button data-view="organisation">Habitudes & routines</button>
+      <button data-view="trackers">Trackers</button>
+      <button data-view="admin">Administratif</button>
+      <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -73,6 +77,7 @@
 
       <div id="journalBook" data-home-module="journal" class="journal-book" aria-label="Journal de l’Atelier">
         <section class="journal-page journal-left">
+          <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
 
           <div class="journal-section">
@@ -89,9 +94,12 @@
             </div>
             <div id="homeTodayTasks" class="journal-task-list"></div>
           </div>
+          </div>
+          <div class="journal-secondary-content"><div class="journal-heading">Mon suivi du jour</div><div id="journalTrackerSummary"></div><div class="journal-divider"></div><div class="journal-heading">Mes démarches</div><div id="journalAdminSummary"></div></div>
         </section>
 
         <section class="journal-page journal-right">
+          <div class="journal-primary-content">
           <div class="journal-section">
             <div class="journal-heading">Que faire maintenant ?</div>
             <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
@@ -108,7 +116,10 @@
             <div class="journal-heading">À consommer bientôt</div>
             <div id="homeExpiryList"></div>
           </div>
+          </div>
+          <div class="journal-secondary-content"><div class="journal-heading">Courrier arrivé</div><div id="journalCaptureSummary"></div><div class="journal-divider"></div><button id="journalQuickCapture" type="button" class="journal-heading journal-heading-button">✎ Noter une idée</button><div class="journal-divider"></div><button id="journalBackToToday" type="button" class="journal-heading journal-heading-button">← Revenir à aujourd’hui</button></div>
         </section>
+        <div class="journal-page-turn"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
       </div>
 
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
@@ -354,6 +365,20 @@
     </section>
 
 
+    <section id="trackersView" class="view life-view">
+      <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL</span><h2>Mes trackers</h2><p class="muted">Suis ce qui t’intéresse, sans jugement ni obligation de régularité.</p></div></div>
+      <form id="trackerCreateForm" class="life-form"><label>Nom du tracker<input name="title" maxlength="120" required placeholder="Ex. : Lecture, marche, humeur…"></label><label>Unité<input name="unit" maxlength="32" placeholder="pages, minutes, /10…"></label><label>Objectif facultatif<input name="target" type="number" step="any" placeholder="—"></label><button type="submit" class="primary">+ Créer</button></form>
+      <div id="trackerList" class="life-card-list"></div>
+    </section>
+    <section id="adminView" class="view life-view">
+      <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
+      <form id="adminCreateForm" class="life-form"><label>Démarche<input name="title" maxlength="180" required placeholder="Ex. : Envoyer un dossier"></label><label>Catégorie<select name="category"><option>Santé</option><option>Logement</option><option>CAF</option><option>Emploi</option><option>Identité</option><option>Autre</option></select></label><label>Échéance<input name="due_date" type="date"></label><label class="life-form-wide">Notes<textarea name="notes" rows="2" placeholder="Pièces à réunir, contact, référence…"></textarea></label><button type="submit" class="primary">+ Ajouter</button></form>
+      <div id="adminList" class="life-card-list"></div>
+    </section>
+    <section id="capturesView" class="view life-view">
+      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
+      <div id="captureInbox" class="life-card-list"></div>
+    </section>
     <section id="settingsView" class="view settings-view">
       <div class="settings-shell">
         <div class="settings-heading">
@@ -442,10 +467,8 @@
               <input id="settingsNotificationPersistent" type="checkbox">
               <span><strong>Notification persistante</strong><small>Demande à Brave/Windows de la garder affichée jusqu’à interaction. Le système peut malgré tout décider de la masquer.</small></span>
             </label>
-            <div class="settings-future">
-              <span>♪ Son de rappel</span>
-              <small>Prévu pour un prochain bloc.</small>
-            </div>
+            <label class="settings-toggle"><input id="settingsReminderSound" type="checkbox"><span><strong>♪ Son de rappel</strong><small>Petit son original lorsque l’application est ouverte. Sur téléphone, les restrictions du système peuvent empêcher le son en arrière-plan.</small></span></label>
+            <button id="settingsTestReminderSound" type="button">▶ Tester le son</button>
             <div class="settings-future">
               <span>● Badge sur l’icône</span>
               <small>Prévu plus tard, surtout pour la future application bureau.</small>
@@ -460,6 +483,7 @@
             <button id="settingsNavReset" type="button">Remettre le tiroir à droite</button>
           </section>
 
+          <section class="settings-card" id="settingsQuickCaptureCard"><div class="settings-card-title"><span class="settings-card-icon">✎</span><div><h3>Capture rapide</h3><p>Note une idée et range-la avec #Carnet, #Tâches, #Administratif…</p></div></div><label class="settings-field">Raccourci dans L’Atelier<input id="settingsQuickCaptureShortcut" readonly placeholder="Clique puis appuie sur la combinaison"></label><button id="settingsQuickCaptureOpen" type="button">✎ Ouvrir la capture rapide</button><p class="muted">Le raccourci fonctionne lorsque la fenêtre L’Atelier est active. Un raccourci global Windows sera une étape distincte.</p></section>
           <section class="settings-card"><div class="settings-card-title"><span class="settings-card-icon">⌨</span><div><h3>Raccourcis pratiques</h3><p>Quelques commandes utiles de L’Atelier.</p></div></div><div class="atelier-settings-shortcuts"><span>Feuilleter un carnet en lecture</span><strong>← / →</strong><span>Rechercher dans un carnet</span><strong>Ctrl + F</strong><span>Placement précis sur l’Accueil</span><strong>Flèches · Maj + flèche · Échap</strong></div></section><section class="settings-card settings-card-muted">
             <div class="settings-card-title">
               <span class="settings-card-icon">✦</span>
@@ -516,6 +540,14 @@
   </div>
 
   <div id="toastArea" class="toast-area" aria-live="polite"></div>
+  <div id="quickCaptureOverlay" class="quick-capture-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="quickCaptureTitle">
+    <div class="quick-capture-dialog"><div class="quick-capture-head"><h2 id="quickCaptureTitle">✎ Capture rapide</h2><button id="quickCaptureClose" type="button" aria-label="Fermer">×</button></div>
+    <p>Commence par <strong>#</strong> pour choisir une destination.</p>
+    <textarea id="quickCaptureText" rows="5" placeholder="#Carnet Une idée à garder…"></textarea>
+    <div id="quickCaptureSuggestions" class="quick-capture-suggestions" role="listbox"></div>
+    <div class="quick-capture-foot"><span id="quickCaptureDestination">Destination : Carnet</span><button id="quickCaptureSend" type="button" class="primary">Envoyer</button></div>
+    </div>
+  </div>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/postits.js"></script>
@@ -524,5 +556,6 @@
   <script src="/calendar_cycle_compact.js"></script>
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
+  <script src="/life_tools.js"></script>
 </body>
 </html>
