@@ -755,7 +755,7 @@ async function api(path,method='GET',body){
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
   // Toutes les rubriques principales reçoivent aussi des poignées de modules.
   await page.evaluate(()=>showView('organisation'));
-  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),2,'Habit and cycle modules can be moved');
+  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),1,'Habit module remains movable after cycle editor removal');
   await page.evaluate(()=>showView('kitchen'));
   assert.equal(await page.locator('#kitchenView .kitchen-panel.layout-object').count(),3,'All kitchen modules can be moved');
   await page.locator('#globalLayoutEdit').click();
