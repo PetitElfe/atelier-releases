@@ -39,6 +39,13 @@ jobs:
       - name: Build debug APK
         working-directory: mobile/android
         run: gradle --no-daemon assembleDebug
+      - name: Verify APK package and bundled journal
+        run: |
+          APK=mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -l "$APK" | grep -q 'assets/index.html'
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
       - uses: actions/upload-artifact@v4
         with:
           name: LAtelierDuGoblin_Android_Prototype_APK
