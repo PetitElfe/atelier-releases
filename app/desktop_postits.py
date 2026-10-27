@@ -153,6 +153,22 @@ def create_note(db_path=DB):
         return cur.lastrowid
 
 
+def archived_notes(db_path=DB):
+    with _db(db_path) as c:
+        return [dict(row) for row in c.execute(
+            "SELECT id,title,archived FROM home_postits WHERE archived=1 ORDER BY id DESC")]
+
+
+def restore_note(note_id, db_path=DB):
+    with _db(db_path) as c:
+        if c.execute("SELECT COUNT(*) FROM home_postits WHERE archived=0").fetchone()[0]>=100:
+            raise ValueError("Archive quelques Post-it avant de les restaurer.")
+        result=c.execute(
+            "UPDATE home_postits SET archived=0,updated_at=? WHERE id=? AND archived=1",
+            (dt.datetime.now().isoformat(timespec="microseconds"),int(note_id)))
+        return bool(result.rowcount)
+
+
 def _pythonw():
     executable = Path(sys.executable)
     if executable.name.lower() == "python.exe":
@@ -311,6 +327,7 @@ def _run_gui():
             self.hint.pack(fill="x", pady=(0, 5))
             self.menu = tk.Menu(self.window, tearoff=0)
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
+            self.menu.add_command(label="Mes archives…", command=self._show_archives)
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
             self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
@@ -373,6 +390,37 @@ def _run_gui():
                 wake()
             except (sqlite3.Error,OSError,ValueError) as error:
                 messagebox.showerror("Post-it", str(error), parent=self.window)
+
+        def _show_archives(self):
+            if _update_in_progress():
+                return
+            rows=archived_notes()
+            if not rows:
+                messagebox.showinfo("Archives", "Aucun Post-it archivé.", parent=self.window)
+                return
+            dialog=tk.Toplevel(root)
+            dialog.title("Archives des Post-it — L’Atelier du Goblin")
+            dialog.geometry("390x350")
+            dialog.transient(self.window)
+            tk.Label(dialog, text="Choisis la note à restaurer :", pady=12).pack()
+            listing=tk.Listbox(dialog, font=("Segoe UI", 10))
+            listing.pack(fill="both",expand=True,padx=15)
+            for note in rows:
+                listing.insert("end",note["title"])
+            def restore_selected():
+                current=listing.curselection()
+                if not current:
+                    return
+                if _update_in_progress():
+                    return
+                try:
+                    if restore_note(rows[current[0]]["id"]):
+                        wake()
+                    dialog.destroy()
+                except (sqlite3.Error,OSError,ValueError) as exc:
+                    messagebox.showerror("Archives",str(exc),parent=dialog)
+            tk.Button(dialog,text="Restaurer sur le Bureau",command=restore_selected).pack(pady=9)
+            tk.Button(dialog,text="Fermer",command=dialog.destroy).pack(pady=(0,9))
 
         def _menu(self, event):
             try:
@@ -494,6 +542,9 @@ def _run_gui():
                 return
             if self.pending:
                 root.after_cancel(self.pending)
+                self.pending=None
+            if not self._save():
+                return
             with _db() as c:
                 c.execute("UPDATE home_postits SET archived=1 WHERE id=?",
                           (self.note["id"],))
@@ -583,6 +634,11 @@ def _self_test():
         assert (note_rows(db)[0]["x"],note_rows(db)[0]["width"])==(321,350)
         fresh=create_note(db)
         assert any(row["id"]==fresh for row in note_rows(db))
+        assert len(archived_notes(db))==1
+        assert restore_note(2,db)
+        assert any(row["id"]==2 for row in note_rows(db))
+        with sqlite3.connect(db) as c:
+            c.execute("UPDATE home_postits SET archived=1 WHERE id=2")
         # Ancienne base v6 : ajouter une colonne locked sans perte de géométrie.
         with sqlite3.connect(db) as c:
             c.execute("ALTER TABLE desktop_postit_layout RENAME TO old_layout")
