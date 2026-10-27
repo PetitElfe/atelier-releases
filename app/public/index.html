@@ -18,7 +18,7 @@
     </div>
     <div class="top-actions">
       <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil">＋</button>
-      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙</button>
+      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙<span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
       <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="globalLayoutUndo" class="secondary hidden" type="button">↶ Annuler la remise à zéro</button>
@@ -377,12 +377,12 @@
           <section class="settings-card" id="settingsUpdatesCard">
             <div class="settings-card-title">
               <span class="settings-card-icon">↻</span>
-              <div><h3>Mises à jour</h3><p>Vérifier, sauvegarder et redémarrer automatiquement L’Atelier TEST.</p></div>
+              <div><h3>Mises à jour <span id="settingsUpdateAvailable" class="atelier-update-indicator hidden" role="status">● Mise à jour disponible</span></h3><p>Vérifier, sauvegarder et redémarrer automatiquement L’Atelier TEST.</p></div>
             </div>
             <div class="settings-status-row"><span>Version installée</span><strong id="settingsInstalledVersion">—</strong></div>
             <button id="settingsCheckUpdates" type="button">↻ Vérifier les mises à jour</button>
             <button id="settingsInstallUpdate" type="button" class="primary" hidden disabled>↓ Installer la mise à jour TEST</button>
-            <p id="settingsUpdateMessage" class="muted" role="status" aria-live="polite">Aucune vérification effectuée.</p>
+            <p id="settingsUpdateMessage" class="muted" role="status" aria-live="polite">Recherche automatique des mises à jour au démarrage.</p><p class="muted">Vérification discrète au lancement, puis périodiquement lorsque l’application est ouverte. Aucune mise à jour ne s’installe sans ton accord.</p>
             <button id="settingsExportBrowserData" type="button">↓ Sauvegarder les réglages du navigateur</button>
             <p class="muted">Ce téléchargement reste privé sur ton ordinateur et peut contenir des brouillons. Il ne remplace pas une sauvegarde des carnets et de la base de données.</p>
             <p class="muted">Sur la version TEST uniquement : sauvegarde de secours, installation et redémarrage automatique. La fenêtre du navigateur se reconnecte sans intervention. La version stable reste protégée.</p>
