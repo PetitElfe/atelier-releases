@@ -183,7 +183,10 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
       await lifeApi('/api/captures',{method:'POST',body:JSON.stringify({destination,body})});
     }
     lifeCloseCapture();await loadLifeTools();await refresh();
-    showUiMessage('Idée rangée',destination==='carnet'?'Ta note attend dans la boîte de réception #Carnet.':'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination));
+    const toast=lifeNode('div','toast');
+    toast.append(lifeNode('strong','','✓ Idée rangée'),lifeNode('div','task-meta',
+      destination==='carnet'?'Ta note attend dans la boîte de réception #Carnet.':'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination)));
+    $('#toastArea').append(toast);setTimeout(()=>toast.remove(),4500);
   }catch(err){showUiError(err,'Impossible de ranger la note')}
   finally{btn.disabled=false}
 });
