@@ -1,15 +1,29 @@
-# Android release checklist — before first installation
+# Android release checklist — permanent install
 
-**Do not distribute the prototype debug APK as the permanent install.** GitHub Actions debug builds may be signed with a different debug certificate on each runner, making future updates fail.
+## One-time private signing configuration
 
-1. Generate a dedicated Android release signing keystore **locally**; never commit it.
-2. Save the keystore and passwords securely; back them up offline.
-3. Configure GitHub Actions secrets for the signing material and use the **same signing certificate for every release**.
-4. Produce an APK signed by the release certificate, with an incrementing `versionCode` and `versionName`.
-5. Upload the signed APK as a public GitHub release asset named `LAtelierDuGoblin-Mobile.apk` with a tag like `android-v0.1.0`.
-6. Install that signed APK once on the phone; later releases can replace it if package ID and signing certificate remain unchanged.
-7. Test download and install on a physical device. Android requires user confirmation for APK installs; it cannot be silently bypassed.
-8. Add APK signature verification / checksum checks and a safer update download destination before production.
-9. Keep mobile data separate from the Windows stable installation until authenticated sync and conflict handling are tested.
+A permanent Android signing key must be kept **outside the repository** and backed up securely. Do not commit the key, its password, or base64 text to GitHub.
 
-Current updater: checks public GitHub releases on request, shows a new version and downloads the official APK into Downloads. It does **not** auto-install. It does **not** check a cryptographic manifest beyond the normal Android installer signature enforcement. Private GitHub releases cannot be fetched without authentication.
+The GitHub Actions release workflow expects these **repository secrets**:
+- `ATELIER_ANDROID_KEYSTORE_B64`: base64-encoded contents of the PKCS12/JKS keystore file
+- `ATELIER_ANDROID_STORE_PASSWORD`: keystore password
+- `ATELIER_ANDROID_KEY_PASSWORD`: private key password
+- `ATELIER_ANDROID_KEY_ALIAS`: key alias
+
+Create these via GitHub repository Settings → Secrets and variables → Actions → New repository secret. The assistant cannot create repository secrets through the available GitHub connector. Keep an offline backup of the keystore and passwords; losing them prevents seamless upgrades.
+
+## Release procedure
+
+1. Validate the prototype Android build and emulator smoke test.
+2. Confirm the four repository secrets are present.
+3. Trigger the `Android mobile signed release` workflow on the mobile feature branch with version `0.1.0` (workflow must be registered in the repository Actions UI; first activation may require an authorized maintainer to merge the workflow into the default branch).
+4. The workflow signs `app-release.apk` with the permanent keystore, verifies the signature and publishes a public GitHub release `android-vX.Y.Z` with `LAtelierDuGoblin-Mobile.apk`.
+5. Install that **signed** APK once. Subsequent signed releases with higher version codes and the same certificate can upgrade it.
+6. Test the update check/download/install flow on a real Android phone.
+
+## Known limitations
+
+- Android requires user approval to install an APK update.
+- Current updater checks public GitHub releases and downloads the new APK into Downloads. It does not silently install.
+- This is still a prototype; no Wi-Fi sync, native reminder notifications or production-grade backup.
+- The Windows stable application and its data remain untouched.
