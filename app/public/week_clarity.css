@@ -68,7 +68,7 @@
 #weekGrid .week-head:first-child{position:sticky;top:0;left:0;z-index:8}
 #weekGrid .week-day-layer{z-index:5}
 #weekGrid .week-timed-event{
-  min-height:0!important;overflow:hidden;
+  min-height:24px!important;overflow:hidden;
   border-radius:6px;box-shadow:0 1px 3px #0003;
 }
 #weekGrid .week-timed-event .week-card-open{
