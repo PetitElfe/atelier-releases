@@ -42,8 +42,14 @@ jobs:
         run: |
           python -m compileall -q app tools
           python -c "import ast,pathlib; a=ast.parse(pathlib.Path('app/nathan_updater.py').read_text(encoding='utf-8')); assert any(isinstance(n,ast.FunctionDef) and n.name=='check' for n in a.body); assert any(isinstance(n,ast.FunctionDef) and n.name=='begin' for n in a.body); print('PASS: updater entrypoints')"
-      - name: Run Python regression suite and release smoke tests
-        shell: pwsh
-        run: |
-          python -m unittest discover -s tests -p 'test_*.py'
-          python tools/release_smoke.py
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run Python regression suite
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Run release smoke tests
+        run: python tools/release_smoke.py
