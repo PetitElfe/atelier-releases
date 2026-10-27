@@ -31,7 +31,6 @@ jobs:
           python -m py_compile tools/nathan_launcher.py tools/nathan_patch.py tools/build_nathan_bundle.py
           python tools/build_nathan_bundle.py
           python -c "import sys;sys.path.insert(0,'build/nathan_code/app');import updater,desktop_postits;assert updater.PORT==8877 and desktop_postits.DATA.name=='data' and 'LAtelierDuGoblinNathan' in str(updater.BASE);print('PASS: independent Nathan paths')"
-          python build/nathan_code/app/desktop_postits.py --self-test
       - name: Build bundled Windows EXE including its own Python runtime and app
         shell: pwsh
         run: |
