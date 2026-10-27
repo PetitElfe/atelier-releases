@@ -3,6 +3,8 @@ package fr.atelierdugoblin.mobile;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebResourceRequest;
+import android.content.Intent;
+import android.net.Uri;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -18,6 +20,12 @@ public class MainActivity extends Activity {
             .build();
         webView = new WebView(this);
         webView.setWebViewClient(new WebViewClientCompat() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if ("https".equals(uri.getScheme()) && "appassets.androidplatform.net".equals(uri.getHost())) return false;
+                if ("https".equals(uri.getScheme())) startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                return true;
+            }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return loader.shouldInterceptRequest(request.getUrl());
             }
