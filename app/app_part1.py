@@ -3,9 +3,9 @@ from urllib.parse import urlparse, parse_qs
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from pathlib import Path
 from calendar import monthrange
-import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
+import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater, desktop_postits, event_preparations
+import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -276,6 +276,34 @@ CREATE INDEX IF NOT EXISTS idx_meal_idea_links_recipe ON meal_idea_links(recipe_
 CREATE INDEX IF NOT EXISTS idx_objective_parent ON objective_nodes(parent_id, order_index);
 CREATE INDEX IF NOT EXISTS idx_objective_library_node ON objective_library_sections(node_id, order_index);
 CREATE INDEX IF NOT EXISTS idx_objective_library_section ON objective_library_entries(section_id, order_index);
+-- Carnet de bord, trackers et administratif : données locales, séparées par installation.
+CREATE TABLE IF NOT EXISTS personal_trackers (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
+ unit TEXT NOT NULL DEFAULT '', target REAL, archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS personal_tracker_entries (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ tracker_id INTEGER NOT NULL REFERENCES personal_trackers(id) ON DELETE CASCADE,
+ entry_date TEXT NOT NULL, value REAL NOT NULL, notes TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL,
+ UNIQUE(tracker_id,entry_date)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_entries ON personal_tracker_entries(tracker_id,entry_date);
+CREATE TABLE IF NOT EXISTS admin_documents (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
+ category TEXT NOT NULL DEFAULT 'Général', due_date TEXT,
+ status TEXT NOT NULL DEFAULT 'todo' CHECK(status IN ('todo','waiting','done')),
+ notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_admin_due ON admin_documents(status,due_date);
+CREATE TABLE IF NOT EXISTS quick_captures (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, destination TEXT NOT NULL,
+ body TEXT NOT NULL, seen INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_quick_capture_unread ON quick_captures(destination,seen);
+
 
 '''
 

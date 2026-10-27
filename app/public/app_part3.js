@@ -258,6 +258,7 @@ async function checkDue(){
 const shown=new Set();
 function notifyReminder(r){
   if(shown.has(r.id))return;
+  if(typeof lifeReminderChime==='function')lifeReminderChime();
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
   const when=formatReminderMoment(r.snoozed_until||r.remind_at);
@@ -325,10 +326,11 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
+  if(['trackers','admin','captures'].includes(view)&&typeof loadLifeTools==='function')loadLifeTools();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -541,6 +543,7 @@ function renderSettings(){
   if(persistent)persistent.checked=notificationPersistentPreference();
   if(status)status.textContent=notificationPermissionLabel();
   if(typeof renderCycleSettings==='function')renderCycleSettings();
+  if(typeof lifeRenderSettings==='function')lifeRenderSettings();
   if(permission){
     const granted=('Notification' in window)&&Notification.permission==='granted';
     permission.textContent=granted?'Notifications autorisées':'Autoriser les notifications';
@@ -627,7 +630,8 @@ async function atelierPollUpdate(){
       const state=await atelierUpdateRequest('/api/update/status');
       if(state.phase==='success'){
         message.textContent='Mise à jour installée ! Rechargement de L’Atelier…';
-        window.location.reload();
+        // Après l’arrêt/redémarrage du serveur, forcer un nouvel HTML/JS.
+        window.location.replace('/?atelier_reloaded='+Date.now());
         return;
       }
       if(state.phase==='error'){
@@ -651,6 +655,16 @@ async function atelierPollUpdate(){
   atelierUpdatePolling=false;check.disabled=false;
 }
 $('#settingsCheckUpdates').onclick=()=>atelierCheckForUpdates({automatic:false});
+$('#settingsReloadUi')?.addEventListener('click',()=>{
+  window.location.replace('/?atelier_reloaded='+Date.now());
+});
+function atelierShowEdition(){
+  const port=location.port;
+  const edition=port==='8876'?'ALPHA TEST (8876)':port==='18877'?'Nathan (18877)':port==='8765'?'Stable (8765)':'Installation locale (port '+port+')';
+  const label=$('#settingsRunningEdition');
+  if(label)label.textContent='Fenêtre actuellement ouverte : '+edition+'. Si rien ne change, vérifie que tu as bien mis à jour cette installation.';
+}
+atelierShowEdition();
 // Alertes discrètes : jamais de mise à jour sans confirmation explicite.
 setTimeout(()=>atelierCheckForUpdates({automatic:true}),5000);
 setInterval(()=>atelierCheckForUpdates({automatic:true}),ATELIER_UPDATE_NOTICE_INTERVAL);
@@ -1464,7 +1478,12 @@ function initGlobalLayoutEditor(){
         <span class="layout-scale-value" aria-label="Dimensions">—</span>
         <span class="layout-width-handle" title="Étirer la largeur" aria-label="Étirer la largeur">↔</span>
         <span class="layout-height-handle" title="Étirer la hauteur" aria-label="Étirer la hauteur">↕</span>
-        <span class="layout-resize-handle" title="Étirer largeur et hauteur" aria-label="Étirer largeur et hauteur">↘</span>`;
+        <span class="layout-resize-handle" title="Étirer largeur et hauteur" aria-label="Étirer largeur et hauteur">↘</span>
+        <span class="layout-corner layout-corner-nw" title="Tirer le coin haut gauche" aria-label="Tirer le coin haut gauche">↖</span>
+        <span class="layout-corner layout-corner-ne" title="Tirer le coin haut droit" aria-label="Tirer le coin haut droit">↗</span>
+        <span class="layout-corner layout-corner-sw" title="Tirer le coin bas gauche" aria-label="Tirer le coin bas gauche">↙</span>
+        <span class="layout-side layout-side-left" title="Étirer par la gauche" aria-label="Étirer par la gauche">↔</span>
+        <span class="layout-side layout-side-top" title="Étirer par le haut" aria-label="Étirer par le haut">↕</span>`;
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
@@ -1545,11 +1564,22 @@ function initGlobalLayoutEditor(){
       d.scale=1;
       if(homeCanvasReady&&isHomeCanvasItem(item))selectHomeCanvasItem(item);
       else item.el.classList.add('layout-selected');
+      const originX=d.x,originY=d.y;
       const move=ev=>{
-        if(axis!=='height')d.width=clamp(baseWidth+ev.clientX-sx,minWidth,maxWidth);
-        if(axis!=='width')d.height=clamp(baseHeight+ev.clientY-sy,minHeight,maxHeight);
+        const dx=ev.clientX-sx,dy=ev.clientY-sy;
+        const fromLeft=['nw','sw','left'].includes(axis);
+        const fromTop=['nw','ne','top'].includes(axis);
+        const hasWidth=!['height','top','bottom'].includes(axis);
+        const hasHeight=!['width','left','right'].includes(axis);
+        if(hasWidth){
+          d.width=clamp(baseWidth+(fromLeft?-dx:dx),minWidth,maxWidth);
+          if(fromLeft)d.x=originX+baseWidth-d.width;
+        }
+        if(hasHeight){
+          d.height=clamp(baseHeight+(fromTop?-dy:dy),minHeight,maxHeight);
+          if(fromTop)d.y=originY+baseHeight-d.height;
+        }
         applyGlobalLayout(item,d);
-        // Persist also during dragging: a lost pointerup must never lose a placement.
         saveGlobalLayout(item,d);
       };
       const up=()=>finishInteraction(d,move,up,cancel);
@@ -1564,7 +1594,12 @@ function initGlobalLayoutEditor(){
     controls.querySelector('.layout-move-handle')?.addEventListener('pointerdown',beginMove);
     controls.querySelector('.layout-width-handle')?.addEventListener('pointerdown',event=>beginResize('width',event));
     controls.querySelector('.layout-height-handle')?.addEventListener('pointerdown',event=>beginResize('height',event));
-    controls.querySelector('.layout-resize-handle')?.addEventListener('pointerdown',event=>beginResize('both',event));
+    controls.querySelector('.layout-resize-handle')?.addEventListener('pointerdown',event=>beginResize('se',event));
+    for(const direction of ['nw','ne','sw']){
+      controls.querySelector('.layout-corner-'+direction)?.addEventListener('pointerdown',event=>beginResize(direction,event));
+    }
+    controls.querySelector('.layout-side-left')?.addEventListener('pointerdown',event=>beginResize('left',event));
+    controls.querySelector('.layout-side-top')?.addEventListener('pointerdown',event=>beginResize('top',event));
   });
   $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
   $('#globalLayoutReset').onclick=()=>{

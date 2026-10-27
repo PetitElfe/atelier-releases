@@ -156,6 +156,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        if p == '/api/quick-capture/hotkey':
+            return self._json({'shortcut':quick_capture_native.read_preference(DATA/'quick-capture-hotkey.json')})
         if p == '/api/desktop-postits/status':
             try:
                 desktop_postits._guard()
@@ -191,6 +193,17 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/budget':
                 try: return self._json(budget_snapshot(c,budget_month(q.get('month',[date.today().strftime('%Y-%m')])[0]),now_iso()))
                 except ValueError as ex:return self._json({'error':str(ex)},400)
+            if p == '/api/trackers':
+                trackers=[dict(row) for row in c.execute('SELECT * FROM personal_trackers WHERE archived=0 ORDER BY id')]
+                for item in trackers:
+                    item['entries']=[dict(row) for row in c.execute(
+                        'SELECT id,entry_date,value,notes FROM personal_tracker_entries WHERE tracker_id=? ORDER BY entry_date DESC LIMIT 90',(item['id'],))]
+                return self._json(trackers)
+            if p == '/api/admin':
+                return self._json([dict(row) for row in c.execute(
+                    "SELECT * FROM admin_documents ORDER BY CASE status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, COALESCE(due_date,'9999'),id DESC")])
+            if p == '/api/captures':
+                return self._json([dict(row) for row in c.execute('SELECT * FROM quick_captures ORDER BY seen,created_at DESC,id DESC LIMIT 300')])
             if p == '/api/habits':
                 rows=[dict(row) for row in c.execute('SELECT * FROM habits WHERE archived=0 ORDER BY id')]
                 for row in rows:
@@ -341,6 +354,19 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
         if p == '/api/version':
             return self._json({'version': atelier_version()})
+        if p == '/api/quick-capture/hotkey':
+            try:
+                shortcut=str(body.get('shortcut') or '')
+                quick_capture_native.parse_hotkey(shortcut)
+                target=DATA/'quick-capture-hotkey.json'
+                temporary=DATA/'quick-capture-hotkey.tmp'
+                temporary.write_text(json.dumps({'shortcut':shortcut}),encoding='utf-8')
+                temporary.replace(target)
+                return self._json({'shortcut':shortcut,'ok':True})
+            except (ValueError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
+            except OSError as ex:
+                return self._json({'error':'Impossible de sauvegarder le raccourci : '+str(ex)},500)
         if p == '/api/shutdown':
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -377,6 +403,37 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(desktop_postits.launch())
             except (RuntimeError,OSError) as exc:
                 return self._json({'error':str(exc)},409)
+        if p == '/api/trackers':
+            title=str(body.get('title') or '').strip()[:120]
+            unit=str(body.get('unit') or '').strip()[:32]
+            if not title:return self._json({'error':'Nom du tracker requis.'},400)
+            try:
+                target=float(body['target']) if body.get('target') not in (None,'') else None
+                if target is not None and (not math.isfinite(target) or abs(target)>100000000):raise ValueError()
+            except (TypeError,ValueError):return self._json({'error':'Objectif numérique invalide.'},400)
+            with conn() as c:
+                cur=c.execute('INSERT INTO personal_trackers(title,unit,target,created_at,updated_at) VALUES(?,?,?,?,?)',(title,unit,target,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+        if p == '/api/admin':
+            title=str(body.get('title') or '').strip()[:180]
+            if not title:return self._json({'error':'Nom de démarche requis.'},400)
+            due=str(body.get('due_date') or '').strip()
+            try:due=date.fromisoformat(due).isoformat() if due else None
+            except ValueError:return self._json({'error':'Date invalide.'},400)
+            category=str(body.get('category') or 'Général').strip()[:80]
+            notes=str(body.get('notes') or '')[:8000]
+            with conn() as c:
+                cur=c.execute('INSERT INTO admin_documents(title,category,due_date,notes,created_at,updated_at) VALUES(?,?,?,?,?,?)',(title,category,due,notes,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+        if p == '/api/captures':
+            destination=str(body.get('destination') or '').lower()
+            if destination not in ('carnet','taches','rappels','postit','administratif','tracker'):
+                return self._json({'error':'Destination inconnue.'},400)
+            content=str(body.get('body') or '').strip()
+            if not content or len(content)>10000:return self._json({'error':'Texte requis (10 000 caractères maximum).'},400)
+            with conn() as c:
+                cur=c.execute('INSERT INTO quick_captures(destination,body,created_at) VALUES(?,?,?)',(destination,content,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
         if p == '/api/postits':
             if not isinstance(body,dict):return self._json({'error':'Données incorrectes.'},400)
             title=str(body.get('title','')).strip()[:120] or 'Sans titre'
@@ -625,6 +682,42 @@ class Handler(BaseHTTPRequestHandler):
                     c.commit()
                 return self._json({'ok':True})
             except (ValueError,TypeError):return self._json({'error':'Date ou identifiant invalide.'},400)
+        if len(parts)==4 and parts[:2]==['api','trackers'] and parts[3]=='entries':
+            try:
+                tracker_id=int(parts[2]);when=date.fromisoformat(str(body.get('entry_date') or date.today().isoformat())).isoformat()
+                value=float(body.get('value'))
+                if not math.isfinite(value) or abs(value)>100000000:raise ValueError()
+                notes=str(body.get('notes') or '')[:2000]
+            except (TypeError,ValueError):return self._json({'error':'Date ou valeur numérique invalide.'},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM personal_trackers WHERE id=? AND archived=0',(tracker_id,)).fetchone():
+                    return self._json({'error':'Tracker introuvable.'},404)
+                c.execute("""INSERT INTO personal_tracker_entries(tracker_id,entry_date,value,notes,created_at)
+                   VALUES(?,?,?,?,?) ON CONFLICT(tracker_id,entry_date) DO UPDATE SET value=excluded.value,notes=excluded.notes""",
+                   (tracker_id,when,value,notes,ts))
+                c.commit();return self._json({'ok':True})
+        if len(parts)==3 and parts[:2]==['api','admin']:
+            try:doc_id=int(parts[2])
+            except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+            with conn() as c:
+                row=c.execute('SELECT * FROM admin_documents WHERE id=?',(doc_id,)).fetchone()
+                if not row:return self._json({'error':'Démarche introuvable.'},404)
+                status=str(body.get('status',row['status']))
+                if status not in ('todo','waiting','done'):return self._json({'error':'Statut invalide.'},400)
+                title=str(body.get('title',row['title'])).strip()[:180]
+                if not title:return self._json({'error':'Nom requis.'},400)
+                due=str(body.get('due_date',row['due_date']) or '').strip()
+                try:due=date.fromisoformat(due).isoformat() if due else None
+                except ValueError:return self._json({'error':'Date invalide.'},400)
+                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,updated_at=? WHERE id=?',
+                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],ts,doc_id))
+                c.commit();return self._json({'ok':True})
+        if len(parts)==3 and parts[:2]==['api','captures']:
+            try:capture_id=int(parts[2])
+            except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+            with conn() as c:
+                updated=c.execute('UPDATE quick_captures SET seen=? WHERE id=?',(1 if body.get('seen',True) else 0,capture_id))
+                c.commit();return self._json({'ok':bool(updated.rowcount)})
         if len(parts)==5 and parts[:2]==['api','events'] and parts[3]=='preparations':
             try:
                 eid=int(parts[2]); pid=int(parts[4]); day=str(body.get('instance_date') or '')
@@ -1202,6 +1295,17 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('DELETE FROM events WHERE id=?',(eid,))
                 c.commit()
                 return self._json({'ok':True})
+            if len(parts)==3 and parts[:2]==['api','trackers']:
+                c.execute('UPDATE personal_trackers SET archived=1 WHERE id=?',(int(parts[2]),))
+                c.commit();return self._json({'ok':True})
+            if len(parts)==4 and parts[:2]==['api','trackers'] and parts[3]=='entries':
+                return self._json({'error':'Utilise le formulaire pour modifier une mesure.'},405)
+            if len(parts)==3 and parts[:2]==['api','admin']:
+                c.execute('DELETE FROM admin_documents WHERE id=?',(int(parts[2]),))
+                c.commit();return self._json({'ok':True})
+            if len(parts)==3 and parts[:2]==['api','captures']:
+                c.execute('DELETE FROM quick_captures WHERE id=?',(int(parts[2]),))
+                c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','habits']:
                 c.execute('UPDATE habits SET archived=1 WHERE id=?',(int(parts[2]),));c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','cycle-periods']:

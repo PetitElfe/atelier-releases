@@ -1,0 +1,60 @@
+name: L'Atelier — journal, trackers, administratif et capture
+on:
+  push:
+    branches: [feature/0180-desktop-journal-capture-trackers-admin-20261028]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --only-shell chromium
+      - name: Syntax and browser regression
+        run: |
+          node --check app/public/app_part1.js
+          node --check app/public/app_part3.js
+          node --check app/public/life_tools.js
+          node tools/life_tools_browser_test.cjs
+          node tools/week_clarity_forecast_browser_test.cjs
+          node tools/cycle_compact_browser_test.cjs
+          node tools/preparation_browser_test.cjs
+          node tools/objective_map_browser_test.cjs
+          node tools/library_browser_test.cjs
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Syntax, migration and release hashes
+        run: |
+          python -m compileall -q app tests tools
+          python -m unittest discover -s tests -p 'test_*.py'
+          python tools/release_smoke.py
+          python tools/build_nathan_bundle.py
+          python - <<'PY'
+          import hashlib,json,pathlib
+          m=json.loads(pathlib.Path('manifest.json').read_text())
+          for item in m['files']:
+              path=pathlib.Path('app')/item['path']
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest!=item['sha256']:raise RuntimeError('MISMATCH '+item['path']+' '+digest)
+          for name in ['public/life_tools.js','public/life_tools.css','quick_capture_native.py']:
+              print('NEW_HASH',name,hashlib.sha256((pathlib.Path('app')/name).read_bytes()).hexdigest())
+          PY
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - shell: pwsh
+        run: ./tools/windows_updater_test.ps1
