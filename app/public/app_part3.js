@@ -43,12 +43,13 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
-    <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    <div class="field full"><label>Notes du rendez-vous</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    ${eventPreparationEditor(e?.preparations||[])}
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
-  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
+  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); wireEventPreparationEditor(); $('#cancelEvent').onclick=closeModal;
   $('#eventMore')?.addEventListener('click',ev=>showAtelierContextMenu(ev.currentTarget,[
     {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
     ...(e?.url?[{label:'Ouvrir le lien',run:()=>window.open(e.url,'_blank','noopener,noreferrer')}]:[]),
@@ -61,6 +62,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   $('#duplicateEventAction')?.addEventListener('click',()=>{
     const fd=new FormData(f); const copy=Object.fromEntries(fd.entries());
     copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time;
+    copy.preparations=collectEventPreparations().map(({title})=>({title}));
     try{copy.reminders=collectReminders()}catch(err){
       const error=$('#eventSaveError');error.textContent=err.message;error.classList.remove('hidden');return;
     }
@@ -92,6 +94,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     const payload=Object.fromEntries(fd.entries());
     payload.show_in_month=f.show_in_month.checked;
     payload.all_day=!payload.start_time;
+    payload.preparations=collectEventPreparations();
     try{payload.reminders=collectReminders()}catch(err){
       error.textContent=err.message;error.classList.remove('hidden');
       submit.disabled=false;submit.textContent=duplicate?'Créer la copie':'Enregistrer';return;
@@ -108,6 +111,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
         route=`/api/events/${e.id}/edit-instance`;
         payload.instance_date=instanceDate;
         payload.recurrence='none';
+        payload.preparations=payload.preparations.map(({title})=>({title}));
       }else{
         // Adapter la date de base de toute la série sans déplacer son ancrage
         // lorsque l'on édite une occurrence autre que la première.
