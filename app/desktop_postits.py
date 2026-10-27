@@ -169,6 +169,14 @@ def restore_note(note_id, db_path=DB):
         return bool(result.rowcount)
 
 
+def delete_note(note_id, db_path=DB):
+    """Permanently delete a specific note and its window coordinates."""
+    with _db(db_path) as c:
+        c.execute("DELETE FROM desktop_postit_layout WHERE note_id=?", (int(note_id),))
+        result = c.execute("DELETE FROM home_postits WHERE id=?", (int(note_id),))
+        return bool(result.rowcount)
+
+
 def _pythonw():
     executable = Path(sys.executable)
     if executable.name.lower() == "python.exe":
@@ -272,6 +280,7 @@ def _run_gui():
     closed = set()
     windows = {}
     wake_value = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
+    tray = None
 
     class NoteWindow:
         def __init__(self, note, index):
@@ -281,6 +290,9 @@ def _run_gui():
             self.geo_pending = None
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             self.window = tk.Toplevel(root)
+            if tray is not None:
+                # WS_EX_TOOLWINDOW removes a note from taskbar and Alt+Tab.
+                self.window.wm_attributes("-toolwindow", True)
             self.window.title("L'Atelier du Goblin · " + note["title"])
             self.window.configure(bg=paper)
             x = note["x"] if note["x"] is not None else 45 + (index % 5) * 46
@@ -321,6 +333,16 @@ def _run_gui():
                                 font=("Segoe UI", 11), padx=12, pady=10)
             self.body.pack(fill="both", expand=True)
             self.body.insert("1.0", note["body"])
+            self.footer = tk.Frame(self.window, bg=paper)
+            self.footer.pack(fill="x", padx=9, pady=(5, 2))
+            self.ok_button = tk.Button(self.footer, text="✓ OK", bg=paper, fg=ink,
+                                       relief="groove", font=("Segoe UI", 10, "bold"),
+                                       command=self._close, cursor="hand2")
+            self.ok_button.pack(side="right")
+            self.delete_button = tk.Button(self.footer, text="Supprimer", bg=paper, fg=ink,
+                                           relief="flat", font=("Segoe UI", 9),
+                                           command=self._delete, cursor="hand2")
+            self.delete_button.pack(side="left")
             self.hint = tk.Label(self.window, text="● Enregistré · Post-it indépendant",
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
                                  anchor="w", padx=10)
@@ -331,7 +353,8 @@ def _run_gui():
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
             self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
-            self.menu.add_command(label="Fermer cette note (session)", command=self._close)
+            self.menu.add_command(label="Supprimer définitivement…", command=self._delete)
+            self.menu.add_command(label="✓ OK · Enregistrer et fermer", command=self._close)
             self.window.bind("<Button-3>", self._menu)
             self.title.bind("<Button-3>", self._menu)
             self.body.bind("<Button-3>", self._menu)
@@ -392,35 +415,7 @@ def _run_gui():
                 messagebox.showerror("Post-it", str(error), parent=self.window)
 
         def _show_archives(self):
-            if _update_in_progress():
-                return
-            rows=archived_notes()
-            if not rows:
-                messagebox.showinfo("Archives", "Aucun Post-it archivé.", parent=self.window)
-                return
-            dialog=tk.Toplevel(root)
-            dialog.title("Archives des Post-it — L’Atelier du Goblin")
-            dialog.geometry("390x350")
-            dialog.transient(self.window)
-            tk.Label(dialog, text="Choisis la note à restaurer :", pady=12).pack()
-            listing=tk.Listbox(dialog, font=("Segoe UI", 10))
-            listing.pack(fill="both",expand=True,padx=15)
-            for note in rows:
-                listing.insert("end",note["title"])
-            def restore_selected():
-                current=listing.curselection()
-                if not current:
-                    return
-                if _update_in_progress():
-                    return
-                try:
-                    if restore_note(rows[current[0]]["id"]):
-                        wake()
-                    dialog.destroy()
-                except (sqlite3.Error,OSError,ValueError) as exc:
-                    messagebox.showerror("Archives",str(exc),parent=dialog)
-            tk.Button(dialog,text="Restaurer sur le Bureau",command=restore_selected).pack(pady=9)
-            tk.Button(dialog,text="Fermer",command=dialog.destroy).pack(pady=(0,9))
+            show_archives(self.window)
 
         def _menu(self, event):
             try:
@@ -443,7 +438,8 @@ def _run_gui():
         def _change_color(self):
             paper, ink = COLORS[self.color.get()]
             for item in (self.window, self.header, self.title, self.palette,
-                         self.body, self.hint):
+                         self.footer, self.ok_button, self.delete_button,
+                         self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
             self.title.config(fg=ink, insertbackground=ink)
             self.body.config(fg=ink, insertbackground=ink)
@@ -499,7 +495,8 @@ def _run_gui():
             self.color.set(note["color"])
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             for item in (self.window, self.header, self.title, self.palette,
-                         self.body, self.hint):
+                         self.footer, self.ok_button, self.delete_button,
+                         self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
             self.title.config(fg=ink, insertbackground=ink)
             self.body.config(fg=ink, insertbackground=ink)
@@ -552,10 +549,41 @@ def _run_gui():
             self.dirty = False
             self._close()
 
+        def _delete(self):
+            if _update_in_progress():
+                self.hint.config(text="● Attends la fin de la mise à jour")
+                return
+            if not messagebox.askyesno(
+                "Supprimer définitivement ?",
+                "Supprimer définitivement « " + self.title.get().strip() +
+                " » ?\n\nCette action est irréversible. "
+                "Pour conserver la note, utilise plutôt « Archiver ».",
+                icon="warning", parent=self.window):
+                return
+            try:
+                if not delete_note(self.note["id"]):
+                    raise ValueError("Cette note n'existe plus.")
+            except (sqlite3.Error,OSError,ValueError) as exc:
+                messagebox.showerror("Suppression impossible",str(exc),parent=self.window)
+                return
+            self.dirty=False
+            if self.pending:
+                root.after_cancel(self.pending)
+                self.pending=None
+            if self.geo_pending:
+                root.after_cancel(self.geo_pending)
+                self.geo_pending=None
+            closed.add(self.note["id"])
+            windows.pop(self.note["id"],None)
+            self.window.destroy()
+
         def _close(self):
             if self.pending and self.window.winfo_exists():
                 root.after_cancel(self.pending)
-                self._save()
+                self.pending=None
+            if not self._save():
+                self.hint.config(text="Non enregistré — réessaie avant de fermer")
+                return
             if self.dirty:
                 self.hint.config(text="Non enregistré — réessaie avant de fermer")
                 return
@@ -655,7 +683,13 @@ def _self_test():
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
         assert all(note['id'] != 1 for note in note_rows(db))
         assert any(note['id'] == fresh for note in note_rows(db))
-    print("PASS: Post-it shared SQLite, compare-and-swap, archive, geometry")
+        assert delete_note(1,db)
+        assert not delete_note(1,db)
+        with sqlite3.connect(db) as c:
+            assert c.execute("SELECT COUNT(*) FROM desktop_postit_layout WHERE note_id=1").fetchone()[0]==0
+            assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=1").fetchone()[0]==0
+            assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=?", (fresh,)).fetchone()[0]==1
+    print("PASS: Post-it SQLite, lock, archive, deletion, geometry")
 
 
 if __name__ == "__main__":
