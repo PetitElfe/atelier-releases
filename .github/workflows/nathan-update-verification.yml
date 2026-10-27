@@ -34,8 +34,8 @@ jobs:
               path=root/item["path"]
               assert path.is_file(),path
               digest=hashlib.sha256(path.read_bytes()).hexdigest()
-              print(f"HASH {item['path']} {digest} {'OK' if digest==item['sha256'] else 'MISMATCH'}")
-          print("HASH AUDIT COMPLETE")
+              assert digest==item["sha256"],f"{path}: {digest} != {item['sha256']}"
+          print("PASS: all manifest hashes match release files")
           '@ | python -
       - name: Python compile and update entrypoint verification
         shell: pwsh
