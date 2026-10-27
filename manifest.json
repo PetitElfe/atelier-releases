@@ -37,15 +37,15 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "61e5e8c78192f68e13416fcd505818a49e66f1a4ab3b52f8c488717e65d8de97"
+      "sha256": "a3087aa2dfca1555b44629a96156c1861cf6cd7c56b3aba0a868327d237fef56"
     },
     {
       "path": "public/index.html",
-      "sha256": "e2c5918d4320e3c0edef8018780a5651c3a0fdcc8dec3b980572049e6716ee2b"
+      "sha256": "49de1403f4c9a2f71548f8d20ffdaf2ede0962349559dc576b50ff6513122251"
     },
     {
       "path": "public/styles.css",
-      "sha256": "423881fd9deeb734edc6059a2763d4a11fe89615ce9bcabd65e89edaad137bcf"
+      "sha256": "b9a848368f6ea65395e6d1eecea40efe131dd556198902028cac5d6d74c4f7bd"
     },
     {
       "path": "progression.py",
