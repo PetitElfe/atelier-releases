@@ -3,6 +3,10 @@ package fr.atelierdugoblin.mobile;
 import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
+import android.os.Build;
+import android.view.View;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.content.Intent;
@@ -41,7 +45,40 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         webView.addJavascriptInterface(new UpdateBridge(this), "AtelierUpdates");
-        setContentView(webView);
+        // Android 15+ draws apps beneath system bars even when targeting SDK 35.
+        // Keep the WebView in a safe content area instead of overlapping the clock.
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackgroundColor(Color.rgb(36, 55, 45));
+        frame.addView(webView, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT));
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        }
+        frame.setOnApplyWindowInsetsListener((view, insets) -> {
+            int top, bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                top = insets.getInsets(WindowInsets.Type.statusBars()).top;
+                bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) webView.getLayoutParams();
+            if (params.topMargin != top || params.bottomMargin != bottom) {
+                params.topMargin = top;
+                params.bottomMargin = bottom;
+                webView.setLayoutParams(params);
+            }
+            return insets;
+        });
+        setContentView(frame);
+        frame.requestApplyInsets();
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
     @Override protected void onDestroy() {
