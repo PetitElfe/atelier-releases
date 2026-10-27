@@ -1,0 +1,23 @@
+# L'Atelier du Goblin — Android (prototype isolé)
+
+Cette première version est **un prototype Android hors ligne** et ne communique pas avec l'installation Windows, le serveur Python ou la base SQLite existante.
+
+## Fonctions de ce prototype
+- Journal vertical avec sections configurables et réordonnables.
+- Habitudes, tâches et courses à cocher.
+- Ajout de tâches, courses et notes.
+- Persistance locale via WebView localStorage (prototype uniquement).
+- Calendrier encore fictif.
+
+## Construction
+Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototype/index.html` dans les assets Android, puis construit et teste un APK **debug**. Cet APK de CI est uniquement destiné aux essais ; les versions à installer durablement sont produites par le workflow manuel signé `Android mobile signed release` avec la clé permanente, depuis `main`. Un test d'émulateur ne remplace pas un test sur téléphone réel.
+
+## Limites importantes
+- Pas de synchronisation Wi-Fi ni Internet.
+- Pas de notifications Android ni de sonnerie intégrée.
+- Pas encore de stockage SQLite natif, sauvegarde ou migrations : ne pas saisir de données importantes.
+- La suppression de l'application peut effacer les données du prototype.
+- Aucun accès à la version Windows stable ni à ses données.
+- La synchronisation future exigera un appairage authentifié et une gestion des conflits.
+
+La présence du code mobile sur `main` ne déploie rien sur les installations Windows : la synchronisation demeure désactivée et le service TEST est indépendant. Ne jamais exécuter le serveur avec des données réelles sur HTTP non chiffré.
