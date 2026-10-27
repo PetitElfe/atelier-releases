@@ -90,7 +90,8 @@ function renderHome(){
   }else{
     deadlines.forEach(d=>{
       const b=document.createElement('button'); b.type='button'; b.className='deadline-line';
-      b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span>${esc(d.title)}</span>`;
+      const time=d.type==='event'&&d.item?.start_time?fmtTime(d.item.start_time)+(d.item.end_time?'–'+fmtTime(d.item.end_time):''):d.item?.due_time?fmtTime(d.item.due_time):'';
+      b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span class="deadline-text">${esc(d.title)}</span><span class="deadline-time">${esc(time)}</span>`;
       b.addEventListener('click',()=>d.type==='task'?openTaskModal(d.item):openEventModal(d.item)); deadlineRoot.appendChild(b);
     });
     for(let i=deadlines.length;i<3;i++){ const blank=document.createElement('div'); blank.className='deadline-empty'; blank.innerHTML='&nbsp;'; deadlineRoot.appendChild(blank); }
@@ -100,9 +101,19 @@ function renderHome(){
   const todayTasks=state.tasks.filter(t=>!t.completed && (!t.due_date || t.due_date<=today)).slice(0,10);
   if(!todayTasks.length) taskRoot.innerHTML='<div class="journal-empty">Rien à faire pour le moment c:</div>';
   todayTasks.forEach(t=>{
-    const b=document.createElement('button'); b.type='button'; b.className='journal-task';
-    b.innerHTML=`<span class="journal-task-mark">${t.important?'✦':'☐'}</span><span class="journal-task-title">${esc(t.title)}</span><span class="journal-task-time">${t.due_time?fmtTime(t.due_time):''}</span>`;
-    b.addEventListener('click',()=>openTaskModal(t)); taskRoot.appendChild(b);
+    const row=document.createElement('div');row.className='journal-task journal-task-interactive';
+    const check=document.createElement('input');check.type='checkbox';check.className='journal-task-check';
+    check.setAttribute('aria-label','Terminer : '+t.title);
+    check.addEventListener('change',async()=>{
+      check.disabled=true;
+      const result=await runUiAction('Impossible de cocher la tâche',()=>api('/api/tasks/'+t.id,{method:'PUT',body:JSON.stringify({completed:check.checked})}));
+      if(result.ok)await refresh();else{check.checked=false;check.disabled=false}
+    });
+    const title=document.createElement('button');title.type='button';title.className='journal-task-open';
+    title.textContent=(t.important?'✦ ':'')+t.title;title.title='Modifier la tâche';
+    title.onclick=()=>openTaskModal(t);
+    const time=document.createElement('span');time.className='journal-task-time';time.textContent=t.due_time?fmtTime(t.due_time):'';
+    row.append(check,title,time);taskRoot.appendChild(row);
   });
 
   const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
