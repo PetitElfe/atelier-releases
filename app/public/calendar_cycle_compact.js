@@ -132,16 +132,17 @@ function openCycleQuickEditor(day,anchor){
     }else save.disabled=false;
   });
   const del=editor.querySelector('.cycle-quick-delete');
-  if(del)del.addEventListener('click',()=>{
-    if(editor.querySelector('.cycle-quick-confirm'))return;
-    const row=document.createElement('div');row.className='cycle-quick-confirm';
-    row.innerHTML='<span>Supprimer cette période ?</span><button type="button" class="cycle-quick-keep">Conserver</button><button type="button" class="cycle-quick-yes">Supprimer</button>';
-    row.querySelector('.cycle-quick-keep').onclick=()=>row.remove();
-    row.querySelector('.cycle-quick-yes').onclick=async()=>{
-      const result=await runUiAction('Supprimer les règles',()=>api('/api/cycle-periods/'+existing.id,{method:'DELETE'}));
-      if(result.ok){close();await refreshOrganisation()}
-    };
-    form.appendChild(row);
+  if(del)del.addEventListener('click',async()=>{
+    if(del.dataset.confirm!=='yes'){
+      del.dataset.confirm='yes';
+      del.textContent='Confirmer la suppression';
+      del.title='Clique encore une fois pour supprimer définitivement cette période.';
+      return;
+    }
+    del.disabled=true;
+    const result=await runUiAction('Supprimer les règles',()=>api('/api/cycle-periods/'+existing.id,{method:'DELETE'}));
+    if(result.ok){close();await refreshOrganisation()}
+    else del.disabled=false;
   });
   start.focus();
 }
