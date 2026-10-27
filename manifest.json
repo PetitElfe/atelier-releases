@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "d15b37f64609fe0e5d5df4e92aa0d55d4013db53682ae23ed5ceec258f6de477"
+      "sha256": "273f414d1d5878fd16f026635eae04a59db4e5ab9fb88082341e5d1323ed7897"
     },
     {
       "path": "app_part2.py",
-      "sha256": "4b3faa41a63c306cf37b36050e46688a85f84ae7b4ac1e873efa0d2732768e5b"
+      "sha256": "2abd09c8e9b92748805d0a57ef101389cd61458bdb154c4788fbb45a6dc01557"
     },
     {
       "path": "app_part3.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "57948433baf786df8c6530c257ec7622c96e406cf5b340a60ff981d0f3f793f8"
+      "sha256": "bf935d0c60a34952b01a64a930171e25ba17228dd78c6ca654cb81df25a3999e"
     },
     {
       "path": "public/app_part2.js",
@@ -37,15 +37,15 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "64527b1d2794b5a3c204d708308fe43b43baf2cb3c339016471fb389fc48b66e"
+      "sha256": "61e5e8c78192f68e13416fcd505818a49e66f1a4ab3b52f8c488717e65d8de97"
     },
     {
       "path": "public/index.html",
-      "sha256": "b1fee4a1c89923c8b44ce25eb25d40e09d777c12c61f8ecd12e7ee0a463e0149"
+      "sha256": "f767a0c914bda825b324d6eb1e83ea2df5554d7c10220ca2aaee05b94239a636"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5007f78a701eea4d23e2fd12425b7452418a611018379aea1aa6540767f0886d"
+      "sha256": "423881fd9deeb734edc6059a2763d4a11fe89615ce9bcabd65e89edaad137bcf"
     },
     {
       "path": "progression.py",
@@ -73,7 +73,7 @@
     },
     {
       "path": "public/postits.js",
-      "sha256": "be48235b21a5184a893ce54d5e1151638252b5f23f5e75c4c24607af4a8fce0d"
+      "sha256": "c663d4bd9cf6b9bd8d5ca6aa4173f6053783e5f0d9f20eecb6e8a05af1c5b775"
     },
     {
       "path": "desktop_shell.py",
@@ -81,7 +81,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "66cd3ddbab21efe78364e9d4f01e3df90afd8f0b69a554f08dd1dba26c9ae2b0"
+      "sha256": "28ef93669368f81dd86ab83300dd17ed696a973275e308569499792f45f96fd4"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
