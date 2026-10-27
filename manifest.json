@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "f767a0c914bda825b324d6eb1e83ea2df5554d7c10220ca2aaee05b94239a636"
+      "sha256": "e2c5918d4320e3c0edef8018780a5651c3a0fdcc8dec3b980572049e6716ee2b"
     },
     {
       "path": "public/styles.css",
@@ -81,7 +81,11 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "ec33cf7e1bc0e539bbe150699127cdce866526406f72b91cc6f20fb371020947"
+      "sha256": "fed00b2bb3dd8c0034f01d132a2840251b0838bb8ef27a4eae0ec2fdca71cd82"
+    },
+    {
+      "path": "windows_tray.py",
+      "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
