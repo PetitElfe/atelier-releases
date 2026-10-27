@@ -1807,3 +1807,19 @@ body.home-active{overflow-y:auto}
   border-radius:7px;background:#433522;color:#f2d9a3;
   font:700 11px/1.4 system-ui,sans-serif;white-space:nowrap;
 }
+
+/* Responsive Windows desktop: scale typography and fill the resized journal. */
+.journal-book{min-height:345px;align-items:stretch;container-type:inline-size}
+.journal-page{height:100%;min-height:345px}
+@container (min-width:700px){
+  .journal-page{padding:clamp(18px,2.3cqw,36px)}
+  .journal-heading{font-size:clamp(15px,2.3cqw,23px)}
+  .journal-date,.journal-link{font-size:clamp(10px,1.4cqw,15px)}
+  .journal-task,.deadline-line,.journal-empty,.deadline-empty,.objective-name{font-size:clamp(11px,1.5cqw,17px)}
+}
+@media (min-width:1800px){
+  .pinned-calendar{width:100%;padding:clamp(10px,.8vw,20px)}
+  .desk-note{padding:clamp(12px,.9vw,22px)}
+  .desk-note-head{font-size:clamp(13px,.85vw,19px)}
+  .home-mini-calendar .hday{min-height:clamp(25px,1.8vw,42px);font-size:clamp(11px,.75vw,17px)}
+}
