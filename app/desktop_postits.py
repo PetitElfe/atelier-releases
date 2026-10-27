@@ -428,7 +428,7 @@ def _run_gui():
                 self.menu.grab_release()
 
         def _insert_newline(self, _=None):
-            self.body.insert("insert", "\\n")
+            self.body.insert("insert", "\n")
             self.body.see("insert")
             self._changed()
             return "break"
