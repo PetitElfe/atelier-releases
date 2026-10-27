@@ -618,7 +618,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
   assert.ok(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,'Recorded 1 August must have cycle highlight');
   await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#miniMonth .mday.cycle-recorded').length>0,null,{timeout:10000});
+  await page.waitForFunction(()=>document.querySelectorAll('#weekGrid .week-head.cycle-recorded').length>0,null,{timeout:10000});
+  assert.equal(await page.locator('#miniMonth').count(),0,'Le mini-calendrier redondant a été supprimé');
   await api('/api/cycle-periods','POST',{start_date:'2026-08-29',end_date:null});
   await page.evaluate(()=>refreshOrganisation());
   await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('Règles estimées'));
