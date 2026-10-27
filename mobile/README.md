@@ -10,7 +10,7 @@ Cette première version est **un prototype Android hors ligne** et ne communique
 - Calendrier encore fictif.
 
 ## Construction
-Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototype/index.html` dans les assets Android, puis construit un APK **debug**. Télécharger l'artefact `LAtelierDuGoblin_Android_Prototype_APK` depuis le workflow. Cet APK n'est pas encore une version finale.
+Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototype/index.html` dans les assets Android, puis construit et teste un APK **debug**. Cet APK de CI est uniquement destiné aux essais ; les versions à installer durablement sont produites par le workflow manuel signé `Android mobile signed release` avec la clé permanente, depuis `main`. Un test d'émulateur ne remplace pas un test sur téléphone réel.
 
 ## Limites importantes
 - Pas de synchronisation Wi-Fi ni Internet.
@@ -20,4 +20,4 @@ Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototyp
 - Aucun accès à la version Windows stable ni à ses données.
 - La synchronisation future exigera un appairage authentifié et une gestion des conflits.
 
-Ne pas fusionner avec la branche de production avant validation humaine.
+La présence du code mobile sur `main` ne déploie rien sur les installations Windows : la synchronisation demeure désactivée et le service TEST est indépendant. Ne jamais exécuter le serveur avec des données réelles sur HTTP non chiffré.
