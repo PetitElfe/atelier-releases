@@ -46,6 +46,20 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
+      - name: Boot Android emulator and smoke-test app
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_4
+          disable-animations: true
+          script: |
+            adb install mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
+            sleep 12
+            adb shell pidof fr.atelierdugoblin.mobile
+            adb logcat -d -s AndroidRuntime:E | tee /tmp/atelier-crashes.log
+            ! grep -q 'FATAL EXCEPTION' /tmp/atelier-crashes.log
       - uses: actions/upload-artifact@v4
         with:
           name: LAtelierDuGoblin_Android_Prototype_APK
