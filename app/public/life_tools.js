@@ -202,13 +202,14 @@ $('#settingsQuickCaptureShortcut')?.addEventListener('keydown',async e=>{
   if(!e.ctrlKey&&!e.altKey&&!e.metaKey)return;
   if(['Control','Alt','Shift','Meta'].includes(e.key))return;
   const combination=lifeShortcutFromEvent(e),previous=lifeShortcut();
+  const field=e.currentTarget;
   try{
     await lifeApi('/api/quick-capture/hotkey',{method:'POST',body:JSON.stringify({shortcut:combination})});
     localStorage.setItem('atelierQuickCaptureShortcut',combination);
-    e.currentTarget.value=combination;e.currentTarget.blur();
+    field.value=combination;field.blur();
     lifeSetText('#settingsGlobalShortcutStatus','Raccourci enregistré.');
   }catch(err){
-    e.currentTarget.value=previous;
+    field.value=previous;
     showUiError(err,'Raccourci non enregistré');
   }
 });
