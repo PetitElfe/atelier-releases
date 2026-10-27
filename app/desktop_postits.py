@@ -594,6 +594,85 @@ def _run_gui():
             windows.pop(self.note["id"], None)
             self.window.destroy()
 
+    def show_archives(parent=None):
+        if _update_in_progress():
+            return
+        rows=archived_notes()
+        if not rows:
+            messagebox.showinfo("Archives", "Aucun Post-it archivé.", parent=parent or root)
+            return
+        dialog=tk.Toplevel(root)
+        dialog.title("Archives des Post-it — L’Atelier du Goblin")
+        dialog.geometry("390x350")
+        if parent is not None:
+            dialog.transient(parent)
+        elif tray is not None:
+            dialog.wm_attributes("-toolwindow",True)
+        tk.Label(dialog, text="Choisis la note à restaurer :", pady=12).pack()
+        listing=tk.Listbox(dialog, font=("Segoe UI", 10))
+        listing.pack(fill="both",expand=True,padx=15)
+        for note in rows:
+            listing.insert("end",note["title"])
+        def restore_selected():
+            current=listing.curselection()
+            if not current or _update_in_progress():
+                return
+            try:
+                if restore_note(rows[current[0]]["id"]):
+                    wake()
+                dialog.destroy()
+            except (sqlite3.Error,OSError,ValueError) as exc:
+                messagebox.showerror("Archives",str(exc),parent=dialog)
+        tk.Button(dialog,text="Restaurer sur le Bureau",command=restore_selected).pack(pady=9)
+        tk.Button(dialog,text="Fermer",command=dialog.destroy).pack(pady=(0,9))
+        dialog.lift()
+
+    def show_all():
+        # Closing a note with OK only hides it for this session.
+        closed.clear()
+        for window in list(windows.values()):
+            window.window.deiconify()
+            window.window.lift()
+        wake()
+
+    def create_new():
+        if _update_in_progress():
+            return
+        try:
+            create_note()
+            wake()
+        except (sqlite3.Error,OSError,ValueError) as exc:
+            messagebox.showerror("Post-it",str(exc),parent=root)
+
+    def quit_all():
+        if _update_in_progress():
+            messagebox.showinfo("Post-it", "La mise à jour est en cours.",parent=root)
+            return
+        # Never close the independent process with an unsaved note.
+        for widget in list(windows.values()):
+            if widget.pending:
+                root.after_cancel(widget.pending)
+                widget.pending=None
+            if not widget._save():
+                messagebox.showwarning("Post-it non enregistré",
+                    "Impossible de quitter : une note n'a pas été sauvegardée.",
+                    parent=widget.window)
+                return
+            if widget.geo_pending:
+                root.after_cancel(widget.geo_pending)
+                widget._save_geometry()
+        root.quit()
+
+    try:
+        from windows_tray import WindowsTray
+        tray = WindowsTray(root,show_all,create_new,show_archives,quit_all,
+                           BASE / "desktop" / "LAtelierDuGoblin_TEST.exe")
+    except (OSError,RuntimeError,AttributeError) as exc:
+        # If Explorer's tray is unavailable, keep ordinary taskbar windows
+        # rather than hiding the Post-its without a way to reopen them.
+        print("Windows tray unavailable:",exc,flush=True)
+        tray = None
+
     def sync():
         nonlocal wake_value
         if _update_in_progress():
@@ -628,6 +707,9 @@ def _run_gui():
         for widget in list(windows.values()):
             widget._save()
             widget._save_geometry()
+        if tray is not None:
+            tray.destroy()
+        root.destroy()
         lock_file.close()
 
 
