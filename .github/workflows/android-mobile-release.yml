@@ -5,7 +5,7 @@ on:
       version:
         description: 'Version X.Y.Z (example: 0.1.0)'
         required: true
-        default: '0.1.1'
+        default: '0.1.2'
 permissions:
   contents: write
 jobs:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feature/android-goblin-mobile
+          ref: main
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -42,7 +42,7 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-          test "$RELEASE_VERSION" != "0.1.0" || { echo "::error::0.1.0 already published; use 0.1.1"; exit 1; }
+          test "$RELEASE_VERSION" != "0.1.0" && test "$RELEASE_VERSION" != "0.1.1" || { echo "::error::Version already published; choose 0.1.2 or higher"; exit 1; }
           mkdir -p mobile/android/app/src/main/assets
           cp mobile/prototype/index.html mobile/android/app/src/main/assets/index.html
       - name: Build signed APK
