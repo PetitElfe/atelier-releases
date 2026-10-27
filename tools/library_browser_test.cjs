@@ -901,7 +901,22 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(dragX-45,dragY+35,{steps:5});
   await page.mouse.up();
-  const afterCanvasMove=await canvasCalendar.boundingBox();
+  let afterCanvasMove=await canvasCalendar.boundingBox();
+  if(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)<=20){
+    // Un alignement magnétique ou un clic dans une case peut absorber le premier
+    // mouvement : recommencer en visant la poignée explicite et sans aimant.
+    const handle=canvasCalendar.locator('.layout-move-handle');
+    const grip=await handle.boundingBox();
+    if(grip){
+      await page.keyboard.down('Alt');
+      await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
+      await page.mouse.down();
+      await page.mouse.move(grip.x+grip.width/2-70,grip.y+grip.height/2+65,{steps:8});
+      await page.mouse.up();
+      await page.keyboard.up('Alt');
+      afterCanvasMove=await canvasCalendar.boundingBox();
+    }
+  }
   const afterOtherCanvas=await page.locator('#journalBook').boundingBox();
   assert.ok(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)>20,'Calendrier déplacé en position libre');
   assert.ok(Math.abs(afterOtherCanvas.y-beforeOtherCanvas.y)<3,'Déplacer Calendrier ne déplace pas le Journal');
