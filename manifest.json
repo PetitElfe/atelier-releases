@@ -81,7 +81,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "28ef93669368f81dd86ab83300dd17ed696a973275e308569499792f45f96fd4"
+      "sha256": "e036cdbf233aea38b7fc55aa0bad5b867ef4d5acb1023e9518d8d05cbc1836af"
     }
   ],
   "notes": "Candidat TEST 0.18.0 : mises à jour en un clic isolées sur 8876, sauvegardes obligatoires, restauration en cas d'échec; validation Windows humaine avant usage."
