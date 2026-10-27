@@ -35,7 +35,9 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py'
 
       - name: Vérifier les Post-it indépendants et la protection des écritures
-        run: python app/desktop_postits.py --self-test
+        run: |
+          python app/desktop_postits.py --self-test
+          python app/windows_tray.py
 
       - name: Vérifier la sauvegarde et l'installateur TEST isolé
         run: python tools/update_smoke.py
@@ -81,5 +83,6 @@ jobs:
         shell: pwsh
         run: |
           python app/desktop_postits.py --self-test
-          python -m py_compile app/desktop_postits.py
+          python app/windows_tray.py
+          python -m py_compile app/desktop_postits.py app/windows_tray.py
           python -c "import tkinter; print('PASS: Windows Tkinter available')"
