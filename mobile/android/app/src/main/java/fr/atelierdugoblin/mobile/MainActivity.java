@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        webView.addJavascriptInterface(new UpdateBridge(this, webView), "AtelierUpdates");
+        webView.addJavascriptInterface(new UpdateBridge(this), "AtelierUpdates");
         setContentView(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
