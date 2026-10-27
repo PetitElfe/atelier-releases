@@ -1,6 +1,17 @@
 name: L’Atelier du Goblin — Nathan private Windows app
 
 on:
+  push:
+    branches: ['feature/0180-*']
+    paths:
+      - "app/app_part2.py"
+      - "app/public/app_part3.js"
+      - "app/public/index.html"
+      - "manifest.json"
+      - "tools/nathan_launcher.py"
+      - "tools/nathan_patch.py"
+      - "tools/build_nathan_bundle.py"
+      - ".github/workflows/nathan.yml"
   pull_request:
     branches: [main]
     paths:
@@ -85,6 +96,29 @@ jobs:
             $read=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/postits' -TimeoutSec 4
             $revision=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/update/status' -TimeoutSec 4
             if($null -eq $read -or -not $revision){throw "Nathan API unavailable"}
+            # Verify native actions accept Nathan's 8877 origin and reject the TEST origin.
+            # Invalid input is used deliberately: no update or Post-it startup is performed.
+            $originCheck=@'
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          import json
+          base='http://127.0.0.1:8877'
+          def response_status(path, origin, header, body):
+              request=Request(base+path, data=json.dumps(body).encode('utf-8'),
+                  headers={'Origin':origin,header:'1','Content-Type':'application/json'},method='POST')
+              try:
+                  with urlopen(request,timeout=8) as response:return response.status
+              except HTTPError as exc:return exc.code
+          for path,header,body,accepted in [
+              ('/api/update/start','X-Atelier-Update',{'revision':'invalid'},409),
+              ('/api/desktop-postits/startup','X-Atelier-Desktop',{'enabled':'invalid'},400)
+          ]:
+              assert response_status(path,'http://127.0.0.1:8876',header,body)==403,path+' foreign origin accepted'
+              assert response_status(path,base,header,body)==accepted,path+' own origin rejected'
+          print('PASS: Nathan localhost-origin authorization for update and desktop Post-it actions')
+          '@
+            $originCheck | python -
+            if($LASTEXITCODE -ne 0){throw 'Nathan origin authorization failed'}
             Write-Host "PASS: standalone frozen server, empty personal DB initialized, GET API, separate port 8877"
           } finally {
             if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}

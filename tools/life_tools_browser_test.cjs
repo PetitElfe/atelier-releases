@@ -70,7 +70,23 @@ async function api(path,method='GET',body){
   await page.locator('#quickCaptureText').fill('#Tâches Nouvelle tâche via capture');
   await page.locator('#quickCaptureSend').click();
   assert.ok((await api('/api/tasks')).some(x=>x.title==='Nouvelle tâche via capture'));
+  // Both Windows editions must accept only their own localhost origin.
+  // This disposable test server uses a third port and must not start a real updater.
+  for(const [path,header,body] of [
+    ['/api/update/start','X-Atelier-Update',{revision:'0'.repeat(40)}],
+    ['/api/desktop-postits/new','X-Atelier-Desktop',{}]
+  ]){
+    const wrong=await fetch(base+path,{method:'POST',
+      headers:{Origin:'http://127.0.0.1:8876',[header]:'1','Content-Type':'application/json'},
+      body:JSON.stringify(body)});
+    assert.equal(wrong.status,403,path+' must reject a foreign localhost origin');
+    const own=await fetch(base+path,{method:'POST',
+      headers:{Origin:base,[header]:'1','Content-Type':'application/json'},
+      body:JSON.stringify(body)});
+    assert.equal(own.status,409,path+' should pass the origin check and then fail its TEST-only guard');
+  }
   await page.evaluate(()=>showView('settings'));
+  assert.ok((await page.locator('#settingsRunningEdition').innerText()).includes('Installation locale (port 18812)'));
   await page.locator('#settingsReminderSound').check();
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierReminderSound')),'1');
   await page.locator('#settingsTestReminderSound').click();
@@ -93,7 +109,7 @@ async function api(path,method='GET',body){
   assert.ok((await api('/api/captures')).some(x=>x.body.includes('Deuxième ligne')));
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierReminderSound')),'1');
   assert.deepEqual(errors,[]);
-  console.log('PASS: journal pages and checkboxes, timed deadlines, trackers, admin, routed multiline capture, unread highlight, sound and shortcut settings, directional grips and persistence');
+  console.log('PASS: journal pages and checkboxes, timed deadlines, trackers, admin, routed multiline capture, unread highlight, sound and shortcut settings, same-origin native action guards, edition label, directional grips and persistence');
  }finally{
   if(browser)await browser.close();
   server.kill();rmSync(data,{recursive:true,force:true,maxRetries:5,retryDelay:150});

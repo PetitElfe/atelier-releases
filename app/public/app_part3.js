@@ -551,7 +551,8 @@ function renderSettings(){
   }
 }
 
-/* ALPHA 0.18.0 — mises à jour TEST : même écran, assistant externe sécurisé. */
+/* ALPHA 0.18.0 — mises à jour TEST et Nathan : même interface, données séparées. */
+function atelierEditionChannel(){return location.port==='8877'?'Nathan':'TEST';}
 let atelierUpdateCandidate=null,atelierUpdatePolling=false;
 let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false;
 const ATELIER_UPDATE_NOTICE_INTERVAL=30*60*1000;
@@ -574,7 +575,7 @@ async function atelierCheckForUpdates({automatic=false}={}){
   const check=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
   const install=$('#settingsInstallUpdate');
   if(check)check.disabled=true;
-  if(!automatic&&message)message.textContent='Recherche de la dernière révision TEST sur GitHub…';
+  if(!automatic&&message)message.textContent='Recherche de la dernière révision '+atelierEditionChannel()+' sur GitHub…';
   try{
     const result=await atelierUpdateRequest('/api/update/check');
     if(!result||typeof result.available!=='boolean'||
@@ -584,7 +585,7 @@ async function atelierCheckForUpdates({automatic=false}={}){
     atelierUpdateCandidate=result.available?result.revision:null;
     const build=result.installed_build?' · build '+result.installed_build:'';
     const version=$('#settingsInstalledVersion');
-    if(version)version.textContent=result.installed_version+' · TEST'+build;
+    if(version)version.textContent=result.installed_version+' · '+atelierEditionChannel()+build;
     atelierSetUpdateNotice(result.available);
     if(install){
       install.hidden=!result.available;
@@ -592,8 +593,8 @@ async function atelierCheckForUpdates({automatic=false}={}){
     }
     if(message){
       message.textContent=result.available
-        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données TEST sera créée avant le redémarrage.'
-        : 'L’Atelier TEST est à jour ('+result.revision.slice(0,8)+').';
+        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
+        : 'L’Atelier '+atelierEditionChannel()+' est à jour ('+result.revision.slice(0,8)+').';
     }
   }catch(error){
     // No false "update available" claim when GitHub cannot be contacted.
@@ -644,14 +645,14 @@ async function atelierPollUpdate(){
     }catch(error){
       // Le serveur s'arrête temporairement; c'est normal.
       if(lastPhase==='stopping'||lastPhase==='backup'||lastPhase==='installing'){
-        message.textContent='Redémarrage de L’Atelier TEST… La page se reconnecte automatiquement.';
+        message.textContent='Redémarrage de L’Atelier '+atelierEditionChannel()+'… La page se reconnecte automatiquement.';
       }else{
-        message.textContent='Connexion au serveur TEST interrompue. Nouvelle tentative…';
+        message.textContent='Connexion au serveur '+atelierEditionChannel()+' interrompue. Nouvelle tentative…';
       }
     }
     await new Promise(resolve=>setTimeout(resolve,1600));
   }
-  message.textContent='Le redémarrage prend plus de temps que prévu. Vérifie la fenêtre TEST et la sauvegarde avant de recommencer.';
+  message.textContent='Le redémarrage prend plus de temps que prévu. Vérifie la fenêtre '+atelierEditionChannel()+' et la sauvegarde avant de recommencer.';
   atelierUpdatePolling=false;check.disabled=false;
 }
 $('#settingsCheckUpdates').onclick=()=>atelierCheckForUpdates({automatic:false});
@@ -660,9 +661,11 @@ $('#settingsReloadUi')?.addEventListener('click',()=>{
 });
 function atelierShowEdition(){
   const port=location.port;
-  const edition=port==='8876'?'ALPHA TEST (8876)':port==='18877'?'Nathan (18877)':port==='8765'?'Stable (8765)':'Installation locale (port '+port+')';
+  const edition=port==='8876'?'ALPHA TEST (8876)':port==='8877'?'Nathan (8877)':port==='8765'?'Stable (8765)':'Installation locale (port '+port+')';
   const label=$('#settingsRunningEdition');
   if(label)label.textContent='Fenêtre actuellement ouverte : '+edition+'. Si rien ne change, vérifie que tu as bien mis à jour cette installation.';
+  const install=$('#settingsInstallUpdate');
+  if(install)install.textContent='↓ Installer la mise à jour '+atelierEditionChannel();
 }
 atelierShowEdition();
 // Alertes discrètes : jamais de mise à jour sans confirmation explicite.
@@ -675,7 +678,7 @@ document.addEventListener('visibilitychange',()=>{
 $('#settingsInstallUpdate').onclick=async()=>{
   if(!atelierUpdateCandidate||atelierUpdatePolling)return;
   const message=$('#settingsUpdateMessage'),button=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
-  const accepted=await askUiConfirm('Installer la mise à jour TEST',
+  const accepted=await askUiConfirm('Installer la mise à jour '+atelierEditionChannel(),
     'L’Atelier enregistrera une sauvegarde, s’arrêtera brièvement, puis redémarrera seul. La version habituelle ne sera pas touchée.',
     'Installer et redémarrer');
   if(!accepted)return;

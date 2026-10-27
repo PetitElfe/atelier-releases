@@ -1,7 +1,9 @@
 name: L'Atelier — journal, trackers, administratif et capture
 on:
   push:
-    branches: [feature/0180-desktop-journal-capture-trackers-admin-20261028]
+    branches: ['feature/0180-*']
+  pull_request:
+    branches: ['feature/0180-progression-foundations']
   workflow_dispatch:
 permissions:
   contents: read
