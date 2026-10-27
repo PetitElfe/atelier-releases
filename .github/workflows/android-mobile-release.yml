@@ -1,0 +1,76 @@
+name: Android mobile signed release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version X.Y.Z (example: 0.1.0)'
+        required: true
+        default: '0.1.0'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/android-goblin-mobile
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Validate signing configuration
+        env:
+          KEYSTORE_B64: ${{ secrets.ATELIER_ANDROID_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ATELIER_ANDROID_KEY_ALIAS }}
+        run: |
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || { echo "::error::Missing Android signing secrets. See mobile/RELEASE_CHECKLIST.md"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/atelier-release.jks"
+          echo "ATELIER_SIGNING_FILE=$RUNNER_TEMP/atelier-release.jks" >> "$GITHUB_ENV"
+      - name: Install Android SDK
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Validate version and bundle UI
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          mkdir -p mobile/android/app/src/main/assets
+          cp mobile/prototype/index.html mobile/android/app/src/main/assets/index.html
+      - name: Build signed APK
+        working-directory: mobile/android
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
+          ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
+          ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
+          ATELIER_SIGNING_KEY_ALIAS: ${{ secrets.ATELIER_ANDROID_KEY_ALIAS }}
+        run: gradle --no-daemon assembleRelease
+      - name: Verify APK signature and package
+        run: |
+          APK=mobile/android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$APK"
+          unzip -l "$APK" | grep -q 'assets/index.html'
+          mv "$APK" LAtelierDuGoblin-Mobile.apk
+          sha256sum LAtelierDuGoblin-Mobile.apk > LAtelierDuGoblin-Mobile.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LAtelierDuGoblin_Android_Signed
+          path: |
+            LAtelierDuGoblin-Mobile.apk
+            LAtelierDuGoblin-Mobile.apk.sha256
+      - name: Publish Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "android-v$RELEASE_VERSION" LAtelierDuGoblin-Mobile.apk LAtelierDuGoblin-Mobile.apk.sha256 --title "L'Atelier du Goblin Android v$RELEASE_VERSION" --notes "Version Android signée. Les futures mises à jour exigent le même certificat."
