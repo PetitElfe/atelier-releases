@@ -52,25 +52,28 @@ async function api(path,method='GET',body){
   await page.unroute('**/api/update/check');
   await page.evaluate(()=>showView('home'));
 
-  // Post-it : création, auto-sauvegarde en SQLite, couleur et forme après F5.
-  await page.locator('#homeNewPostit').click();
-  await page.locator('#postitEditForm').waitFor();
-  await page.locator('#postitEditForm input[name="title"]').fill('Mon Post-it de test');
-  await page.locator('#postitEditForm textarea[name="body"]').fill('Un rappel important avec https://example.com');
-  await page.locator('#postitEditForm select[name="color"]').selectOption('deep-green');
-  await page.locator('#postitEditForm select[name="shape"]').selectOption('square');
-  await page.locator('#postitEditorClose').click();
-  await page.locator('#postitEditForm').waitFor({state:'detached'});
-  const savedPostit=(await api('/api/postits')).find(n=>n.title==='Mon Post-it de test');
-  assert.ok(savedPostit&&savedPostit.color==='deep-green'&&savedPostit.shape==='square'&&savedPostit.body.includes('example.com'),
-    'Les modifications doivent être sauvegardées dans la base SQLite, pas seulement le navigateur');
+  // Les Post-it sont UNIQUEMENT des fenêtres natives Windows, jamais des cartes dans L'Atelier.
+  assert.equal(await page.locator('#homePostitBoard').count(),0,
+    'Aucun encadré Post-it ne doit être présent dans l’Accueil');
+  assert.equal(await page.locator('#homeNewPostit').count(),0,
+    'Ne plus proposer de Post-it intégré à l’Accueil');
+  assert.equal(await page.locator('.home-postit').count(),0);
+  await page.evaluate(()=>showView('settings'));
+  assert.equal(await page.locator('#settingsNewDesktopPostit').count(),1,
+    'La création des notes est accessible dans les paramètres Windows');
+  const postitStatus=await api('/api/desktop-postits/status');
+  assert.equal(postitStatus.available,false,'Compagnon Windows indisponible sur le runner Linux');
+  await page.evaluate(()=>showView('home'));
+  // Les données SQLite existantes ne sont PAS effacées lors du retrait de la carte web.
+  const created=await api('/api/postits','POST',{title:'Note conservée',
+    body:'Contenu personnel inchangé',color:'sage',shape:'rounded'});
+  const saved=(await api('/api/postits')).find(note=>note.id===created.id);
+  assert.ok(saved&&saved.body==='Contenu personnel inchangé',
+    'Conserver le stockage des Post-it sans les afficher dans la fenêtre principale');
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').waitFor();
-  assert.ok(await page.locator('.home-postit[data-postit-id="'+savedPostit.id+'"]').evaluate(
-    el=>el.classList.contains('postit-deep-green')&&el.classList.contains('postit-square')
-       &&!!el.querySelector('a[href^="https://example.com"]')),
-    'Le Post-it et son lien doivent réapparaître après F5');
-
+  assert.equal(await page.locator('#homePostitBoard').count(),0);
+  assert.equal((await api('/api/postits')).find(note=>note.id===created.id)?.title,
+    'Note conservée','Les notes persistantes restent disponibles dans SQLite');
 
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
@@ -916,7 +919,7 @@ async function api(path,method='GET',body){
   await page.locator('#openHomeModuleLibrary').click();
   const picker=page.locator('#homeModulePicker');
   await picker.waitFor({state:'visible'});
-  assert.equal(await picker.locator('input[data-module]').count(),12,'The home module library lists five widgets (including Post-it) and seven shortcuts');
+  assert.equal(await picker.locator('input[data-module]').count(),11,'Home modules exclude desktop-only Post-it; four widgets and seven shortcuts');
   await picker.locator('input[data-module="tasks"]').check();
   await picker.locator('input[data-module="upcoming"]').uncheck();
   await picker.locator('button[type="submit"]').click();
