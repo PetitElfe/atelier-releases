@@ -545,6 +545,66 @@ function renderSettings(){
 
 /* ALPHA 0.18.0 — mises à jour TEST : même écran, assistant externe sécurisé. */
 let atelierUpdateCandidate=null,atelierUpdatePolling=false;
+let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false;
+const ATELIER_UPDATE_NOTICE_INTERVAL=30*60*1000;
+function atelierSetUpdateNotice(available){
+  const dot=$('#settingsUpdateDot'),label=$('#settingsUpdateAvailable');
+  const gear=$('#settingsBtn');
+  if(dot)dot.classList.toggle('hidden',!available);
+  if(label)label.classList.toggle('hidden',!available);
+  if(gear){
+    gear.title=available?'Paramètres — mise à jour disponible':'Paramètres';
+    gear.setAttribute('aria-label',gear.title);
+  }
+}
+async function atelierCheckForUpdates({automatic=false}={}){
+  if(atelierUpdatePolling||atelierUpdateCheckActive)return;
+  if(automatic&&(document.visibilityState==='hidden'||
+      Date.now()-atelierUpdateLastCheck<ATELIER_UPDATE_NOTICE_INTERVAL))return;
+  atelierUpdateCheckActive=true;
+  atelierUpdateLastCheck=Date.now();
+  const check=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
+  const install=$('#settingsInstallUpdate');
+  if(check)check.disabled=true;
+  if(!automatic&&message)message.textContent='Recherche de la dernière révision TEST sur GitHub…';
+  try{
+    const result=await atelierUpdateRequest('/api/update/check');
+    if(!result||typeof result.available!=='boolean'||
+       !/^[0-9a-f]{40}$/.test(result.revision||'')){
+      throw new Error('Réponse de mise à jour inattendue');
+    }
+    atelierUpdateCandidate=result.available?result.revision:null;
+    const build=result.installed_build?' · build '+result.installed_build:'';
+    const version=$('#settingsInstalledVersion');
+    if(version)version.textContent=result.installed_version+' · TEST'+build;
+    atelierSetUpdateNotice(result.available);
+    if(install){
+      install.hidden=!result.available;
+      install.disabled=!result.available;
+    }
+    if(message){
+      message.textContent=result.available
+        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données TEST sera créée avant le redémarrage.'
+        : 'L’Atelier TEST est à jour ('+result.revision.slice(0,8)+').';
+    }
+  }catch(error){
+    // No false "update available" claim when GitHub cannot be contacted.
+    if(!automatic){
+      atelierUpdateCandidate=null;
+      atelierSetUpdateNotice(false);
+      if(install){install.hidden=true;install.disabled=true}
+    }
+    if(message&&(!automatic||!atelierUpdateCandidate)){
+      message.textContent='Vérification '+(automatic?'automatique ':'')+
+        'impossible : '+(error?.message||'réseau indisponible')+
+        '. Aucune modification effectuée.';
+    }
+  }finally{
+    atelierUpdateCheckActive=false;
+    if(check&&!atelierUpdatePolling)check.disabled=false;
+  }
+}
+
 async function atelierUpdateRequest(url,opts={}){
   const response=await fetch(url,{cache:'no-store',...opts});
   const result=await response.json();
@@ -585,28 +645,14 @@ async function atelierPollUpdate(){
   message.textContent='Le redémarrage prend plus de temps que prévu. Vérifie la fenêtre TEST et la sauvegarde avant de recommencer.';
   atelierUpdatePolling=false;check.disabled=false;
 }
-$('#settingsCheckUpdates').onclick=async()=>{
-  const button=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
-  const install=$('#settingsInstallUpdate');
-  if(atelierUpdatePolling)return;
-  atelierUpdateCandidate=null;
-  install.hidden=true;install.disabled=true;
-  button.disabled=true;
-  message.textContent='Recherche de la dernière révision TEST sur GitHub…';
-  try{
-    const result=await atelierUpdateRequest('/api/update/check');
-    $('#settingsInstalledVersion').textContent=result.installed_version+' · TEST'+(result.installed_build?' · build '+result.installed_build:'');
-    if(result.available){
-      atelierUpdateCandidate=result.revision;
-      message.textContent='Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données TEST sera créée avant le redémarrage.';
-      install.hidden=false;install.disabled=false;
-    }else{
-      message.textContent='L’Atelier TEST est à jour ('+result.revision.slice(0,8)+').';
-    }
-  }catch(error){
-    message.textContent='Vérification impossible : '+(error?.message||'réseau indisponible')+'. Aucun fichier modifié.';
-  }finally{button.disabled=false}
-};
+$('#settingsCheckUpdates').onclick=()=>atelierCheckForUpdates({automatic:false});
+// Alertes discrètes : jamais de mise à jour sans confirmation explicite.
+setTimeout(()=>atelierCheckForUpdates({automatic:true}),5000);
+setInterval(()=>atelierCheckForUpdates({automatic:true}),ATELIER_UPDATE_NOTICE_INTERVAL);
+window.addEventListener('focus',()=>atelierCheckForUpdates({automatic:true}));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')atelierCheckForUpdates({automatic:true});
+});
 $('#settingsInstallUpdate').onclick=async()=>{
   if(!atelierUpdateCandidate||atelierUpdatePolling)return;
   const message=$('#settingsUpdateMessage'),button=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
