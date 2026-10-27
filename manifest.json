@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "0b5a5bf6d1c1e33f68b58c679a121f150962ab4cdf112c4e195332a49ea39791"
+      "sha256": "584138ad5ccc7ea751fc1809b3c045bfb15d7b6a244184f42568afc18e0d128b"
     }
   ],
   "notes": "ALPHA 0.17.0 — BIG BLOC transversal : Calendrier aujourd’hui, filtres tâches, rappels, budget, cuisine, habitudes, Bibliothèque clavier et Paramètres."
