@@ -29,6 +29,15 @@ public final class UpdateBridge {
         });
     }
 
+    /** Display the actually installed APK version, not a hard-coded UI value. */
+    @JavascriptInterface public String getVersionName() {
+        try {
+            return activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
+        } catch (android.content.pm.PackageManager.NameNotFoundException ex) {
+            return "inconnue";
+        }
+    }
+
     @JavascriptInterface public void openReleases() {
         activity.runOnUiThread(() ->
             activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES))));
