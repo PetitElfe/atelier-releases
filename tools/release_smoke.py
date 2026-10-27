@@ -439,8 +439,11 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 6:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 7:
                 fail("PRAGMA user_version n'a pas été appliqué.")
+            cols={row[1] for row in c.execute("PRAGMA table_info(desktop_postit_layout)")}
+            if "locked" not in cols:
+                fail("Le verrouillage des positions Post-it manque à la migration.")
             c.execute("PRAGMA user_version = 0")
             c.commit()
 
