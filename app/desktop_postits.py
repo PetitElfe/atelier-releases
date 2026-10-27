@@ -360,6 +360,10 @@ def _run_gui():
             self.body.bind("<Button-3>", self._menu)
             self.title.bind("<KeyRelease>", self._changed)
             self.body.bind("<<Modified>>", self._body_changed)
+            # Entrée insère toujours une nouvelle ligne dans le corps de la
+            # note (et ne déclenche jamais le bouton « OK » par défaut).
+            self.body.bind("<Return>", self._insert_newline)
+            self.body.bind("<KP_Enter>", self._insert_newline)
             self.body.edit_modified(False)
             self.window.bind("<Configure>", self._geometry_changed)
             self.window.protocol("WM_DELETE_WINDOW", self._close)
@@ -422,6 +426,12 @@ def _run_gui():
                 self.menu.tk_popup(event.x_root, event.y_root)
             finally:
                 self.menu.grab_release()
+
+        def _insert_newline(self, _=None):
+            self.body.insert("insert", "\\n")
+            self.body.see("insert")
+            self._changed()
+            return "break"
 
         def _body_changed(self, _=None):
             if self.body.edit_modified():
