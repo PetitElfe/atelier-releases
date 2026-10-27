@@ -184,6 +184,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':'GitHub ou manifeste indisponible : '+str(exc)},502)
 
         with conn() as c:
+            if p == '/api/preparations/upcoming':
+                try:
+                    return self._json(event_preparations.upcoming(c,expand_events,q.get('today',[None])[0]))
+                except ValueError as ex: return self._json({'error':str(ex)},400)
             if p == '/api/budget':
                 try: return self._json(budget_snapshot(c,budget_month(q.get('month',[date.today().strftime('%Y-%m')])[0]),now_iso()))
                 except ValueError as ex:return self._json({'error':str(ex)},400)
@@ -211,7 +215,7 @@ class Handler(BaseHTTPRequestHandler):
                     e['instance_action'] = action['action'] if action else ''
                     e['moved_event_id'] = action['moved_event_id'] if action else None
                     e['instance_action_at'] = action['action_at'] if action else ''
-                return self._json([e for e in expanded if e.get('instance_action')!='hidden'])
+                return self._json(event_preparations.attach(c,[e for e in expanded if e.get('instance_action')!='hidden']))
             if p == '/api/event-template':
                 title = (q.get('title', [''])[0] or '').strip()
                 if not title:
@@ -480,6 +484,11 @@ class Handler(BaseHTTPRequestHandler):
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
+                try:
+                    if 'preparations' in body:
+                        event_preparations.replace_templates(c,eid,body['preparations'],ts)
+                except (ValueError,TypeError,LookupError) as ex:
+                    c.rollback();return self._json({'error':str(ex)},400)
                 c.commit(); return self._json({'id':eid},201)
             if p == '/api/objective-map/edges':
                 try:
@@ -595,6 +604,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==5 and parts[:2]==['api','events'] and parts[3]=='preparations':
+            try:
+                eid=int(parts[2]); pid=int(parts[4]); day=str(body.get('instance_date') or '')
+                if not isinstance(body.get('done'),bool): raise ValueError('État de case invalide.')
+                with conn() as c:
+                    event_preparations.set_checked(c,eid,pid,day,body['done'],ts)
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError) as ex: return self._json({'error':str(ex)},400)
+            except LookupError as ex: return self._json({'error':str(ex)},404)
         if len(parts)==3 and parts[:2]==['api','postits']:
             if not isinstance(body,dict):return self._json({'error':'Données incorrectes.'},400)
             try:note_id=int(parts[2])
@@ -847,6 +866,7 @@ class Handler(BaseHTTPRequestHandler):
                                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals)
                         moved_event_id=cur.lastrowid
 
+                    event_preparations.copy_to_event(c,eid,moved_event_id,instance_date,ts)
                     if old['recurrence']=='none':
                         try:
                             old_dt=datetime.fromisoformat(f"{instance_date}T{old['start_time'] or '00:00'}")
@@ -986,6 +1006,9 @@ class Handler(BaseHTTPRequestHandler):
                         cur=c.execute('''INSERT INTO events(title,event_date,start_time,end_time,all_day,category,color,location,notes,contact,travel_time,url,status,recurrence,show_in_month,created_at,updated_at)
                                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',vals+(ts,))
                         moved_id=cur.lastrowid
+                    event_preparations.copy_to_event(c,eid,moved_id,instance_date,ts)
+                    if 'preparations' in body:
+                        event_preparations.replace_templates(c,moved_id,body['preparations'],ts)
                     c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=? AND status!='done'",(moved_id,))
                     for ra in body.get('reminders',[]) or []:
                         if isinstance(ra,str): ra={'remind_at':ra,'title':''}
@@ -1034,6 +1057,10 @@ class Handler(BaseHTTPRequestHandler):
                         if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                         when = (ra or {}).get('remind_at')
                         if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('event',eid,(ra or {}).get('title',''),when,'pending',ts))
+                if 'preparations' in body:
+                    try: event_preparations.replace_templates(c,eid,body['preparations'],ts)
+                    except (ValueError,TypeError,LookupError) as ex:
+                        c.rollback();return self._json({'error':str(ex)},400)
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='tasks':
                 tid=int(parts[2]); old=c.execute('SELECT * FROM tasks WHERE id=?',(tid,)).fetchone()
@@ -1147,6 +1174,8 @@ class Handler(BaseHTTPRequestHandler):
                 # Supprimer aussi les rappels et les statuts des occurrences rattachés.
                 c.execute("DELETE FROM reminders WHERE entity_type='event' AND entity_id=?",(eid,))
                 c.execute('DELETE FROM event_completions WHERE event_id=?',(eid,))
+                c.execute('DELETE FROM event_preparation_checks WHERE preparation_id IN (SELECT id FROM event_preparations WHERE event_id=?)',(eid,))
+                c.execute('DELETE FROM event_preparations WHERE event_id=?',(eid,))
                 c.execute('DELETE FROM event_instance_actions WHERE event_id=?',(eid,))
                 c.execute('UPDATE event_instance_actions SET moved_event_id=NULL WHERE moved_event_id=?',(eid,))
                 c.execute('DELETE FROM events WHERE id=?',(eid,))
