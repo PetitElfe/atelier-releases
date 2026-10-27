@@ -156,7 +156,11 @@ function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=typeof cycleShowMarksPreference==='function'&&cycleShowMarksPreference()&&isRecordedCycleDay(ds); const cell=document.createElement('div'); cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'');
+    const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=cycleShowMarksPreference()&&isRecordedCycleDay(ds);
+    const forecast=recorded?null:cycleForecastForDay(ds);
+    const cell=document.createElement('div');
+    cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
+    if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<div class="day-number">${d.getDate()}</div><button class="day-add" title="Ajouter un rendez-vous">+</button>`;
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);bindCalendarDateContextMenu(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
@@ -164,7 +168,7 @@ function renderMonth(){
       const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; const wrap=document.createElement('div');wrap.className='calendar-month-event';wrap.appendChild(b);addCalendarHoverActions(wrap,e);cell.appendChild(wrap);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
-    cell.title='Double-clique pour ajouter un rendez-vous';
+    cell.title=forecast?cell.dataset.cycleForecast+' Double-clique pour ajouter un rendez-vous.':'Double-clique pour ajouter un rendez-vous';
     cell.addEventListener('dblclick',ev=>{ if(ev.target.closest('button')) return; state.cursor=new Date(d); openEventModal(null,ds); });
     grid.appendChild(cell);
   }
@@ -181,7 +185,6 @@ function renderMiniMonth(){
 function renderWeek(){
   const start=monday(state.cursor),end=sunday(state.cursor);
   $('#weekTitle').textContent=start.getDate()+' '+months[start.getMonth()].slice(0,3)+' — '+end.getDate()+' '+months[end.getMonth()].slice(0,3);
-  renderMiniMonth();
   const grid=$('#weekGrid');grid.innerHTML='';
   const blank=document.createElement('div');blank.className='week-head';grid.appendChild(blank);
   const firstMinute=7*60,lastMinute=23*60,spanMinutes=lastMinute-firstMinute;
@@ -195,9 +198,13 @@ function renderWeek(){
   for(let i=0;i<7;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);
     const ds=ymd(d);dates.push(ds);
-    const head=document.createElement('div');head.className='week-head';
+    const today=ds===ymd(new Date());
+    const predicted=cycleForecastForDay(ds);
+    const head=document.createElement('div');head.className='week-head'+(today?' week-current-day':'')+(predicted?' cycle-forecast':'');
     head.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
     if(cycleShowMarksPreference()&&isRecordedCycleDay(ds))head.classList.add('cycle-recorded');
+    if(predicted)head.title='Règles possibles autour du '+fmtFrenchDate(parseYMD(predicted.start))+' (± '+predicted.spread+' jours).';
+    if(today){const marker=document.createElement('span');marker.className='week-today-label';marker.textContent='AUJOURD’HUI';head.prepend(marker);}
     bindCalendarDateContextMenu(head,ds);
     const allDay=state.events.filter(e=>e.instance_date===ds&&isAllDay(e));
     if(allDay.length){
@@ -223,7 +230,8 @@ function renderWeek(){
   for(let hour=7;hour<=22;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
     for(let i=0;i<7;i++){
-      const ds=dates[i],cell=document.createElement('div');cell.className='week-slot';
+      const ds=dates[i],cell=document.createElement('div');
+      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'');
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
       bindCalendarDateContextMenu(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);
@@ -286,11 +294,14 @@ function renderWeek(){
         card.className='week-timed-event '+eventClass(event)+(eventInstanceClosed(event)?' event-instance-closed':'');
         card.dataset.eventId=String(event.id);
         card.dataset.instanceDate=event.instance_date||event.event_date;
+        card.dataset.fullLabel=(event.start_time||'')+(event.end_time?'–'+event.end_time:'')+' · '+event.title;
         card.style.top=((item.start-firstMinute)/spanMinutes*100)+'%';
         card.style.height=((item.end-item.start)/spanMinutes*100)+'%';
         card.style.left='calc('+(100*item.lane/lanes)+'% + 2px)';
         card.style.width='calc('+(100/lanes)+'% - 4px)';
         if(item.end-item.start<45)card.classList.add('week-short-event');
+        if(item.end-item.start>=45&&item.end-item.start<90)card.classList.add('week-medium-event');
+        if(lanes>1)card.classList.add('week-overlap-event');
         const open=document.createElement('button');open.type='button';open.className='week-card-open';
         open.title=(event.start_time||'')+(event.end_time?'–'+event.end_time:'')+' '+event.title;
         open.setAttribute('aria-label',open.title);

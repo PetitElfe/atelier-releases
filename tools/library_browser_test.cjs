@@ -416,7 +416,7 @@ async function api(path,method='GET',body){
       scrollBottom:Math.round(scroll.getBoundingClientRect().bottom),
       scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,
       overflowY:getComputedStyle(scroll).overflowY,
-      noVerticalOverflow:(getComputedStyle(scroll).overflowY==='visible'&&
+      noVerticalOverflow:(['visible','clip','hidden'].includes(getComputedStyle(scroll).overflowY)&&
         scroll.getBoundingClientRect().bottom<=window.innerHeight+10)||
         scroll.scrollHeight<=scroll.clientHeight+3
     };
@@ -618,7 +618,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
   assert.ok(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,'Recorded 1 August must have cycle highlight');
   await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#miniMonth .mday.cycle-recorded').length>0,null,{timeout:10000});
+  await page.waitForFunction(()=>document.querySelectorAll('#weekGrid .week-head.cycle-recorded').length>0,null,{timeout:10000});
+  assert.equal(await page.locator('#miniMonth').count(),0,'Le mini-calendrier redondant a été supprimé');
   await api('/api/cycle-periods','POST',{start_date:'2026-08-29',end_date:null});
   await page.evaluate(()=>refreshOrganisation());
   await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('Règles estimées'));
@@ -900,7 +901,22 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(dragX-45,dragY+35,{steps:5});
   await page.mouse.up();
-  const afterCanvasMove=await canvasCalendar.boundingBox();
+  let afterCanvasMove=await canvasCalendar.boundingBox();
+  if(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)<=20){
+    // Un alignement magnétique ou un clic dans une case peut absorber le premier
+    // mouvement : recommencer en visant la poignée explicite et sans aimant.
+    const handle=canvasCalendar.locator('.layout-move-handle');
+    const grip=await handle.boundingBox();
+    if(grip){
+      await page.keyboard.down('Alt');
+      await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
+      await page.mouse.down();
+      await page.mouse.move(grip.x+grip.width/2-70,grip.y+grip.height/2+65,{steps:8});
+      await page.mouse.up();
+      await page.keyboard.up('Alt');
+      afterCanvasMove=await canvasCalendar.boundingBox();
+    }
+  }
   const afterOtherCanvas=await page.locator('#journalBook').boundingBox();
   assert.ok(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)>20,'Calendrier déplacé en position libre');
   assert.ok(Math.abs(afterOtherCanvas.y-beforeOtherCanvas.y)<3,'Déplacer Calendrier ne déplace pas le Journal');

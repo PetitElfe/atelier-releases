@@ -1632,19 +1632,55 @@ function isRecordedCycleDay(day){
   return organisationState.periods.some(p=>p.start_date<=day&&day<=(p.end_date||p.start_date));
 }
 function cycleEstimate(){
-  const dates=[...new Set(organisationState.periods.map(x=>x.start_date))].sort();
+  const dates=[...new Set(organisationState.periods.map(p=>p.start_date))].sort();
+  if(dates.length<2)return null;
   const intervals=[];
   for(let i=1;i<dates.length;i++){
-    const d=dayDistance(dates[i-1],dates[i]);
-    if(d>=21&&d<=45)intervals.push(d);
+    const length=dayDistance(dates[i-1],dates[i]);
+    if(length>=21&&length<=45)intervals.push(length);
   }
   if(!intervals.length)return null;
-  const recent=intervals.slice(-6),avg=Math.round(recent.reduce((a,b)=>a+b,0)/recent.length);
-  let next=localDayAdd(dates[dates.length-1],avg);
+  // Les six derniers cycles comptent davantage que les plus anciens.
+  // Une valeur très éloignée de la médiane est écartée seulement si
+  // au moins quatre cycles ont été mesurés (évite les sauts aberrants).
+  const recent=intervals.slice(-6);
+  const ordered=[...recent].sort((a,b)=>a-b);
+  const median=ordered[Math.floor(ordered.length/2)];
+  const reliable=recent.length>=4?recent.filter(v=>Math.abs(v-median)<=9):recent;
+  const values=reliable.length>=2?reliable:recent;
+  const weighted=values.reduce((sum,v,i)=>sum+v*(i+1),0);
+  const weight=values.reduce((sum,_,i)=>sum+i+1,0);
+  const avg=Math.max(21,Math.min(45,Math.round(weighted/weight)));
+  const spread=Math.max(2,Math.min(7,Math.ceil((Math.max(...values)-Math.min(...values))/2)));
+  // Durée probable : médiane des périodes réellement complétées,
+  // sinon 5 jours de visualisation, clairement identifiés comme estimés.
+  const durations=organisationState.periods.filter(p=>p.end_date).map(p=>dayDistance(p.start_date,p.end_date)+1).filter(d=>d>=1&&d<=15).sort((a,b)=>a-b);
+  const duration=durations.length?durations[Math.floor((durations.length-1)/2)]:5;
+  const last=dates[dates.length-1];
+  let next=localDayAdd(last,avg);
   const today=ymd(new Date());
-  while(next<today)next=localDayAdd(next,avg);
-  return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next))};
+  let skipped=0;
+  while(next<today&&skipped<240){next=localDayAdd(next,avg);skipped++;}
+  return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next)),
+    duration,spread,last,sampleCount:values.length,observedDuration:durations.length>0};
 }
+function cycleForecastForDay(day){
+  if(typeof cycleShowMarksPreference!=='function'||!cycleShowMarksPreference())return null;
+  if(isRecordedCycleDay(day)||day<ymd(new Date()))return null;
+  const estimate=cycleEstimate();
+  if(!estimate||day<=estimate.last)return null;
+  for(let n=0;n<6;n++){
+    const start=localDayAdd(estimate.next,n*estimate.average);
+    const end=localDayAdd(start,estimate.duration-1);
+    if(day>=start&&day<=end){
+      return {start,end,spread:estimate.spread,duration:estimate.duration,
+        observedDuration:estimate.observedDuration,index:n};
+    }
+    if(day<start)break;
+  }
+  return null;
+}
+
 function renderOrganisation(){
   const habits=$('#habitList');
   if(habits){

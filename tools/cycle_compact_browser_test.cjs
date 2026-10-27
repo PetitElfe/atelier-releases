@@ -70,12 +70,14 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   const end=ymd(add(new Date(),3));
   await page.locator('#cycleQuickForm [name=end_date]').fill(end);
   await page.locator('#cycleQuickForm button[type=submit]').click();
+  await page.locator('#cycleQuickEditor').waitFor({state:'detached',timeout:12000});
   periods=await api('/api/cycle-periods');
   assert.equal(periods.find(p=>p.start_date===today).end_date,end);
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
   await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
   await page.locator('.cycle-quick-delete').click();
   await page.locator('.cycle-quick-delete').click();
+  await page.locator('#cycleQuickEditor').waitFor({state:'detached',timeout:12000});
   periods=await api('/api/cycle-periods');
   assert.equal(periods.length,1);
   assert.deepEqual(errors,[]);

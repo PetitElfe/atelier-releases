@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/objective_map.css" />
   <link rel="stylesheet" href="/event_preparations.css" />
   <link rel="stylesheet" href="/calendar_cycle_compact.css" />
+  <link rel="stylesheet" href="/week_clarity.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -136,14 +137,16 @@
       </div>
 
       <div id="weekPanel" class="calendar-panel">
-        <div class="week-layout">
-          <aside class="mini-panel">
-            <div class="view-head compact">
-              <button id="prevWeek">‹</button><h2 id="weekTitle"></h2><button id="nextWeek">›</button><button id="weekToday" type="button" class="atelier-today-button">Aujourd’hui</button>
+        <div class="week-layout week-layout-clean">
+          <div class="week-topbar">
+            <div class="week-navigation">
+              <button id="prevWeek" type="button" aria-label="Semaine précédente">‹</button>
+              <h3 id="weekTitle"></h3>
+              <button id="nextWeek" type="button" aria-label="Semaine suivante">›</button>
+              <button id="weekToday" type="button" class="atelier-today-button">Aujourd’hui</button>
             </div>
-            <div id="miniMonth" class="mini-month"></div>
-            <button id="addEventWeek" class="primary wide">+ Rendez-vous</button>
-          </aside>
+            <button id="addEventWeek" type="button" class="primary">+ Rendez-vous</button>
+          </div>
           <div class="week-scroll">
             <div id="weekGrid" class="week-grid"></div>
           </div>
@@ -421,7 +424,7 @@
             </label>
             <label class="settings-toggle">
               <input id="settingsCycleShowMarks" type="checkbox">
-              <span><strong>Colorer les dates de règles enregistrées</strong><small>Désactive les cases rouges sans effacer les dates.</small></span>
+              <span><strong>Afficher les règles enregistrées et prévues sur le calendrier</strong><small>Rouge soutenu pour les dates notées, rouge discret et pointillé pour les dates estimées. Désactiver ne supprime aucune donnée.</small></span>
             </label>
             <p class="muted">Clic droit sur une date du calendrier → « Règles » pour ajouter, modifier ou supprimer une période. Prévisions indicatives, jamais certaines.</p>
           </section>
