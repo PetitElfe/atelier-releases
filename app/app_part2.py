@@ -372,11 +372,11 @@ class Handler(BaseHTTPRequestHandler):
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
         if p == '/api/update/start':
-            # A deliberate button click from the localhost UI is required;
-            # foreign websites cannot issue a cross-origin custom-header POST.
-            if (self.headers.get('Origin') != 'http://127.0.0.1:8876'
+            # Only this installation's localhost UI may initiate an update.
+            # The per-edition port is fixed by the server configuration.
+            if (self.headers.get('Origin') != f'http://{HOST}:{PORT}'
                     or self.headers.get('X-Atelier-Update') != '1'):
-                return self._json({'error':'Action réservée aux Paramètres de L’Atelier TEST.'},403)
+                return self._json({'error':'Action réservée aux Paramètres de cette installation.'},403)
             try:
                 return self._json(updater.begin(str(body.get('revision',''))))
             except RuntimeError as exc:
@@ -385,10 +385,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':'Mise à jour impossible : '+str(exc)},502)
 
         if p in ('/api/desktop-postits/start','/api/desktop-postits/startup','/api/desktop-postits/new'):
-            # Explicit action inside L'Atelier TEST, never a cross-origin web request.
-            if (self.headers.get('Origin') != 'http://127.0.0.1:8876'
+            # Native desktop actions are restricted to this installation's origin.
+            if (self.headers.get('Origin') != f'http://{HOST}:{PORT}'
                     or self.headers.get('X-Atelier-Desktop') != '1'):
-                return self._json({'error':'Action réservée à L’Atelier du Goblin TEST.'},403)
+                return self._json({'error':'Action réservée à cette installation de L’Atelier.'},403)
             try:
                 if p.endswith('/startup'):
                     if not isinstance(body,dict) or not isinstance(body.get('enabled'),bool):
