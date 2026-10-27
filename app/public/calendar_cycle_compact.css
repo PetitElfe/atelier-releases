@@ -1,0 +1,50 @@
+/* Le suivi du cycle ne doit pas ajouter de gros module au calendrier. */
+.calendar-title-inline{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.calendar-title-inline h2{margin:0}
+.calendar-cycle-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
+.calendar-cycle-summary[hidden]{display:none}
+.calendar-cycle-chip{
+  display:inline-flex;align-items:center;min-height:25px;
+  padding:3px 9px;border:1px solid #665348;border-radius:100px;
+  color:#e9d7c6;background:#302820;font-size:12px;font-weight:600;
+  line-height:1.3;white-space:normal
+}
+.goblin-cycle-chip{color:#d2dfc8;border-color:#59705a;background:#263229}
+.goblin-cycle-chip.is-goblin-window{color:#f2d6bc;border-color:#916949;background:#3c3026}
+.week-head.cycle-recorded{
+  background:linear-gradient(135deg,rgba(167,58,73,.22),rgba(167,58,73,.08));
+  box-shadow:inset 0 0 0 1px rgba(207,93,107,.35)
+}
+.cycle-quick-editor{
+  position:fixed;z-index:10020;width:min(312px,calc(100vw - 16px));
+  max-height:calc(100vh - 16px);overflow:auto;
+  padding:12px;border:1px solid #987c62;border-radius:12px;
+  background:#27211d;color:#f3e8da;box-shadow:0 16px 38px #000b;
+  font-size:13px
+}
+.cycle-quick-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cycle-quick-heading strong{font-size:16px}
+.cycle-quick-close{border:0;background:transparent;color:inherit;font-size:22px;cursor:pointer;min-width:28px}
+#cycleQuickForm{display:grid;gap:10px}
+#cycleQuickForm label{display:grid;gap:5px;color:#e4d2c0;font-weight:600}
+#cycleQuickForm input[type=date]{
+  width:100%;min-width:0;padding:7px 9px;border:1px solid #8e7761;
+  border-radius:7px;background:#f4e9da;color:#30251c;font:inherit
+}
+.cycle-optional{display:inline;font-size:11px;font-weight:400;color:#bdad9b}
+.cycle-quick-hint{margin:0;color:#c8b8a7;font-size:12px;line-height:1.4}
+.cycle-quick-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.cycle-quick-actions button,.cycle-quick-confirm button{
+  min-height:30px;padding:5px 9px;border:1px solid #806a56;border-radius:7px;
+  background:#45382d;color:#f4e8da;cursor:pointer;font:inherit
+}
+.cycle-quick-actions .primary{background:#6a8168;border-color:#7d9a79;color:white}
+.cycle-quick-delete{margin-right:auto;color:#f4b4ad!important}
+.cycle-quick-confirm{display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  padding:8px;border:1px solid #98645c;border-radius:7px}
+.cycle-quick-confirm span{flex:1 1 100%;font-size:12px}
+.cycle-quick-yes{background:#85444a!important}
+@media(max-width:700px){
+  .calendar-title-inline{gap:7px}
+  .calendar-cycle-chip{font-size:11px}
+}
