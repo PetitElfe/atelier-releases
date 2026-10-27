@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[], preparationsUpcoming:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -61,6 +61,7 @@ async function refresh(){
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
     ['tasks',api('/api/tasks')],
     ['reminders',api('/api/reminders')],
+    ['preparationsUpcoming',api('/api/preparations/upcoming')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],
     ['recipeBooks',api('/api/recipe-books')],
@@ -78,6 +79,7 @@ function renderHome(){
   const now=new Date(), today=ymd(now);
   $('#homeDate').textContent=fmtFrenchDate(now).replace(/^./,c=>c.toUpperCase());
   renderHomeMiniCalendar();
+  renderHomePreparationBadge();
 
   const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
   const urgentTasks=state.tasks.filter(t=>!t.completed&&t.important&&t.due_date).map(t=>({type:'task',date:t.due_date,title:t.title,item:t}));

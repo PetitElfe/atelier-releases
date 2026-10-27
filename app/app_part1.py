@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater, desktop_postits
+import progression, objective_maps, updater, desktop_postits, event_preparations
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -322,6 +322,7 @@ with conn() as c:
     c.executescript(SCHEMA)
     progression.initialise(c)
     objective_maps.initialise(c)
+    event_preparations.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
     # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
     if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():
