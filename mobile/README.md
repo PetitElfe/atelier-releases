@@ -5,7 +5,9 @@ Cette première version est **un prototype Android hors ligne** et ne communique
 ## Fonctions de ce prototype
 - Journal vertical avec sections configurables et réordonnables.
 - Habitudes, tâches et courses à cocher.
-- Ajout de tâches, courses et notes.
+- Ajout et suppression de tâches, courses, habitudes et notes.
+- Export manuel d'une sauvegarde JSON via le partage Android (ou téléchargement en navigateur).
+- Les données exportées peuvent être sensibles : choisir une destination de confiance. La restauration automatique n'est pas encore disponible.
 - Persistance locale via WebView localStorage (prototype uniquement).
 - Calendrier local : ajout et suppression de rendez-vous (sans synchronisation Windows).
 - Balayage horizontal pour changer de page ; défilement vertical conservé.
@@ -17,7 +19,7 @@ Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototyp
 ## Limites importantes
 - Pas de synchronisation Wi-Fi ni Internet.
 - Pas de notifications Android ni de sonnerie intégrée.
-- Pas encore de stockage SQLite natif, sauvegarde ou migrations : ne pas saisir de données importantes.
+- Pas encore de stockage SQLite natif, de restauration automatique ni de migrations : ne pas saisir de données importantes. La sauvegarde JSON est une copie de secours, pas une garantie de restauration.
 - La suppression de l'application peut effacer les données du prototype.
 - Aucun accès à la version Windows stable ni à ses données.
 - La synchronisation future exigera un appairage authentifié et une gestion des conflits.
