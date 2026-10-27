@@ -45,6 +45,29 @@ async function api(path,method='GET',body){
   assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0 · TEST · build b23f591a');
   assert.ok(await page.locator('#settingsInstallUpdate').isVisible(),'Le bouton Installer doit apparaître quand une révision TEST est disponible');
   assert.ok(await page.locator('#settingsInstallUpdate').isEnabled(),'Le bouton Installer doit être utilisable');
+  assert.ok(await page.locator('#settingsUpdateDot').isVisible(),
+    'La roue Paramètres doit afficher un témoin visuel si une mise à jour est disponible');
+  assert.ok(await page.locator('#settingsUpdateAvailable').isVisible(),
+    'Les Paramètres doivent indiquer clairement la mise à jour disponible');
+  assert.match(await page.locator('#settingsBtn').getAttribute('aria-label'),/mise à jour disponible/,
+    'Le témoin doit également être compréhensible au lecteur d’écran');
+  // Vérification automatique sans installer : une autre session pourrait découvrir
+  // une révision, et le statut doit être synchronisé avec la vérification manuelle.
+  await page.evaluate(async()=>{atelierUpdateLastCheck=0;await atelierCheckForUpdates({automatic:true})});
+  assert.ok(await page.locator('#settingsUpdateDot').isVisible());
+  await page.unroute('**/api/update/check');
+  await page.route('**/api/update/check',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({version:'0.18.0',installed_version:'0.18.0',
+      available:false,channel:'TEST',revision:'b'.repeat(40),installed_build:'b23f591a'})
+  }));
+  await page.locator('#settingsCheckUpdates').click();
+  assert.equal(await page.locator('#settingsUpdateDot').isVisible(),false,
+    'Le témoin disparaît quand aucune révision nouvelle n’existe');
+  assert.equal(await page.locator('#settingsUpdateAvailable').isVisible(),false);
+  assert.equal(await page.locator('#settingsInstallUpdate').isVisible(),false,
+    'Aucun bouton Installer sur une révision identique');
+
   await page.evaluate(()=>localStorage.setItem('atelierUpdateSmoke','test'));
   const browserBackup=page.waitForEvent('download');
   await page.locator('#settingsExportBrowserData').click();
