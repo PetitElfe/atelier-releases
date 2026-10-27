@@ -55,5 +55,6 @@ jobs:
           npm install --no-save playwright
           npx playwright install --only-shell chromium
       - run: |
+          node tools/preparation_browser_test.cjs
           node tools/objective_map_browser_test.cjs
           node tools/library_browser_test.cjs
