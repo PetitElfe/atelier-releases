@@ -48,6 +48,18 @@ def patch_server(app_dir):
     content = file.read_text(encoding="utf-8")
     content = _replace_once(content, "'http://127.0.0.1:8876'",
                             "'http://127.0.0.1:18877'", "origine des commandes natives")
+    content = _replace_once(content,
+                            "server_version = 'AtelierLocal/' + atelier_version()",
+                            "server_version = 'AtelierLocal/Nathan/' + atelier_version()",
+                            "identité serveur propre à Nathan")
+    file.write_text(content, encoding="utf-8", newline="\n")
+
+    file = app_dir / "app_part3.py"
+    content = file.read_text(encoding="utf-8")
+    content = _replace_once(content,
+                            "        _kill_stale_atelier(pid_file)",
+                            "        # Ne jamais arrêter un processus par PID recyclé ou étranger.\n        pass",
+                            "aucun arrêt forcé d'un serveur étranger")
     file.write_text(content, encoding="utf-8", newline="\n")
 
     file = app_dir / "public" / "index.html"
@@ -151,6 +163,7 @@ def verify_payload(code_root):
     pn=(app/"nathan_postits.py").read_text(encoding="utf-8")
     if (NATHAN_IMPORT not in p1 or PART1_IMPORT in p1 or
             "'http://127.0.0.1:18877'" not in p2 or
+            "'AtelierLocal/Nathan/'" not in p2 or
             'ATELIER_EDITION="NATHAN"' not in pn or
             'LAtelierDuGoblin_Nathan.exe' not in pn):
         raise RuntimeError("Le paquet Nathan contient encore une référence TEST active.")
