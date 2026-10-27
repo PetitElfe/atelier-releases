@@ -43,6 +43,15 @@ function ymd(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padSt
   assert.equal(events.length,2);
   assert.equal(events[0].preparations.length,1);
   assert.equal(events[1].preparations_remaining,1);
+  // Le tiroir du semainier ne change pas la hauteur des créneaux.
+  const card=page.locator('.week-timed-event').filter({hasText:'Rendez-vous préparation E2E'}).first();
+  await card.hover();
+  const weekHeight=await page.locator('#weekGrid').evaluate(el=>el.getBoundingClientRect().height);
+  await card.locator('.calendar-hover-action.prepare').click();
+  await page.locator('.event-prep-drawer').waitFor({state:'visible'});
+  assert.match(await page.locator('.event-prep-drawer').innerText(),/Préparer le dossier/);
+  assert.equal(await page.locator('#weekGrid').evaluate(el=>el.getBoundingClientRect().height),weekHeight);
+  await page.locator('.event-prep-drawer-head button').click();
   const badge=page.locator('#homePreparationBadge');
   await page.locator('#globalHomeShortcut').click();
   await badge.waitFor({state:'visible'});
