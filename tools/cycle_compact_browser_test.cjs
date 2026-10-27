@@ -75,7 +75,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
   await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
   await page.locator('.cycle-quick-delete').click();
-  await page.locator('.cycle-quick-yes').click();
+  await page.locator('.cycle-quick-delete').click();
   periods=await api('/api/cycle-periods');
   assert.equal(periods.length,1);
   assert.deepEqual(errors,[]);
