@@ -93,6 +93,13 @@ class WindowsTray:
             wintypes.DWORD, ctypes.POINTER(NotifyIconData))
         self.shell32.Shell_NotifyIconW.restype = wintypes.BOOL
         self.user32.RegisterWindowMessageW.restype = wintypes.UINT
+        self.user32.RegisterWindowMessageW.argtypes = (wintypes.LPCWSTR,)
+        self.user32.GetCursorPos.argtypes = (ctypes.POINTER(wintypes.POINT),)
+        self.user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
+        self.user32.DestroyWindow.argtypes = (wintypes.HWND,)
+        self.user32.DestroyIcon.argtypes = (wintypes.HICON,)
+        self.user32.UnregisterClassW.argtypes = (wintypes.LPCWSTR,wintypes.HINSTANCE)
+        self.kernel32.GetModuleHandleW.argtypes = (wintypes.LPCWSTR,)
         self.taskbar_created = self.user32.RegisterWindowMessageW("TaskbarCreated")
 
         cls = WndClass()
