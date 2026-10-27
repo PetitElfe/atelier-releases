@@ -99,24 +99,24 @@ jobs:
             # Verify native actions accept Nathan's 8877 origin and reject the TEST origin.
             # Invalid input is used deliberately: no update or Post-it startup is performed.
             $originCheck=@'
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
-import json
-base='http://127.0.0.1:8877'
-def response_status(path, origin, header, body):
-    request=Request(base+path, data=json.dumps(body).encode('utf-8'),
-        headers={'Origin':origin,header:'1','Content-Type':'application/json'},method='POST')
-    try:
-        with urlopen(request,timeout=8) as response:return response.status
-    except HTTPError as exc:return exc.code
-for path,header,body,accepted in [
-    ('/api/update/start','X-Atelier-Update',{'revision':'invalid'},409),
-    ('/api/desktop-postits/startup','X-Atelier-Desktop',{'enabled':'invalid'},400)
-]:
-    assert response_status(path,'http://127.0.0.1:8876',header,body)==403,path+' foreign origin accepted'
-    assert response_status(path,base,header,body)==accepted,path+' own origin rejected'
-print('PASS: Nathan localhost-origin authorization for update and desktop Post-it actions')
-'@
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          import json
+          base='http://127.0.0.1:8877'
+          def response_status(path, origin, header, body):
+              request=Request(base+path, data=json.dumps(body).encode('utf-8'),
+                  headers={'Origin':origin,header:'1','Content-Type':'application/json'},method='POST')
+              try:
+                  with urlopen(request,timeout=8) as response:return response.status
+              except HTTPError as exc:return exc.code
+          for path,header,body,accepted in [
+              ('/api/update/start','X-Atelier-Update',{'revision':'invalid'},409),
+              ('/api/desktop-postits/startup','X-Atelier-Desktop',{'enabled':'invalid'},400)
+          ]:
+              assert response_status(path,'http://127.0.0.1:8876',header,body)==403,path+' foreign origin accepted'
+              assert response_status(path,base,header,body)==accepted,path+' own origin rejected'
+          print('PASS: Nathan localhost-origin authorization for update and desktop Post-it actions')
+          '@
             $originCheck | python -
             if($LASTEXITCODE -ne 0){throw 'Nathan origin authorization failed'}
             Write-Host "PASS: standalone frozen server, empty personal DB initialized, GET API, separate port 8877"
