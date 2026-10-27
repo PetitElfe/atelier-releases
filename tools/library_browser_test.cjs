@@ -62,6 +62,8 @@ async function api(path,method='GET',body){
       available:false,channel:'TEST',revision:'b'.repeat(40),installed_build:'b23f591a'})
   }));
   await page.locator('#settingsCheckUpdates').click();
+  await page.waitForFunction(()=>document.querySelector('#settingsUpdateDot')?.classList.contains('hidden')&&
+    document.querySelector('#settingsUpdateMessage')?.textContent?.includes('à jour'),null,{timeout:8000});
   assert.equal(await page.locator('#settingsUpdateDot').isVisible(),false,
     'Le témoin disparaît quand aucune révision nouvelle n’existe');
   assert.equal(await page.locator('#settingsUpdateAvailable').isVisible(),false);
