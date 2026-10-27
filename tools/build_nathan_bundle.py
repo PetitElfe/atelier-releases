@@ -20,7 +20,9 @@ def main():
         src=REPO/"app"/item["path"]
         dst=OUTPUT/"app"/item["path"]
         dst.parent.mkdir(parents=True,exist_ok=True)
-        shutil.copy2(src,dst)
+        # Windows Git may check out CRLF while the signed manifest uses LF.
+        # All manifest-listed release files are UTF-8 text, not binaries.
+        dst.write_bytes(src.read_bytes().replace(b'\r\n',b'\n'))
     (OUTPUT/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     shutil.copy2(REPO/"tools"/"nathan_patch.py",OUTPUT/"app"/"nathan_patch.py")
     sys.path.insert(0,str(OUTPUT/"app"))
