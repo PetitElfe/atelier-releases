@@ -156,6 +156,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        if p == '/api/quick-capture/hotkey':
+            return self._json({'shortcut':quick_capture_native.read_preference(DATA/'quick-capture-hotkey.json')})
         if p == '/api/desktop-postits/status':
             try:
                 desktop_postits._guard()
@@ -352,6 +354,19 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
         if p == '/api/version':
             return self._json({'version': atelier_version()})
+        if p == '/api/quick-capture/hotkey':
+            try:
+                shortcut=str(body.get('shortcut') or '')
+                quick_capture_native.parse_hotkey(shortcut)
+                target=DATA/'quick-capture-hotkey.json'
+                temporary=DATA/'quick-capture-hotkey.tmp'
+                temporary.write_text(json.dumps({'shortcut':shortcut}),encoding='utf-8')
+                temporary.replace(target)
+                return self._json({'shortcut':shortcut,'ok':True})
+            except (ValueError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
+            except OSError as ex:
+                return self._json({'error':'Impossible de sauvegarder le raccourci : '+str(ex)},500)
         if p == '/api/shutdown':
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
