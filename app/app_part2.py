@@ -354,7 +354,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._json({'error':'Mise à jour impossible : '+str(exc)},502)
 
-        if p in ('/api/desktop-postits/start','/api/desktop-postits/startup'):
+        if p in ('/api/desktop-postits/start','/api/desktop-postits/startup','/api/desktop-postits/new'):
             # Explicit action inside L'Atelier TEST, never a cross-origin web request.
             if (self.headers.get('Origin') != 'http://127.0.0.1:8876'
                     or self.headers.get('X-Atelier-Desktop') != '1'):
@@ -365,6 +365,11 @@ class Handler(BaseHTTPRequestHandler):
                         return self._json({'error':'Réglage incorrect.'},400)
                     enabled=desktop_postits.set_startup(body['enabled'])
                     return self._json({'ok':True,'startup':enabled})
+                if p.endswith('/new'):
+                    desktop_postits._guard()
+                    note_id=desktop_postits.create_note()
+                    desktop_postits.launch()
+                    return self._json({'ok':True,'id':note_id},201)
                 return self._json(desktop_postits.launch())
             except (RuntimeError,OSError) as exc:
                 return self._json({'error':str(exc)},409)
