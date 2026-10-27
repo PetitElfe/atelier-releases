@@ -459,6 +459,9 @@ class Handler(BaseHTTPRequestHandler):
                     end=date.fromisoformat(str(body['end_date'])) if body.get('end_date') else None
                 except (ValueError,TypeError): return self._json({'error':'Dates invalides.'},400)
                 if end and (end<start or (end-start).days>20): return self._json({'error':'La période de règles ne peut pas dépasser 21 jours.'},400)
+                overlap=c.execute('SELECT 1 FROM menstrual_periods WHERE start_date<=? AND COALESCE(end_date,start_date)>=? LIMIT 1',
+                                  ((end or start).isoformat(),start.isoformat())).fetchone()
+                if overlap: return self._json({'error':'Cette période chevauche des règles déjà enregistrées. Modifie la période existante.'},409)
                 cur=c.execute('INSERT INTO menstrual_periods(start_date,end_date,notes,created_at) VALUES(?,?,?,?)',(start.isoformat(),end.isoformat() if end else None,str(body.get('notes',''))[:500],ts))
                 c.commit();return self._json({'id':cur.lastrowid},201)
         with conn() as c:
@@ -604,6 +607,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==3 and parts[:2]==['api','cycle-periods']:
+            try:
+                period_id=int(parts[2])
+                start=date.fromisoformat(str(body.get('start_date','')))
+                end=date.fromisoformat(str(body['end_date'])) if body.get('end_date') else None
+                if end and (end<start or (end-start).days>20):
+                    return self._json({'error':'La période de règles ne peut pas dépasser 21 jours.'},400)
+                with conn() as c:
+                    previous=c.execute('SELECT id FROM menstrual_periods WHERE id=?',(period_id,)).fetchone()
+                    if not previous:return self._json({'error':'Période introuvable.'},404)
+                    overlap=c.execute('SELECT 1 FROM menstrual_periods WHERE id!=? AND start_date<=? AND COALESCE(end_date,start_date)>=? LIMIT 1',
+                                      (period_id,(end or start).isoformat(),start.isoformat())).fetchone()
+                    if overlap:return self._json({'error':'Ces dates chevauchent une autre période.'},409)
+                    c.execute('UPDATE menstrual_periods SET start_date=?,end_date=? WHERE id=?',
+                              (start.isoformat(),end.isoformat() if end else None,period_id))
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError):return self._json({'error':'Date ou identifiant invalide.'},400)
         if len(parts)==5 and parts[:2]==['api','events'] and parts[3]=='preparations':
             try:
                 eid=int(parts[2]); pid=int(parts[4]); day=str(body.get('instance_date') or '')
