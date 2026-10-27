@@ -78,7 +78,7 @@ def _bundled():
     root=Path(getattr(sys,"_MEIPASS",Path(__file__).parent))
     return root/"nathan_code"
 
-def _install():
+def _install(launch=True):
     safe()
     base,code,data,exe,profile=paths()
     if code.exists():
@@ -116,8 +116,9 @@ def _install():
             if not _same(current,dest):raise RuntimeError("Copie de l'exécutable non vérifiée.")
             dest.rename(exe)
         _shortcut(exe)
-        subprocess.Popen([str(exe)],cwd=str(exe.parent),
-            creationflags=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0))
+        if launch:
+            subprocess.Popen([str(exe)],cwd=str(exe.parent),
+                creationflags=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0))
         return True
     _shortcut(exe)
     return False
@@ -152,6 +153,10 @@ def main():
         print("PASS: Nathan port, private profile, isolated data")
         return
     # A single frozen Python distribution services WebView, Post-it and updater.
+    if "--nathan-install-only" in sys.argv:
+        _install(launch=False)
+        print("PASS: Nathan private app and shortcut installed without launching GUI")
+        return
     if "--nathan-server" in sys.argv:
         _run_python("app.py",[])
         return
