@@ -48,3 +48,6 @@
   .calendar-title-inline{gap:7px}
   .calendar-cycle-chip{font-size:11px}
 }
+
+/* Sans le grand panneau cycle, les habitudes utilisent toute la largeur. */
+#organisationView .organisation-grid{grid-template-columns:minmax(0,1fr)}
