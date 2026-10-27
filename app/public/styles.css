@@ -1412,7 +1412,6 @@ body.home-active{overflow-y:auto}
 #homeView.home-free-ready #openCalendarCard,
 #homeView.home-free-ready #homeUpcomingWidget,
 #homeView.home-free-ready #journalBook,
-#homeView.home-free-ready #homePostitBoard,
 #homeView.home-free-ready #homeShortcutShelf>.home-shortcut-card{
   position:absolute;
   margin:0;
@@ -1743,90 +1742,6 @@ body.home-active{overflow-y:auto}
 @media(max-height:620px){
   #weekPanel .week-grid{--week-hour-height:22px}
   #weekPanel .week-scroll{max-height:calc(100dvh - 200px);overflow-y:auto}
-}
-
-
-/* ALPHA 0.18.0 — Post-it de bureau, palette pastel L'Atelier. */
-.home-postit-board{
-  box-sizing:border-box;
-  width:min(650px,calc(100vw - 48px));
-  min-height:186px;
-  padding:13px 14px;
-  border-radius:14px;
-  border:1px solid #514337;
-  background:#211B17;
-  box-shadow:0 10px 24px #0005;
-  color:#EFE5D7;
-}
-.home-postit-heading{
-  display:flex;gap:10px;align-items:center;
-  justify-content:space-between;margin-bottom:11px;
-}
-.home-postit-heading strong{font-size:18px;color:#D3B278}
-.home-postit-heading>div{display:flex;gap:5px}
-.home-postit-heading button{font-size:12px;padding:6px 9px;white-space:nowrap}
-.home-postit-list{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px;min-height:105px}
-.postit-empty{font-size:13px;color:#BEB0A0;line-height:1.5;margin:10px 2px}
-.home-postit{
-  --postit-paper:#C39B69;--postit-ink:#2B2017;
-  flex:1 1 210px;
-  min-width:0;max-width:100%;
-  min-height:130px;
-  padding:12px 13px 10px;
-  box-sizing:border-box;
-  background:var(--postit-paper);color:var(--postit-ink);
-  box-shadow:2px 5px 0 #0002,0 8px 14px #0002;
-  display:flex;flex-direction:column;gap:7px;
-  border:1px solid #0002;
-}
-.home-postit.postit-rounded{border-radius:14px}
-.home-postit.postit-square{border-radius:2px}
-.home-postit.postit-pill{border-radius:28px;padding-left:20px;padding-right:20px}
-.home-postit.postit-sage{--postit-paper:#92B09A;--postit-ink:#213326}
-.home-postit.postit-mauve{--postit-paper:#AA91BE;--postit-ink:#2B2138}
-.home-postit.postit-gold{--postit-paper:#D2AF76;--postit-ink:#392919}
-.home-postit.postit-red{--postit-paper:#C48982;--postit-ink:#341C1A}
-.home-postit.postit-pink{--postit-paper:#D6A3B3;--postit-ink:#39212B}
-.home-postit.postit-blue{--postit-paper:#9FB5CA;--postit-ink:#273848}
-.home-postit.postit-peach{--postit-paper:#D8AD83;--postit-ink:#3C2C1B}
-.home-postit.postit-cream{--postit-paper:#DDC88B;--postit-ink:#493C23}
-.home-postit.postit-deep-blue{--postit-paper:#506F89;--postit-ink:#FBF3EB}
-.home-postit.postit-deep-green{--postit-paper:#4D705D;--postit-ink:#FBF3EB}
-.postit-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.postit-title{font-size:16px;overflow-wrap:anywhere;min-width:0}
-.postit-card-edit{
-  opacity:.45;padding:0 3px;border:0;background:transparent;
-  color:inherit;font-size:19px;line-height:1;
-}
-.home-postit:hover .postit-card-edit,.home-postit:focus-within .postit-card-edit{opacity:1}
-.postit-card-body{
-  font-size:13px;line-height:1.5;white-space:pre-wrap;
-  overflow-wrap:anywhere;min-height:60px;max-height:180px;overflow:auto;
-}
-.postit-card-body a{color:inherit;text-decoration:underline;font-weight:600}
-.postit-card-open{
-  margin-top:auto;align-self:flex-start;
-  color:inherit;background:transparent;border:1px solid currentColor;
-  border-radius:7px;padding:3px 8px;font-size:11px;
-}
-.postit-card-open:hover,.postit-card-edit:hover{background:#FFFFFF35}
-.postit-editor form{display:flex;flex-direction:column;gap:10px}
-.postit-editor form>label,.postit-editor-options>label{display:flex;flex-direction:column;gap:6px}
-.postit-editor textarea{
-  min-height:155px;resize:vertical;
-  white-space:pre-wrap;line-height:1.5;
-}
-.postit-editor-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.postit-save-status{font-size:12px;min-height:19px}
-.postit-archive-row{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:8px;padding:9px 0;border-bottom:1px solid #65513C5A;
-}
-@media (max-width:640px){
-  .home-postit-board{width:calc(100vw - 38px)}
-  .home-postit{flex-basis:180px}
-  .home-postit-heading{flex-wrap:wrap}
-  .postit-editor-options{grid-template-columns:1fr}
 }
 
 
