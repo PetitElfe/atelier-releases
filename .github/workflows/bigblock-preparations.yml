@@ -1,0 +1,56 @@
+name: L'Atelier — BIG BLOCK calendar preparations
+on:
+  push:
+    branches: [feature/0180-bigblock-calendar-preparations]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript and Python syntax
+        run: |
+          node --check app/public/app_part1.js
+          node --check app/public/app_part2.js
+          node --check app/public/app_part3.js
+          node --check app/public/event_preparations.js
+          python -m compileall -q app tools tests
+      - name: Audit release file hashes
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          m=json.loads(pathlib.Path('manifest.json').read_text())
+          for item in m['files']:
+              path=pathlib.Path('app')/item['path']
+              if not path.exists(): raise RuntimeError(str(path))
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              print('RAW_HASH',item['path'],digest,'OK' if digest==item['sha256'] else 'MISMATCH')
+          PY
+      - name: Run all unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Verify release and HTTP smoke
+        run: python tools/release_smoke.py
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save playwright
+          npx playwright install --only-shell chromium
+      - run: |
+          node tools/objective_map_browser_test.cjs
+          node tools/library_browser_test.cjs
