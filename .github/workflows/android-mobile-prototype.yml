@@ -2,7 +2,7 @@ name: Android mobile prototype APK
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/mobile-usability-backup-20261027']
     paths:
       - 'mobile/**'
       - '.github/workflows/android-mobile-prototype.yml'
