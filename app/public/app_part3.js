@@ -630,7 +630,8 @@ async function atelierPollUpdate(){
       const state=await atelierUpdateRequest('/api/update/status');
       if(state.phase==='success'){
         message.textContent='Mise à jour installée ! Rechargement de L’Atelier…';
-        window.location.reload();
+        // Après l’arrêt/redémarrage du serveur, forcer un nouvel HTML/JS.
+        window.location.replace('/?atelier_reloaded='+Date.now());
         return;
       }
       if(state.phase==='error'){
@@ -654,6 +655,16 @@ async function atelierPollUpdate(){
   atelierUpdatePolling=false;check.disabled=false;
 }
 $('#settingsCheckUpdates').onclick=()=>atelierCheckForUpdates({automatic:false});
+$('#settingsReloadUi')?.addEventListener('click',()=>{
+  window.location.replace('/?atelier_reloaded='+Date.now());
+});
+function atelierShowEdition(){
+  const port=location.port;
+  const edition=port==='8876'?'ALPHA TEST (8876)':port==='18877'?'Nathan (18877)':port==='8765'?'Stable (8765)':'Installation locale (port '+port+')';
+  const label=$('#settingsRunningEdition');
+  if(label)label.textContent='Fenêtre actuellement ouverte : '+edition+'. Si rien ne change, vérifie que tu as bien mis à jour cette installation.';
+}
+atelierShowEdition();
 // Alertes discrètes : jamais de mise à jour sans confirmation explicite.
 setTimeout(()=>atelierCheckForUpdates({automatic:true}),5000);
 setInterval(()=>atelierCheckForUpdates({automatic:true}),ATELIER_UPDATE_NOTICE_INTERVAL);
