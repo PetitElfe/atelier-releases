@@ -105,7 +105,7 @@
     },
     {
       "path": "public/calendar_cycle_compact.css",
-      "sha256": "2df4bda1476df628d7b7b3d058dd2a74e876d9ef7f06e28f1ee652f325e51b7f"
+      "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
     }
   ],
   "notes": "ALPHA 0.18.0 — TEST + Nathan : calendrier compact, clic droit Règles, décompte J−14 Goblin, visibilité indépendante des cases rouges et des informations du cycle, préparatifs RDV, accueil 2K. Données locales séparées."
