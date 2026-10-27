@@ -20,6 +20,7 @@ def customize_updater(source):
     src=replace_one(source,
         "BASE = Path(r'E:\\LATELIER_TEST_0180')",
         "BASE = Path(os.environ['LOCALAPPDATA']) / 'LAtelierDuGoblinNathan'")
+    src=replace_one(src,"CODE = BASE / 'code_0180'","CODE = BASE / 'code'")
     src=replace_one(src,"PORT = 8876","PORT = 8877")
     # Nathan updates on their own profile; never judge personalized hashes
     # against original TEST sources.
