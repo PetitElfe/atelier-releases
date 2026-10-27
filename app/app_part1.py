@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from pathlib import Path
 from calendar import monthrange
-import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
+import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
 import progression, objective_maps, updater, desktop_postits, event_preparations
 
