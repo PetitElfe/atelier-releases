@@ -79,6 +79,11 @@ def replace_templates(c,event_id,items,ts):
             raise ValueError("Chaque préparatif doit avoir un titre (180 caractères maximum).")
         raw_id=item.get('id')
         item_id=int(raw_id) if raw_id not in (None,'') else None
+        # Une occurrence éditée peut copier la liste du modèle sans ses IDs.
+        # Réutiliser alors le même titre pour préserver les cases déjà cochées.
+        if item_id is None:
+            item_id=next((key for key,row in old.items()
+                          if key not in seen and row['title']==title),None)
         if item_id is not None:
             if item_id not in old or item_id in seen:
                 raise ValueError("Préparatif étranger au rendez-vous ou en double.")
