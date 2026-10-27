@@ -7,7 +7,9 @@ Cette première version est **un prototype Android hors ligne** et ne communique
 - Habitudes, tâches et courses à cocher.
 - Ajout de tâches, courses et notes.
 - Persistance locale via WebView localStorage (prototype uniquement).
-- Calendrier encore fictif.
+- Calendrier local : ajout et suppression de rendez-vous (sans synchronisation Windows).
+- Balayage horizontal pour changer de page ; défilement vertical conservé.
+- Note rapide avec choix de destination (pensées, tâches, courses, habitudes).
 
 ## Construction
 Le workflow GitHub Actions `Android mobile prototype APK` copie `mobile/prototype/index.html` dans les assets Android, puis construit et teste un APK **debug**. Cet APK de CI est uniquement destiné aux essais ; les versions à installer durablement sont produites par le workflow manuel signé `Android mobile signed release` avec la clé permanente, depuis `main`. Un test d'émulateur ne remplace pas un test sur téléphone réel.
