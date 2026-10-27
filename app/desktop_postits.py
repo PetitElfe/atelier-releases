@@ -597,7 +597,8 @@ def _self_test():
         assert not any(note["title"] == "Archivée" for note in note_rows(db))
         with sqlite3.connect(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
-        assert len(note_rows(db)) == 0
+        assert all(note['id'] != 1 for note in note_rows(db))
+        assert any(note['id'] == fresh for note in note_rows(db))
     print("PASS: Post-it shared SQLite, compare-and-swap, archive, geometry")
 
 
