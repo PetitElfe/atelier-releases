@@ -5,87 +5,87 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "e29b2b820c966c13931ce48a7c30ed530118873540aba9840e79213dab2ad3f1"
+      "sha256": "57ca379606c6acf035f3664de84f493e4974c4f949b61d275173dcd4d4b53db7"
     },
     {
       "path": "VERSION",
-      "sha256": "7aada4daae1879ef282de249051c13ff4e912fcf670f4461676802653793ed38"
+      "sha256": "f5e9382967c9833066a55808829f3750fc8e1181b170cafd222c37048bb49a77"
     },
     {
       "path": "app.py",
-      "sha256": "a41fc183aaa30628e23701c409ded26d62c02cd366bc66450b818904424e5ab7"
+      "sha256": "b8a3a766f613fed381d3352e518f9503132773562972874f297c96dd31db10d0"
     },
     {
       "path": "app_part1.py",
-      "sha256": "0dd9473c71dc248e14abbd6ba90fb20e8a2b5d573e8037a2e0007b3c7e4b11e3"
+      "sha256": "273f414d1d5878fd16f026635eae04a59db4e5ab9fb88082341e5d1323ed7897"
     },
     {
       "path": "app_part2.py",
-      "sha256": "0d9c2bfe6e3a20742f24c7a1ac27fd3b4a1e1693f476917a0eb304e8ecf0dbec"
+      "sha256": "2abd09c8e9b92748805d0a57ef101389cd61458bdb154c4788fbb45a6dc01557"
     },
     {
       "path": "app_part3.py",
-      "sha256": "a72c274da48f2fd22a49711521f37809689d61fb48e5ecbab8269ee5ea8c6c9b"
+      "sha256": "70c98367ff1ddb986c1d3693e23e55a4fc1ed92687fc1b2eacd8853161adfe75"
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "4e229baf1fb6deaffddaccd6028161f037a4a35f19ab06866f5106d475b7d9ed"
+      "sha256": "bf935d0c60a34952b01a64a930171e25ba17228dd78c6ca654cb81df25a3999e"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "83dcc9de2511d449e521acbb6e2065838fecbe705a6f2af673357709eaa20b64"
+      "sha256": "aaa500fa78dc055b0c1bcd845a46fb17996a61927796323cde0e61e6b2f2d0ee"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "a8efc67c4647af958684c636e0ccf94c8050c05623ee6dcbcecf6e7805df9794"
+      "sha256": "853d96b4ce519cdd91a7b0596476c94f63057ef7dcb9bec5652f09f1b455c784"
     },
     {
       "path": "public/index.html",
-      "sha256": "8517149b34a95033e047a2aae688e16dae47c1042164fa5f722c504e079dec45"
+      "sha256": "4be2f0dc99963a837448e457d0bc463ed42368f64d6d625f35654890596e0b63"
     },
     {
       "path": "public/styles.css",
-      "sha256": "5d714de25e8e319b2c9eb0391da13e50c344100e7d1816173e92923a6efad630"
+      "sha256": "19530c2b0d0c875a29fa98e5b055faf76ba6a434a5202f7a4b1ff6ea84cb1a48"
     },
     {
       "path": "progression.py",
-      "sha256": "a84478543a2c66c53a9ec158896ee6d1f05f344013bbb5513c2e9b3475bebe68"
+      "sha256": "1b8ab620b090825c8592b387e76fc6f013675e42731b9554e10cbce5c8e6af87"
     },
     {
       "path": "objective_maps.py",
-      "sha256": "5407c5ded249202b10803f6e2a4bff048d0cb39f01481f696b56814b17cfc171"
+      "sha256": "2bb255e4401dae116753eca710a12fb661e30061511fbdb02a217b9d168c3aba"
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "b46e38e90a713d6e3521e1ec8b45edb010ab22071cc42b6c2e9ea74ab16d1881"
+      "sha256": "0dcb94739257a62177672f4b385d10caa9257a7a4bf2303a238bd56eb789a58e"
     },
     {
       "path": "public/objective_map.css",
-      "sha256": "d2546054ccc6bade51d3aec517e53dac834b4d57ca4b0c7f5d1f2a648b2cd298"
+      "sha256": "79a2435fba1eafd2bc5fd5666933efe38d58ae1ac4e1bedd943b15abacfaf36f"
     },
     {
       "path": "public/progression_view.js",
-      "sha256": "151f6178f2a373feb212cdb9fce8872d03c17de469fbac3577b00650f741c8af"
+      "sha256": "392c2f91083441140c62d20b1b12d555622318b38f41cac25c6d233a11fffde0"
     },
     {
       "path": "updater.py",
-      "sha256": "6e0be7735dad14ef22a4651ef5657671ff48a11759dcea215b03cfc43d037866"
+      "sha256": "2ed0ddd5f05800cf6f8fa0766d9e8c23caaaa575a907b55019c2635d9b732497"
     },
     {
       "path": "public/postits.js",
-      "sha256": "db2ef3895b73a9eea2f044c1bc3bb67160131ee8c1505a91e79ec067f4d3d81e"
+      "sha256": "c663d4bd9cf6b9bd8d5ca6aa4173f6053783e5f0d9f20eecb6e8a05af1c5b775"
     },
     {
       "path": "desktop_shell.py",
-      "sha256": "6584dd31cb2fb3cf9ccd7245b9354d5d37b55978302c6334ce8a0161bfa9846d"
+      "sha256": "bfce1e85056311eef14188ca3e12323babde666941f8295666081adc81650b2f"
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "06708cbe9c919369dfe821422d4e1bf757fde8f0c55aef16ecad27f675e22cf6"
+      "sha256": "fed00b2bb3dd8c0034f01d132a2840251b0838bb8ef27a4eae0ec2fdca71cd82"
     },
     {
       "path": "windows_tray.py",
-      "sha256": "75da2a96804a852f306df308ad0b64e51a82024c36f677b0692760b9b0fe6931"
+      "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
     }
   ],
   "notes": "ALPHA 0.18.0 — édition TEST/Nathan : mise à jour intégrée, accueil adaptatif 2K et carnet redimensionnable."
