@@ -592,7 +592,7 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
   }
   function setScale(item,next){
-    const d=read(item.id); d.scale=clamp(next,.45,1.6); save(item.id,d); apply(item,d);
+    const d=read(item.id); d.scale=clamp(next,.45,3.5); save(item.id,d); apply(item,d);
   }
   function beginMove(e,item){
     if(!view.classList.contains('layout-editing')||e.button!==0)return;
@@ -609,10 +609,29 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     e.preventDefault();e.stopPropagation();
     const d=read(item.id), startScale=d.scale||1, sx=e.clientX, sy=e.clientY;
     item.el.classList.add('layout-selected');
-    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,1.6);apply(item,d)};
+    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,3.5);apply(item,d)};
     const up=()=>{save(item.id,d);item.el.classList.remove('layout-selected');document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
     document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
   }
+
+  // Preserve relative placement when the window moves between displays or resolutions.
+  // Existing saved pixel offsets remain compatible with earlier releases.
+  let layoutViewport={width:window.innerWidth,height:window.innerHeight};
+  window.addEventListener('resize',()=>{
+    const next={width:window.innerWidth,height:window.innerHeight};
+    if(next.width===layoutViewport.width&&next.height===layoutViewport.height)return;
+    const rx=next.width/Math.max(1,layoutViewport.width);
+    const ry=next.height/Math.max(1,layoutViewport.height);
+    specs.forEach(item=>{
+      const d=read(item.id);
+      if(!d.x&&!d.y)return;
+      d.x=Math.round(d.x*rx);
+      d.y=Math.round(d.y*ry);
+      save(item.id,d);
+      apply(item,d);
+    });
+    layoutViewport=next;
+  });
 
   specs.forEach(item=>{
     item.el.classList.add('layout-object');
