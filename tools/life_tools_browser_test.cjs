@@ -76,7 +76,8 @@ async function api(path,method='GET',body){
   await page.locator('#settingsTestReminderSound').click();
   await page.locator('#settingsQuickCaptureShortcut').focus();
   await page.keyboard.press('Control+Alt+KeyJ');
-  assert.equal(await page.locator('#settingsQuickCaptureShortcut').inputValue(),'Ctrl+Alt+J');
+  await page.waitForFunction(()=>document.querySelector('#settingsQuickCaptureShortcut').value==='Ctrl+Alt+J');
+  assert.equal((await api('/api/quick-capture/hotkey')).shortcut,'Ctrl+Alt+J');
   await page.keyboard.press('Control+Alt+KeyJ');
   assert.equal(await page.locator('#quickCaptureOverlay').evaluate(el=>!el.classList.contains('hidden')),true);
   await page.keyboard.press('Escape');
