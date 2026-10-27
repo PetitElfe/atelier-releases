@@ -109,7 +109,7 @@
     },
     {
       "path": "public/week_clarity.css",
-      "sha256": "b50cba2785608a216b696d473dcd1d24ff2e6d15a1d828f4190f549d348ba9ad"
+      "sha256": "f43fcacc000a586f941557d873aba3d2968c4af0da174353e3e30d9a884308f2"
     }
   ],
   "notes": "ALPHA 0.18.0 — TEST + Nathan : semainier pleine largeur sans mini-calendrier, jour actuel visible, rendez-vous lisibles et compacts ; règles au clic droit, décompte J−14, dates futures en rouge discret selon cycles observés ; préférences séparées. Stable 0.17.0 inchangée."
