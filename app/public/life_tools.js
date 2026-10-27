@@ -196,14 +196,21 @@ function lifeShortcutFromEvent(e){
   const key=e.code==='Space'?'Space':e.code.startsWith('Key')?e.code.slice(3):e.code.startsWith('Digit')?e.code.slice(5):e.key.length===1?e.key.toUpperCase():e.key;
   return [...mods,key].join('+');
 }
-$('#settingsQuickCaptureShortcut')?.addEventListener('keydown',e=>{
+$('#settingsQuickCaptureShortcut')?.addEventListener('keydown',async e=>{
   e.preventDefault();e.stopPropagation();
   if(e.key==='Escape'){e.currentTarget.blur();return}
   if(!e.ctrlKey&&!e.altKey&&!e.metaKey)return;
   if(['Control','Alt','Shift','Meta'].includes(e.key))return;
-  const combination=lifeShortcutFromEvent(e);
-  localStorage.setItem('atelierQuickCaptureShortcut',combination);
-  e.currentTarget.value=combination;e.currentTarget.blur();
+  const combination=lifeShortcutFromEvent(e),previous=lifeShortcut();
+  try{
+    await lifeApi('/api/quick-capture/hotkey',{method:'POST',body:JSON.stringify({shortcut:combination})});
+    localStorage.setItem('atelierQuickCaptureShortcut',combination);
+    e.currentTarget.value=combination;e.currentTarget.blur();
+    lifeSetText('#settingsGlobalShortcutStatus','Raccourci enregistré.');
+  }catch(err){
+    e.currentTarget.value=previous;
+    showUiError(err,'Raccourci non enregistré');
+  }
 });
 $('#settingsQuickCaptureOpen')?.addEventListener('click',lifeOpenCapture);
 document.addEventListener('keydown',e=>{
@@ -245,4 +252,10 @@ function lifeRenderSettings(){
 }
 lifeSetJournalPage(0);
 lifeRenderSettings();
+lifeApi('/api/quick-capture/hotkey').then(result=>{
+  if(result?.shortcut){
+    localStorage.setItem('atelierQuickCaptureShortcut',result.shortcut);
+    lifeRenderSettings();
+  }
+}).catch(err=>console.warn('[Atelier] Raccourci natif indisponible',err));
 loadLifeTools();
