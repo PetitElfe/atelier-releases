@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,6 +49,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Audit raw release hashes
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          for item in json.loads(pathlib.Path('manifest.json').read_text())['files']:
+              print('RAW_HASH',item['path'],hashlib.sha256((pathlib.Path('app')/item['path']).read_bytes()).hexdigest())
+          PY
       - name: Run release smoke tests
         run: python tools/release_smoke.py
       - name: Run Python regression suite
