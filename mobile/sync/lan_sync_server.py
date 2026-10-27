@@ -99,11 +99,15 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, TypeError, KeyError, json.JSONDecodeError):
             return self.respond(400, {"error": "invalid_changes"})
         with sqlite3.connect(DB_FILE) as db:
+            before = db.total_changes
             db.executemany("INSERT OR IGNORE INTO changes(device,change_id,kind,item_id,value,received_at) VALUES(?,?,?,?,?,?)", normalized)
-        return self.respond(200, {"accepted": len(normalized)})
+            accepted = db.total_changes - before
+        return self.respond(200, {"accepted": accepted, "duplicates": len(normalized) - accepted})
 
 if __name__ == "__main__":
     print("Atelier sync TEST: separate database only. No Windows Atelier data accessed.")
     print(f"Listening on http://{HOST}:{PORT}")
     print("Keep sync-token.txt private. Ctrl+C to stop.")
+    if HOST != "127.0.0.1":
+        print("WARNING: HTTP is unencrypted; DO NOT send real personal data or your token over Wi-Fi.")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
