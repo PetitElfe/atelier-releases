@@ -2,6 +2,8 @@ package fr.atelierdugoblin.mobile;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.graphics.Color;
+import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.content.Intent;
 import android.net.Uri;
@@ -15,6 +17,9 @@ public class MainActivity extends Activity {
     private WebView webView;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        getWindow().setStatusBarColor(Color.rgb(36, 55, 45));
+        getWindow().setNavigationBarColor(Color.rgb(241, 229, 201));
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
             .build();
