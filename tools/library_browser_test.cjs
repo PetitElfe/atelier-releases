@@ -416,7 +416,7 @@ async function api(path,method='GET',body){
       scrollBottom:Math.round(scroll.getBoundingClientRect().bottom),
       scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,
       overflowY:getComputedStyle(scroll).overflowY,
-      noVerticalOverflow:(getComputedStyle(scroll).overflowY==='visible'&&
+      noVerticalOverflow:(['visible','clip','hidden'].includes(getComputedStyle(scroll).overflowY)&&
         scroll.getBoundingClientRect().bottom<=window.innerHeight+10)||
         scroll.scrollHeight<=scroll.clientHeight+3
     };
