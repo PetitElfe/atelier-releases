@@ -83,7 +83,12 @@ class WindowsTray:
         self.user32.DefWindowProcW.argtypes = (
             wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
         self.user32.CreateWindowExW.restype = wintypes.HWND
+        self.user32.CreateWindowExW.argtypes = (
+            wintypes.DWORD, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD,
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+            wintypes.HWND, wintypes.HMENU, wintypes.HINSTANCE, ctypes.c_void_p)
         self.user32.RegisterClassW.restype = wintypes.ATOM
+        self.user32.RegisterClassW.argtypes = (ctypes.POINTER(WndClass),)
         self.shell32.Shell_NotifyIconW.argtypes = (
             wintypes.DWORD, ctypes.POINTER(NotifyIconData))
         self.shell32.Shell_NotifyIconW.restype = wintypes.BOOL
@@ -108,6 +113,8 @@ class WindowsTray:
         self.icon = None
         if exe_path and exe_path.is_file():
             self.shell32.ExtractAssociatedIconW.restype = wintypes.HICON
+            self.shell32.ExtractAssociatedIconW.argtypes = (
+                wintypes.HINSTANCE, wintypes.LPWSTR, ctypes.POINTER(ctypes.c_ushort))
             path = ctypes.create_unicode_buffer(str(exe_path))
             index = ctypes.c_ushort(0)
             self.icon = self.shell32.ExtractAssociatedIconW(
@@ -115,6 +122,7 @@ class WindowsTray:
             self._custom_icon = bool(self.icon)
         if not self.icon:
             self.user32.LoadIconW.restype = wintypes.HICON
+            self.user32.LoadIconW.argtypes = (wintypes.HINSTANCE, ctypes.c_void_p)
             self.icon = self.user32.LoadIconW(None, ctypes.c_void_p(IDI_APPLICATION))
 
         self.nid = NotifyIconData()
