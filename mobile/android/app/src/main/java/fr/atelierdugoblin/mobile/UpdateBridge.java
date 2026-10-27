@@ -19,7 +19,7 @@ public final class UpdateBridge {
     private final Activity activity;
     private final WebView webView;
     // Only the official repository's public releases are trusted.
-    private static final String API = "https://api.github.com/repos/PetitElfe/atelier-releases/releases/latest";
+    private static final String API = "https://api.github.com/repos/PetitElfe/atelier-releases/releases?per_page=30";
     UpdateBridge(Activity activity, WebView webView) { this.activity = activity; this.webView = webView; }
 
     @JavascriptInterface public void check() {
@@ -33,7 +33,16 @@ public final class UpdateBridge {
                 if (connection.getResponseCode() != 200) throw new Exception("Aucune mise à jour publique disponible.");
                 byte[] data;
                 try(InputStream in = connection.getInputStream()) { data = in.readAllBytes(); }
-                JSONObject release = new JSONObject(new String(data, StandardCharsets.UTF_8));
+                JSONArray releases = new JSONArray(new String(data, StandardCharsets.UTF_8));
+                JSONObject release = null;
+                for (int i=0;i<releases.length();i++) {
+                    JSONObject candidate = releases.optJSONObject(i);
+                    if (candidate != null && !candidate.optBoolean("draft") && !candidate.optBoolean("prerelease") &&
+                        candidate.optString("tag_name").matches("android-v[0-9]+\\\\.[0-9]+\\\\.[0-9]+")) {
+                        if (release == null || compare(candidate.optString("tag_name").substring(9), release.optString("tag_name").substring(9)) > 0) release = candidate;
+                    }
+                }
+                if (release == null) throw new Exception("Aucune version Android publiée.");
                 String tag = release.optString("tag_name");
                 // Mobile releases use android-vMAJOR.MINOR.PATCH.
                 if (!tag.matches("android-v[0-9]+\\.[0-9]+\\.[0-9]+")) throw new Exception("Aucune version Android publiée.");
