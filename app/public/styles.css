@@ -1790,3 +1790,20 @@ body.home-active{overflow-y:auto}
   .library-compact-page-picker{width:100%;max-width:100%}
   .library-compact-page-picker select{max-width:none}
 }
+
+
+/* 0.18.0 — petite alerte visuelle des mises à jour TEST (sans notification intrusive). */
+#settingsBtn{position:relative;overflow:visible}
+#settingsBtn .atelier-update-dot:not(.hidden){
+  display:block;position:absolute;top:-3px;right:-3px;
+  width:11px;height:11px;border-radius:50%;
+  border:2px solid #29221c;background:#dcb35e;
+  box-shadow:0 0 0 1px rgba(241,206,128,.55);
+  pointer-events:none;
+}
+#settingsUpdatesCard .atelier-update-indicator:not(.hidden){
+  display:inline-block;vertical-align:middle;
+  padding:3px 7px;margin-left:5px;border:1px solid #bea16b;
+  border-radius:7px;background:#433522;color:#f2d9a3;
+  font:700 11px/1.4 system-ui,sans-serif;white-space:nowrap;
+}
