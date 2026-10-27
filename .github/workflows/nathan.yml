@@ -52,6 +52,43 @@ jobs:
           }
           python -c "import sys;sys.path.insert(0,'build/nathan_code/app');import nathan_patch;assert nathan_patch.PORT==8877;print('PASS: Nathan patcher')"
           Write-Host "PASS: Nathan bundle is separate; user's real Windows GUI needs human test"
+      - name: Test fresh private install, bundled Python server, and SQLite on Windows
+        shell: pwsh
+        run: |
+          $testRoot=Join-Path $env:RUNNER_TEMP "nathan-real-install"
+          New-Item -ItemType Directory -Force $testRoot | Out-Null
+          $env:LOCALAPPDATA=$testRoot
+          $exe=(Resolve-Path "dist/LAtelierDuGoblin_Nathan.exe").Path
+          $install=Start-Process -FilePath $exe -ArgumentList '--nathan-install-only' -PassThru -Wait
+          if ($install.ExitCode -ne 0) { throw "Independent Nathan install failed: $($install.ExitCode)" }
+          $userRoot=Join-Path $testRoot 'LAtelierDuGoblinNathan'
+          $installedExe=Join-Path $userRoot 'desktop\LAtelierDuGoblin_Nathan.exe'
+          if (-not (Test-Path $installedExe)) { throw "Nathan private exe missing" }
+          if (Test-Path (Join-Path $userRoot 'data\atelier.db')) { throw "User database must start empty before first server launch" }
+          $server=Start-Process -FilePath $installedExe -ArgumentList '--nathan-server' -PassThru
+          try {
+            $ready=$false
+            for($i=0;$i -lt 70;$i++){
+              Start-Sleep -Milliseconds 600
+              if($server.HasExited){break}
+              try {
+                $response=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/runtime-version' -TimeoutSec 1
+                if($response.version -eq '0.18.0'){$ready=$true;break}
+              }catch{}
+            }
+            if(-not $ready){
+              $log=Join-Path $userRoot 'data\desktop-server.log'
+              if(Test-Path $log){Write-Host (Get-Content $log -Tail 50)}
+              throw "Nathan frozen Python server did not start"
+            }
+            if(-not(Test-Path (Join-Path $userRoot 'data\atelier.db'))){throw 'Fresh Nathan SQLite missing'}
+            $read=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/postits' -TimeoutSec 4
+            $revision=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/update/status' -TimeoutSec 4
+            if($null -eq $read -or -not $revision){throw "Nathan API unavailable"}
+            Write-Host "PASS: standalone frozen server, empty personal DB initialized, GET API, separate port 8877"
+          } finally {
+            if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}
+          }
       - name: Instructions
         shell: pwsh
         run: |
