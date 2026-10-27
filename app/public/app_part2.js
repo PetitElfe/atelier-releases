@@ -156,9 +156,9 @@ function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ds); const cell=document.createElement('div'); cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'');
+    const d=new Date(start); d.setDate(start.getDate()+i); const ds=ymd(d); const recorded=typeof cycleShowMarksPreference==='function'&&cycleShowMarksPreference()&&isRecordedCycleDay(ds); const cell=document.createElement('div'); cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'');
     cell.innerHTML=`<div class="day-number">${d.getDate()}</div><button class="day-add" title="Ajouter un rendez-vous">+</button>`;
-    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);
+    cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);bindCalendarDateContextMenu(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
       const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; const wrap=document.createElement('div');wrap.className='calendar-month-event';wrap.appendChild(b);addCalendarHoverActions(wrap,e);cell.appendChild(wrap);
@@ -174,7 +174,7 @@ function renderMiniMonth(){
   const y=state.cursor.getFullYear(),m=state.cursor.getMonth(); const root=$('#miniMonth'); root.innerHTML='';
   days.forEach(x=>{const d=document.createElement('div');d.textContent=x[0];d.style.color='var(--muted)';d.style.textAlign='center';root.appendChild(d)});
   const first=new Date(y,m,1), offset=(first.getDay()+6)%7; for(let i=0;i<offset;i++) root.appendChild(document.createElement('div'));
-  const n=new Date(y,m+1,0).getDate(); for(let i=1;i<=n;i++){ const d=new Date(y,m,i), el=document.createElement('button'); el.className='mday'+(typeof isRecordedCycleDay==='function'&&isRecordedCycleDay(ymd(d))?' cycle-recorded':'')+(ymd(d)===ymd(new Date())?' today':'')+(ymd(d)===ymd(state.cursor)?' selected':'');el.textContent=i;el.addEventListener('click',()=>{state.cursor=d;renderWeek();renderMonth();});root.appendChild(el); }
+  const n=new Date(y,m+1,0).getDate(); for(let i=1;i<=n;i++){ const d=new Date(y,m,i), el=document.createElement('button'); el.className='mday'+(typeof cycleShowMarksPreference==='function'&&cycleShowMarksPreference()&&isRecordedCycleDay(ymd(d))?' cycle-recorded':'')+(ymd(d)===ymd(new Date())?' today':'')+(ymd(d)===ymd(state.cursor)?' selected':'');el.textContent=i;el.addEventListener('click',()=>{state.cursor=d;renderWeek();renderMonth();});bindCalendarDateContextMenu(el,ymd(d));root.appendChild(el); }
 }
 
 
@@ -197,6 +197,8 @@ function renderWeek(){
     const ds=ymd(d);dates.push(ds);
     const head=document.createElement('div');head.className='week-head';
     head.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
+    if(cycleShowMarksPreference()&&isRecordedCycleDay(ds))head.classList.add('cycle-recorded');
+    bindCalendarDateContextMenu(head,ds);
     const allDay=state.events.filter(e=>e.instance_date===ds&&isAllDay(e));
     if(allDay.length){
       head.classList.add('week-all-day-header');
@@ -223,6 +225,7 @@ function renderWeek(){
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');cell.className='week-slot';
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
+      bindCalendarDateContextMenu(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);
       const tasks=state.tasks.filter(t=>!t.completed&&t.due_date===ds&&t.due_time&&Number(t.due_time.slice(0,2))===hour);
       // Le trait pastel vertical relie l'heure de départ à la fin du RDV.

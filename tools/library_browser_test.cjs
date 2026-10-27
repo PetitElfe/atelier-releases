@@ -604,36 +604,27 @@ async function api(path,method='GET',body){
   console.log('HABIT LABEL AFTER CHECK:',JSON.stringify(await page.locator('.habit-card-head small').first().innerText()));
   console.log('HABIT API:',JSON.stringify(await api('/api/habits')));
   assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
-  await page.locator('#cycleStart').fill('2026-08-01');
-  await page.locator('#cycleForm button[type="submit"]').click();
-  try{await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1,null,{timeout:10000});}
-  catch(err){
-    console.log('CYCLE DIAGNOSTIC:',JSON.stringify({form:await page.locator('#cycleForm').evaluate(el=>({html:el.outerHTML,visible:!!el.offsetParent})),api:await api('/api/cycle-periods'),errors:pageErrors}));
-    throw err;
-  }
-  // Une seule période connue doit suffire à surligner le calendrier.
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="calendar"]').click();
-  await page.evaluate(()=>{state.cursor=parseYMD("2026-08-01");renderMonth();renderWeek()});
+  // Le cycle n'a plus de module autonome : saisie rapide depuis le calendrier.
+  await page.evaluate(()=>showView('calendar'));
+  await page.evaluate(()=>{state.cursor=parseYMD('2026-08-01');renderMonth();renderWeek()});
+  const augustFirst=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^1$/})});
+  await augustFirst.click({button:'right'});
+  await page.locator('#atelierContextMenu').getByText('Règles',{exact:true}).click();
+  await page.locator('#cycleQuickForm [name=start_date]').fill('2026-08-01');
+  await page.locator('#cycleQuickForm button[type=submit]').click();
+  await page.waitForFunction(async()=>{
+    const r=await fetch('/api/cycle-periods');return (await r.json()).length===1;
+  });
   await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
-  const markedDay=page.locator('#monthGrid .day-cell.cycle-recorded').filter({has:page.locator('.day-number', {hasText:'1'})});
-  assert.ok(await markedDay.count()>0,'Recorded 1 August must have cycle highlight');
+  assert.ok(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,'Recorded 1 August must have cycle highlight');
   await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
   await page.waitForFunction(()=>document.querySelectorAll('#miniMonth .mday.cycle-recorded').length>0,null,{timeout:10000});
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="organisation"]').click();
-  await page.locator('.cycle-entry').first().waitFor();
-  await page.locator('#cycleStart').fill('2026-08-29');
-  await page.locator('#cycleForm button[type="submit"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===2);
-  assert.match(await page.locator('#cycleForecast').innerText(),/cycle moyen de 28 jours/);
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="calendar"]').click();
-  await page.locator('#calendarCycleHint').waitFor({state:'visible'});
-  assert.match(await page.locator('#calendarCycleHint').innerText(),/Suivi du cycle/);
+  await api('/api/cycle-periods','POST',{start_date:'2026-08-29',end_date:null});
+  await page.evaluate(()=>refreshOrganisation());
+  await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('Règles estimées'));
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon/);
+  assert.equal(await page.locator('#calendarCycleHint').count(),0);
+  assert.equal(await page.locator('.cycle-module').count(),0);
   // ALPHA 0.15.0 — Budget : récurrences, confirmations, solde, dettes et historique.
   await page.evaluate(()=>showView('budget'));
   await page.locator('#budgetView').waitFor({state:'visible'});
@@ -764,7 +755,7 @@ async function api(path,method='GET',body){
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
   // Toutes les rubriques principales reçoivent aussi des poignées de modules.
   await page.evaluate(()=>showView('organisation'));
-  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),2,'Habit and cycle modules can be moved');
+  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),1,'Habit module remains movable after cycle editor removal');
   await page.evaluate(()=>showView('kitchen'));
   assert.equal(await page.locator('#kitchenView .kitchen-panel.layout-object').count(),3,'All kitchen modules can be moved');
   await page.locator('#globalLayoutEdit').click();

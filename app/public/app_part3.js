@@ -325,7 +325,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
@@ -540,6 +540,7 @@ function renderSettings(){
   }
   if(persistent)persistent.checked=notificationPersistentPreference();
   if(status)status.textContent=notificationPermissionLabel();
+  if(typeof renderCycleSettings==='function')renderCycleSettings();
   if(permission){
     const granted=('Notification' in window)&&Notification.permission==='granted';
     permission.textContent=granted?'Notifications autorisées':'Autoriser les notifications';
@@ -1617,7 +1618,8 @@ async function refreshOrganisation(){
     if(serial!==organisationRefreshSerial)return;
     organisationState.habits=habits;organisationState.periods=periods;
     renderOrganisation();
-    renderMonth();renderMiniMonth();
+    renderMonth();renderWeek();
+    if(typeof renderCycleHeader==='function')renderCycleHeader();
   }catch(err){showUiError(err,'Impossible de charger le suivi')}
 }
 function localDayAdd(iso,days){
@@ -1644,7 +1646,7 @@ function cycleEstimate(){
   return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next))};
 }
 function renderOrganisation(){
-  const habits=$('#habitList'),entries=$('#cycleEntries'),forecast=$('#cycleForecast');
+  const habits=$('#habitList');
   if(habits){
     const week=monday(new Date()),days=Array.from({length:7},(_,i)=>ymd(new Date(week.getFullYear(),week.getMonth(),week.getDate()+i)));
     habits.innerHTML=organisationState.habits.length?'':'<p class="muted">Aucune habitude enregistrée pour le moment.</p>';
@@ -1672,41 +1674,7 @@ function renderOrganisation(){
       habits.appendChild(card);
     }
   }
-  if(forecast){
-    const prediction=cycleEstimate();
-    forecast.textContent=prediction?'Prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+' (environ '+prediction.approxDays+' jour(s), cycle moyen de '+prediction.average+' jours).':'Ta période enregistrée apparaît dans le calendrier. Une seule date suffit pour le suivi ; deux débuts de cycles sont nécessaires pour une estimation indicative.';
-  }
-  if(entries){
-    entries.innerHTML=organisationState.periods.length?'':'<p class="muted">Aucune période enregistrée.</p>';
-    for(const period of organisationState.periods){
-      const card=document.createElement('div');card.className='cycle-entry';
-      card.innerHTML='<span>Début : '+esc(period.start_date)+(period.end_date?' · Fin : '+esc(period.end_date):'')+'</span><button type="button">Supprimer</button>';
-      card.querySelector('button').onclick=async()=>{
-        if(!card.querySelector('.cycle-inline-confirm')){
-          const ask=document.createElement('div');ask.className='cycle-inline-confirm';
-          ask.innerHTML='<span>Supprimer cette période enregistrée ?</span><button type="button" class="cycle-cancel-delete">Conserver</button><button type="button" class="cycle-accept-delete">Supprimer</button>';
-          ask.querySelector('.cycle-cancel-delete').onclick=()=>ask.remove();
-          ask.querySelector('.cycle-accept-delete').onclick=async()=>{
-            const response=await runUiAction('Supprimer la période',()=>api('/api/cycle-periods/'+period.id,{method:'DELETE'}));
-            if(response.ok)await refreshOrganisation();
-          };
-          card.appendChild(ask);
-        }
-      };entries.appendChild(card);
-    }
-  }
-  const hint=$('#calendarCycleHint');
-  if(hint){
-    const prediction=cycleEstimate();
-    hint.classList.toggle('hidden',!prediction);
-    hint.replaceChildren();
-    if(prediction){
-      const label=document.createElement('span');
-      label.textContent='Suivi du cycle : prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+'. ';
-      const link=document.createElement('button');link.type='button';link.textContent='Voir mon suivi →';link.onclick=()=>showView('organisation');
-      hint.append(label,link);
-    }
-  }
+
 }
 $('#habitFrequency')?.addEventListener('change',event=>{
   $('#habitTarget').value=event.target.value==='daily'?'7':'3';
@@ -1717,19 +1685,6 @@ $('#habitCreateForm')?.addEventListener('submit',async event=>{
   const result=await runUiAction('Créer une habitude',()=>api('/api/habits',{method:'POST',body:JSON.stringify({title,frequency:$('#habitFrequency').value,target_per_week:Number($('#habitTarget').value)})}));
   if(result.ok){$('#habitTitle').value='';await refreshOrganisation()}
 });
-$('#cycleForm')?.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const start_date=$('#cycleStart').value,end_date=$('#cycleEnd').value;
-  if(end_date&&end_date<start_date){showUiError(new Error('La fin doit suivre le début.'),'Vérifier les dates');return}
-  const submit=$('#cycleForm button[type="submit"]');if(submit.disabled)return;
-  submit.disabled=true;
-  try{
-    const result=await runUiAction('Enregistrer la période',()=>api('/api/cycle-periods',{method:'POST',body:JSON.stringify({start_date,end_date})}));
-    if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
-  }finally{submit.disabled=false}
-});
-
-
 /* ALPHA 0.15.1 — Budget financier local. Pas de données bancaires synchronisées. */
 let budgetData=null;
 let budgetSelectedMonth=ymd(new Date()).slice(0,7);

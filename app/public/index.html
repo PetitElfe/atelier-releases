@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/objective_map.css" />
   <link rel="stylesheet" href="/event_preparations.css" />
+  <link rel="stylesheet" href="/calendar_cycle_compact.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -38,7 +39,7 @@
       <button data-view="tasks">Tâches</button>
       <button data-view="library">Bibliothèque</button>
       <button data-view="reminders">Rappels</button>
-      <button data-view="organisation">Habitudes & cycle</button>
+      <button data-view="organisation">Habitudes & routines</button>
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -116,7 +117,7 @@
       <div class="calendar-toolbar">
         <div>
           <div class="section-kicker">ESPACE CALENDRIER</div>
-          <h2>Calendrier & semainier</h2>
+          <div class="calendar-title-inline"><h2>Calendrier & semainier</h2><div id="calendarCycleSummary" class="calendar-cycle-summary" aria-live="polite" hidden></div></div>
         </div>
         <div class="calendar-modes" role="tablist" aria-label="Vue du calendrier">
           <button data-calendar-mode="month" class="active">Mois</button>
@@ -124,7 +125,6 @@
         </div>
       </div>
 
-      <div id="calendarCycleHint" class="calendar-cycle-hint hidden"></div>
       <div id="monthPanel" class="calendar-panel active-calendar-panel">
         <div class="view-head">
           <button id="prevMonth" aria-label="Mois précédent">‹</button>
@@ -300,18 +300,7 @@
           </form>
           <p id="habitsSummary" class="atelier-list-summary" aria-live="polite"></p><div id="habitList" class="organisation-list"></div>
         </section>
-        <section class="organisation-module cycle-module">
-          <h3>Suivi du cycle menstruel</h3>
-          <p class="muted">Données sensibles stockées dans la base locale. Tant que les comptes indépendants n'existent pas, elles sont accessibles à toute personne utilisant cette installation.</p>
-          <form id="cycleForm" class="organisation-form">
-            <label>Début des règles <input id="cycleStart" type="date" required></label>
-            <label>Fin des règles (facultatif) <input id="cycleEnd" type="date"></label>
-            <button type="submit">Enregistrer la période</button>
-          </form>
-          <div id="cycleForecast" class="cycle-forecast" aria-live="polite"></div>
-          <div id="cycleEntries" class="organisation-list"></div>
-          <small class="muted">Les estimations ne sont pas des dates certaines et ne doivent pas servir de méthode contraceptive.</small>
-        </section>
+
       </div>
     </section>
 
@@ -421,6 +410,21 @@
             </div>
           </section>
 
+          <section class="settings-card" id="settingsCycleCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">◷</span>
+              <div><h3>Cycle & calendrier</h3><p>Des préférences propres à cette installation. Les dates restent dans sa base locale.</p></div>
+            </div>
+            <label class="settings-toggle">
+              <input id="settingsCycleShowInfo" type="checkbox">
+              <span><strong>Afficher le compte à rebours du cycle</strong><small>À côté de « Calendrier & semainier », avec le mode Goblin grognon estimé 14 jours avant.</small></span>
+            </label>
+            <label class="settings-toggle">
+              <input id="settingsCycleShowMarks" type="checkbox">
+              <span><strong>Colorer les dates de règles enregistrées</strong><small>Désactive les cases rouges sans effacer les dates.</small></span>
+            </label>
+            <p class="muted">Clic droit sur une date du calendrier → « Règles » pour ajouter, modifier ou supprimer une période. Prévisions indicatives, jamais certaines.</p>
+          </section>
           <section class="settings-card">
             <div class="settings-card-title">
               <span class="settings-card-icon">🔔</span>
@@ -514,6 +518,7 @@
   <script src="/postits.js"></script>
   <script src="/event_preparations.js"></script>
   <script src="/app_part3.js"></script>
+  <script src="/calendar_cycle_compact.js"></script>
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
 </body>

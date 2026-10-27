@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "09388f1f4a90813e404aa44b1f7b52fd0294c200c43f695e2b5f4ada4e3a1c2a"
+      "sha256": "7723b7dfa0eab3a695672d500681de8be57a2fa34914d4f0ed6e70aa42b99bbd"
     },
     {
       "path": "app_part3.py",
@@ -33,15 +33,15 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "0737cdc11b68bacc0ebba4d285d2b37ac4e0ef90aa5e1756e1bd2ad7bc8a94f0"
+      "sha256": "b8461a2ca523f0268565d9b88adbc33983c26b03b514d75ee9d7377c8aa6dcf9"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "19b198d031f4054a9c116f6d2a1d02a962e2d77a44969d78865cae9fd8ec3d2f"
+      "sha256": "a29f62502529192b3ac019f8074eb77f23822d33e5a6683287a9a0df832e8c36"
     },
     {
       "path": "public/index.html",
-      "sha256": "217d7f3fba6d62e445a172eeef2fc6c957eb439ebef4f47d38b9f4d6a1b96d2a"
+      "sha256": "eab323063a18114d5a43c2ebf61ba0d6ed0b1d78f75af39b488fcae542db3224"
     },
     {
       "path": "public/styles.css",
@@ -98,7 +98,15 @@
     {
       "path": "public/event_preparations.css",
       "sha256": "17d64e2034a689bfe155e6f06ec2d2cc0f37fd365817db4250080a2b883de458"
+    },
+    {
+      "path": "public/calendar_cycle_compact.js",
+      "sha256": "6e0f029678de9fdf928c22ea9c4eb019085029eeea3b730cfd9355b25b04ecc3"
+    },
+    {
+      "path": "public/calendar_cycle_compact.css",
+      "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
     }
   ],
-  "notes": "ALPHA 0.18.0 — TEST + Nathan : accueil adaptatif 2K, préparatifs de rendez-vous récurrents par occurrence, tiroir calendrier et compteur J−1. Données séparées par installation."
+  "notes": "ALPHA 0.18.0 — TEST + Nathan : calendrier compact, clic droit Règles, décompte J−14 Goblin, visibilité indépendante des cases rouges et des informations du cycle, préparatifs RDV, accueil 2K. Données locales séparées."
 }
