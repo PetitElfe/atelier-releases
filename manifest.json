@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "2d9c31b153ea10d9f2a6ec9126d0a7ec446f96ad85a8f74450c2e4b521c70768"
+      "sha256": "b8a0cf5fe626c39503e09763e048624b57de8f8493eb4d005f44fe34906e3a89"
     },
     {
       "path": "app_part3.py",
@@ -37,11 +37,11 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "ee979fbf9dc137221448f9f8e77e8e18930bd73207cdc9077d4fac9c91ba6343"
+      "sha256": "6cbe887d03bc7e7108fd13bce23eb22fb1298294ec8fe4318265eac76beedd9c"
     },
     {
       "path": "public/index.html",
-      "sha256": "0807a19e91d0cf872d1c9d4ed11db3b9e064206f4fa4c1e52be988771cf62206"
+      "sha256": "3ebf3c876429686a13b265d56b9d4c0df283e2987779a807bfc41445cab0447b"
     },
     {
       "path": "public/styles.css",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST et Nathan — semainier et prévisions du cycle conservés ; journal pages 1–4 interactif avec tâches cochables et horaires ; post-it multiligne ; trackers et administratif SQLite avec sauvegarde v9 ; capture #Carnet/#Tâches/#Post-it/#Administratif, boîte de réception surlignée ; raccourci configurable navigateur et compagnon Windows ; son des rappels lorsque l'application est active ; coins/poignées de redimensionnement ; rechargement après redémarrage et identification de l'édition. Version stable 0.17.0 non modifiée."
+  "notes": "ALPHA 0.18.0 TEST et Nathan — mises à jour et actions natives autorisées uniquement depuis le bon port local de chaque édition (TEST 8876, Nathan 8877), affichage correct du canal dans Paramètres et tests d'origine renforcés. Fonctionnalités journal, trackers, administratif, capture et semainier préservées ; stable 0.17.0 non modifiée."
 }
