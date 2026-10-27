@@ -33,15 +33,15 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "b8461a2ca523f0268565d9b88adbc33983c26b03b514d75ee9d7377c8aa6dcf9"
+      "sha256": "993d68de484bb9896d3301275a200f99c42e21bd5a3a56efd196cf67766374ea"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "a29f62502529192b3ac019f8074eb77f23822d33e5a6683287a9a0df832e8c36"
+      "sha256": "b00e1e21508dc066b4174a6300f35e711c678a3161d160a8227cc8e2a6d84388"
     },
     {
       "path": "public/index.html",
-      "sha256": "eab323063a18114d5a43c2ebf61ba0d6ed0b1d78f75af39b488fcae542db3224"
+      "sha256": "2b39d03764d3f86fb1aa4d77266f2cd6e66a0bb5f08bb75ed261e0b65759def9"
     },
     {
       "path": "public/styles.css",
@@ -106,7 +106,11 @@
     {
       "path": "public/calendar_cycle_compact.css",
       "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
+    },
+    {
+      "path": "public/week_clarity.css",
+      "sha256": "b50cba2785608a216b696d473dcd1d24ff2e6d15a1d828f4190f549d348ba9ad"
     }
   ],
-  "notes": "ALPHA 0.18.0 — TEST + Nathan : calendrier compact, clic droit Règles, décompte J−14 Goblin, visibilité indépendante des cases rouges et des informations du cycle, préparatifs RDV, accueil 2K. Données locales séparées."
+  "notes": "ALPHA 0.18.0 — TEST + Nathan : semainier pleine largeur sans mini-calendrier, jour actuel visible, rendez-vous lisibles et compacts ; règles au clic droit, décompte J−14, dates futures en rouge discret selon cycles observés ; préférences séparées. Stable 0.17.0 inchangée."
 }
