@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "2cac2383f1510bdb1101fa7508b9ff7a71c7b45f5638c2054286c6dabbd4ea2a"
+      "sha256": "9b5003a35c626e2fd63301bb43bdb13ea7a72fa0757466732e71bfd301e1954d"
     },
     {
       "path": "app_part2.py",
-      "sha256": "b8a0cf5fe626c39503e09763e048624b57de8f8493eb4d005f44fe34906e3a89"
+      "sha256": "5a270c6e5a9102075623a6058ff3ef7cf5e3f3edebfbf9fb72088b7d662ce568"
     },
     {
       "path": "app_part3.py",
@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "3ebf3c876429686a13b265d56b9d4c0df283e2987779a807bfc41445cab0447b"
+      "sha256": "b11e23e6a448548faf40270634d956c638be3b685f472e1aad49a45af2f8ccb2"
     },
     {
       "path": "public/styles.css",
@@ -113,16 +113,16 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "d07e8433d3d8b48bf44390c111614ea03d2759b6644e4f2fc80d20a943d254c1"
+      "sha256": "63ff58913758cba3434676a16b84c67425d40ddf0255eb44b34a3ed966cd5257"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "d06ec73bdf1bfbbe70301b3a371796bd3e4623d3f9d07a604980ab54590c69d4"
+      "sha256": "4b2a5cfb75fe1abb80b49d11baa0b2c25dc97f706b9efaa3cf9592b871cbfbe0"
     },
     {
       "path": "quick_capture_native.py",
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 — Calendrier : URL des rendez-vous cliquable via lien visible directement sous son champ et menu contextuel ; uniquement les adresses http:// et https:// reconnues ; texte et données conservés, nouvelle adresse prévisualisée sans enregistrer. Tests navigateur de validation et de sécurité. Ne touche ni à la stable 0.17.0 ni aux données indépendantes de Nathan."
+  "notes": "ALPHA 0.18.0 — tableaux de trackers inspirés des grilles de bullet journal : plusieurs tableaux indépendants, lignes personnalisées (cases à cocher ou chiffres), jours du mois en colonnes, couleurs pastel, historique et navigation mensuelle, archivage/restauration sans perte. Anciennes mesures et données préservées. Migration schéma 10 avec sauvegarde SQLite préalable. Stable 0.17.0 non touchée. Tests Windows/navigateur et validation utilisateur nécessaires."
 }
