@@ -269,31 +269,17 @@ class Handler(BaseHTTPRequestHandler):
                         'SELECT id,title,done,order_index FROM standalone_preparation_items '
                         'WHERE list_id=? AND archived=0 ORDER BY order_index,id',(item['id'],))]
                 return self._json(lists)
+            if p == '/api/tracker-links/options':
+                return self._json(tracker_rituals.options(c))
+            if p == '/api/tracker-boards/history':
+                return self._json(tracker_rituals.monthly_archive(c,date.today()))
             if p == '/api/tracker-boards/daily':
-                # Only day-based boards appear in today's quick-check list.
-                # Annual/6-month boards have MONTH cells and are excluded.
                 try:
                     day=date.fromisoformat(q.get('day',[date.today().isoformat()])[0])
                     if abs((day-date.today()).days)>366:raise ValueError()
                 except (TypeError,ValueError):
                     return self._json({'error':'Date de suivi invalide.'},400)
-                result=[]
-                for board in c.execute(
-                    'SELECT * FROM tracker_boards WHERE archived=0 ORDER BY id'):
-                    try:period=tracker_window(board,today=day)
-                    except (ValueError,OverflowError):continue
-                    if period['granularity']!='days' or not period['start']<=day.isoformat()<=period['end']:
-                        continue
-                    for row in c.execute(
-                        'SELECT r.id,r.title,r.order_index,m.value FROM tracker_board_rows r '
-                        'LEFT JOIN tracker_board_marks m ON m.row_id=r.id AND m.day=? '
-                        'WHERE r.board_id=? AND r.archived=0 AND r.mode=? '
-                        'ORDER BY r.order_index,r.id',
-                        (day.isoformat(),board['id'],'check')):
-                        result.append({'board_id':board['id'],'board_title':board['title'],
-                          'color':board['color'],'row_id':row['id'],'title':row['title'],
-                          'done':row['value'] is not None})
-                return self._json({'day':day.isoformat(),'items':result})
+                return self._json(tracker_rituals.daily(c,day,tracker_window))
             if p == '/api/preparations/upcoming':
                 try:
                     return self._json(event_preparations.upcoming(c,expand_events,q.get('today',[None])[0]))
@@ -321,9 +307,12 @@ class Handler(BaseHTTPRequestHandler):
                     for board in boards:
                         if view:board['period']=tracker_window(board,shifts.get(str(board['id']),0))
                         board['rows']=[dict(row) for row in c.execute(
-                            'SELECT id,title,mode,order_index FROM tracker_board_rows '
+                            'SELECT id,title,mode,order_index,target_count,weekday,linked_type,linked_id FROM tracker_board_rows '
                             'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],))]
                         for line in board['rows']:
+                            line['steps']=tracker_rituals.steps_for_row(
+                                c,line['id'],board['period']['start'] if view else month+'-01',
+                                board['period']['end'] if view else month+'-31')
                             if view:
                                 line['marks']={row['day']:row['value'] for row in c.execute(
                                     'SELECT day,value FROM tracker_board_marks '
