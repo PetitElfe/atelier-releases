@@ -328,6 +328,15 @@ function renderTrackerBoards(){
       rhythm.setAttribute('role','menuitem');
       popup.append(archive,rhythm);
       document.body.append(popup);
+      popup.style.position='fixed';
+      popup.style.zIndex='100';
+      popup.style.display='flex';
+      popup.style.flexDirection='column';
+      popup.style.minWidth='200px';
+      popup.style.padding='6px';
+      popup.style.background='#27211b';
+      popup.style.border='1px solid #b89d73';
+      popup.style.borderRadius='10px';
       popup.style.left=Math.max(4,Math.min(event.clientX,innerWidth-popup.offsetWidth-8))+'px';
       popup.style.top=Math.max(4,Math.min(event.clientY,innerHeight-popup.offsetHeight-8))+'px';
       document.addEventListener('pointerdown',outside,true);
