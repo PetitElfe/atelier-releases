@@ -333,6 +333,19 @@ function renderTrackerBoards(){
       edit.title='Objectif, étapes, jour fixe et lien de cette ligne';
       edit.setAttribute('aria-label','Configurer '+line.title);
       name.append(open,edit);
+      if(line.linked_type&&line.linked_id){
+        const linked=lifeButton('↗',()=>{
+          const type=line.linked_type;
+          if(type==='task'){
+            const task=state.tasks.find(x=>Number(x.id)===Number(line.linked_id));
+            if(task)openTaskModal(task);else showView('tasks');
+          }else showView(type==='admin'?'admin':'library');
+        },'tracker-row-linked');
+        linked.title='Ouvrir le lien avec '+(line.linked_type==='task'?'la tâche':
+          line.linked_type==='admin'?'la démarche':'l’objectif');
+        linked.setAttribute('aria-label',linked.title+' · '+line.title);
+        name.append(linked);
+      }
       row.append(name);
       for(const item of columns){
         const holder=lifeNode('span','tracker-cell-wrap'+(item.day===today?' tracker-today':''));
