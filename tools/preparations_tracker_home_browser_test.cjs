@@ -77,24 +77,18 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id,day})=>
     !(await (await fetch('/api/tracker-boards/daily?day='+day)).json()).items.find(x=>x.row_id===id).done,
     {id:habitId,day});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))
-    await page.locator('#sideNavToggle').click();
-  await page.locator('#sideNav [data-view="preparations"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.standalone-preparation-card').length===1);
-  assert.ok((await page.locator('.standalone-preparation-card').innerText()).includes('Préparer un voyage'));
-  assert.ok(await page.locator('.standalone-preparation-card input[type=checkbox]').isChecked());
-  await page.locator('.standalone-preparation-item-form input').fill('Vérifier le chargeur');
-  await page.locator('.standalone-preparation-item-form button[type=submit]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.standalone-preparation-card .standalone-preparation-check input').length===2);
-  await page.reload({waitUntil:'domcontentloaded'});
-  await page.evaluate(()=>showView('preparations'));
-  await page.waitForFunction(()=>document.querySelectorAll('.standalone-preparation-card .standalone-preparation-check input').length===2);
-  assert.ok((await page.locator('.standalone-preparation-card').innerText()).includes('Vérifier le chargeur'));
-  assert.equal((await api('/api/standalone-preparations'))[0].items.length,2);
+  // The old "Préparatifs" pane must be absent. Its saved data remain
+  // readable (Settings > Archives) and are never deleted on upgrade.
+  assert.equal(await page.locator('#sideNav [data-view="preparations"]').count(),0);
+  assert.equal(await page.locator('#preparationsView').count(),0);
+  await page.evaluate(()=>showView('settings'));
+  await page.waitForFunction(()=>document.querySelector('#settingsLegacyPreparations')?.textContent.includes('Préparer un voyage'));
+  assert.match(await page.locator('#settingsLegacyPreparations').innerText(),/Vérifier les papiers/);
+  assert.equal((await api('/api/standalone-preparations'))[0].items[0].done,1);
   assert.equal((await api('/api/tracker-boards/daily?day='+day)).items.length,8);
   assert.equal((await api('/api/preparations/upcoming')).length,0);
   if(errors.length)throw Error('Browser page errors: '+errors.join(' / '));
-  console.log('PASS: independent preparations, archive/restore, future date, 8 daily tracker rows with 5 visible, scroll, check/uncheck, F5, no fake appointment');
+  console.log('PASS: retired Preparatifs UI without erasing saved lists; 8 daily tracker rows, 5 visible, scroll, check/uncheck, F5');
  }finally{
   await browser?.close();server.kill();rmSync(data,{recursive:true,force:true});
  }
