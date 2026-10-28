@@ -374,7 +374,7 @@ function renderTrackerBoards(){
      ['4','Vendredi'],['5','Samedi'],['6','Dimanche']].forEach(([value,text])=>{
       const op=lifeNode('option','',text);op.value=value;weekday.append(op);
     });
-    const updateTarget=()=>{target.classList.toggle('hidden',mode.value!=='number');target.required=mode.value==='number'};
+    const updateTarget=()=>{target.classList.toggle('hidden',mode.value!=='number');target.required=false};
     mode.addEventListener('change',updateTarget);updateTarget();
     const submit=lifeNode('button','primary','+ Ajouter une ligne');submit.type='submit';
     form.append(title,mode,target,weekday,submit);
@@ -383,7 +383,7 @@ function renderTrackerBoards(){
       if(submit.disabled)return;
       submit.disabled=true;
       const requestedTitle=title.value,requestedMode=mode.value,
-        requestedTarget=requestedMode==='number'?Number(target.value):null,
+        requestedTarget=requestedMode==='number'&&target.value.trim()?Number(target.value):null,
         requestedDay=weekday.value===''?null:Number(weekday.value);
       try{
         const result=await runUiAction('Ajouter une ligne',()=>lifeApi(
