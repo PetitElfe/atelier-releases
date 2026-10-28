@@ -200,3 +200,49 @@ def monthly_archive(c,now,months=60):
                                 'archived':bool(board['archived']),'month':label,
                                 'completed':completed,'total':available,'rows':details})
     return results
+
+
+def archive_month_summary(c, board):
+    """Bilan du dernier mois civil complet avant l'archivage.
+
+    Les lignes numérotées sans objectif ne sont pas des cases à réussir.
+    Une ligne à jour fixe n'a que ses vrais jours éligibles au dénominateur.
+    Les lignes et tableaux créés après un jour ne sont pas comptés ce jour-là.
+    Aucune coche n'est créée ou modifiée par cette lecture.
+    """
+    archived_at=date.fromisoformat(str(board['updated_at'])[:10])
+    first_of_archive_month=date(archived_at.year,archived_at.month,1)
+    last=first_of_archive_month-timedelta(days=1)
+    first=date(last.year,last.month,1)
+    days=[first+timedelta(days=i) for i in range(last.day)]
+    board_created=date.fromisoformat(str(board['created_at'])[:10])
+    rows=c.execute(
+        "SELECT id,title,mode,target_count,weekday,created_at "
+        "FROM tracker_board_rows WHERE board_id=? AND archived=0 ORDER BY order_index,id",
+        (board['id'],)).fetchall()
+    result=[];total_done=total_eligible=0
+    for row in rows:
+        if row['mode']=='number' and row['target_count'] is None:
+            continue
+        started=max(board_created,date.fromisoformat(str(row['created_at'])[:10]))
+        eligible=[d.isoformat() for d in days if d>=started and
+                  (row['weekday'] is None or d.weekday()==row['weekday'])]
+        if not eligible:continue
+        marks={r['day']:r['value'] for r in c.execute(
+            "SELECT day,value FROM tracker_board_marks "
+            "WHERE row_id=? AND day BETWEEN ? AND ?",
+            (row['id'],first.isoformat(),last.isoformat()))}
+        goal=row['target_count'] if row['mode']=='number' else None
+        def success(day):
+            value=marks.get(day)
+            if value is None:return False
+            if goal is None:return str(value)=='1'
+            try:return float(value)>=goal
+            except (ValueError,TypeError):return False
+        done=sum(success(day) for day in eligible)
+        total_done+=done;total_eligible+=len(eligible)
+        result.append({'row_id':row['id'],'title':row['title'],
+                       'done':done,'eligible':len(eligible)})
+    return {'start':first.isoformat(),'end':last.isoformat(),
+            'label':first.strftime('%Y-%m'),'done':total_done,
+            'eligible':total_eligible,'rows':result}
