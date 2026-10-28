@@ -77,7 +77,7 @@
     },
     {
       "path": "desktop_shell.py",
-      "sha256": "bfce1e85056311eef14188ca3e12323babde666941f8295666081adc81650b2f"
+      "sha256": "8ae05d247e8f5192ace037170e6ec26a127636fc2ade102d6d4f4d7c31cb38eb"
     },
     {
       "path": "desktop_postits.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST/Nathan — correctif WinError 5 : l’updater TEST ne renomme plus le dossier de code utilisé par les Post-it Windows ; installation atomique fichier par fichier avec copie complète de l’ancien code, validation des empreintes, retour arrière et protection des données. Les Post-it natifs sont désormais lancés avec leur dossier de travail dans data. Tests Windows avec dossier code occupé et tests unitaires de rollback. Stable 0.17.0 intacte."
+  "notes": "ALPHA 0.18.0 TEST/Nathan — Fermeture WebView2 : arrêt propre du serveur lancé par la fenêtre, même après remplacement par une mise à jour ; attente de libération du port ; protection des mises à jour en cours ; fenêtre unique par édition ; tests Windows sur vrai serveur et contrôle du verrou. Nouveau lanceur TEST : mise à niveau de l'EXE déjà installé avec sauvegarde vérifiée et remplacement atomique si l'ancien EXE est fermé. Données et stable 0.17.0 inchangées. La mise à jour de l'EXE nécessite un paquet Windows distinct et validation utilisateur."
 }

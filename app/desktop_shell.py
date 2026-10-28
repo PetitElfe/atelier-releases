@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import traceback
+from contextlib import contextmanager
 from urllib.request import urlopen
 
 TEST_ROOT = Path(r"E:\LATELIER_TEST_0180")
@@ -116,20 +117,39 @@ def _install_self(launch: bool = True) -> bool:
         _shortcut(destination)
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if destination.exists() and not _same_file(source, destination):
-        raise RuntimeError(
-            "Une autre version du lanceur Windows existe déjà.\n"
-            "Elle n'a pas été écrasée. Ferme l'ancienne application avant toute modification."
-        )
-    if not destination.exists():
+    # A previous TEST EXE may exist: replace it only while it is closed,
+    # after a verified copy and an independently verified backup.
+    if not destination.exists() or not _same_file(source, destination):
         staging = destination.with_suffix(".new")
         if staging.exists():
             raise RuntimeError("Une installation incomplète nécessite une vérification.")
-        shutil.copy2(source, staging)
-        if not _same_file(source, staging):
+        try:
+            shutil.copy2(source, staging)
+            if not _same_file(source, staging):
+                raise RuntimeError("La copie du fichier .exe n'a pas passé sa vérification.")
+            if destination.exists():
+                backup = destination.with_name(
+                    destination.name + ".backup-" +
+                    time.strftime("%Y%m%d_%H%M%S") + "-" + str(os.getpid()))
+                if backup.exists():
+                    raise RuntimeError("Une sauvegarde du lanceur porte déjà ce nom.")
+                shutil.copy2(destination, backup)
+                if not _same_file(destination, backup):
+                    raise RuntimeError("La sauvegarde de l'ancien lanceur est invalide.")
+                try:
+                    os.replace(staging, destination)
+                except PermissionError as exc:
+                    raise RuntimeError(
+                        "Ferme toutes les fenêtres L’Atelier TEST avant de remplacer "
+                        "son lanceur. L'ancien exécutable et sa sauvegarde sont conservés."
+                    ) from exc
+                if not _same_file(source, destination):
+                    os.replace(backup, destination)
+                    raise RuntimeError("Vérification du lanceur échouée : ancien EXE restauré.")
+            else:
+                staging.rename(destination)
+        finally:
             staging.unlink(missing_ok=True)
-            raise RuntimeError("La copie du fichier .exe n'a pas passé sa vérification.")
-        staging.rename(destination)
     _shortcut(destination)
     if launch:
         subprocess.Popen([str(destination)], cwd=str(destination.parent),
@@ -198,25 +218,75 @@ def _start_local_server():
     raise RuntimeError("L'Atelier TEST ne répond pas sur le port 8876.")
 
 
+@contextmanager
+def _one_desktop_window():
+    """Only one TEST WebView may own the server lifecycle at a time.
+
+    The OS releases this byte-range lock even if the GUI crashes. It never
+    locks user data or prevents the independent desktop Post-its from running.
+    """
+    if os.name != "nt":
+        yield
+        return
+    import msvcrt
+    DATA.mkdir(parents=True, exist_ok=True)
+    with (DATA / "desktop-window.lock").open("a+b") as handle:
+        if handle.seek(0, os.SEEK_END) == 0:
+            handle.write(b"1")
+            handle.flush()
+        handle.seek(0)
+        try:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError as exc:
+            raise RuntimeError("Une fenêtre de L’Atelier TEST est déjà ouverte.") from exc
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+
 def _stop_own_server(child) -> None:
-    # Never stop another server, including the server replaced by the in-app
-    # updater while the WebView window remained open.
-    if child is None or child.poll() is not None:
+    """Stop a server created by this WebView, even if an update replaced it.
+
+    A completed in-app update starts a new Python server: the original child
+    then exits. Checking child.poll() here used to leave that new server
+    listening on port 8876 after the user closed the window.
+    """
+    if child is None:
+        # The server was already running before this window opened. Never
+        # shut down an instance that this desktop session did not create.
         return
     try:
         if not _probe():
             return
-        with urlopen(URL + "api/update/status", timeout=1) as r:
+        with urlopen(URL + "api/update/status", timeout=2) as r:
             phase = json.load(r).get("phase")
         if phase in ("starting", "download", "stopping", "backup", "installing"):
+            _log("Server shutdown deferred: update is " + str(phase))
             return
         from urllib.request import Request
         request = Request(URL + "api/shutdown", data=b"{}", method="POST",
                           headers={"Content-Type": "application/json"})
-        with urlopen(request, timeout=2):
-            pass
+        with urlopen(request, timeout=3) as response:
+            if not response.headers.get("Server", "").startswith("AtelierLocal/"):
+                raise RuntimeError("Le serveur sur le port 8876 n'est pas reconnu.")
+        for _ in range(30):
+            if not _port_open():
+                return
+            time.sleep(.2)
+        # Never kill a server by a guessed PID. Only a Popen we own may be
+        # terminated, and only after checking the updater is not running.
+        if child.poll() is None:
+            child.terminate()
+            try:
+                child.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                _log("Own TEST child did not terminate in time.")
+        if _port_open():
+            _log("The TEST port remains occupied after desktop window closed.")
     except Exception as error:
-        _log("Stopping own server skipped: " + repr(error))
+        _log("Stopping own server failed: " + repr(error))
 
 
 def main():
@@ -235,16 +305,17 @@ def main():
         if getattr(sys, "frozen", False) and _install_self():
             return
         import webview
-        PROFILE.mkdir(parents=True, exist_ok=True)
-        child = _start_local_server()
-        try:
-            webview.create_window(WINDOW_TITLE, URL, width=1360, height=860,
-                                  min_size=(870, 590), background_color="#211B17",
-                                  confirm_close=False, text_select=True)
-            webview.start(gui="edgechromium", private_mode=False,
-                          storage_path=str(PROFILE), debug=False)
-        finally:
-            _stop_own_server(child)
+        with _one_desktop_window():
+            PROFILE.mkdir(parents=True, exist_ok=True)
+            child = _start_local_server()
+            try:
+                webview.create_window(WINDOW_TITLE, URL, width=1360, height=860,
+                                      min_size=(870, 590), background_color="#211B17",
+                                      confirm_close=False, text_select=True)
+                webview.start(gui="edgechromium", private_mode=False,
+                              storage_path=str(PROFILE), debug=False)
+            finally:
+                _stop_own_server(child)
     except Exception as error:
         _log(traceback.format_exc())
         _message(str(error), error=True)

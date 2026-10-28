@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import traceback
+from contextlib import contextmanager
 from urllib.request import urlopen, Request
 
 NAME = "L'Atelier du Goblin — Nathan"
@@ -146,6 +147,66 @@ def _busy():
         s.settimeout(.4)
         return s.connect_ex(("127.0.0.1",PORT))==0
 
+@contextmanager
+def one_window(data):
+    """Protect Nathan's own GUI from duplicate windows, never TEST or stable."""
+    if os.name != "nt":
+        yield
+        return
+    import msvcrt
+    data.mkdir(parents=True, exist_ok=True)
+    with (data / "desktop-window.lock").open("a+b") as handle:
+        if handle.seek(0, os.SEEK_END) == 0:
+            handle.write(b"1")
+            handle.flush()
+        handle.seek(0)
+        try:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError as exc:
+            raise RuntimeError("Une fenêtre de L’Atelier Nathan est déjà ouverte.") from exc
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+
+
+def stop_own_server(child):
+    """Stop Nathan's server on GUI close, including after an in-app update."""
+    if child is None:
+        return
+    try:
+        if not _probe():
+            return
+        base = "http://127.0.0.1:8877/"
+        with urlopen(base + "api/update/status", timeout=2) as r:
+            phase = json.load(r).get("phase")
+        if phase in ("starting", "download", "stopping", "backup", "installing"):
+            return
+        with urlopen(Request(base + "api/shutdown", data=b"{}", method="POST",
+                             headers={"Content-Type": "application/json"}), timeout=3) as r:
+            if not r.headers.get("Server", "").startswith("AtelierLocal/"):
+                raise RuntimeError("Serveur Nathan non reconnu.")
+        for _ in range(30):
+            if not _busy():
+                return
+            time.sleep(.2)
+        if child.poll() is None:
+            child.terminate()
+            try:
+                child.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                pass
+    except Exception as exc:
+        try:
+            data=paths()[2]
+            data.mkdir(exist_ok=True)
+            with (data/"desktop-launch.log").open("a",encoding="utf-8") as out:
+                out.write("Nathan server shutdown: "+repr(exc)+"\\n")
+        except OSError:
+            pass
+
+
 def main():
     if "--self-test" in sys.argv:
         assert PORT==8877 and VERSION=="0.18.0"
@@ -172,37 +233,30 @@ def main():
         safe()
         base,code,data,exe,profile=paths()
         import webview
-        if not _probe() and _busy():
-            raise RuntimeError("Le port 8877 est déjà utilisé par un autre programme.")
-        child=None
-        if not _probe():
-            with (data/"desktop-server.log").open("ab",buffering=0) as log:
-                child=subprocess.Popen([sys.executable,"--nathan-server"],
-                    cwd=str(code),stdin=subprocess.DEVNULL,
-                    stdout=log,stderr=subprocess.STDOUT,close_fds=True,
-                    creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
-            for _ in range(95):
-                if child.poll() is not None:raise RuntimeError("Serveur Nathan arrêté au démarrage.")
-                if _probe():break
-                time.sleep(.3)
-            else:raise RuntimeError("Serveur Nathan inaccessible. Voir desktop-server.log.")
-        profile.mkdir(exist_ok=True)
-        try:
-            webview.create_window(NAME,"http://127.0.0.1:8877/",width=1360,
-                height=860,min_size=(870,590),background_color="#211B17",
-                confirm_close=False,text_select=True)
-            webview.start(gui="edgechromium",private_mode=False,
-                          storage_path=str(profile),debug=False)
-        finally:
-            if child is not None and child.poll() is None and _probe():
-                try:
-                    with urlopen("http://127.0.0.1:8877/api/update/status",timeout=2) as r:
-                        phase=json.load(r).get("phase")
-                    if phase not in ("starting","download","stopping","backup","installing"):
-                        with urlopen(Request("http://127.0.0.1:8877/api/shutdown",
-                            data=b"{}",method="POST",headers={"Content-Type":"application/json"}),
-                            timeout=2):pass
-                except Exception:pass
+        with one_window(data):
+            if not _probe() and _busy():
+                raise RuntimeError("Le port 8877 est déjà utilisé par un autre programme.")
+            child=None
+            if not _probe():
+                with (data/"desktop-server.log").open("ab",buffering=0) as log:
+                    child=subprocess.Popen([sys.executable,"--nathan-server"],
+                        cwd=str(code),stdin=subprocess.DEVNULL,
+                        stdout=log,stderr=subprocess.STDOUT,close_fds=True,
+                        creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+                for _ in range(95):
+                    if child.poll() is not None:raise RuntimeError("Serveur Nathan arrêté au démarrage.")
+                    if _probe():break
+                    time.sleep(.3)
+                else:raise RuntimeError("Serveur Nathan inaccessible. Voir desktop-server.log.")
+            profile.mkdir(exist_ok=True)
+            try:
+                webview.create_window(NAME,"http://127.0.0.1:8877/",width=1360,
+                    height=860,min_size=(870,590),background_color="#211B17",
+                    confirm_close=False,text_select=True)
+                webview.start(gui="edgechromium",private_mode=False,
+                              storage_path=str(profile),debug=False)
+            finally:
+                stop_own_server(child)
     except Exception as exc:
         try:
             d=paths()[2]
