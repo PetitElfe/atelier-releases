@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "5967b4926aa1b7bf0f9776e97f5a0055272df26299ccfd248ca7d68300306a19"
+      "sha256": "326001b9f5e79726357dc3bae618e7405a50f36a22581e1c936464365465e545"
     },
     {
       "path": "app_part2.py",
-      "sha256": "b6f482913b7598af972cbf3929acf2d73281b498b5645b3d5b88f85f8a4caa3b"
+      "sha256": "fc7b6ed4c814ad264e04a2b2718faffd7d8330ee7f7fc261e7b443442bcf92e2"
     },
     {
       "path": "app_part3.py",
@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "3f57150d2d3f402f8d7659b8857e18a90d33c42c7f444cee42c8980ce080de08"
+      "sha256": "a45b5648099239f519ce20925f7cfda3fb7890e8ffbabc2062fe2cf09c0378fe"
     },
     {
       "path": "public/styles.css",
@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "ba56805b35222d6b62fdeb64fa36fe46d02f4c8d97438e1acc08948764e1a2d2"
+      "sha256": "ec7d135118739a41340c581e3904c5afbe5e4531de22705707dc16a2d7670363"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "4d5de2ca8b3bf97fcfc9cde0274bbb65e6d0b80a98acca0f9e7b96820566d71c"
+      "sha256": "f03362d8a2455b12b6d1b71826aad1964213ad944e7a44f97a4d7f2aca5de0b7"
     },
     {
       "path": "quick_capture_native.py",
