@@ -110,6 +110,7 @@ async function api(path,method='GET',body){
     const boards=await (await fetch('/api/tracker-boards')).json();
     return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]==='1';
   },{id:wellness.id,day:date});
+  await page.waitForFunction(()=>[...document.querySelectorAll('.tracker-grid-line')].some(row=>row.textContent.includes('Boire de l’eau')&&row.querySelector('.tracker-day-cell[aria-pressed="true"]')));
   assert.equal(await checked.getAttribute('aria-pressed'),'true');
   await checked.click();
   await page.waitForFunction(async({id,day})=>{
