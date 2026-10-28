@@ -510,7 +510,29 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({'error':'not found'},404)
 
     def do_POST(self):
-        u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
+        u = urlparse(self.path); p = u.path
+        parts=p.strip('/').split('/')
+        if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:incoming_size=int(self.headers.get('Content-Length','0') or '0')
+            except ValueError:return self._json({'error':'Taille invalide.'},400)
+            if incoming_size>admin_docs.MAX_ATTACHMENT_REQUEST:
+                return self._json({'error':'Pièce jointe trop volumineuse (4 Mo max).'},413)
+        body = self._body(); ts = now_iso()
+        if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:admin_id=int(parts[2])
+            except ValueError:return self._json({'error':'Démarche invalide.'},400)
+            try:
+                name,mime,content=admin_docs.filename_and_bytes(
+                    body.get('filename'),body.get('mime_type'),body.get('base64'))
+            except (ValueError,AttributeError) as exc:
+                return self._json({'error':str(exc)},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM admin_documents WHERE id=?',(admin_id,)).fetchone():
+                    return self._json({'error':'Démarche introuvable.'},404)
+                cur=c.execute('INSERT INTO admin_attachments(admin_id,filename,mime_type,byte_size,content,created_at) '
+                    'VALUES(?,?,?,?,?,?)',(admin_id,name,mime,len(content),content,ts))
+                c.commit()
+                return self._json({'id':cur.lastrowid,'filename':name},201)
         if p == '/api/version':
             return self._json({'version': atelier_version()})
         if p == '/api/quick-capture/hotkey':
