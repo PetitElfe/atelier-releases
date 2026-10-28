@@ -548,6 +548,7 @@ function renderLifeAdmin(){
     .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
   lifeAdmin.forEach(item=>{
     const card=lifeNode('article','life-card'+(item.status==='done'?' life-complete':''));
+    card.dataset.adminId=String(item.id);
     const heading=lifeNode('div','life-card-head');
     heading.append(lifeNode('strong','',item.title),lifeButton('Supprimer',async()=>{
       const yes=await askUiConfirm('Supprimer cette démarche',
