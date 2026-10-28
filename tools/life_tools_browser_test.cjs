@@ -122,6 +122,7 @@ async function api(path,method='GET',body){
   boards=await api('/api/tracker-boards');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
+  await page.evaluate(()=>showView('trackers'));
   // Different boards can have their own schedules and navigation; one
   // bimonthly board must not affect the monthly Habitudes board.
   const createScheduled=async(title,preset)=>{
