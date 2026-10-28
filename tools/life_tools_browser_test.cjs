@@ -37,6 +37,83 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>refresh());
   assert.ok((await page.locator('#homeDeadlineLines').innerText()).includes('16h30'));
   await page.evaluate(()=>showView('trackers'));
+  // Nouvelle interprétation validée par les visuels : plusieurs tableaux,
+  // lignes (habitudes) x jours, couleurs, valeurs optionnelles et archives.
+  const boardForm=page.locator('#trackerBoardCreateForm');
+  await boardForm.locator('[name=title]').fill('Bien-être');
+  await boardForm.locator('[name=color]').selectOption('rose');
+  await boardForm.locator('button[type=submit]').click();
+  await page.locator('.tracker-board-rose').waitFor();
+  await boardForm.locator('[name=title]').fill('Projets');
+  await boardForm.locator('[name=color]').selectOption('mauve');
+  await boardForm.locator('button[type=submit]').click();
+  await page.waitForFunction(async()=> (await (await fetch('/api/tracker-boards')).json()).length===2);
+  let boards=await api('/api/tracker-boards');
+  const wellness=boards.find(b=>b.title==='Bien-être');
+  const projects=boards.find(b=>b.title==='Projets');
+  assert.ok(wellness&&projects&&wellness.id!==projects.id);
+  const wellnessCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')});
+  await wellnessCard.locator('.tracker-add-row [name=title]').fill('Boire de l’eau');
+  await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
+  await wellnessCard.locator('.tracker-add-row button').click();
+  await page.waitForFunction(async id=>(
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===1,wellness.id);
+  await wellnessCard.locator('.tracker-add-row [name=title]').fill('Sommeil');
+  await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('number');
+  await wellnessCard.locator('.tracker-add-row button').click();
+  await page.waitForFunction(async id=>(
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===2,wellness.id);
+  boards=await api('/api/tracker-boards');
+  let current=boards.find(b=>b.id===wellness.id);
+  const checkRow=current.rows.find(x=>x.title==='Boire de l’eau');
+  const numberRow=current.rows.find(x=>x.title==='Sommeil');
+  assert.equal(checkRow.mode,'check');
+  assert.equal(numberRow.mode,'number');
+  const todayN=new Date().getDate()-1;
+  const checked=wellnessCard.locator('.tracker-grid-line').filter({hasText:'Boire de l’eau'})
+    .locator('.tracker-day-cell').nth(todayN);
+  await checked.click();
+  await page.waitForFunction(async({id,day})=>{
+    const boards=await (await fetch('/api/tracker-boards')).json();
+    return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]==='1';
+  },{id:wellness.id,day:date});
+  assert.equal(await checked.getAttribute('aria-pressed'),'true');
+  await checked.click();
+  await page.waitForFunction(async({id,day})=>{
+    const boards=await (await fetch('/api/tracker-boards')).json();
+    return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]===undefined;
+  },{id:wellness.id,day:date});
+  await checked.click();
+  const numberCell=wellnessCard.locator('.tracker-grid-line').filter({hasText:'Sommeil'})
+    .locator('.tracker-day-cell').nth(todayN);
+  await numberCell.click();
+  const editor=wellnessCard.locator('.tracker-number-editor');
+  await editor.fill('7.5');
+  await editor.press('Enter');
+  await page.waitForFunction(async({id,day})=>{
+    const boards=await (await fetch('/api/tracker-boards')).json();
+    return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5';
+  },{id:wellness.id,day:date});
+  await page.locator('#trackerMonthPrev').click();
+  await page.waitForFunction(()=>document.querySelector('#trackerMonthLabel')?.textContent!==
+    new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date()));
+  await page.locator('#trackerMonthToday').click();
+  await page.waitForFunction(async id=> (await (await fetch('/api/tracker-boards')).json())
+    .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[date]==='7.5',wellness.id);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('trackers'));
+  assert.equal(await page.locator('.tracker-board').count(),2,'All boards survive a full reload');
+  assert.equal(await page.locator('.tracker-board-rose .tracker-day-done').count(),2);
+  await api('/api/tracker-boards/'+wellness.id,'PUT',{archived:true});
+  await page.evaluate(()=>loadLifeTools());
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===1);
+  await page.locator('#trackerBoardArchivesToggle').click();
+  await page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'})
+    .getByRole('button',{name:'Restaurer'}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
+  boards=await api('/api/tracker-boards');
+  assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
+  assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
   await page.locator('#trackerCreateForm [name=title]').fill('Lecture');
   await page.locator('#trackerCreateForm [name=unit]').fill('pages');
   await page.locator('#trackerCreateForm button[type=submit]').click();
@@ -109,7 +186,7 @@ async function api(path,method='GET',body){
   assert.ok((await api('/api/captures')).some(x=>x.body.includes('Deuxième ligne')));
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierReminderSound')),'1');
   assert.deepEqual(errors,[]);
-  console.log('PASS: journal pages and checkboxes, timed deadlines, trackers, admin, routed multiline capture, unread highlight, sound and shortcut settings, same-origin native action guards, edition label, directional grips and persistence');
+  console.log('PASS: visual tracker boards (multiple boards, day grid, numeric cells, monthly navigation, archive/restore and reload), preserved legacy measures, journal checkboxes, admin, capture, sound, origins and layout');
  }finally{
   if(browser)await browser.close();
   server.kill();rmSync(data,{recursive:true,force:true,maxRetries:5,retryDelay:150});
