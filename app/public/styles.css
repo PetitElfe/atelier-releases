@@ -1596,6 +1596,13 @@ body.home-active{overflow-y:auto}
 #monthGrid .event-pill{min-width:0;max-width:100%;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 @media(max-width:800px){#monthGrid.month-grid{grid-auto-rows:94px}}
 
+/* Contraste des événements par défaut dans le semainier : la vue mensuelle
+   définissait un texte sombre, mais les cartes de semaine héritaient du blanc.
+   Les couleurs personnalisées conservent leurs propres color: ... !important. */
+#weekGrid .week-timed-event.event-general,
+#weekGrid .week-timed-event.event-medical,
+#weekGrid .week-timed-event.event-important { color:#1e1a17; }
+
 /* Couleurs pastorales/pastel communes, indépendantes de la catégorie d'un RDV. */
 .event-color-sage{background:#78977D!important;color:#1A231C!important}
 .event-color-mauve{background:#AA91BE!important;color:#2D2233!important}
