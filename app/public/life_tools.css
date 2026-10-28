@@ -333,3 +333,12 @@
 .tracker-archive-details{flex:1 1 100%;font:12px/1.5 system-ui,sans-serif;color:var(--muted)}
 .tracker-archive-details summary{cursor:pointer;color:#e2c38d}
 .tracker-archive-details>div{padding:3px 0;border-bottom:1px solid #4b4033}
+
+/* Les archives des Post-it sont accessibles dans Paramètres même avec 0 note active. */
+.postit-settings-archives{padding:10px 12px;border:1px solid #69553c;border-radius:9px;background:#241f19}
+.postit-settings-archives>summary{cursor:pointer;font-weight:650;color:#efd4a6}
+.postit-settings-archives>p{margin:8px 0}
+.postit-archive-list{display:grid;gap:8px;margin-top:12px;max-height:230px;overflow-y:auto}
+.postit-archive-entry{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border:1px solid #554533;border-radius:7px}
+.postit-archive-entry strong{min-width:0;flex:1 1 130px;overflow-wrap:anywhere;font-size:13px}
+.postit-archive-entry button{min-height:32px;padding:5px 10px}
