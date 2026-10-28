@@ -102,6 +102,7 @@ async function api(path,method='GET',body){
     .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5',{id:wellness.id,day:date});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
   assert.equal(await page.locator('.tracker-board').count(),2,'All boards survive a full reload');
   assert.equal(await page.locator('.tracker-board-rose .tracker-day-done').count(),2);
   await api('/api/tracker-boards/'+wellness.id,'PUT',{archived:true});
@@ -176,6 +177,7 @@ async function api(path,method='GET',body){
   },{label:oldLabel});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===6);
   assert.equal(await page.locator('.tracker-board').count(),6);
   assert.ok(await page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Ménage 2 semaines")')})
     .locator('.tracker-day-done').first().isVisible());
