@@ -266,8 +266,28 @@ function renderTrackerBoards(){
     if(!lifeArchivedBoards.length)archiveRoot.append(lifeNode('p','life-muted','Aucun tableau archivé.'));
     lifeArchivedBoards.forEach(board=>{
       const item=lifeNode('div','tracker-archived-entry');
-      item.append(lifeNode('strong','',board.title),lifeButton('Restaurer',()=>
-        lifeAction('Restaurer le tableau',()=>lifeApi('/api/tracker-boards/'+board.id,
+      const summary=board.archive_summary;
+      item.append(lifeNode('strong','',board.title));
+      if(summary){
+        const [y,m]=summary.label.split('-').map(Number);
+        const period=new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'})
+          .format(new Date(y,m-1,1));
+        const recap=lifeNode('div','tracker-archive-recap',
+          summary.eligible?'Bilan de '+period+' · '+summary.done+'/'+summary.eligible+
+            ' jours éligibles':'Bilan de '+period+' · Aucun jour éligible');
+        recap.title='Seuls les jours réellement prévus et après la création des lignes sont comptés.';
+        item.append(recap);
+        if(summary.rows?.length){
+          const details=lifeNode('details','tracker-archive-details');
+          details.append(lifeNode('summary','','Détail des lignes'));
+          for(const line of summary.rows){
+            details.append(lifeNode('div','',line.title+' : '+line.done+'/'+line.eligible));
+          }
+          item.append(details);
+        }
+      }
+      item.append(lifeButton('Restaurer',()=>lifeAction('Restaurer le tableau',
+        ()=>lifeApi('/api/tracker-boards/'+board.id,
           {method:'PUT',body:JSON.stringify({archived:false})})),'tracker-restore'));
       archiveRoot.append(item);
     });
