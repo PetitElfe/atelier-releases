@@ -52,6 +52,7 @@ class AdminDocumentsTests(unittest.TestCase):
         c.execute("INSERT INTO admin_attachments(admin_id,filename,mime_type,byte_size,content,created_at) "
                   "VALUES(?,?,?,?,?,?)",(1,'document.pdf','application/pdf',8,b'%PDF-test','2026-10-28'))
         self.assertEqual(admin_docs.summaries(c,1)[0]['filename'],'document.pdf')
+        c.commit()  # La sauvegarde SQLite attendrait un COMMIT pour une écriture en cours.
         snapshot=sqlite3.connect(':memory:')
         c.backup(snapshot)
         self.assertEqual(admin_docs.detail(snapshot,1,1)['content'],b'%PDF-test')
