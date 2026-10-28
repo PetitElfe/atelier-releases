@@ -57,12 +57,14 @@ async function api(path,method='GET',body){
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
   await wellnessCard.locator('.tracker-add-row button').click();
   await page.waitForFunction(async id=>(
-    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===1,wellness.id);
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.some(r=>r.title==='Boire de l’eau'),wellness.id);
+  await wellnessCard.locator('.tracker-grid-line').filter({hasText:'Boire de l’eau'}).waitFor();
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Sommeil');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('number');
   await wellnessCard.locator('.tracker-add-row button').click();
   await page.waitForFunction(async id=>(
-    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===2,wellness.id);
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.some(r=>r.title==='Sommeil'),wellness.id);
+  await wellnessCard.locator('.tracker-grid-line').filter({hasText:'Sommeil'}).waitFor();
   boards=await api('/api/tracker-boards');
   let current=boards.find(b=>b.id===wellness.id);
   const checkRow=current.rows.find(x=>x.title==='Boire de l’eau');
