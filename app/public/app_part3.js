@@ -21,6 +21,66 @@ function safeCalendarEventUrl(raw){
   }catch(_){return ''}
 }
 
+/* Les pièces jointes sont liées au rendez-vous de base, pas à une date de
+   répétition. Aucun fichier n'est transmis à un serveur distant. */
+function wireEventDocumentEditor(event){
+  const root=$('#eventAttachmentList'),input=$('#eventAttachmentInput');
+  if(!root||!input||!event?.id)return;
+  const eventId=Number(event.id);
+  if(!Number.isSafeInteger(eventId)||eventId<1)return;
+  const endpoint='/api/events/'+eventId+'/attachments';
+  const render=items=>{
+    root.replaceChildren();
+    const current=Array.isArray(items)?items:[];
+    if(!current.length){const empty=document.createElement('p');
+      empty.className='muted';empty.textContent='Aucun document joint.';root.append(empty);}
+    for(const file of current){
+      const id=Number(file.id);if(!Number.isSafeInteger(id)||id<1)continue;
+      const line=document.createElement('div');line.className='event-document-row';
+      const link=document.createElement('a');link.href=endpoint+'/'+id;
+      link.download=file.filename;link.textContent=file.filename+' · '+Math.max(1,Math.round(file.byte_size/1024))+' Ko';
+      link.title='Télécharger '+file.filename;
+      const remove=document.createElement('button');remove.type='button';remove.className='event-document-delete';
+      remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer '+file.filename);
+      remove.addEventListener('click',async()=>{
+        const confirmed=await askUiConfirm('Retirer le document',
+          'Supprimer définitivement « '+file.filename+' » de ce rendez-vous ?','Retirer',true);
+        if(!confirmed)return;
+        remove.disabled=true;
+        try{await api(endpoint+'/'+id,{method:'DELETE'});await reload();}
+        catch(error){showUiError(error,'Document du rendez-vous');remove.disabled=false;}
+      });
+      line.append(link,remove);root.append(line);
+    }
+    // Les événements récurrents partagent les documents du rendez-vous de base.
+    event.attachments=current;
+    (state.events||[]).filter(e=>Number(e.id)===eventId).forEach(e=>e.attachments=current);
+  };
+  const reload=async()=>{const files=await api(endpoint);render(files);};
+  render(event.attachments||[]);
+  reload().catch(error=>showUiError(error,'Documents du rendez-vous'));
+  input.addEventListener('change',async()=>{
+    const file=input.files?.[0];if(!file)return;
+    if(!file.size||file.size>4*1024*1024){
+      showUiError(new Error('Fichier vide ou de plus de 4 Mo.'),'Document du rendez-vous');
+      input.value='';return;
+    }
+    input.disabled=true;
+    try{
+      const encoded=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+        reader.onerror=()=>reject(new Error('Impossible de lire le fichier local.'));
+        reader.readAsDataURL(file);
+      });
+      await api(endpoint,{method:'POST',body:JSON.stringify({
+        filename:file.name,mime_type:file.type||'text/plain',base64:encoded
+      })});
+      await reload();
+    }catch(error){showUiError(error,'Document du rendez-vous')}
+    finally{input.disabled=false;input.value=''}
+  });
+}
 function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const editing=!!e&&!duplicate;
   const reminders=Array.isArray(e?.reminders)
@@ -56,6 +116,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
     <div class="field full"><label>Notes du rendez-vous</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    ${editing?'<fieldset class="field full event-document-editor"><legend>Documents du rendez-vous</legend><p class="field-help">PDF, images ou TXT, 4 Mo par fichier. Ces documents restent locaux et sont communs aux occurrences d’un rendez-vous récurrent.</p><div id="eventAttachmentList" class="event-document-list"></div><label class="event-document-upload">＋ Joindre un document<input id="eventAttachmentInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt" aria-label="Joindre un fichier à ce rendez-vous"></label></fieldset>':'<p class="field full field-help">Enregistre d’abord le rendez-vous pour pouvoir lui joindre des documents locaux.</p>'}
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
@@ -67,6 +128,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     const card=$('#adminList .life-card[data-admin-id="'+adminId+'"]');
     if(card){card.scrollIntoView({block:'center',behavior:'smooth'});card.classList.add('life-admin-highlight')}
   });
+  if(editing)wireEventDocumentEditor(e);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
   // Link remains visible in the form while editing; changing the URL updates
   // its target immediately, without requiring a save or hidden menu.
