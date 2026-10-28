@@ -115,6 +115,25 @@ def check_manifest() -> str:
     return version
 
 
+def check_git_test_launcher() -> None:
+    # The Git-only launcher must never blur a missing local clone with a
+    # different branch, nor pass a trailing slash before a native Windows
+    # closing quote (git.exe then loses the path argument on Windows).
+    script = (ROOT / "Mise_a_jour_TEST.cmd").read_text(encoding="utf-8")
+    required = (
+        'set "ROOT=E:\\LATELIER_TEST_0180\\code_0180"',
+        'set "BRANCH=feature/0180-progression-foundations"',
+        'rev-parse --is-inside-work-tree',
+        'if not defined CURRENT (',
+        'if not "%CURRENT%"=="%BRANCH%" (',
+        'Ouvre l\'Atelier TEST, puis Parametres ^> Mises a jour.',
+        'python -u "%ROOT%\\app\\app.py"',
+    )
+    for excerpt in required:
+        if excerpt not in script:
+            fail("Le lanceur Git TEST a perdu un garde-fou : " + excerpt)
+
+
 def check_python_syntax() -> None:
     for path in sorted(APP.glob("*.py")):
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
@@ -471,6 +490,7 @@ def check_server(version: str) -> None:
 
 
 if __name__ == "__main__":
+    check_git_test_launcher()
     check_python_syntax()
     check_frontend_contract()
     version = check_manifest()
