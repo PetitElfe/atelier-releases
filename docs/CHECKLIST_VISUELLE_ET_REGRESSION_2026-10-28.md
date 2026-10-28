@@ -113,7 +113,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 ## H. Administratif et autres modules
 - [ ] Créer, modifier nom/catégorie/échéance/notes, marquer terminé, archiver et restaurer une démarche ; les pièces et le rendez-vous restent intacts.
 - [ ] Lier Administratif ↔ Calendrier sans transformer arbitrairement une démarche en faux rendez-vous.
-- [ ] Pièces jointes locales de démarche (PDF, PNG, JPEG, TXT jusqu’à 4 Mo) : ajout, téléchargement, retrait confirmé, sauvegarde et sécurité. Les pièces directement jointes à un événement restent distinctes et non développées.
+- [ ] Pièces jointes locales de démarche **et de rendez-vous** (PDF, PNG, JPEG, TXT jusqu’à 4 Mo) : ajout, téléchargement, retrait confirmé, sauvegarde, sécurité et accès après F5. Pour les rendez-vous récurrents, fichiers communs à la série ; à valider sur Windows.
 - [ ] Tâches : création, listes, vues Aujourd’hui/Toutes, priorités, récurrence par occurrence, coche synchronisée.
 - [ ] Rendez-vous : rappels configurables, statut et préparation historique non détruite après modification.
 - [ ] Bibliothèque/Objectifs : arborescence, sous-objectifs, liens, progression et accès depuis l’accueil.

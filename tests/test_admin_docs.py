@@ -64,5 +64,31 @@ class AdminDocumentsTests(unittest.TestCase):
         c.close()
 
 
+    def test_event_file_backup_and_delete_cascade(self):
+        c=sqlite3.connect(':memory:')
+        c.row_factory=sqlite3.Row
+        c.execute('PRAGMA foreign_keys=ON')
+        c.execute('CREATE TABLE events(id INTEGER PRIMARY KEY,title TEXT)')
+        c.execute('CREATE TABLE admin_documents(id INTEGER PRIMARY KEY,title TEXT)')
+        c.execute("INSERT INTO events VALUES (1,'Rendez-vous médical')")
+        c.execute("INSERT INTO events VALUES (2,'Autre rendez-vous')")
+        admin_docs.initialise(c)
+        c.execute("INSERT INTO event_attachments(event_id,filename,mime_type,byte_size,content,created_at) "
+                  "VALUES(?,?,?,?,?,?)",(1,'compte-rendu.txt','text/plain',7,b'bonjour','2026-10-28'))
+        self.assertEqual(admin_docs.event_summaries(c,1)[0]['filename'],'compte-rendu.txt')
+        self.assertEqual(admin_docs.event_summaries(c,2),[])
+        self.assertIsNone(admin_docs.event_detail(c,2,1))
+        self.assertEqual(admin_docs.event_detail(c,1,1)['content'],b'bonjour')
+        c.commit()
+        backup=sqlite3.connect(':memory:')
+        backup.row_factory=sqlite3.Row
+        c.backup(backup)
+        c.execute('DELETE FROM events WHERE id=1')
+        self.assertEqual(admin_docs.event_summaries(c,1),[])
+        self.assertEqual(admin_docs.event_detail(backup,1,1)['content'],b'bonjour')
+        backup.close()
+        c.close()
+
+
 if __name__=='__main__':
     unittest.main()

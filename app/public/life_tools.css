@@ -310,3 +310,14 @@
 .life-admin-edit-form label{display:grid;gap:5px;min-width:0;font-size:12px}
 .life-admin-edit-form input{min-width:0;width:100%}
 .life-admin-edit-form button{min-height:36px}
+
+/* Documents locaux attachés à la fiche d'un rendez-vous. */
+.event-document-editor{min-width:0;display:grid;gap:8px;border:1px solid #65513e;border-radius:9px;padding:11px;background:#241f1b}
+.event-document-editor legend{font-weight:700;color:#ead2a9;padding:0 5px}
+.event-document-editor .field-help{margin:0 0 4px}
+.event-document-list{display:grid;gap:6px;max-height:185px;overflow-y:auto;min-width:0}
+.event-document-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-bottom:1px solid #4f4235;padding:4px 0}
+.event-document-row a{flex:1;min-width:130px;overflow-wrap:anywhere;color:#e4c88f}
+.event-document-delete{padding:5px 8px;min-height:28px;border:1px solid #9c6f68;border-radius:5px;color:#ffdbcf;background:#47302b}
+.event-document-upload{display:grid;gap:7px;color:#dcc49e;font-size:13px}
+.event-document-upload input{max-width:100%;min-width:0;font-size:12px}

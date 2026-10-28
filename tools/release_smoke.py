@@ -439,7 +439,7 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 15:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 16:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             admin_cols={row[1] for row in c.execute("PRAGMA table_info(admin_documents)")}
             if "archived" not in admin_cols:
@@ -448,6 +448,8 @@ def check_server(version: str) -> None:
                 fail("Le lien Administratif vers Calendrier manque à la migration.")
             if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='admin_attachments'").fetchone():
                 fail("Les pièces jointes locales manquent à la migration.")
+            if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='event_attachments'").fetchone():
+                fail("Les pièces jointes des rendez-vous manquent à la migration.")
             cols={row[1] for row in c.execute("PRAGMA table_info(desktop_postit_layout)")}
             if "locked" not in cols:
                 fail("Le verrouillage des positions Post-it manque à la migration.")

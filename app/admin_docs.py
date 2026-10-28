@@ -22,6 +22,16 @@ def initialise(c):
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_admin_attachments ON admin_attachments(admin_id,id);
+    CREATE TABLE IF NOT EXISTS event_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      byte_size INTEGER NOT NULL,
+      content BLOB NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_event_attachments ON event_attachments(event_id,id);
     """)
 
 
@@ -69,3 +79,16 @@ def detail(c, admin_id, file_id):
     return c.execute(
         'SELECT filename,mime_type,byte_size,content FROM admin_attachments '
         'WHERE admin_id=? AND id=?', (admin_id, file_id)).fetchone()
+
+
+def event_summaries(c, event_id):
+    """Only metadata leaves SQLite in the calendar's JSON responses."""
+    return [dict(r) for r in c.execute(
+        'SELECT id,filename,mime_type,byte_size,created_at FROM event_attachments '
+        'WHERE event_id=? ORDER BY id DESC', (event_id,))]
+
+
+def event_detail(c, event_id, file_id):
+    return c.execute(
+        'SELECT filename,mime_type,byte_size,content FROM event_attachments '
+        'WHERE event_id=? AND id=?', (event_id, file_id)).fetchone()

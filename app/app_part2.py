@@ -228,6 +228,28 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         parts=p.strip('/').split('/')
+        if len(parts) in (4,5) and parts[:2]==['api','events'] and parts[3]=='attachments':
+            try:
+                event_id=int(parts[2])
+                file_id=int(parts[4]) if len(parts)==5 else None
+            except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM events WHERE id=?',(event_id,)).fetchone():
+                    return self._json({'error':'Rendez-vous introuvable.'},404)
+                if file_id is None:return self._json(admin_docs.event_summaries(c,event_id))
+                attachment=admin_docs.event_detail(c,event_id,file_id)
+                if not attachment:return self._json({'error':'Fichier introuvable.'},404)
+                content=attachment['content']
+                self.send_response(200)
+                self.send_header('Content-Type',attachment['mime_type'])
+                self.send_header('Content-Length',str(len(content)))
+                self.send_header('X-Content-Type-Options','nosniff')
+                self.send_header('Cache-Control','no-store, max-age=0')
+                self.send_header('Content-Disposition',
+                    "attachment; filename=\"fichier\"; filename*=UTF-8''"+quote(attachment['filename']))
+                self.end_headers()
+                self.wfile.write(content)
+                return
         if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
             try:admin_id=int(parts[2]);file_id=int(parts[4])
             except ValueError:return self._json({'error':'Identifiant invalide.'},400)
@@ -379,7 +401,11 @@ class Handler(BaseHTTPRequestHandler):
                 linked_admin={}
                 for item in c.execute('SELECT id,title,event_id FROM admin_documents WHERE event_id IS NOT NULL'):
                     linked_admin.setdefault(item['event_id'],[]).append({'id':item['id'],'title':item['title']})
+                event_files={}
                 for e in expanded:
+                    if e['id'] not in event_files:
+                        event_files[e['id']]=admin_docs.event_summaries(c,e['id'])
+                    e['attachments']=event_files[e['id']]
                     e['admin_links']=linked_admin.get(e['id'],[])
                     key = (e['id'], e.get('instance_date') or e['event_date'])
                     completed_at = done_map.get(key)
@@ -514,7 +540,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         u = urlparse(self.path); p = u.path
         parts=p.strip('/').split('/')
-        if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+        if len(parts)==4 and parts[:2] in (['api','admin'],['api','events']) and parts[3]=='attachments':
             try:incoming_size=int(self.headers.get('Content-Length','0') or '0')
             except ValueError:return self._json({'error':'Taille invalide.'},400)
             if incoming_size>admin_docs.MAX_ATTACHMENT_REQUEST:
@@ -533,6 +559,21 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({'error':'Démarche introuvable.'},404)
                 cur=c.execute('INSERT INTO admin_attachments(admin_id,filename,mime_type,byte_size,content,created_at) '
                     'VALUES(?,?,?,?,?,?)',(admin_id,name,mime,len(content),content,ts))
+                c.commit()
+                return self._json({'id':cur.lastrowid,'filename':name},201)
+        if len(parts)==4 and parts[:2]==['api','events'] and parts[3]=='attachments':
+            try:event_id=int(parts[2])
+            except ValueError:return self._json({'error':'Rendez-vous invalide.'},400)
+            try:
+                name,mime,content=admin_docs.filename_and_bytes(
+                    body.get('filename'),body.get('mime_type'),body.get('base64'))
+            except (ValueError,AttributeError) as exc:
+                return self._json({'error':str(exc)},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM events WHERE id=?',(event_id,)).fetchone():
+                    return self._json({'error':'Rendez-vous introuvable.'},404)
+                cur=c.execute('INSERT INTO event_attachments(event_id,filename,mime_type,byte_size,content,created_at) '
+                    'VALUES(?,?,?,?,?,?)',(event_id,name,mime,len(content),content,ts))
                 c.commit()
                 return self._json({'id':cur.lastrowid,'filename':name},201)
         if p == '/api/version':
@@ -1678,6 +1719,14 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError,IndexError,ValueError,TypeError) as ex:
                 return self._json({'error':str(ex)},400)
         with conn() as c:
+            if len(parts)==5 and parts[:2]==['api','events'] and parts[3]=='attachments':
+                try:event_id=int(parts[2]);file_id=int(parts[4])
+                except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+                deleted=c.execute('DELETE FROM event_attachments WHERE event_id=? AND id=?',
+                                  (event_id,file_id))
+                c.commit()
+                return self._json({'ok':True} if deleted.rowcount else {'error':'Fichier introuvable.'},
+                                  200 if deleted.rowcount else 404)
             if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
                 try:admin_id=int(parts[2]);file_id=int(parts[4])
                 except ValueError:return self._json({'error':'Identifiant invalide.'},400)
