@@ -36,6 +36,18 @@ async function api(path,method='GET',body){
   const event=await api('/api/events','POST',{title:'RDV du journal',event_date:date,start_time:'16:30',category:'important'});
   await page.evaluate(()=>refresh());
   assert.ok((await page.locator('#homeDeadlineLines').innerText()).includes('16h30'));
+  for(let i=0;i<4;i++)await api('/api/events','POST',{
+    title:'Autre rendez-vous '+i,event_date:date,start_time:'18:'+String(i*10).padStart(2,'0'),category:'general'
+  });
+  await page.evaluate(()=>refresh());
+  const expand=page.locator('#homeUpcoming .home-upcoming-toggle');
+  await expand.waitFor();
+  assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
+  await expand.click();
+  assert.ok(await page.locator('#homeUpcoming .home-appt-row').count()>=5);
+  assert.equal(await page.locator('#homeUpcoming .home-upcoming-toggle').getAttribute('aria-expanded'),'true');
+  await page.locator('#homeUpcoming .home-upcoming-toggle').click();
+  assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
   await page.evaluate(()=>showView('trackers'));
   // Nouvelle interprétation validée par les visuels : plusieurs tableaux,
   // lignes (habitudes) x jours, couleurs, valeurs optionnelles et archives.
@@ -66,6 +78,12 @@ async function api(path,method='GET',body){
   const projects=boards.find(b=>b.title==='Projets');
   assert.ok(wellness&&projects&&wellness.id!==projects.id,'Expected distinct named boards: '+JSON.stringify(boards.map(b=>({id:b.id,title:b.title}))));
   const wellnessCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')});
+  await wellnessCard.click({button:'right'});
+  const boardMenu=page.locator('.tracker-board-popup');
+  await boardMenu.waitFor();
+  assert.match(await boardMenu.innerText(),/Archiver le tableau/);
+  await page.keyboard.press('Escape');
+  assert.equal(await boardMenu.count(),0,'Right-click menu dismisses without changing the board');
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Boire de l’eau');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
   await wellnessCard.locator('.tracker-add-row button').click();
