@@ -439,7 +439,7 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 11:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 12:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             cols={row[1] for row in c.execute("PRAGMA table_info(desktop_postit_layout)")}
             if "locked" not in cols:
@@ -447,6 +447,9 @@ def check_server(version: str) -> None:
             rhythm_cols={row[1] for row in c.execute("PRAGMA table_info(tracker_boards)")}
             if not {"period_unit","period_count","anchor_date"} <= rhythm_cols:
                 fail("Les périodes indépendantes des trackers manquent à la migration.")
+            for table in ("standalone_preparation_lists","standalone_preparation_items"):
+                if not c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?",(table,)).fetchone():
+                    fail("Table de préparatifs autonomes manquante : "+table)
             c.execute("PRAGMA user_version = 0")
             c.commit()
 
