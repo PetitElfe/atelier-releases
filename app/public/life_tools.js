@@ -10,16 +10,23 @@ const lifeDestinations=[
   {key:'tracker',tag:'#Tracker',label:'Tracker'}
 ];
 let lifeTrackers=[],lifeAdmin=[],lifeCaptures=[],lifeJournalPage=0;
+let lifeBoards=[],lifeArchivedBoards=[],lifeBoardMonth=ymd(new Date()).slice(0,7),lifeBoardArchivesVisible=false;
 let lifeCaptureChoice='carnet',lifeAudioContext=null;
 function lifeApi(path,opts){return api(path,opts)}
 function lifeDate(s){return s?parseYMD(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'Sans échéance'}
 function lifeNumber(v){return Number(v).toLocaleString('fr-FR',{maximumFractionDigits:2})}
 function lifeSetText(id,text){const el=$(id);if(el)el.textContent=text}
 async function loadLifeTools(){
-  const settled=await Promise.allSettled([lifeApi('/api/trackers'),lifeApi('/api/admin'),lifeApi('/api/captures')]);
+  const month='?month='+encodeURIComponent(lifeBoardMonth);
+  const settled=await Promise.allSettled([
+    lifeApi('/api/trackers'),lifeApi('/api/admin'),lifeApi('/api/captures'),
+    lifeApi('/api/tracker-boards'+month),lifeApi('/api/tracker-boards'+month+'&archived=1')
+  ]);
   if(settled[0].status==='fulfilled')lifeTrackers=settled[0].value;
   if(settled[1].status==='fulfilled')lifeAdmin=settled[1].value;
   if(settled[2].status==='fulfilled')lifeCaptures=settled[2].value;
+  if(settled[3].status==='fulfilled')lifeBoards=settled[3].value;
+  if(settled[4].status==='fulfilled')lifeArchivedBoards=settled[4].value;
   const failures=settled.filter(x=>x.status==='rejected');
   if(failures.length)showUiError(failures[0].reason,'Chargement du suivi et de l’administratif');
   renderLifeTools();
@@ -28,8 +35,185 @@ function lifeNode(tag,cls,text){const el=document.createElement(tag);if(cls)el.c
 function lifeButton(label,callback,cls=''){const b=lifeNode('button',cls,label);b.type='button';b.onclick=callback;return b}
 async function lifeAction(label,fn){const result=await runUiAction(label,fn);if(result.ok)await loadLifeTools();return result.ok}
 function renderLifeTools(){
-  renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();
+  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();
 }
+/* Trackers visuels : tableaux indépendants, lignes x jours, un geste = une case.
+   Le stockage n'est PAS le même que les anciens trackers numériques. */
+function lifeTrackerDay(year,month,number){
+  return String(year)+'-'+String(month).padStart(2,'0')+'-'+String(number).padStart(2,'0');
+}
+function lifeTrackerChangeMonth(offset){
+  const [year,month]=lifeBoardMonth.split('-').map(Number);
+  const d=new Date(year,month-1+offset,1);
+  lifeBoardMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  loadLifeTools();
+}
+function lifeTrackerMarkButton(board,line,day){
+  const raw=line.marks?.[day];
+  const active=raw!==undefined;
+  const numeric=line.mode==='number';
+  const button=lifeButton(numeric?(active?String(raw):'·'):(active?'●':''),
+    async()=>{if(numeric){lifeEditTrackerNumber(button,board,line,day);return}
+      const changed=active?null:true;
+      button.disabled=true;
+      const result=await runUiAction('Marquer un jour',()=>
+        lifeApi('/api/tracker-board-rows/'+line.id+'/mark',
+          {method:'PUT',body:JSON.stringify({day,value:changed})}));
+      if(result.ok){
+        if(changed===null)delete line.marks[day];
+        else line.marks[day]='1';
+        const next=lifeTrackerMarkButton(board,line,day);
+        button.replaceWith(next);
+      }else button.disabled=false;
+    },'tracker-day-cell'+(active?' tracker-day-done':'')+
+       (numeric?' tracker-day-number':''));
+  button.type='button';
+  button.setAttribute('aria-label',line.title+' · '+lifeDate(day)+' : '+
+    (numeric?(active?'Valeur '+raw:'Saisir une valeur'):(active?'marqué':'non marqué')));
+  if(!numeric)button.setAttribute('aria-pressed',String(active));
+  button.title=(numeric?'Saisir une valeur pour ':'Cocher ou décocher ')+lifeDate(day);
+  return button;
+}
+function lifeEditTrackerNumber(button,board,line,day){
+  const input=lifeNode('input','tracker-number-editor');
+  input.type='number';input.step='any';input.min='-1000000';input.max='1000000';
+  input.value=line.marks?.[day]??'';
+  input.setAttribute('aria-label','Valeur '+line.title+' · '+lifeDate(day));
+  const original=input.value,holder=button.parentElement;
+  holder.replaceChildren(input);input.focus();input.select();
+  let finished=false;
+  const restore=()=>holder.replaceChildren(lifeTrackerMarkButton(board,line,day));
+  const close=async(save)=>{
+    if(finished)return;finished=true;
+    const value=input.value.trim();
+    if(!save||value===original){restore();return}
+    const numeric=value===''?null:Number(value);
+    if(value!==''&&(!Number.isFinite(numeric)||Math.abs(numeric)>1000000)){
+      showUiError(new Error('Entre un nombre valide (entre -1 000 000 et 1 000 000).'),'Tracker');
+      restore();return;
+    }
+    input.disabled=true;
+    const result=await runUiAction('Enregistrer une valeur',()=>
+      lifeApi('/api/tracker-board-rows/'+line.id+'/mark',
+        {method:'PUT',body:JSON.stringify({day,value:numeric})}));
+    if(result.ok){
+      if(numeric===null)delete line.marks[day];
+      else line.marks[day]=String(numeric);
+    }
+    restore();
+  };
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();close(false)}
+    if(e.key==='Enter'){e.preventDefault();close(true)}
+  });
+  input.addEventListener('blur',()=>close(true));
+}
+function renderTrackerBoards(){
+  const root=$('#trackerBoardList');if(!root)return;
+  const [year,month]=lifeBoardMonth.split('-').map(Number);
+  const label=new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date(year,month-1,1));
+  lifeSetText('#trackerMonthLabel',label.charAt(0).toUpperCase()+label.slice(1));
+  const archiveRoot=$('#trackerBoardArchiveList');archiveRoot?.replaceChildren();
+  archiveRoot?.classList.toggle('hidden',!lifeBoardArchivesVisible);
+  const archives=$('#trackerBoardArchivesToggle');
+  if(archives){
+    archives.setAttribute('aria-expanded',String(lifeBoardArchivesVisible));
+    archives.textContent='Mes tableaux archivés ('+lifeArchivedBoards.length+')';
+  }
+  if(lifeBoardArchivesVisible&&archiveRoot){
+    if(!lifeArchivedBoards.length)archiveRoot.append(lifeNode('p','life-muted','Aucun tableau archivé.'));
+    lifeArchivedBoards.forEach(board=>{
+      const item=lifeNode('div','tracker-archived-entry');
+      item.append(lifeNode('strong','',board.title),lifeButton('Restaurer',()=>
+        lifeAction('Restaurer le tableau',()=>lifeApi('/api/tracker-boards/'+board.id,
+          {method:'PUT',body:JSON.stringify({archived:false})})),'tracker-restore'));
+      archiveRoot.append(item);
+    });
+  }
+  root.replaceChildren();
+  if(!lifeBoards.length)root.append(lifeNode('p','tracker-empty',
+    'Aucun tableau pour l’instant. Crée ton premier tableau, puis ajoute une ligne par habitude ou activité.'));
+  const total=new Date(year,month,0).getDate();
+  const today=ymd(new Date());
+  lifeBoards.forEach(board=>{
+    const section=lifeNode('section','tracker-board tracker-board-'+board.color);
+    const head=lifeNode('div','tracker-board-head');
+    const h=lifeNode('h3','',board.title);
+    const action=lifeButton('Archiver le tableau',async()=>{
+      const ok=await askUiConfirm('Archiver ce tableau',
+        'Le tableau « '+board.title+' » et ses cases seront conservés dans Mes tableaux archivés.',
+        'Archiver');
+      if(ok)await lifeAction('Archiver le tableau',()=>
+        lifeApi('/api/tracker-boards/'+board.id,
+          {method:'PUT',body:JSON.stringify({archived:true})}));
+    },'tracker-archive-button');
+    head.append(h,action);
+    const hint=lifeNode('p','life-muted','Clique sur une case pour marquer ta journée. Pour les lignes chiffrées, saisis une valeur. Fais défiler les jours horizontalement.');
+    const viewport=lifeNode('div','tracker-board-scroll');
+    viewport.tabIndex=0;viewport.setAttribute('aria-label','Tableau '+board.title+' pour '+label);
+    const grid=lifeNode('div','tracker-board-grid');
+    grid.style.setProperty('--tracker-days',String(total));
+    const days=lifeNode('div','tracker-grid-line tracker-grid-dates');
+    days.append(lifeNode('span','tracker-row-label','Mes suivis'));
+    for(let d=1;d<=total;d++){
+      const day=lifeTrackerDay(year,month,d),dateObj=new Date(year,month-1,d);
+      const week=new Intl.DateTimeFormat('fr-FR',{weekday:'narrow'}).format(dateObj);
+      const cell=lifeNode('span','tracker-grid-day'+(day===today?' tracker-today':''),week+'\n'+d);
+      cell.title=lifeDate(day);
+      days.append(cell);
+    }
+    grid.append(days);
+    board.rows.forEach(line=>{
+      const row=lifeNode('div','tracker-grid-line');
+      const name=lifeNode('span','tracker-row-label',line.title);
+      name.title=line.title+' · '+(line.mode==='number'?'nombre':'case à cocher');
+      row.append(name);
+      for(let d=1;d<=total;d++){
+        const day=lifeTrackerDay(year,month,d);
+        const holder=lifeNode('span','tracker-cell-wrap'+(day===today?' tracker-today':''));
+        holder.append(lifeTrackerMarkButton(board,line,day));row.append(holder);
+      }
+      grid.append(row);
+    });
+    viewport.append(grid);
+    if(!board.rows.length)viewport.append(lifeNode('p','life-muted',
+      'Ajoute une ligne ci-dessous : lecture, marcher, prendre soin de moi…'));
+    const form=lifeNode('form','tracker-add-row');
+    const title=lifeNode('input','');title.name='title';title.required=true;
+    title.maxLength=100;title.placeholder='Nouvelle ligne (ex. : Lecture)';
+    title.setAttribute('aria-label','Nouvelle ligne dans '+board.title);
+    const mode=lifeNode('select','');mode.name='mode';
+    [['check','À cocher'],['number','Chiffre']].forEach(([value,text])=>{
+      const opt=lifeNode('option','',text);opt.value=value;mode.append(opt);
+    });
+    mode.setAttribute('aria-label','Type de suivi');
+    const submit=lifeNode('button','primary','+ Ajouter une ligne');submit.type='submit';
+    form.append(title,mode,submit);
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const ok=await lifeAction('Ajouter une ligne',()=>lifeApi(
+        '/api/tracker-boards/'+board.id+'/rows',
+        {method:'POST',body:JSON.stringify({title:title.value,mode:mode.value})}));
+      if(ok)title.value='';
+    };
+    section.append(head,hint,viewport,form);root.append(section);
+  });
+}
+$('#trackerBoardCreateForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();const form=e.currentTarget,v=Object.fromEntries(new FormData(form).entries());
+  const ok=await lifeAction('Créer un tableau',()=>lifeApi('/api/tracker-boards',
+    {method:'POST',body:JSON.stringify(v)}));
+  if(ok)form.reset();
+});
+$('#trackerMonthPrev')?.addEventListener('click',()=>lifeTrackerChangeMonth(-1));
+$('#trackerMonthNext')?.addEventListener('click',()=>lifeTrackerChangeMonth(1));
+$('#trackerMonthToday')?.addEventListener('click',()=>{
+  lifeBoardMonth=ymd(new Date()).slice(0,7);loadLifeTools();
+});
+$('#trackerBoardArchivesToggle')?.addEventListener('click',()=>{
+  lifeBoardArchivesVisible=!lifeBoardArchivesVisible;renderTrackerBoards();
+});
+
 function renderLifeTrackers(){
   const root=$('#trackerList');if(!root)return;root.replaceChildren();
   if(!lifeTrackers.length)root.append(lifeNode('p','muted','Aucun tracker pour le moment. Crée ton premier suivi !'));
