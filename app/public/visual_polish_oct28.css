@@ -20,3 +20,5 @@
 #weekGrid .week-timed-event{min-height:25px!important}
 #weekGrid .week-card-title{font-size:12px!important;line-height:1.28!important}
 #weekGrid .week-timed-event:focus-within{outline:2px solid #e3bc73}
+
+#trackerBoardCreateForm.hidden{display:none!important}
