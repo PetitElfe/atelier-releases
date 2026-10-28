@@ -421,6 +421,12 @@
       <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
       <form id="adminCreateForm" class="life-form"><label>Démarche<input name="title" maxlength="180" required placeholder="Ex. : Envoyer un dossier"></label><label>Catégorie<select name="category"><option>Santé</option><option>Logement</option><option>CAF</option><option>Emploi</option><option>Identité</option><option>Autre</option></select></label><label>Échéance<input name="due_date" type="date"></label><label class="life-form-wide">Notes<textarea name="notes" rows="2" placeholder="Pièces à réunir, contact, référence…"></textarea></label><button type="submit" class="primary">+ Ajouter</button></form>
       <div id="adminList" class="life-card-list"></div>
+      <section class="life-admin-archives-section" aria-label="Démarches archivées">
+        <button id="adminArchivesToggle" type="button" aria-expanded="false"
+          aria-controls="adminArchivedList">▸ Mes démarches archivées (0)</button>
+        <p class="life-muted">Archiver ne supprime ni les notes, ni les fichiers, ni le rendez-vous associé.</p>
+        <div id="adminArchivedList" class="life-card-list hidden"></div>
+      </section>
     </section>
     <section id="capturesView" class="view life-view">
       <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>

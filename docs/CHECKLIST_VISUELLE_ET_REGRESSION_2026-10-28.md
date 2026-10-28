@@ -89,7 +89,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Si accueil vide / plein : pas de rognage à gauche ni scroll horizontal inattendu après F5.
 - [ ] Format plein écran/réduction fenêtre 1080p, 2K, 4K : positions conservées et carte visible.
 
-## F. Poignées façon éditeur (PR #78 toujours brouillon)
+## F. Poignées façon éditeur (fonctions intégrées par la PR #88 ; vérification manuelle attendue)
 - [ ] Dans Modifier, tous les côtés et coins offrent le curseur ↔, ↕ ou diagonal adapté.
 - [ ] Tirer bord droit conserve bord gauche ; tirer bord gauche conserve bord droit (idem haut/bas).
 - [ ] Tirer chaque coin redimensionne de façon prévisible, sans saut au premier mouvement ni inversion.
@@ -111,9 +111,9 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Plusieurs captures consécutives sans écrasement ou doublon.
 
 ## H. Administratif et autres modules
-- [ ] Créer, modifier, classer, marquer terminé et archiver une démarche ; échéance et notes intactes.
+- [ ] Créer, modifier nom/catégorie/échéance/notes, marquer terminé, archiver et restaurer une démarche ; les pièces et le rendez-vous restent intacts.
 - [ ] Lier Administratif ↔ Calendrier sans transformer arbitrairement une démarche en faux rendez-vous.
-- [ ] **En attente de développement** : joindre de véritables documents locaux à une démarche/événement ; sauvegarde, ouverture et sécurité.
+- [ ] Pièces jointes locales de démarche (PDF, PNG, JPEG, TXT jusqu’à 4 Mo) : ajout, téléchargement, retrait confirmé, sauvegarde et sécurité. Les pièces directement jointes à un événement restent distinctes et non développées.
 - [ ] Tâches : création, listes, vues Aujourd’hui/Toutes, priorités, récurrence par occurrence, coche synchronisée.
 - [ ] Rendez-vous : rappels configurables, statut et préparation historique non détruite après modification.
 - [ ] Bibliothèque/Objectifs : arborescence, sous-objectifs, liens, progression et accès depuis l’accueil.
@@ -135,4 +135,4 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 | V08 | Admin / Calendrier / documents | non testé | | |
 | V09 | Nathan / Android | non testé | | |
 
-**Statut technique de référence :** #84 et #85 fusionnées dans `feature/0180-progression-foundations`. #78 reste en brouillon ; la branche `main` est le canal stable. La présente checklist ne constitue ni une validation manuelle ni une autorisation de déployer.
+**Statut technique de référence :** #84, #85, #86, #87 et #88 fusionnées dans `feature/0180-progression-foundations` (ALPHA). #89 traite les archives et l’édition des démarches. #78 est toujours un brouillon expérimental historique, partiellement repris dans #88. La branche `main` est la stable. Une CI verte ne coche aucune case de test manuel.
