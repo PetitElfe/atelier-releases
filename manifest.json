@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "13458da095c8c3e4e12422ecf1a37e4d2b90401332758a56299f1ddb1a5edca3"
+      "sha256": "b6f482913b7598af972cbf3929acf2d73281b498b5645b3d5b88f85f8a4caa3b"
     },
     {
       "path": "app_part3.py",
@@ -33,11 +33,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "650c5afee0e053f5d7fc2d2d32aa12572157f55d8623a5974ea7a8551dbbb342"
+      "sha256": "02bbc88d98bc61688b4b3e2113d1412fb515e59f2c2eb60369ec633836b095c8"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "445ec23521fa1ee114283888622c48c7c443e631878ce20c9107f085344ba7c3"
+      "sha256": "6b4e7f7931387019f124e56bc9a66b02b30023a58353c231ed49a0ccaa04e7cb"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "307fa2e6122517444f9d323aac77a5b9edc85b6be0ba8d0f8fb81cb817b3630b"
+      "sha256": "2d637305753bb33208d75505ae893425bb2203adb5d616f9a32cd2d2f5d4bfb7"
     },
     {
       "path": "progression.py",
@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "fdd930c7053007d21daab28c9c123d15100c7f64ecf58f1019b5a9fe2dde69cb"
+      "sha256": "ba56805b35222d6b62fdeb64fa36fe46d02f4c8d97438e1acc08948764e1a2d2"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "e4164797a4097ab53070b6dafc2ce137e076637bc051f43221e0e53077988eca"
+      "sha256": "4d5de2ca8b3bf97fcfc9cde0274bbb65e6d0b80a98acca0f9e7b96820566d71c"
     },
     {
       "path": "quick_capture_native.py",
