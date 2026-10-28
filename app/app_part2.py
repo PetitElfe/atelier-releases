@@ -595,15 +595,22 @@ class Handler(BaseHTTPRequestHandler):
             mode=str(body.get('mode') or 'check')
             if not title or mode not in ('check','number'):
                 return self._json({'error':'Ligne ou type de suivi invalide.'},400)
+            try:
+                target,weekday,link,identity=tracker_rituals.normalized_row_config(body,mode)
+            except ValueError as ex:return self._json({'error':str(ex)},400)
             with conn() as c:
+                try:tracker_rituals.check_link(c,link,identity)
+                except ValueError as ex:return self._json({'error':str(ex)},400)
                 if not c.execute('SELECT 1 FROM tracker_boards WHERE id=? AND archived=0',(board_id,)).fetchone():
                     return self._json({'error':'Tableau introuvable ou archivé.'},404)
                 if c.execute('SELECT COUNT(*) FROM tracker_board_rows WHERE board_id=? AND archived=0',(board_id,)).fetchone()[0]>=80:
                     return self._json({'error':'Limite de lignes atteinte.'},409)
                 index=c.execute('SELECT COALESCE(MAX(order_index),0)+1 FROM tracker_board_rows WHERE board_id=?',
                                 (board_id,)).fetchone()[0]
-                cur=c.execute('INSERT INTO tracker_board_rows(board_id,title,mode,order_index,created_at,updated_at) '
-                              'VALUES(?,?,?,?,?,?)',(board_id,title,mode,index,ts,ts))
+                cur=c.execute('INSERT INTO tracker_board_rows '
+                              '(board_id,title,mode,target_count,weekday,linked_type,linked_id,order_index,created_at,updated_at) '
+                              'VALUES(?,?,?,?,?,?,?,?,?,?)',
+                              (board_id,title,mode,target,weekday,link,identity,index,ts,ts))
                 c.commit();return self._json({'id':cur.lastrowid},201)
         if p == '/api/trackers':
             title=str(body.get('title') or '').strip()[:120]
@@ -866,6 +873,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='setup':
+            try:row_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Ligne invalide.'},400)
+            try:
+                with conn() as c:
+                    reply=tracker_rituals.save_setup(c,row_id,body,ts)
+                    c.commit()
+                    return self._json(reply)
+            except ValueError as ex:return self._json({'error':str(ex)},400)
+            except LookupError as ex:return self._json({'error':str(ex)},404)
+        if len(parts)==4 and parts[:2]==['api','tracker-row-steps'] and parts[3]=='check':
+            try:
+                step_id=int(parts[2])
+                day=date.fromisoformat(str(body['day'])).isoformat()
+                with conn() as c:
+                    reply=tracker_rituals.toggle_step(c,step_id,day,body.get('done'),ts)
+                    c.commit()
+                    return self._json(reply)
+            except (TypeError,ValueError,KeyError) as ex:
+                return self._json({'error':str(ex)},400)
+            except LookupError as ex:return self._json({'error':str(ex)},404)
         if len(parts)==3 and parts[:2]==['api','standalone-preparation-items']:
             try:entry_id=int(parts[2])
             except (TypeError,ValueError):return self._json({'error':'Élément invalide.'},400)
@@ -921,9 +949,15 @@ class Handler(BaseHTTPRequestHandler):
                 value=body.get('value')
             except (ValueError,TypeError,KeyError):return self._json({'error':'Jour invalide.'},400)
             with conn() as c:
-                row=c.execute('SELECT r.mode FROM tracker_board_rows r JOIN tracker_boards b ON r.board_id=b.id '
+                row=c.execute('SELECT r.mode,r.weekday,r.target_count FROM tracker_board_rows r '
+                              'JOIN tracker_boards b ON r.board_id=b.id '
                               'WHERE r.id=? AND r.archived=0 AND b.archived=0',(row_id,)).fetchone()
                 if not row:return self._json({'error':'Ligne introuvable ou archivée.'},404)
+                if row['weekday'] is not None and date.fromisoformat(when).weekday()!=row['weekday']:
+                    return self._json({'error':'Cette ligne est prévue un autre jour de la semaine.'},409)
+                if row['mode']=='check' and value is not None and c.execute(
+                      'SELECT 1 FROM tracker_row_steps WHERE row_id=? AND active=1 LIMIT 1',(row_id,)).fetchone():
+                    return self._json({'error':'Termine les étapes de la liste pour valider cette habitude.'},409)
                 if value is not None:
                     if row['mode']=='check':
                         if type(value) is not bool or not value:
@@ -934,6 +968,9 @@ class Handler(BaseHTTPRequestHandler):
                             if isinstance(value,bool):raise ValueError()
                             numeric=float(value)
                             if not math.isfinite(numeric) or abs(numeric)>1000000:raise ValueError()
+                            if row['target_count'] is not None:
+                                if numeric<0 or numeric>row['target_count'] or not numeric.is_integer():
+                                    raise ValueError()
                             encoded=format(numeric,'.8g')
                         except (TypeError,ValueError):
                             return self._json({'error':'Valeur numérique invalide.'},400)
