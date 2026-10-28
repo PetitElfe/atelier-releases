@@ -251,8 +251,10 @@ def launch():
     env = os.environ.copy()
     env.update(ATELIER_DATA_DIR=str(DATA), ATELIER_PORT="8876")
     logfile = (DATA / "desktop-postits.log").open("ab", buffering=0)
+    # Never hold CODE/app as the working directory: Windows then refuses
+    # to rename that folder during updates, even after the server stops.
     try:
-        subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(CODE / "app"),
+        subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(DATA),
                          env=env, stdin=subprocess.DEVNULL,
                          stdout=logfile, stderr=subprocess.STDOUT,
                          close_fds=True, creationflags=flags)
