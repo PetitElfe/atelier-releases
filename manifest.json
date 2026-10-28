@@ -77,7 +77,7 @@
     },
     {
       "path": "desktop_shell.py",
-      "sha256": "c6bd964a5ec26d5a7d2de30a227db935982cadda02d35afaebfad869668c52de"
+      "sha256": "8ae05d247e8f5192ace037170e6ec26a127636fc2ade102d6d4f4d7c31cb38eb"
     },
     {
       "path": "desktop_postits.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST/Nathan — Correctif du cycle de vie des fenêtres Windows : à la fermeture de WebView2, arrêt propre du serveur local lancé par cette fenêtre, même si la mise à jour l’a remplacé entre-temps ; attente de libération du port ; interruption interdite pendant une mise à jour ; fenêtre unique par édition via verrou Windows ; processus et données des autres éditions préservés. Tests unitaires et Windows réels, stable 0.17.0 non modifiée. L’exécutable Windows déjà installé doit être remplacé séparément après validation."
+  "notes": "ALPHA 0.18.0 TEST/Nathan — Fermeture WebView2 : arrêt propre du serveur lancé par la fenêtre, même après remplacement par une mise à jour ; attente de libération du port ; protection des mises à jour en cours ; fenêtre unique par édition ; tests Windows sur vrai serveur et contrôle du verrou. Nouveau lanceur TEST : mise à niveau de l'EXE déjà installé avec sauvegarde vérifiée et remplacement atomique si l'ancien EXE est fermé. Données et stable 0.17.0 inchangées. La mise à jour de l'EXE nécessite un paquet Windows distinct et validation utilisateur."
 }
