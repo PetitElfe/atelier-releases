@@ -144,10 +144,10 @@ async function api(path,method='GET',body){
       return readGlobalLayout(item);
     });
     assert.ok(after.width>0&&after.height>0,axis+' must keep positive size');
-    const left=axis.includes('w')||axis==='left';
-    const top=axis.includes('n')||axis==='top';
-    const right=axis.includes('e')||axis==='right';
-    const bottom=axis.includes('s')||axis==='bottom';
+    const left=['nw','sw','left'].includes(axis);
+    const top=['nw','ne','top'].includes(axis);
+    const right=['ne','se','right'].includes(axis);
+    const bottom=['sw','se','bottom'].includes(axis);
     const near=(a,b,msg)=>assert.ok(Math.abs(a-b)<4,msg+': '+a+' vs '+b);
     if(left)near(after.x+after.width,initial.x+initial.width,axis+' keeps right edge');
     if(top)near(after.y+after.height,initial.y+initial.height,axis+' keeps bottom edge');
