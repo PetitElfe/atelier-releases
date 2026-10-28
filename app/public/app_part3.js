@@ -51,6 +51,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field"><label>Temps de trajet</label><input name="travel_time" placeholder="ex. 25 min ou 1h10" value="${esc(e?.travel_time||'')}"></div>
     <div id="eventTemplateHint" class="field-help full"></div>
     <div class="field full"><label for="eventUrlField">URL du rendez-vous</label><input id="eventUrlField" name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"><a id="eventOpenUrl" class="event-open-url hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir le lien du rendez-vous">↗ Ouvrir le lien dans le navigateur</a></div>
+    ${editing&&Array.isArray(e?.admin_links)&&e.admin_links.length?`<div class="field full"><div class="event-admin-links"><strong>Démarches liées</strong><span>${e.admin_links.map(x=>esc(x.title)).join(" · ")}</span><button type="button" id="eventOpenAdmin" class="secondary">↗ Ouvrir dans Administratif</button></div></div>`:""}
     <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
@@ -59,6 +60,13 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
+  $('#eventOpenAdmin')?.addEventListener('click',async()=>{
+    closeModal();showView('admin');
+    if(typeof loadLifeTools==='function')await loadLifeTools();
+    const adminId=e.admin_links[0]?.id;
+    const card=$('#adminList .life-card[data-admin-id="'+adminId+'"]');
+    if(card){card.scrollIntoView({block:'center',behavior:'smooth'});card.classList.add('life-admin-highlight')}
+  });
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
   // Link remains visible in the form while editing; changing the URL updates
   // its target immediately, without requiring a save or hidden menu.

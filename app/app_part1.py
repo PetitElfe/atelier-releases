@@ -1,11 +1,11 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals
+import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -422,6 +422,7 @@ with conn() as c:
     progression.initialise(c)
     objective_maps.initialise(c)
     event_preparations.initialise(c)
+    admin_docs.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
     # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
     if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():
@@ -559,6 +560,10 @@ with conn() as c:
     ):
         if column not in row_columns:
             c.execute(f'ALTER TABLE tracker_board_rows ADD COLUMN {column} {definition}')
+    admin_cols = {r['name'] for r in c.execute('PRAGMA table_info(admin_documents)')}
+    if 'event_id' not in admin_cols:
+        c.execute('ALTER TABLE admin_documents ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE SET NULL')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_admin_event_link ON admin_documents(event_id)')
     c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
 

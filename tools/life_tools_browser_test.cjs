@@ -259,6 +259,43 @@ async function api(path,method='GET',body){
   await page.locator('#adminList .life-card').first().waitFor();
   await page.locator('#adminList select.life-status').first().selectOption('waiting');
   await page.waitForFunction(async()=>(await (await fetch('/api/admin')).json()).some(x=>x.title==='Dossier CAF'&&x.status==='waiting'));
+  const admin=(await api('/api/admin')).find(x=>x.title==='Dossier CAF');
+  await page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"] .life-admin-event-select')
+    .selectOption(String(event.id));
+  await page.waitForFunction(async({id,eid})=>
+    (await (await fetch('/api/admin')).json()).find(x=>x.id===id)?.event_id===eid,
+    {id:admin.id,eid:event.id});
+  const linked=(await api('/api/events')).find(x=>x.id===event.id);
+  assert.ok(linked.admin_links.some(x=>x.id===admin.id),'Event exposes linked admin without creating another event');
+  const fileName='pièce-test.txt',sample='Dossier de test — reste dans SQLite.';
+  await page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"] input[type=file]')
+    .setInputFiles({name:fileName,mimeType:'text/plain',buffer:Buffer.from(sample,'utf8')});
+  await page.waitForFunction(async id=>(await (await fetch('/api/admin')).json())
+    .find(x=>x.id===id)?.attachments?.length===1,admin.id);
+  let att;
+  for(let retry=0;retry<35;retry++){
+    const fresh=(await api('/api/admin')).find(x=>x.id===admin.id);
+    att=fresh?.attachments?.[0];
+    if(att)break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  assert.ok(att,'Uploaded file must remain in SQLite after asynchronous UI reload');
+  const attachmentResponse=await fetch(base+'/api/admin/'+admin.id+'/attachments/'+att.id);
+  assert.equal(attachmentResponse.status,200);
+  assert.equal(await attachmentResponse.text(),sample);
+  assert.match(attachmentResponse.headers.get('content-disposition'),/attachment/);
+  assert.equal(attachmentResponse.headers.get('x-content-type-options'),'nosniff');
+  const invalid=await fetch(base+'/api/admin/'+admin.id+'/attachments',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filename:'../escape.txt',mime_type:'text/plain',
+      base64:Buffer.from(sample).toString('base64')})});
+  assert.equal(invalid.status,400,'No path traversal in filenames');
+  const wrongOwner=await fetch(base+'/api/admin/'+(admin.id+1000)+'/attachments/'+att.id);
+  assert.equal(wrongOwner.status,404,'Attachments cannot be fetched by another dossier');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('admin'));
+  await page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"] a').first().waitFor();
+  assert.equal((await api('/api/admin')).find(x=>x.id===admin.id).event_id,event.id);
   await page.evaluate(()=>showView('home'));
   await page.locator('#journalNextPage').click();
   assert.equal(await page.locator('#journalTrackerSummary').count(),0,

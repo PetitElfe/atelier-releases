@@ -227,6 +227,24 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        parts=p.strip('/').split('/')
+        if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:admin_id=int(parts[2]);file_id=int(parts[4])
+            except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+            with conn() as c:
+                attachment=admin_docs.detail(c,admin_id,file_id)
+                if not attachment:return self._json({'error':'Fichier introuvable.'},404)
+                content=attachment['content']
+                self.send_response(200)
+                self.send_header('Content-Type',attachment['mime_type'])
+                self.send_header('Content-Length',str(len(content)))
+                self.send_header('X-Content-Type-Options','nosniff')
+                self.send_header('Cache-Control','no-store, max-age=0')
+                self.send_header('Content-Disposition',
+                    "attachment; filename=\"fichier\"; filename*=UTF-8''"+quote(attachment['filename']))
+                self.end_headers()
+                self.wfile.write(content)
+                return
         if p == '/api/quick-capture/hotkey':
             return self._json({'shortcut':quick_capture_native.read_preference(DATA/'quick-capture-hotkey.json')})
         if p == '/api/desktop-postits/status':
@@ -332,8 +350,13 @@ class Handler(BaseHTTPRequestHandler):
                         'SELECT id,entry_date,value,notes FROM personal_tracker_entries WHERE tracker_id=? ORDER BY entry_date DESC LIMIT 90',(item['id'],))]
                 return self._json(trackers)
             if p == '/api/admin':
-                return self._json([dict(row) for row in c.execute(
-                    "SELECT * FROM admin_documents ORDER BY CASE status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, COALESCE(due_date,'9999'),id DESC")])
+                items=[dict(row) for row in c.execute(
+                    "SELECT a.*,e.title AS event_title,e.event_date AS linked_event_date "
+                    "FROM admin_documents a LEFT JOIN events e ON a.event_id=e.id "
+                    "ORDER BY CASE a.status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, "
+                    "COALESCE(a.due_date,'9999'),a.id DESC")]
+                for item in items:item['attachments']=admin_docs.summaries(c,item['id'])
+                return self._json(items)
             if p == '/api/captures':
                 return self._json([dict(row) for row in c.execute('SELECT * FROM quick_captures ORDER BY seen,created_at DESC,id DESC LIMIT 300')])
             if p == '/api/habits':
@@ -351,7 +374,11 @@ class Handler(BaseHTTPRequestHandler):
                 done_map = {(r['event_id'],r['instance_date']): r['completed_at'] for r in done_rows}
                 action_rows = c.execute('SELECT event_id,instance_date,action,moved_event_id,action_at FROM event_instance_actions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
                 action_map = {(r['event_id'],r['instance_date']): dict(r) for r in action_rows}
+                linked_admin={}
+                for item in c.execute('SELECT id,title,event_id FROM admin_documents WHERE event_id IS NOT NULL'):
+                    linked_admin.setdefault(item['event_id'],[]).append({'id':item['id'],'title':item['title']})
                 for e in expanded:
+                    e['admin_links']=linked_admin.get(e['id'],[])
                     key = (e['id'], e.get('instance_date') or e['event_date'])
                     completed_at = done_map.get(key)
                     action = action_map.get(key)
@@ -483,7 +510,29 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({'error':'not found'},404)
 
     def do_POST(self):
-        u = urlparse(self.path); p = u.path; body = self._body(); ts = now_iso()
+        u = urlparse(self.path); p = u.path
+        parts=p.strip('/').split('/')
+        if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:incoming_size=int(self.headers.get('Content-Length','0') or '0')
+            except ValueError:return self._json({'error':'Taille invalide.'},400)
+            if incoming_size>admin_docs.MAX_ATTACHMENT_REQUEST:
+                return self._json({'error':'Pièce jointe trop volumineuse (4 Mo max).'},413)
+        body = self._body(); ts = now_iso()
+        if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:admin_id=int(parts[2])
+            except ValueError:return self._json({'error':'Démarche invalide.'},400)
+            try:
+                name,mime,content=admin_docs.filename_and_bytes(
+                    body.get('filename'),body.get('mime_type'),body.get('base64'))
+            except (ValueError,AttributeError) as exc:
+                return self._json({'error':str(exc)},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM admin_documents WHERE id=?',(admin_id,)).fetchone():
+                    return self._json({'error':'Démarche introuvable.'},404)
+                cur=c.execute('INSERT INTO admin_attachments(admin_id,filename,mime_type,byte_size,content,created_at) '
+                    'VALUES(?,?,?,?,?,?)',(admin_id,name,mime,len(content),content,ts))
+                c.commit()
+                return self._json({'id':cur.lastrowid,'filename':name},201)
         if p == '/api/version':
             return self._json({'version': atelier_version()})
         if p == '/api/quick-capture/hotkey':
@@ -1025,8 +1074,13 @@ class Handler(BaseHTTPRequestHandler):
                 due=str(body.get('due_date',row['due_date']) or '').strip()
                 try:due=date.fromisoformat(due).isoformat() if due else None
                 except ValueError:return self._json({'error':'Date invalide.'},400)
-                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,updated_at=? WHERE id=?',
-                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],ts,doc_id))
+                raw_event=body.get('event_id',row['event_id'])
+                try:event_id=int(raw_event) if raw_event not in (None,'') else None
+                except (TypeError,ValueError):return self._json({'error':'Rendez-vous invalide.'},400)
+                if event_id is not None and not c.execute('SELECT 1 FROM events WHERE id=?',(event_id,)).fetchone():
+                    return self._json({'error':'Rendez-vous introuvable.'},404)
+                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,event_id=?,updated_at=? WHERE id=?',
+                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],event_id,ts,doc_id))
                 c.commit();return self._json({'ok':True})
         if len(parts)==3 and parts[:2]==['api','captures']:
             try:capture_id=int(parts[2])
@@ -1597,6 +1651,14 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError,IndexError,ValueError,TypeError) as ex:
                 return self._json({'error':str(ex)},400)
         with conn() as c:
+            if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+                try:admin_id=int(parts[2]);file_id=int(parts[4])
+                except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+                deleted=c.execute('DELETE FROM admin_attachments WHERE admin_id=? AND id=?',
+                                  (admin_id,file_id))
+                c.commit()
+                return self._json({'ok':True} if deleted.rowcount else {'error':'Fichier introuvable.'},
+                                  200 if deleted.rowcount else 404)
             if len(parts)==3 and parts[:2]==['api','events']:
                 eid=int(parts[2])
                 if not c.execute('SELECT id FROM events WHERE id=?',(eid,)).fetchone():

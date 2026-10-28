@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "d90844bd18d65a2d54b33a5f42c17347d9f80f1c9d73aedc6207d08bf8571f60"
+      "sha256": "5967b4926aa1b7bf0f9776e97f5a0055272df26299ccfd248ca7d68300306a19"
     },
     {
       "path": "app_part2.py",
-      "sha256": "43446e4e9f9392fe5fe131ba31134f0dd2b0f1180f1acf8d7eced799301af555"
+      "sha256": "13458da095c8c3e4e12422ecf1a37e4d2b90401332758a56299f1ddb1a5edca3"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "4de72baf5924ea6ac5e1af2e98e835d796998e45cad8569bf0f7ea4d27a88227"
+      "sha256": "445ec23521fa1ee114283888622c48c7c443e631878ce20c9107f085344ba7c3"
     },
     {
       "path": "public/index.html",
@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "539993c2be21dfe8370b119d28232bd18c63f7751920a74399029fa431ecfaf8"
+      "sha256": "fdd930c7053007d21daab28c9c123d15100c7f64ecf58f1019b5a9fe2dde69cb"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "97ea53e1c2c9e2816b2c16b3bebdaf10023f8c3eb5e5cd96d58fe3a4e19e173d"
+      "sha256": "e4164797a4097ab53070b6dafc2ce137e076637bc051f43221e0e53077988eca"
     },
     {
       "path": "quick_capture_native.py",
@@ -142,6 +142,10 @@
     {
       "path": "public/visual_polish_oct28.css",
       "sha256": "4609536fe893a025ae84d93442efb9afd3dc53068e143dd3f66e8b0b7ae7458e"
+    },
+    {
+      "path": "admin_docs.py",
+      "sha256": "01abceb8a2b031cc76d36df577d2b43cfa1ef61be2701332dc1ac78f2c13d5cd"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."

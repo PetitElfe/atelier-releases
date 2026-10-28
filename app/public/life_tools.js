@@ -544,21 +544,108 @@ function renderLifeAdmin(){
   const root=$('#adminList');if(!root)return;root.replaceChildren();
   if(!lifeAdmin.length)root.append(lifeNode('p','muted','Aucune démarche enregistrée.'));
   const statusNames={todo:'À faire',waiting:'En attente',done:'Terminée'};
+  const allEvents=[...new Map((state.events||[]).filter(e=>e.id).map(e=>[Number(e.id),e])).values()]
+    .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
   lifeAdmin.forEach(item=>{
     const card=lifeNode('article','life-card'+(item.status==='done'?' life-complete':''));
+    card.dataset.adminId=String(item.id);
     const heading=lifeNode('div','life-card-head');
     heading.append(lifeNode('strong','',item.title),lifeButton('Supprimer',async()=>{
-      if(!confirm('Supprimer cette démarche et ses notes ?'))return;
-      await lifeAction('Supprimer la démarche',()=>lifeApi('/api/admin/'+item.id,{method:'DELETE'}));
+      const yes=await askUiConfirm('Supprimer cette démarche',
+        'Supprimer « '+item.title+' » et ses documents joints ? Le rendez-vous lié sera conservé.','Supprimer',true);
+      if(yes)await lifeAction('Supprimer la démarche',()=>lifeApi('/api/admin/'+item.id,{method:'DELETE'}));
     },'life-danger'));
     const meta=lifeNode('div','life-muted',item.category+' · '+lifeDate(item.due_date));
     const select=lifeNode('select','life-status');
-    Object.entries(statusNames).forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;select.append(opt)});
+    Object.entries(statusNames).forEach(([value,label])=>{
+      const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);
+    });
     select.value=item.status;
-    select.onchange=async()=>{const ok=await lifeAction('Changer le statut',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({status:select.value})}));if(!ok)select.value=item.status};
-    const notes=lifeNode('textarea','life-admin-notes');notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
-    const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
-    card.append(heading,meta,select,notes,save);root.append(card);
+    select.onchange=async()=>{
+      const ok=await lifeAction('Changer le statut',()=>lifeApi('/api/admin/'+item.id,
+        {method:'PUT',body:JSON.stringify({status:select.value})}));
+      if(!ok)select.value=item.status;
+    };
+    const notes=lifeNode('textarea','life-admin-notes');
+    notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
+    const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi(
+      '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
+    const eventPanel=lifeNode('div','life-admin-link-panel');
+    const eventLabel=lifeNode('label','life-admin-link-label','Rendez-vous associé (facultatif)');
+    const eventSelect=lifeNode('select','life-admin-event-select');
+    const none=lifeNode('option','', 'Aucun rendez-vous lié');none.value='';eventSelect.append(none);
+    if(item.event_id && !allEvents.some(e=>Number(e.id)===Number(item.event_id))){
+      const current=lifeNode('option','',item.event_title||'Rendez-vous lié');
+      current.value=String(item.event_id);eventSelect.append(current);
+    }
+    allEvents.forEach(event=>{
+      const option=lifeNode('option','',lifeDate(event.event_date)+' · '+event.title);
+      option.value=String(event.id);eventSelect.append(option);
+    });
+    eventSelect.value=item.event_id==null?'':String(item.event_id);
+    eventSelect.onchange=async()=>{
+      const value=eventSelect.value;
+      const ok=await lifeAction('Relier le rendez-vous',()=>lifeApi('/api/admin/'+item.id,
+        {method:'PUT',body:JSON.stringify({event_id:value?Number(value):null})}));
+      if(!ok)eventSelect.value=item.event_id==null?'':String(item.event_id);
+    };
+    eventLabel.append(eventSelect);eventPanel.append(eventLabel);
+    if(item.event_id){
+      const open=lifeButton('↗ Voir dans le calendrier',async()=>{
+        showView('calendar');
+        if(item.linked_event_date)state.cursor=parseYMD(item.linked_event_date);
+        await refresh();
+        const event=(state.events||[]).find(e=>Number(e.id)===Number(item.event_id));
+        if(event)openEventModal(event);
+        else showUiError(new Error('Le rendez-vous est hors de la plage affichée.'),'Calendrier');
+      },'secondary');
+      eventPanel.append(open);
+    }
+    const files=lifeNode('div','life-admin-files');
+    files.append(lifeNode('strong','','Documents de la démarche'));
+    const fileList=lifeNode('div','life-admin-file-list');
+    for(const file of item.attachments||[]){
+      const line=lifeNode('div','life-admin-file');
+      const link=lifeNode('a','',file.filename+' · '+Math.max(1,Math.round(file.byte_size/1024))+' Ko');
+      link.href='/api/admin/'+item.id+'/attachments/'+file.id;
+      link.download=file.filename;link.title='Télécharger '+file.filename;
+      const remove=lifeButton('Retirer',async()=>{
+        const ok=await askUiConfirm('Retirer cette pièce jointe',
+          'Supprimer définitivement « '+file.filename+' » du dossier local ?','Retirer',true);
+        if(ok)await lifeAction('Supprimer le document',()=>lifeApi(
+          '/api/admin/'+item.id+'/attachments/'+file.id,{method:'DELETE'}));
+      },'life-danger');
+      line.append(link,remove);fileList.append(line);
+    }
+    if(!(item.attachments||[]).length)fileList.append(lifeNode('small','life-muted','Aucun document joint.'));
+    files.append(fileList);
+    const uploader=lifeNode('input','life-admin-upload');
+    uploader.type='file';uploader.accept='.pdf,.png,.jpg,.jpeg,.txt';
+    uploader.setAttribute('aria-label','Joindre un document à '+item.title);
+    const uploadLabel=lifeNode('label','life-admin-upload-label','Ajouter PDF, image ou TXT (4 Mo max)');
+    uploadLabel.append(uploader);
+    uploader.addEventListener('change',async()=>{
+      const file=uploader.files?.[0];if(!file)return;
+      if(file.size>4*1024*1024||!file.size){
+        showUiError(new Error('Choisis un fichier de 4 Mo maximum.'),'Pièce jointe');uploader.value='';return;
+      }
+      uploader.disabled=true;
+      try{
+        const raw=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();
+          reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+          reader.onerror=()=>reject(new Error('Lecture impossible.'));
+          reader.readAsDataURL(file);
+        });
+        await lifeAction('Joindre le document',()=>lifeApi('/api/admin/'+item.id+'/attachments',
+          {method:'POST',body:JSON.stringify({
+            filename:file.name,mime_type:file.type||'text/plain',base64:raw
+          })}));
+      }catch(error){showUiError(error,'Pièce jointe')}
+      finally{uploader.disabled=false;uploader.value=''}
+    });
+    files.append(uploadLabel);
+    card.append(heading,meta,select,notes,save,eventPanel,files);root.append(card);
   });
 }
 function renderLifeCaptures(){
