@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 title L'Atelier - Mise a jour TEST 0.18
-set "ROOT=E:\LATELIER_TEST_0180\code_0180\"
-set "ALLOWED=E:\LATELIER_TEST_0180\code_0180\"
+set "ROOT=E:\LATELIER_TEST_0180\code_0180"
+set "ALLOWED=E:\LATELIER_TEST_0180\code_0180"
 set "TEST_DATA=E:\LATELIER_TEST_0180\data"
 set "BRANCH=feature/0180-progression-foundations"
 set "REPO="
@@ -29,10 +29,26 @@ if errorlevel 1 (
   echo Python est introuvable sur ce PC.
   goto :fail
 )
+rem Un clone Git est facultatif pour l'Atelier TEST installe depuis l'app.
+rem Dans ce cas, utiliser le programme de mise a jour integre dans Parametres.
+git -C "%ROOT%" rev-parse --is-inside-work-tree >nul 2>&1
+if errorlevel 1 (
+  echo Le dossier TEST n'est pas un clone Git utilisable.
+  echo Aucune mise a jour faite depuis le lanceur Git.
+  echo Ouvre l'Atelier TEST, puis Parametres ^> Mises a jour.
+  echo Clique sur "Verifier les mises a jour", puis "Installer la mise a jour".
+  goto :fail
+)
 for /f "delims=" %%A in ('git -C "%ROOT%" rev-parse --abbrev-ref HEAD 2^>nul') do set "CURRENT=%%A"
+if not defined CURRENT (
+  echo Impossible de lire la branche Git du dossier TEST.
+  echo Ouvre l'Atelier TEST, puis Parametres ^> Mises a jour.
+  goto :fail
+)
 if not "%CURRENT%"=="%BRANCH%" (
   echo Branche inattendue : %CURRENT%
-  echo Aucun changement effectue.
+  echo Branche TEST attendue : %BRANCH%
+  echo Aucun changement effectue. Ne change pas de branche automatiquement.
   goto :fail
 )
 for /f "delims=" %%A in ('git -C "%ROOT%" remote get-url origin 2^>nul') do set "REPO=%%A"
@@ -98,7 +114,7 @@ echo Version de test a jour. Demarrage sur port 8876.
 set "ATELIER_DATA_DIR=%TEST_DATA%"
 set "ATELIER_PORT=8876"
 set "ATELIER_NO_BROWSER=0"
-python -u "%ROOT%app\app.py"
+python -u "%ROOT%\app\app.py"
 echo.
 echo Le serveur TEST s'est ferme.
 pause
