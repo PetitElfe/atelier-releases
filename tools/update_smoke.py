@@ -35,6 +35,9 @@ def main():
             c.execute('INSERT INTO protected VALUES (?)',('Ceci est une donnée privée fictive',))
         (data/'notes.txt').write_text('Ne jamais perdre ce texte',encoding='utf-8')
         (code/'untracked_important.txt').write_text('Ancien fichier préservé',encoding='utf-8')
+        # The in-place updater needs the existing manifest as its rollback marker.
+        original_manifest=b'{"version":"0.18.0","format":2,"files":[]}\n'
+        (code/'manifest.json').write_bytes(original_manifest)
         backup=root/'sauvegarde';backup.mkdir()
         updater.BASE=root;updater.CODE=code;updater.DATA=data
 
@@ -121,6 +124,8 @@ def main():
                 assert 'restaurée' in outcome['detail']
                 assert calls[0]==2,'Old server was not restarted'
                 assert (code/'app'/'app.py').read_text()=='# Original server fixture'
+                assert (code/'manifest.json').read_bytes()==original_manifest
+                assert not (code/'app'/'VERSION').exists()
                 assert (data/'notes.txt').read_text()=='Ne jamais perdre ce texte'
                 with sqlite3.connect(data/'atelier.db') as c:
                     assert c.execute('SELECT text FROM protected').fetchone()[0]=='Ceci est une donnée privée fictive'
