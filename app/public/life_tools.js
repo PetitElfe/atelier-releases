@@ -250,10 +250,18 @@ function renderTrackerBoards(){
     form.append(title,mode,submit);
     form.onsubmit=async e=>{
       e.preventDefault();
-      const ok=await lifeAction('Ajouter une ligne',()=>lifeApi(
-        '/api/tracker-boards/'+board.id+'/rows',
-        {method:'POST',body:JSON.stringify({title:title.value,mode:mode.value})}));
-      if(ok)title.value='';
+      if(submit.disabled)return;
+      submit.disabled=true;
+      const requestedTitle=title.value,requestedMode=mode.value;
+      try{
+        const result=await runUiAction('Ajouter une ligne',()=>lifeApi(
+          '/api/tracker-boards/'+board.id+'/rows',
+          {method:'POST',body:JSON.stringify({title:requestedTitle,mode:requestedMode})}));
+        if(result.ok){
+          title.value='';
+          await loadLifeTools();
+        }
+      }finally{submit.disabled=false}
     };
     section.append(head,periodBar,hint,viewport,form);root.append(section);
   });
