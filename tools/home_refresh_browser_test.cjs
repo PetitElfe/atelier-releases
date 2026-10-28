@@ -67,7 +67,7 @@ async function ready(){
     // exceed a smaller viewport. Never rewrite those original preferences.
     const original={
       homeBudgetWidget:{x:1500,y:20,width:310,height:null,scale:1},
-      calendar:{x:1650,y:20,width:440,height:null,scale:1},
+      calendar:{x:1300,y:20,width:440,height:null,scale:1},
       upcoming:{x:1350,y:240,width:365,height:null,scale:1},
       journal:{x:1100,y:345,width:680,height:null,scale:1}
     };
@@ -106,9 +106,10 @@ async function ready(){
     await assertHome('Return to original desktop width');
     const positions=await page.evaluate(()=>({
       calendar:document.getElementById('openCalendarCard').getBoundingClientRect().left,
-      stored:JSON.parse(localStorage.getItem('atelierHomeCanvasV2_calendar')).x
+      stored:JSON.parse(localStorage.getItem('atelierHomeCanvasV2_calendar')).x,
+      canvasLeft:document.querySelector('#homeCanvas').getBoundingClientRect().left
     }));
-    assert.ok(Math.abs(positions.calendar-(positions.stored+document.querySelector('#homeCanvas').getBoundingClientRect().left))<5,
+    assert.ok(Math.abs(positions.calendar-(positions.stored+positions.canvasLeft))<5,
       'The original position must return on a wide enough desktop');
 
     if(errors.length)throw Error('Unexpected browser errors: '+errors.join(' / '));
