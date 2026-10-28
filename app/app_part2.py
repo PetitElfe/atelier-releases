@@ -193,6 +193,25 @@ class Handler(BaseHTTPRequestHandler):
             if p == '/api/budget':
                 try: return self._json(budget_snapshot(c,budget_month(q.get('month',[date.today().strftime('%Y-%m')])[0]),now_iso()))
                 except ValueError as ex:return self._json({'error':str(ex)},400)
+            if p == '/api/tracker-boards':
+                try:
+                    month=str(q.get('month',[date.today().strftime('%Y-%m')])[0])
+                    if len(month)!=7 or date.fromisoformat(month+'-01').strftime('%Y-%m')!=month:
+                        raise ValueError()
+                    archived=str(q.get('archived',['0'])[0])=='1'
+                except (ValueError,TypeError):
+                    return self._json({'error':'Mois invalide.'},400)
+                boards=[dict(row) for row in c.execute(
+                    'SELECT * FROM tracker_boards WHERE archived=? ORDER BY id DESC',(int(archived),))]
+                for board in boards:
+                    board['rows']=[dict(row) for row in c.execute(
+                        'SELECT id,title,mode,order_index FROM tracker_board_rows '
+                        'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],))]
+                    for line in board['rows']:
+                        line['marks']={row['day']:row['value'] for row in c.execute(
+                            'SELECT day,value FROM tracker_board_marks WHERE row_id=? AND day LIKE ?',
+                            (line['id'],month+'-%'))}
+                return self._json(boards)
             if p == '/api/trackers':
                 trackers=[dict(row) for row in c.execute('SELECT * FROM personal_trackers WHERE archived=0 ORDER BY id')]
                 for item in trackers:
@@ -403,6 +422,37 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(desktop_postits.launch())
             except (RuntimeError,OSError) as exc:
                 return self._json({'error':str(exc)},409)
+        if p == '/api/tracker-boards':
+            title=str(body.get('title') or '').strip()[:100]
+            color=str(body.get('color') or 'sage')
+            if not title:return self._json({'error':'Nom du tableau requis.'},400)
+            if color not in ('sage','rose','mauve','gold','blue','peach'):
+                return self._json({'error':'Couleur de tableau invalide.'},400)
+            with conn() as c:
+                if c.execute('SELECT COUNT(*) FROM tracker_boards WHERE archived=0').fetchone()[0]>=48:
+                    return self._json({'error':'Archive un tableau avant d’en créer un autre.'},409)
+                cur=c.execute('INSERT INTO tracker_boards(title,color,created_at,updated_at) VALUES(?,?,?,?)',
+                              (title,color,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+        if p.startswith('/api/tracker-boards/') and p.endswith('/rows'):
+            parts=p.strip('/').split('/')
+            if len(parts)!=4:return self._json({'error':'Adresse invalide.'},404)
+            try:board_id=int(parts[2])
+            except ValueError:return self._json({'error':'Tableau invalide.'},400)
+            title=str(body.get('title') or '').strip()[:100]
+            mode=str(body.get('mode') or 'check')
+            if not title or mode not in ('check','number'):
+                return self._json({'error':'Ligne ou type de suivi invalide.'},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM tracker_boards WHERE id=? AND archived=0',(board_id,)).fetchone():
+                    return self._json({'error':'Tableau introuvable ou archivé.'},404)
+                if c.execute('SELECT COUNT(*) FROM tracker_board_rows WHERE board_id=? AND archived=0',(board_id,)).fetchone()[0]>=80:
+                    return self._json({'error':'Limite de lignes atteinte.'},409)
+                index=c.execute('SELECT COALESCE(MAX(order_index),0)+1 FROM tracker_board_rows WHERE board_id=?',
+                                (board_id,)).fetchone()[0]
+                cur=c.execute('INSERT INTO tracker_board_rows(board_id,title,mode,order_index,created_at,updated_at) '
+                              'VALUES(?,?,?,?,?,?)',(board_id,title,mode,index,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
         if p == '/api/trackers':
             title=str(body.get('title') or '').strip()[:120]
             unit=str(body.get('unit') or '').strip()[:32]
@@ -664,6 +714,46 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==3 and parts[:2]==['api','tracker-boards']:
+            try:
+                board_id=int(parts[2])
+                archived=body['archived']
+                if type(archived) is not bool:raise ValueError()
+            except (ValueError,TypeError,KeyError):return self._json({'error':'Archivage invalide.'},400)
+            with conn() as c:
+                updated=c.execute('UPDATE tracker_boards SET archived=?,updated_at=? WHERE id=?',
+                                  (int(archived),ts,board_id))
+                c.commit()
+                return self._json({'ok':bool(updated.rowcount)},200 if updated.rowcount else 404)
+        if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='mark':
+            try:
+                row_id=int(parts[2])
+                when=date.fromisoformat(str(body['day'])).isoformat()
+                value=body.get('value')
+            except (ValueError,TypeError,KeyError):return self._json({'error':'Jour invalide.'},400)
+            with conn() as c:
+                row=c.execute('SELECT r.mode FROM tracker_board_rows r JOIN tracker_boards b ON r.board_id=b.id '
+                              'WHERE r.id=? AND r.archived=0 AND b.archived=0',(row_id,)).fetchone()
+                if not row:return self._json({'error':'Ligne introuvable ou archivée.'},404)
+                if value is not None:
+                    if row['mode']=='check':
+                        if type(value) is not bool or not value:
+                            return self._json({'error':'Utilise une case cochée ou vide.'},400)
+                        encoded='1'
+                    else:
+                        try:
+                            if isinstance(value,bool):raise ValueError()
+                            numeric=float(value)
+                            if not math.isfinite(numeric) or abs(numeric)>1000000:raise ValueError()
+                            encoded=format(numeric,'.8g')
+                        except (TypeError,ValueError):
+                            return self._json({'error':'Valeur numérique invalide.'},400)
+                    c.execute('INSERT INTO tracker_board_marks(row_id,day,value,updated_at) VALUES(?,?,?,?) '
+                              'ON CONFLICT(row_id,day) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at',
+                              (row_id,when,encoded,ts))
+                else:
+                    c.execute('DELETE FROM tracker_board_marks WHERE row_id=? AND day=?',(row_id,when))
+                c.commit();return self._json({'ok':True})
         if len(parts)==3 and parts[:2]==['api','cycle-periods']:
             try:
                 period_id=int(parts[2])
@@ -1295,6 +1385,11 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('DELETE FROM events WHERE id=?',(eid,))
                 c.commit()
                 return self._json({'ok':True})
+            if len(parts)==3 and parts[:2]==['api','tracker-board-rows']:
+                try:row_id=int(parts[2])
+                except ValueError:return self._json({'error':'Ligne invalide.'},400)
+                c.execute('UPDATE tracker_board_rows SET archived=1,updated_at=? WHERE id=?',(now_iso(),row_id))
+                c.commit();return self._json({'ok':True})
             if len(parts)==3 and parts[:2]==['api','trackers']:
                 c.execute('UPDATE personal_trackers SET archived=1 WHERE id=?',(int(parts[2]),))
                 c.commit();return self._json({'ok':True})
