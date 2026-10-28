@@ -1403,6 +1403,20 @@ body.home-active{overflow-y:auto}
   .home-library-list{max-height:45vh}
 }
 
+/* ALPHA 0.18 — « Voir tous les rendez-vous » reste lisible devant le Carnet.
+   La liste étendue n'est pas coupée par la hauteur personnalisée de la carte.
+   Ne change ni dimensions enregistrées ni ordre des autres modules. */
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded {
+  z-index:12;
+  overflow:visible;
+}
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded #homeUpcoming {
+  position:relative;
+  background:#1b1815;
+  border-radius:0 0 10px 10px;
+  box-shadow:0 12px 22px #0008;
+}
+
 /* ALPHA 0.16.1 — Canvas indépendant pour l'Accueil uniquement.
    Les autres rubriques conservent leurs dispositions et leurs clés existantes. */
 #homeView.home-free-ready #homeCanvas{position:relative;width:100%;min-height:0;overflow:visible}

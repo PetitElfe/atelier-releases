@@ -170,6 +170,8 @@ function renderHome(){
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
   const upcomingAll=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||'')));
   const expanded=upcomingRoot.dataset.expanded==='1';
+  // En affichage étendu, passer au premier plan sans déplacer le module.
+  $('#homeUpcomingWidget')?.classList.toggle('home-upcoming-expanded',expanded);
   const upcoming=expanded?upcomingAll:upcomingAll.slice(0,3);
   if(!upcoming.length) upcomingRoot.innerHTML='<div class="home-empty">Aucun rendez-vous à venir.</div>';
   upcoming.forEach(e=>{
