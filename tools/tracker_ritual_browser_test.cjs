@@ -82,6 +82,11 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
   await page.waitForFunction(async({id,day})=>
     (await (await fetch('/api/tracker-boards')).json()).flatMap(x=>x.rows)
       .find(x=>x.id===id)?.marks?.[day]==='1',{id:morning.id,day});
+  // Le serveur confirme l'écriture avant la fin du handler async côté UI :
+  // attendre le rendu évite de confondre latence et régression.
+  await page.waitForFunction(()=>
+    document.querySelector('.tracker-ritual-progress')?.textContent.includes('Validé'),
+    null,{timeout:12000});
   assert.match(await page.locator('.tracker-ritual-progress').innerText(),/Validé/);
   await page.locator('.tracker-ritual-actions').getByRole('button',{name:'Fermer'}).click();
   const numberRow=card.locator('.tracker-grid-line').filter({hasText:'Boire dix verres'});
@@ -97,6 +102,9 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
       return Number(x?.marks?.[day])===value;
     },{id:number.id,day,value});
   }
+  await page.waitForFunction(async({id,day})=>
+    (await (await fetch('/api/tracker-boards/daily?day='+day)).json()).items
+      .find(x=>x.row_id===id)?.done===true,{id:number.id,day},{timeout:12000});
   assert.equal((await api('/api/tracker-boards/daily?day='+day)).items
     .find(x=>x.row_id===number.id).done,true);
   await page.evaluate(()=>showView('home'));
