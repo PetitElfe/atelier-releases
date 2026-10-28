@@ -1834,3 +1834,25 @@ body.home-active{overflow-y:auto}
 }
 .event-open-url:not(.hidden):hover,
 .event-open-url:not(.hidden):focus-visible{background:#55412b;color:#fff1ce}
+
+
+/* ALPHA 0.18 — correctif Accueil après F5 / redimensionnement.
+   La règle générale .pinned-calendar{width:100%} sur les très grands écrans
+   faisait parfois occuper TOUT le canvas au mini-calendrier. Une coordonnée x
+   sauvegardée à droite pouvait alors créer une page horizontalement défilable,
+   que WebView restaurait après F5 en rognant Budget/À venir à gauche.
+   Les largeurs personnalisées (style inline) priment sur cette largeur par défaut. */
+#homeView.home-free-ready #openCalendarCard{
+  width:min(240px,100%);
+  max-width:100%;
+  box-sizing:border-box;
+}
+#homeView.home-free-ready [data-home-module]{
+  box-sizing:border-box;
+}
+/* Clip seulement le débordement horizontal résiduel (poignées/ombres) et
+   conserver le défilement vertical des modules placés plus bas. */
+#homeView.home-free-ready{
+  overflow-x:clip;
+  overflow-y:visible;
+}
