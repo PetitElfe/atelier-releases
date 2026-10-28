@@ -110,6 +110,8 @@ async function api(path,method='GET',body){
   await api('/api/tracker-boards/'+wellness.id,'PUT',{archived:true});
   await page.evaluate(()=>loadLifeTools());
   await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===1);
+  await page.evaluate(()=>showView('settings'));
+  await page.waitForFunction(()=>document.getElementById('settingsTrackerHistory')?.textContent);
   await page.locator('#trackerBoardArchivesToggle').click();
   await page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'})
     .getByRole('button',{name:'Restaurer'}).click();
@@ -225,7 +227,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async()=>(await (await fetch('/api/admin')).json()).some(x=>x.title==='Dossier CAF'&&x.status==='waiting'));
   await page.evaluate(()=>showView('home'));
   await page.locator('#journalNextPage').click();
-  assert.match(await page.locator('#journalTrackerSummary').innerText(),/Lecture/);
+  assert.equal(await page.locator('#journalTrackerSummary').count(),0,
+    'Trackers must not be copied into the Journal. Daily Tracker lives on Home.');
   assert.match(await page.locator('#journalAdminSummary').innerText(),/Dossier CAF/);
   await page.evaluate(()=>lifeOpenCapture());
   await page.locator('#quickCaptureText').fill('#Car');
