@@ -102,7 +102,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Entrée normale ET Entrée du pavé numérique donnent des lignes distinctes, sauvegardées.
 - [ ] Cadenas protège les positions contre un glisser accidentel ; déverrouillage fonctionne.
 - [ ] Post-it archivé conserve texte, sauts de ligne, couleur et emplacement à la restauration.
-- [ ] Accès aux archives directement depuis Paramètres, même après archivage du dernier post-it.
+- [ ] Accès aux archives directement depuis Paramètres, même après archivage du dernier post-it : titres seuls dans l’Atelier ; bouton Restaurer réaffiche sur Bureau Windows avec texte, sauts de ligne, couleur et coordonnées. Développé sur ALPHA, à vérifier sur Windows.
 - [ ] Archiver ≠ supprimer définitivement ; aucun effacement sans confirmation claire.
 - [ ] Zone de notification discrète, aucune fenêtre gênante dans la barre des tâches.
 - [ ] Capture rapide depuis plume/clic/raccourci choisi ; clavier global si activé.

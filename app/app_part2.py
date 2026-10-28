@@ -1178,10 +1178,17 @@ class Handler(BaseHTTPRequestHandler):
                 content=str(body.get('body',old['body']))
                 color=str(body.get('color',old['color']))
                 shape=str(body.get('shape',old['shape']))
-                archived=int(bool(body.get('archived',old['archived'])))
+                raw_archived=body.get('archived',bool(old['archived']))
+                if type(raw_archived) is not bool:
+                    return self._json({'error':'Statut d’archivage invalide.'},400)
+                archived=int(raw_archived)
                 colors={'sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'}
                 if len(content)>20000 or color not in colors or shape not in ('square','rounded','pill'):
                     return self._json({'error':'Texte, couleur ou forme incorrects.'},400)
+                if old['archived'] and not archived:
+                    count=c.execute('SELECT COUNT(*) FROM home_postits WHERE archived=0').fetchone()[0]
+                    if count>=100:
+                        return self._json({'error':'Archive quelques notes avant de les restaurer.'},409)
                 c.execute('UPDATE home_postits SET title=?,body=?,color=?,shape=?,archived=?,updated_at=? WHERE id=?',
                           (title,content,color,shape,archived,ts,note_id))
                 c.commit()

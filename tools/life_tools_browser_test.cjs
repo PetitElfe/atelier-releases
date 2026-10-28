@@ -468,6 +468,36 @@ async function api(path,method='GET',body){
       body:JSON.stringify(body)});
     assert.equal(own.status,409,path+' should pass the origin check and then fail its TEST-only guard');
   }
+  // Le dernier Post-it peut être récupéré depuis Paramètres, sans avoir
+  // besoin d'un compagnon Windows déjà ouvert ni d'une fenêtre dans l'Atelier.
+  const postit=await api('/api/postits','POST',{
+    title:'Archives E2E',body:'Première ligne'+String.fromCharCode(10)+'Deuxième ligne',
+    color:'mauve',shape:'rounded'
+  });
+  await api('/api/postits/'+postit.id,'PUT',{archived:true});
+  assert.equal((await api('/api/postits')).some(n=>n.id===postit.id),false);
+  const badStatus=await fetch(base+'/api/postits/'+postit.id,{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({archived:'false'})
+  });
+  assert.equal(badStatus.status,400,'Archived must be a real boolean');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('settings'));
+  await page.locator('#settingsDesktopPostitArchives summary').click();
+  const archivedItem=page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]');
+  await archivedItem.waitFor();
+  assert.equal(await archivedItem.getByText('Première ligne').count(),0,
+    'The archive list shows names only, never Post-it contents');
+  await archivedItem.getByRole('button',{name:'Restaurer le Post-it Archives E2E'}).click();
+  await page.waitForFunction(async id=>{
+    const notes=await (await fetch('/api/postits')).json();
+    return notes.some(n=>n.id===id&&n.archived===0);
+  },postit.id);
+  const restored=(await api('/api/postits')).find(n=>n.id===postit.id);
+  assert.equal(restored.body,'Première ligne'+String.fromCharCode(10)+'Deuxième ligne');
+  assert.equal(restored.color,'mauve');
+  assert.equal((await api('/api/postits?archived=1')).some(n=>n.id===postit.id),false);
+  assert.equal(await page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]').count(),0);
   await page.evaluate(()=>showView('settings'));
   assert.ok((await page.locator('#settingsRunningEdition').innerText()).includes('Installation locale (port 18812)'));
   await page.locator('#settingsReminderSound').check();
