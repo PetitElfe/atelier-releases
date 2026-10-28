@@ -284,3 +284,11 @@
 .life-admin-highlight{outline:2px solid var(--gold);outline-offset:3px}
 .event-admin-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:9px;padding:10px}
 .event-admin-links span{flex:1;min-width:140px;overflow-wrap:anywhere}
+
+/* Trier un Tracker sans déplacer ses données datées. */
+.tracker-row-label .tracker-row-order{display:inline-flex;gap:1px;align-items:center;margin-left:auto;flex:0 0 auto}
+.tracker-row-label .tracker-row-move{font:600 13px/1 system-ui,sans-serif;min-width:22px;min-height:23px;padding:2px;border:1px solid #655744;border-radius:5px;background:transparent;color:#dcc49a;cursor:pointer}
+.tracker-row-label .tracker-row-move:disabled{opacity:.2;cursor:default}
+.tracker-row-label .tracker-row-move:not(:disabled):hover{background:#574431}
+.tracker-row-label .tracker-row-move:focus-visible{outline:2px solid #e9bb75}
+.tracker-row-label .tracker-row-title{min-width:0;overflow-wrap:anywhere;text-align:left}

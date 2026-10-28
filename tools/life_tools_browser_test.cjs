@@ -40,6 +40,20 @@ async function api(path,method='GET',body){
     title:'Autre rendez-vous '+i,event_date:date,start_time:'18:'+String(i*10).padStart(2,'0'),category:'general'
   });
   await page.evaluate(()=>refresh());
+  await page.evaluate(()=>{
+    state.cursor=new Date();state.calendarMode='month';applyCalendarMode();showView('calendar');renderMonth();
+  });
+  const dayToggle=page.locator('#monthGrid .day-list-toggle[aria-label="Voir tous les rendez-vous du '+date+'"]');
+  await dayToggle.click();
+  assert.ok(await page.locator('#modalBody .calendar-day-list .event-pill').count()>=5);
+  await page.locator('#calendarDayAdd').click();
+  const dayForm=page.locator('#eventForm');
+  assert.ok(await dayForm.count(),
+    'Bouton Ajouter dans la liste du jour doit ouvrir le formulaire. Modale : '+
+    (await page.locator('#modalBody').innerText())+' · JS : '+JSON.stringify(errors));
+  assert.equal(await dayForm.locator('[name=event_date]').inputValue(),date);
+  await page.locator('#cancelEvent').click();
+  await page.evaluate(()=>showView('home'));
   const expand=page.locator('#homeUpcoming .home-upcoming-toggle');
   await expand.waitFor();
   assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
@@ -100,6 +114,19 @@ async function api(path,method='GET',body){
   let current=boards.find(b=>b.id===wellness.id);
   const checkRow=current.rows.find(x=>x.title==='Boire de l’eau');
   const numberRow=current.rows.find(x=>x.title==='Sommeil');
+  await wellnessCard.locator('.tracker-grid-line[data-tracker-row-id="'+numberRow.id+'"] .tracker-row-move[aria-label^="Monter"]').click();
+  await page.waitForFunction(async({boardId,rowId})=>{
+    const found=(await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===boardId);
+    return found?.rows[0]?.id===rowId;
+  },{boardId:wellness.id,rowId:numberRow.id});
+  current=(await api('/api/tracker-boards')).find(b=>b.id===wellness.id);
+  assert.equal(current.rows[0].id,numberRow.id);
+  assert.equal(current.rows[1].id,checkRow.id);
+  const badMove=await fetch(base+'/api/tracker-board-rows/'+numberRow.id+'/move',{
+    method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({direction:'left'})
+  });
+  assert.equal(badMove.status,400);
+
   assert.equal(checkRow.mode,'check');
   assert.equal(numberRow.mode,'number');
   const todayN=new Date().getDate()-1;
@@ -348,6 +375,88 @@ async function api(path,method='GET',body){
   const corner=page.locator('#openCalendarCard .layout-corner-nw');
   assert.ok(await corner.count(),'Top-left resize handle exists');
   assert.equal(await corner.evaluate(el=>getComputedStyle(el).cursor),'nwse-resize');
+  // Canva-like regression: all eight grips really receive pointer events,
+  // anchor the opposite edge, and persist the result. Previously several
+  // visible grips had pointer-events:none and were impossible to use.
+  const baseline={x:500,y:255,width:350,height:220};
+  const grips=[
+    ['nw','layout-corner-nw',-25,-20],
+    ['ne','layout-corner-ne',35,-20],
+    ['sw','layout-corner-sw',-25,25],
+    ['se','layout-resize-handle',35,25],
+    ['left','layout-side-left',-25,0],
+    ['right','layout-width-handle',35,0],
+    ['top','layout-side-top',0,-25],
+    ['bottom','layout-height-handle',0,30]
+  ];
+  for(const [axis,klass,dx,dy] of grips){
+    await page.evaluate(b=>{
+      const item=globalLayoutItems.find(it=>it.id==='homeBudgetWidget');
+      const next={...readGlobalLayout(item),...b,scale:1};
+      saveGlobalLayout(item,next);applyGlobalLayout(item,next);selectHomeCanvasItem(item);
+    },baseline);
+    const handle=page.locator('#homeBudgetWidget .'+klass);
+    await handle.waitFor({state:'visible'});
+    assert.equal(await handle.evaluate(el=>getComputedStyle(el).pointerEvents),
+      'auto',axis+' must be clickable');
+    const rect=await handle.boundingBox();
+    assert.ok(rect?.width>0&&rect?.height>0,axis+' has a tangible hit target');
+    const center={x:rect.x+rect.width/2,y:rect.y+rect.height/2};
+    const initial=await page.evaluate(()=>{
+      const item=globalLayoutItems.find(it=>it.id==='homeBudgetWidget');
+      const d=readGlobalLayout(item),r=item.el.getBoundingClientRect();
+      return {...d,width:r.width,height:r.height};
+    });
+    await page.mouse.move(center.x,center.y);
+    await page.mouse.down();
+    await page.mouse.move(center.x+dx,center.y+dy,{steps:7});
+    await page.mouse.up();
+    const after=await page.evaluate(()=>{
+      const item=globalLayoutItems.find(it=>it.id==='homeBudgetWidget');
+      return readGlobalLayout(item);
+    });
+    assert.ok(after.width>0&&after.height>0,axis+' must keep positive size');
+    const left=['nw','sw','left'].includes(axis);
+    const top=['nw','ne','top'].includes(axis);
+    const right=['ne','se','right'].includes(axis);
+    const bottom=['sw','se','bottom'].includes(axis);
+    const near=(a,b,msg)=>assert.ok(Math.abs(a-b)<4,msg+': '+a+' vs '+b);
+    if(left)near(after.x+after.width,initial.x+initial.width,axis+' keeps right edge');
+    if(top)near(after.y+after.height,initial.y+initial.height,axis+' keeps bottom edge');
+    if(right)near(after.x,initial.x,axis+' keeps left edge');
+    if(bottom)near(after.y,initial.y,axis+' keeps top edge');
+    if(['nw','ne','sw','se'].includes(axis))
+      near(after.width/after.height,initial.width/initial.height,axis+' preserves ratio');
+    if(['left','right'].includes(axis))near(after.height,initial.height,axis+' only adjusts width');
+    if(['top','bottom'].includes(axis))near(after.width,initial.width,axis+' only adjusts height');
+    assert.ok(Math.abs(after.width-initial.width)>4||Math.abs(after.height-initial.height)>4,
+      axis+' must respond to drag');
+  }
+  // Shift overrides proportional scaling on a corner, as in graphical editors.
+  await page.evaluate(b=>{
+    const item=globalLayoutItems.find(it=>it.id==='homeBudgetWidget');
+    const d={...readGlobalLayout(item),...b};saveGlobalLayout(item,d);
+    applyGlobalLayout(item,d);selectHomeCanvasItem(item);
+  },baseline);
+  const se=await page.locator('#homeBudgetWidget .layout-resize-handle').boundingBox();
+  const mx=se.x+se.width/2,my=se.y+se.height/2;
+  await page.mouse.move(mx,my);
+  await page.keyboard.down('Shift');
+  await page.mouse.down();
+  await page.mouse.move(mx+55,my+10,{steps:6});
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+  const stretched=await page.evaluate(()=>readGlobalLayout(
+    globalLayoutItems.find(it=>it.id==='homeBudgetWidget')));
+  assert.ok(stretched.width>baseline.width+35);
+  assert.ok(stretched.height<baseline.height+24);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#journalPageNumber').waitFor();
+  const persisted=await page.evaluate(()=>readGlobalLayout(
+    globalLayoutItems.find(it=>it.id==='homeBudgetWidget')));
+  assert.equal(persisted.width,stretched.width);
+  assert.equal(persisted.height,stretched.height);
+
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok((await api('/api/trackers'))[0].entries.some(x=>x.value===42));

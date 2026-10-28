@@ -160,7 +160,11 @@ function renderMonth(){
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
-    cell.innerHTML=`<div class="day-number">${d.getDate()}</div><button class="day-add" title="Ajouter un rendez-vous">+</button>`;
+    cell.innerHTML=`<button class="day-number day-list-toggle" type="button"
+      title="Voir tous les rendez-vous du ${ds}" aria-label="Voir tous les rendez-vous du ${ds}">${d.getDate()}</button>
+      <button class="day-add" type="button" title="Ajouter un rendez-vous">+</button>`;
+    const allDayEvents=state.events.filter(e=>e.instance_date===ds);
+    cell.querySelector('.day-list-toggle').addEventListener('click',()=>openDayList(ds,allDayEvents));
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);bindCalendarDateContextMenu(cell,ds);
     const items=state.events.filter(e=>e.instance_date===ds && e.show_in_month).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
     items.slice(0,3).forEach(e=>{
@@ -456,7 +460,21 @@ function openReminderModal(reminder=null){
   };
 }
 
-function openDayList(ds,items){ openModal(`<h2>${ds}</h2><div class="task-list">${items.map(e=>`<button class="event-pill ${eventClass(e)}" data-eid="${e.id}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`).join('')}</div>`); $$('#modalBody [data-eid]').forEach(b=>b.addEventListener('click',()=>{const e=state.events.find(x=>x.id===Number(b.dataset.eid));openEventModal(e)})); }
+function openDayList(ds,items){
+  // Use the actual occurrence object, not only the recurring series ID.
+  // Different dates in one series share an ID but must open independently.
+  const label=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+    .format(parseYMD(ds));
+  const sorted=[...items].sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
+  openModal(`<h2>Rendez-vous du ${esc(label)}</h2>
+    <div class="calendar-day-list" role="list">${sorted.length?sorted.map((e,index)=>
+      `<button role="listitem" type="button" class="event-pill ${eventClass(e)}" data-occurrence="${index}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`
+    ).join(''):'<p class="muted">Aucun rendez-vous ce jour.</p>'}</div>
+    <div class="form-actions"><button type="button" id="calendarDayAdd" class="primary">+ Ajouter un rendez-vous</button></div>`);
+  $$('#modalBody [data-occurrence]').forEach(button=>
+    button.addEventListener('click',()=>openEventModal(sorted[Number(button.dataset.occurrence)])));
+  $('#calendarDayAdd').onclick=()=>openEventModal(null,ds);
+}
 function openModal(html){
   const modal=document.querySelector('.modal');
   if(modal)modal.className='modal';
