@@ -51,7 +51,7 @@ async function api(path,method='GET',body){
   let boards=await api('/api/tracker-boards');
   const wellness=boards.find(b=>b.title==='Bien-être');
   const projects=boards.find(b=>b.title==='Projets');
-  assert.ok(wellness&&projects&&wellness.id!==projects.id);
+  assert.ok(wellness&&projects&&wellness.id!==projects.id,'Expected distinct named boards: '+JSON.stringify(boards.map(b=>({id:b.id,title:b.title}))));
   const wellnessCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')});
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Boire de l’eau');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
