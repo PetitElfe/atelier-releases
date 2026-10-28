@@ -374,7 +374,11 @@ class Handler(BaseHTTPRequestHandler):
                 done_map = {(r['event_id'],r['instance_date']): r['completed_at'] for r in done_rows}
                 action_rows = c.execute('SELECT event_id,instance_date,action,moved_event_id,action_at FROM event_instance_actions WHERE instance_date BETWEEN ? AND ?', (start,end)).fetchall()
                 action_map = {(r['event_id'],r['instance_date']): dict(r) for r in action_rows}
+                linked_admin={}
+                for item in c.execute('SELECT id,title,event_id FROM admin_documents WHERE event_id IS NOT NULL'):
+                    linked_admin.setdefault(item['event_id'],[]).append({'id':item['id'],'title':item['title']})
                 for e in expanded:
+                    e['admin_links']=linked_admin.get(e['id'],[])
                     key = (e['id'], e.get('instance_date') or e['event_date'])
                     completed_at = done_map.get(key)
                     action = action_map.get(key)
