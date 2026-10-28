@@ -2,12 +2,15 @@ name: L’Atelier du Goblin — Windows TEST
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/0180-progression-foundations]
     paths:
       - "app/desktop_shell.py"
       - "tools/create_desktop_icon.py"
       - "tools/windows_version_info.txt"
       - "tools/windows_desktop_test.ps1"
+      - "tools/windows_desktop_shutdown_test.ps1"
+      - "tools/test_desktop_shutdown_integration.py"
+      - "tests/test_desktop_shutdown.py"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -33,6 +36,9 @@ jobs:
           python -m py_compile app/desktop_shell.py tools/create_desktop_icon.py
           python app/desktop_shell.py --self-test
           python tools/create_desktop_icon.py
+      - name: Test real Windows server shutdown and port release after GUI close
+        shell: pwsh
+        run: ./tools/windows_desktop_shutdown_test.ps1
       - name: Package real Windows EXE without browser chrome
         shell: pwsh
         run: |
