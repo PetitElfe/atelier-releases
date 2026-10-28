@@ -44,10 +44,13 @@ async function api(path,method='GET',body){
   await boardForm.locator('[name=color]').selectOption('rose');
   await boardForm.locator('button[type=submit]').click();
   await page.locator('.tracker-board-rose').waitFor();
+  await page.waitForFunction(()=>{const form=document.querySelector('#trackerBoardCreateForm');
+    return form&&!form.elements.title.disabled&&!form.elements.title.value;});
   await boardForm.locator('[name=title]').fill('Projets');
   await boardForm.locator('[name=color]').selectOption('mauve');
   await boardForm.locator('button[type=submit]').click();
-  await page.waitForFunction(async()=> (await (await fetch('/api/tracker-boards')).json()).length===2);
+  await page.waitForFunction(async()=>{const names=(await (await fetch('/api/tracker-boards')).json()).map(b=>b.title);
+    return names.includes('Bien-être')&&names.includes('Projets');});
   let boards=await api('/api/tracker-boards');
   const wellness=boards.find(b=>b.title==='Bien-être');
   const projects=boards.find(b=>b.title==='Projets');
