@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -563,6 +563,9 @@ with conn() as c:
     admin_cols = {r['name'] for r in c.execute('PRAGMA table_info(admin_documents)')}
     if 'event_id' not in admin_cols:
         c.execute('ALTER TABLE admin_documents ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE SET NULL')
+    if 'archived' not in admin_cols:
+        c.execute('ALTER TABLE admin_documents ADD COLUMN archived INTEGER NOT NULL DEFAULT 0')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_admin_archive ON admin_documents(archived,status,due_date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_admin_event_link ON admin_documents(event_id)')
     c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
