@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "9b5003a35c626e2fd63301bb43bdb13ea7a72fa0757466732e71bfd301e1954d"
+      "sha256": "5839ce0d6255ca33b94eba38ed11c57906d5bbc715d802ed2a092b246e57ad7a"
     },
     {
       "path": "app_part2.py",
-      "sha256": "5a270c6e5a9102075623a6058ff3ef7cf5e3f3edebfbf9fb72088b7d662ce568"
+      "sha256": "f99160cdd550a080d7b7aa1f76d9a967ecff0939fa373d8b91c3fedc0f607d4f"
     },
     {
       "path": "app_part3.py",
@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "b11e23e6a448548faf40270634d956c638be3b685f472e1aad49a45af2f8ccb2"
+      "sha256": "4737c184002ac1384d2732c0170250e468e5f0212d65507b910453fbc2e8097b"
     },
     {
       "path": "public/styles.css",
@@ -113,16 +113,16 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "63ff58913758cba3434676a16b84c67425d40ddf0255eb44b34a3ed966cd5257"
+      "sha256": "676d69d4484cfa141938ff86839226f7a1a0d807704038646331c9b603d5a19d"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "4b2a5cfb75fe1abb80b49d11baa0b2c25dc97f706b9efaa3cf9592b871cbfbe0"
+      "sha256": "da57b96691500a4577b1cf189f34d372b5b0a01e7c41c4b4a55e10c8bc28ee54"
     },
     {
       "path": "quick_capture_native.py",
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 — tableaux de trackers inspirés des grilles de bullet journal : plusieurs tableaux indépendants, lignes personnalisées (cases à cocher ou chiffres), jours du mois en colonnes, couleurs pastel, historique et navigation mensuelle, archivage/restauration sans perte. Anciennes mesures et données préservées. Migration schéma 10 avec sauvegarde SQLite préalable. Stable 0.17.0 non touchée. Tests Windows/navigateur et validation utilisateur nécessaires."
+  "notes": "ALPHA 0.18.0 — Trackers à rythmes indépendants : grilles quotidiennes à la semaine, aux 2 semaines, sur plusieurs mois, vues annuelles par mois, et périodes personnalisées (jours 1–90, semaines 1–12, mois 1–24, années 1–5) ; navigation propre à chaque tableau et changement de rythme sans effacer les anciennes cases. Migration SQLite 11 avec sauvegarde. Données, trackers existants et stable 0.17.0 préservés. Validation CI et sur PC utilisateur nécessaire."
 }
