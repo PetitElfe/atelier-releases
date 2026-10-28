@@ -327,6 +327,15 @@ async function api(path,method='GET',body){
   await page.locator('#eventForm input[name="title"]').fill('Rendez-vous persistant E2E');
   await page.locator('#eventForm input[name="event_date"]').fill('2026-10-20');
   await page.locator('#eventForm input[name="start_time"]').fill('14:30');
+  const calendarUrl=page.locator('#eventForm input[name="url"]');
+  const eventLink=page.locator('#eventOpenUrl');
+  await calendarUrl.fill('javascript:alert(1)');
+  assert.equal(await eventLink.isVisible(),false,'Dangerous protocols must not be clickable');
+  await calendarUrl.fill('https://example.com/rdv?source=atelier');
+  assert.equal(await eventLink.isVisible(),true,'Event URL must be visibly clickable');
+  assert.equal(await eventLink.getAttribute('href'),'https://example.com/rdv?source=atelier');
+  assert.equal(await eventLink.getAttribute('target'),'_blank');
+  assert.match(await eventLink.getAttribute('rel'),/noopener/);
   await page.locator('#addReminder').click();
   await page.locator('#reminderEditor .reminder-name').fill('Rappel du rendez-vous E2E');
   await page.locator('#reminderEditor .reminder-date').fill('2026-10-19');
@@ -334,8 +343,22 @@ async function api(path,method='GET',body){
   await page.locator('#saveEvent').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
   const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
-  assert.ok(savedAppointments.some(e=>e.title==='Rendez-vous persistant E2E'),'Appointment must exist in SQLite after saving');
+  const savedEvent=savedAppointments.find(e=>e.title==='Rendez-vous persistant E2E');
+  assert.ok(savedEvent,'Appointment must exist in SQLite after saving');
+  assert.equal(savedEvent.url,'https://example.com/rdv?source=atelier');
   assert.equal(await page.locator('#calendarView').evaluate(el=>el.classList.contains('active-view')),true,'Saving appointment must keep calendar visible');
+  // The saved event exposes its link in both the form and the right-click menu.
+  await page.evaluate(e=>openEventModal(e),savedEvent);
+  assert.equal(await eventLink.isVisible(),true);
+  assert.equal(await eventLink.getAttribute('href'),'https://example.com/rdv?source=atelier');
+  await page.locator('#cancelEvent').click();
+  await page.evaluate(e=>showCalendarEventMenu(e,{clientX:160,clientY:160}),savedEvent);
+  assert.ok(await page.locator('#atelierContextMenu button').filter({hasText:'Ouvrir le lien'}).isVisible(),
+    'The event context menu must expose the link');
+  await page.keyboard.press('Escape');
+  await page.evaluate(e=>openEventModal(e),{...savedEvent,url:'javascript:alert(1)'});
+  assert.equal(await eventLink.isVisible(),false,'An unsafe stored URL must stay unclickable');
+  await page.locator('#cancelEvent').click();
 
   // ALPHA 0.18.0 : le mensuel conserve 42 cases égales même si le titre est long.
   // Le choix de couleur est indépendant de la catégorie du rendez-vous.
