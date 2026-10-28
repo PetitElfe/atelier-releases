@@ -352,6 +352,22 @@ async function api(path,method='GET',body){
     method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({archived:'oui'})
   });
   assert.equal(invalidArchive.status,400);
+  const editCard=page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"]');
+  await editCard.locator('.life-admin-edit-details summary').click();
+  await editCard.locator('.life-admin-edit-form [name=title]').fill('Dossier CAF modifié');
+  await editCard.locator('.life-admin-edit-form [name=category]').fill('Famille');
+  await editCard.locator('.life-admin-edit-form [name=due_date]').fill('2026-11-01');
+  await editCard.locator('.life-admin-edit-form button[type=submit]').click();
+  await page.waitForFunction(async identity=>{
+    const found=(await (await fetch('/api/admin')).json()).find(x=>x.id===identity);
+    return found?.title==='Dossier CAF modifié'&&found.category==='Famille'&&
+      found.due_date==='2026-11-01'&&found.attachments?.length===1;
+  },admin.id);
+  await page.reload({waitUntil:'domcontentloaded'});
+  const savedAdmin=(await api('/api/admin')).find(x=>x.id===admin.id);
+  assert.equal(savedAdmin.title,'Dossier CAF modifié');
+  assert.equal(savedAdmin.event_id,event.id);
+  assert.equal(savedAdmin.attachments.length,1);
   await page.evaluate(()=>showView('home'));
   await page.evaluate(()=>lifeOpenCapture());
   await page.locator('#quickCaptureText').fill('#Car');
