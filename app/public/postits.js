@@ -57,12 +57,71 @@ async function startDesktopPostits(create=false){
     if(make)make.disabled=false;
   }
 }
+/* Paramètres : seulement les titres archivés sont visibles ici, jamais les
+   fenêtres ni le corps des Post-it : les notes vivent sur le Bureau Windows. */
+async function refreshDesktopPostitArchives(){
+  const list=$('#settingsDesktopPostitArchiveList'),counter=$('#settingsDesktopPostitArchiveCount');
+  if(!list)return;
+  let archived;
+  try{archived=await api('/api/postits?archived=1')}
+  catch(error){
+    list.replaceChildren();
+    const failed=document.createElement('p');
+    failed.className='muted';failed.textContent='Impossible de charger les Post-it archivés.';
+    list.append(failed);
+    showUiError(error,'Archives des Post-it');
+    return;
+  }
+  if(counter)counter.textContent='('+archived.length+')';
+  list.replaceChildren();
+  if(!archived.length){
+    const empty=document.createElement('p');empty.className='muted';
+    empty.textContent='Aucun Post-it archivé.';list.append(empty);return;
+  }
+  for(const note of archived){
+    const row=document.createElement('div');row.className='postit-archive-entry';
+    row.dataset.postitId=String(note.id);
+    const title=document.createElement('strong');title.textContent=note.title||'Sans titre';
+    const restore=document.createElement('button');restore.type='button';
+    restore.textContent='Restaurer sur le Bureau';
+    restore.setAttribute('aria-label','Restaurer le Post-it '+title.textContent);
+    restore.addEventListener('click',async()=>{
+      restore.disabled=true;
+      try{
+        await api('/api/postits/'+note.id,{
+          method:'PUT',body:JSON.stringify({archived:false})
+        });
+        await refreshDesktopPostitArchives();
+        let launched=false;
+        try{
+          const availability=await getDesktopPostitsStatus();
+          if(availability.available){
+            await desktopPostitsCommand('start');
+            launched=true;
+          }
+        }catch(error){console.warn('[Atelier] Post-it restauré, compagnon non lancé',error)}
+        const status=$('#settingsDesktopPostitsStatus');
+        if(status)status.textContent=launched
+          ? '✓ Post-it restauré ; affichage demandé sur le Bureau Windows.'
+          : '✓ Post-it restauré en base locale. Ouvre le compagnon Windows pour l’afficher.';
+      }catch(error){
+        showUiError(error,'Restaurer le Post-it');
+        restore.disabled=false;
+      }
+    });
+    row.append(title,restore);list.append(row);
+  }
+}
 function initDesktopPostitsControls(){
   const launch=$('#settingsOpenDesktopPostits');
   const make=$('#settingsNewDesktopPostit');
   const startup=$('#settingsDesktopPostitStartup');
   if(launch)launch.onclick=()=>startDesktopPostits(false);
   if(make)make.onclick=()=>startDesktopPostits(true);
+  const archives=$('#settingsDesktopPostitArchives');
+  archives?.addEventListener('toggle',()=>{
+    if(archives.open)refreshDesktopPostitArchives();
+  });
   if(startup)startup.onchange=async()=>{
     const enabled=startup.checked;
     startup.disabled=true;
