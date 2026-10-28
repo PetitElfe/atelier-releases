@@ -125,6 +125,9 @@ async function api(path,method='GET',body){
     await boardForm.locator('button[type=submit]').click();
     await page.waitForFunction(async title=>
       (await (await fetch('/api/tracker-boards')).json()).some(b=>b.title===title),title);
+    await page.locator('#trackerBoardCreateForm [name=title]').waitFor({state:'visible'});
+    await page.waitForFunction(()=>
+      !document.querySelector('#trackerBoardCreateForm [name=title]')?.disabled);
     const rows=await api('/api/tracker-boards');
     return rows.find(b=>b.title===title);
   };
@@ -136,9 +139,15 @@ async function api(path,method='GET',body){
   await boardForm.locator('[name=custom_count]').fill('10');
   await boardForm.locator('[name=custom_unit]').selectOption('days');
   await boardForm.locator('button[type=submit]').click();
-  await page.waitForFunction(async()=>(await (await fetch('/api/tracker-boards')).json()).length===6);
+  await page.waitForFunction(async()=>(await (await fetch('/api/tracker-boards')).json())
+    .some(b=>b.title==='Projet 10 jours'));
+  await page.waitForFunction(()=>
+    !document.querySelector('#trackerBoardCreateForm [name=title]')?.disabled);
   const allWindows=await page.evaluate(async()=>(await (await fetch(
     '/api/tracker-boards?periods=1')).json()));
+  assert.equal(allWindows.length,6,'All named boards must be present: '+JSON.stringify(allWindows.map(b=>b.title)));
+  for(const title of ['Bien-être','Projets','Ménage 2 semaines','Entretien 2 mois','Administratif annuel','Projet 10 jours'])
+    assert.ok(allWindows.some(b=>b.title===title),'Board missing: '+title);
   const weekWindow=allWindows.find(x=>x.id===fortnight.id).period;
   const bimonthWindow=allWindows.find(x=>x.id===twoMonths.id).period;
   const yearlyWindow=allWindows.find(x=>x.id===yearly.id).period;
