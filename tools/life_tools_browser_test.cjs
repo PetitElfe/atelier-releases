@@ -98,8 +98,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.querySelector('#trackerMonthLabel')?.textContent!==
     new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date()));
   await page.locator('#trackerMonthToday').click();
-  await page.waitForFunction(async id=> (await (await fetch('/api/tracker-boards')).json())
-    .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[date]==='7.5',wellness.id);
+  await page.waitForFunction(async({id,day})=> (await (await fetch('/api/tracker-boards')).json())
+    .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5',{id:wellness.id,day:date});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
   assert.equal(await page.locator('.tracker-board').count(),2,'All boards survive a full reload');
@@ -114,6 +114,7 @@ async function api(path,method='GET',body){
   boards=await api('/api/tracker-boards');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
+  await page.locator('.tracker-legacy-section summary').click();
   await page.locator('#trackerCreateForm [name=title]').fill('Lecture');
   await page.locator('#trackerCreateForm [name=unit]').fill('pages');
   await page.locator('#trackerCreateForm button[type=submit]').click();
