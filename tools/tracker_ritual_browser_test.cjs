@@ -109,12 +109,10 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
     .find(x=>x.id===morning.id).marks[day],'1');
   assert.equal(await page.locator('#sideNav [data-view="preparations"]').count(),0);
   assert.equal(await page.locator('#journalTrackerSummary').count(),0);
-  const old=(await api('/api/tracker-board-rows/'+morning.id+'/mark','PUT',{day,value:true})).ok;
-  assert.fail('Direct marking a ritual with steps must be blocked');
- }catch(error){
-   // The direct-override attempt above is expected to reject, but all other
-   // unexpected errors must still reach GitHub CI.
-   if(!/Direct marking a ritual with steps must be blocked/.test(error.message))
-     throw error;
+  const denied=await fetch(base+'/api/tracker-board-rows/'+morning.id+'/mark',{
+    method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({day,value:true})
+  });
+  assert.equal(denied.status,409,'A ritual cannot bypass its pending steps');
+  console.log('PASS: two-step ritual, 1..10 click counter, weekly Tuesday, linked task, F5, no forgotten Journal/Preparatifs UI');
  }finally{await browser?.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(error=>{console.error(error);process.exitCode=1});
