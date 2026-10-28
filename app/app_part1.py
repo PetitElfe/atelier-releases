@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -309,8 +309,24 @@ CREATE TABLE IF NOT EXISTS tracker_board_rows (
  mode TEXT NOT NULL DEFAULT 'check' CHECK(mode IN ('check','number')),
  order_index INTEGER NOT NULL DEFAULT 0,
  archived INTEGER NOT NULL DEFAULT 0,
+ target_count INTEGER CHECK(target_count IS NULL OR target_count BETWEEN 1 AND 1000),
+ weekday INTEGER CHECK(weekday IS NULL OR weekday BETWEEN 0 AND 6),
+ linked_type TEXT NOT NULL DEFAULT '' CHECK(linked_type IN ('','task','objective','admin')),
+ linked_id INTEGER,
  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tracker_row_steps (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ row_id INTEGER NOT NULL REFERENCES tracker_board_rows(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ order_index INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS tracker_row_step_checks (
+ step_id INTEGER NOT NULL REFERENCES tracker_row_steps(id) ON DELETE CASCADE,
+ day TEXT NOT NULL,
+ PRIMARY KEY(step_id,day)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_steps ON tracker_row_steps(row_id,order_index,id);
 CREATE TABLE IF NOT EXISTS tracker_board_marks (
  row_id INTEGER NOT NULL REFERENCES tracker_board_rows(id) ON DELETE CASCADE,
  day TEXT NOT NULL,
@@ -531,6 +547,17 @@ with conn() as c:
     ):
         if column not in existing:
             c.execute(f'ALTER TABLE tracker_boards ADD COLUMN {column} {specification}')
+    # 0.18.0: opt-in ritual steps, positive counters and weekly day restrictions.
+    # Preserve every existing mark and all earlier standalone preparation data.
+    row_columns={r['name'] for r in c.execute('PRAGMA table_info(tracker_board_rows)')}
+    for column,definition in (
+        ('target_count','INTEGER'),
+        ('weekday','INTEGER'),
+        ('linked_type',"TEXT NOT NULL DEFAULT ''"),
+        ('linked_id','INTEGER'),
+    ):
+        if column not in row_columns:
+            c.execute(f'ALTER TABLE tracker_board_rows ADD COLUMN {column} {definition}')
     c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
 
