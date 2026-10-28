@@ -44,7 +44,6 @@
       <button data-view="reminders">Rappels</button>
       <button data-view="organisation">Habitudes & routines</button>
       <button data-view="trackers">Trackers</button>
-      <button data-view="preparations">Préparatifs</button>
       <button data-view="admin">Administratif</button>
       <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
@@ -372,31 +371,6 @@
     </section>
 
 
-    <section id="preparationsView" class="view life-view">
-      <div class="panel-head"><div>
-        <span class="section-kicker">ORGANISATION · À COCHER</span>
-        <h2>Préparatifs</h2>
-        <p class="muted">Prépare un voyage, un dossier, une journée, un ménage ou un projet, sans créer de rendez-vous. Les préparatifs d’un RDV restent aussi dans le calendrier.</p>
-      </div></div>
-      <form id="standalonePreparationCreateForm" class="life-form standalone-preparation-create">
-        <label>Nom de la liste<input name="title" required maxlength="150" placeholder="Ex. : Préparer mon départ, dossier, randonnée…"></label>
-        <label>Date facultative<input name="due_date" type="date"></label>
-        <button type="submit" class="primary">+ Créer une liste</button>
-      </form>
-      <div class="standalone-preparation-toolbar">
-        <h3>Mes listes de préparatifs</h3>
-        <button id="standalonePreparationArchiveToggle" type="button" aria-expanded="false">Archives</button>
-      </div>
-      <div id="standalonePreparationList" class="standalone-preparation-lists" aria-live="polite"></div>
-      <div id="standalonePreparationArchiveList" class="standalone-preparation-archives hidden" aria-live="polite"></div>
-      <section class="standalone-rdv-section">
-        <div class="standalone-rdv-head"><h3>Préparatifs liés aux rendez-vous</h3>
-          <button id="standaloneOpenCalendar" type="button">Ouvrir le calendrier →</button>
-        </div>
-        <p class="muted">Ceux d’aujourd’hui et de demain restent synchronisés avec les fiches du calendrier.</p>
-        <div id="standaloneRdvUpcoming"></div>
-      </section>
-    </section>
     <section id="trackersView" class="view life-view">
       <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL · BULLET JOURNAL</span><h2>Mes tableaux de suivi</h2><p class="muted">Habitudes, ménage, projets : crée autant de tableaux que tu veux, avec leur propre rythme (semaine, deux semaines, plusieurs mois, année ou durée personnalisée). Coche ou renseigne les cases à ton rythme.</p></div></div>
       <form id="trackerBoardCreateForm" class="life-form tracker-board-create">
@@ -421,10 +395,8 @@
       </form>
       <div class="tracker-board-toolbar">
         <div class="tracker-month-controls" aria-label="Navigation des tableaux mensuels"><button id="trackerMonthPrev" type="button" aria-label="Mois précédent">‹</button><strong id="trackerMonthLabel"></strong><button id="trackerMonthNext" type="button" aria-label="Mois suivant">›</button><button id="trackerMonthToday" type="button">Ce mois-ci</button></div>
-        <button id="trackerBoardArchivesToggle" type="button" aria-expanded="false">Mes tableaux archivés</button>
       </div>
       <div id="trackerBoardList" class="tracker-board-list" aria-live="polite"></div>
-      <div id="trackerBoardArchiveList" class="tracker-board-archive-list hidden"></div>
       <details class="tracker-legacy-section">
         <summary>Mes anciennes mesures chiffrées (conservées séparément)</summary>
         <p class="life-muted">Tes anciennes valeurs, notes et historiques sont toujours ici. Elles ne sont jamais effacées ni converties automatiquement.</p>
@@ -468,6 +440,18 @@
             <button id="settingsExportBrowserData" type="button">↓ Sauvegarder les réglages du navigateur</button>
             <p class="muted">Ce téléchargement reste privé sur ton ordinateur et peut contenir des brouillons. Il ne remplace pas une sauvegarde des carnets et de la base de données.</p>
             <p class="muted">Sur les éditions Windows TEST et Nathan : sauvegarde de secours, installation et redémarrage du serveur. L’interface se reconnecte automatiquement. La version stable reste protégée.</p>
+          </section>
+          <section class="settings-card" id="settingsTrackerArchivesCard">
+            <div class="settings-card-title"><span class="settings-card-icon">▤</span>
+              <div><h3>Archives</h3><p>Historique des mois de Trackers, tableaux et anciennes listes conservées.</p></div>
+            </div>
+            <div class="settings-archive-actions"><button id="settingsRefreshTrackerArchives" type="button">↻ Actualiser les archives</button>
+              <button id="trackerBoardArchivesToggle" type="button" aria-expanded="false">Tableaux archivés</button></div>
+            <div id="settingsTrackerHistory" class="tracker-history-list" aria-live="polite"></div>
+            <div id="trackerBoardArchiveList" class="tracker-board-archive-list hidden"></div>
+            <details class="tracker-old-preps"><summary>Anciennes listes Préparatifs conservées</summary>
+              <p class="muted">Cette ancienne rubrique a été retirée du tiroir. Aucune de ses données n’a été effacée.</p>
+              <div id="settingsLegacyPreparations"></div></details>
           </section>
           <section class="settings-card" id="settingsDesktopPostitsCard">
             <div class="settings-card-title">
@@ -622,5 +606,6 @@
   <script src="/progression_view.js"></script>
   <script src="/life_tools.js"></script>
   <script src="/standalone_preparations.js"></script>
+  <script src="/tracker_ritual_ui.js"></script>
 </body>
 </html>
