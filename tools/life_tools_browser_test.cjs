@@ -57,19 +57,19 @@ async function api(path,method='GET',body){
   assert.match(await page.locator('#journalAdminSummary').innerText(),/Dossier CAF/);
   await page.evaluate(()=>lifeOpenCapture());
   await page.locator('#quickCaptureText').fill('#Car');
-  assert.ok(await page.locator('#quickCaptureSuggestions button').count()>0);
+  await page.locator('#quickCaptureSuggestions button').first().waitFor({state:'visible'});
   await page.locator('#quickCaptureSuggestions button').first().click();
   await page.locator('#quickCaptureText').fill('#Carnet Première idée\nDeuxième ligne');
   await page.locator('#quickCaptureSend').click();
   await page.waitForFunction(async()=>(await (await fetch('/api/captures')).json()).some(x=>x.body.includes('Deuxième ligne')));
   await page.evaluate(()=>showView('captures'));
-  assert.ok(await page.locator('.life-capture.life-unread').count()>0);
+  await page.locator('.life-capture.life-unread').first().waitFor({state:'visible'});
   await page.locator('.life-capture-body').first().click();
   await page.waitForFunction(async()=>(await (await fetch('/api/captures')).json()).every(x=>x.seen===1));
   await page.evaluate(()=>lifeOpenCapture());
   await page.locator('#quickCaptureText').fill('#Tâches Nouvelle tâche via capture');
   await page.locator('#quickCaptureSend').click();
-  assert.ok((await api('/api/tasks')).some(x=>x.title==='Nouvelle tâche via capture'));
+  await page.waitForFunction(async()=>(await (await fetch('/api/tasks')).json()).some(x=>x.title==='Nouvelle tâche via capture'));
   // Both Windows editions must accept only their own localhost origin.
   // This disposable test server uses a third port and must not start a real updater.
   for(const [path,header,body] of [
