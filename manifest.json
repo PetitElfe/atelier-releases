@@ -33,11 +33,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "993d68de484bb9896d3301275a200f99c42e21bd5a3a56efd196cf67766374ea"
+      "sha256": "a96fd5e61fbd90100998538433ef1ac726a6404fdc28e55e44f1a6546bba8961"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "6cbe887d03bc7e7108fd13bce23eb22fb1298294ec8fe4318265eac76beedd9c"
+      "sha256": "6284ad35af19d0a2578cdab87b170e6b520ba312c15c14e1d1d5217c4177eb06"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "19530c2b0d0c875a29fa98e5b055faf76ba6a434a5202f7a4b1ff6ea84cb1a48"
+      "sha256": "6edceb6b5fcf5254230eb2b67eb39c9e8520ae883e678c556a7f3ef754ed66ff"
     },
     {
       "path": "progression.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST/Nathan — Fermeture WebView2 : arrêt propre du serveur lancé par la fenêtre, même après remplacement par une mise à jour ; attente de libération du port ; protection des mises à jour en cours ; fenêtre unique par édition ; tests Windows sur vrai serveur et contrôle du verrou. Nouveau lanceur TEST : mise à niveau de l'EXE déjà installé avec sauvegarde vérifiée et remplacement atomique si l'ancien EXE est fermé. Données et stable 0.17.0 inchangées. La mise à jour de l'EXE nécessite un paquet Windows distinct et validation utilisateur."
+  "notes": "ALPHA 0.18.0 — Calendrier : URL des rendez-vous cliquable via lien visible directement sous son champ et menu contextuel ; uniquement les adresses http:// et https:// reconnues ; texte et données conservés, nouvelle adresse prévisualisée sans enregistrer. Tests navigateur de validation et de sécurité. Ne touche ni à la stable 0.17.0 ni aux données indépendantes de Nathan."
 }
