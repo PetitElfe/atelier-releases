@@ -26,8 +26,14 @@ try {
     $manifestSha = (Get-FileHash -LiteralPath (Join-Path $code 'manifest.json') -Algorithm SHA256).Hash
     $stableSha = (Get-FileHash -LiteralPath (Join-Path $stable 'sentinel.txt') -Algorithm SHA256).Hash
     $expected = 'cbbe1a4e4e09ab5df6f4a5cb3938917f95fe569be9268a12d838dda64dd1e028'
-    if ((Get-FileHash -LiteralPath 'app/updater.py' -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
-        throw 'The pinned upstream SHA-256 does not match the test checkout.'
+    # Git for Windows may check out .py files with CRLF, while the signed
+    # release manifest hashes the original LF blob. Read the immutable blob.
+    $verifiedSource = Join-Path $env:RUNNER_TEMP 'atelier-fixed-updater.py'
+    $fixedCode = "import pathlib,subprocess; pathlib.Path(r'$verifiedSource').write_bytes(subprocess.check_output(['git','show','bb24fd99e22458eebad8e47220be88a6fdd82ee9:app/updater.py']))"
+    & python -c $fixedCode
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot read the immutable fixed updater blob.' }
+    if ((Get-FileHash -LiteralPath $verifiedSource -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+        throw 'The pinned upstream SHA-256 does not match the immutable Git blob.'
     }
 
     # Reproduce the exact Windows directory lock: a second process uses CODE/app as cwd.
@@ -37,7 +43,7 @@ try {
     Start-Sleep -Seconds 2
     if ($holder.HasExited) { throw 'Failed to simulate the Windows Post-it directory lock.' }
 
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'tools/Reparer_LAtelier_TEST.ps1' -SourceFile (Resolve-Path 'app/updater.py').Path
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'tools/Reparer_LAtelier_TEST.ps1' -SourceFile $verifiedSource
     if ($LASTEXITCODE -ne 0) { throw 'Offline repair with locked directory failed.' }
     if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
         throw 'Repair installed the wrong updater.'
@@ -50,7 +56,7 @@ try {
     }
 
     # Running twice must be harmless and must not create another backup.
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'tools/Reparer_LAtelier_TEST.ps1' -SourceFile (Resolve-Path 'app/updater.py').Path
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'tools/Reparer_LAtelier_TEST.ps1' -SourceFile $verifiedSource
     if ($LASTEXITCODE -ne 0) { throw 'Idempotent repair failed.' }
     if (@(Get-ChildItem -LiteralPath $root -Directory -Filter 'SAUVEGARDE_REPARATION_TEST_*').Count -ne 1) {
         throw 'Idempotent repair created a redundant backup.'
