@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -296,6 +296,9 @@ CREATE TABLE IF NOT EXISTS tracker_boards (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  title TEXT NOT NULL,
  color TEXT NOT NULL DEFAULT 'sage',
+ period_unit TEXT NOT NULL DEFAULT 'months' CHECK(period_unit IN ('days','weeks','months','years')),
+ period_count INTEGER NOT NULL DEFAULT 1 CHECK(period_count BETWEEN 1 AND 90),
+ anchor_date TEXT NOT NULL DEFAULT '2000-01-01',
  archived INTEGER NOT NULL DEFAULT 0,
  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
@@ -494,6 +497,16 @@ with conn() as c:
             cleaned=(notes[:match.start()]+notes[match.end():]).strip()
             c.execute('UPDATE recipes SET source_url=?,notes=?,updated_at=? WHERE id=?',
                       (source_url,cleaned,migration_ts,row['id']))
+    # 0.18.0: add independent recurring periods to existing tracker boards.
+    # Old monthly boards keep their calendar alignment and ALL their marks.
+    existing={row['name'] for row in c.execute('PRAGMA table_info(tracker_boards)')}
+    for column,specification in (
+        ('period_unit', "TEXT NOT NULL DEFAULT 'months'"),
+        ('period_count', 'INTEGER NOT NULL DEFAULT 1'),
+        ('anchor_date', "TEXT NOT NULL DEFAULT '2000-01-01'"),
+    ):
+        if column not in existing:
+            c.execute(f'ALTER TABLE tracker_boards ADD COLUMN {column} {specification}')
     c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
 
