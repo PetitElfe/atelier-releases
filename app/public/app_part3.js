@@ -10,6 +10,17 @@ async function applyEventTemplate(f,touched={}){
   }catch(e){}
 }
 
+// Only expose actual web links as clickable actions. Do not execute URLs
+// received from old data or pasted into the editable event URL field.
+function safeCalendarEventUrl(raw){
+  const value=String(raw||'').trim();
+  if(!value)return '';
+  try{
+    const link=new URL(value);
+    return (link.protocol==='https:'||link.protocol==='http:')&&link.hostname?link.href:'';
+  }catch(_){return ''}
+}
+
 function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const editing=!!e&&!duplicate;
   const reminders=Array.isArray(e?.reminders)
@@ -39,7 +50,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field"><label>Contact</label><input name="contact" value="${esc(e?.contact||'')}"></div>
     <div class="field"><label>Temps de trajet</label><input name="travel_time" placeholder="ex. 25 min ou 1h10" value="${esc(e?.travel_time||'')}"></div>
     <div id="eventTemplateHint" class="field-help full"></div>
-    <div class="field full"><label>URL</label><input name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"></div>
+    <div class="field full"><label for="eventUrlField">URL du rendez-vous</label><input id="eventUrlField" name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"><a id="eventOpenUrl" class="event-open-url hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir le lien du rendez-vous">↗ Ouvrir le lien dans le navigateur</a></div>
     <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
@@ -50,11 +61,25 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
   const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); wireEventPreparationEditor(); $('#cancelEvent').onclick=closeModal;
-  $('#eventMore')?.addEventListener('click',ev=>showAtelierContextMenu(ev.currentTarget,[
-    {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
-    ...(e?.url?[{label:'Ouvrir le lien',run:()=>window.open(e.url,'_blank','noopener,noreferrer')}]:[]),
-    {label:'Supprimer le rendez-vous',danger:true,run:()=>$('#deleteEventAction')?.click()}
-  ]));
+  // Link remains visible in the form while editing; changing the URL updates
+  // its target immediately, without requiring a save or hidden menu.
+  const urlInput=f.elements.url,link=$('#eventOpenUrl');
+  const refreshEventLink=()=>{
+    const valid=safeCalendarEventUrl(urlInput.value);
+    link.classList.toggle('hidden',!valid);
+    if(valid){link.href=valid;link.title=valid}
+    else{link.removeAttribute('href');link.removeAttribute('title')}
+  };
+  urlInput.addEventListener('input',refreshEventLink);
+  refreshEventLink();
+  $('#eventMore')?.addEventListener('click',ev=>{
+    const valid=safeCalendarEventUrl(urlInput.value);
+    showAtelierContextMenu(ev.currentTarget,[
+      {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
+      ...(valid?[{label:'↗ Ouvrir le lien',run:()=>window.open(valid,'_blank','noopener,noreferrer')}]:[]),
+      {label:'Supprimer le rendez-vous',danger:true,run:()=>$('#deleteEventAction')?.click()}
+    ]);
+  });
   if(editing){
     const hidden=document.createElement('div');hidden.hidden=true;
     hidden.innerHTML='<button type="button" id="duplicateEventAction"></button><button type="button" id="deleteEventAction"></button>';f.appendChild(hidden);
