@@ -292,3 +292,14 @@
 .tracker-row-label .tracker-row-move:not(:disabled):hover{background:#574431}
 .tracker-row-label .tracker-row-move:focus-visible{outline:2px solid #e9bb75}
 .tracker-row-label .tracker-row-title{min-width:0;overflow-wrap:anywhere;text-align:left}
+
+/* Démarches archivées : une action récupérable par défaut et suppression définitive séparée. */
+.life-admin-archives-section{display:grid;gap:8px;margin-top:18px;padding:12px;border:1px solid #6e5a41;border-radius:10px;background:#201c18}
+#adminArchivesToggle{justify-self:start;min-height:33px;padding:6px 12px;background:transparent;border:1px solid #9c815d;border-radius:8px;color:#ecd2a2;font-weight:650}
+#adminArchivesToggle:hover,#adminArchivesToggle:focus-visible{background:#3b3026}
+.life-admin-archives-section>.life-muted{margin:0;font-size:12px}
+.life-admin-archives-section .life-card{border:1px solid #635541}
+.life-admin-archive-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.life-admin-archive-action{border:1px solid #947954;border-radius:7px;padding:7px 10px;color:#ead4b5;background:#3a3026}
+.life-admin-archive-actions .life-danger{opacity:.85}
+#adminArchivedList.hidden{display:none!important}
