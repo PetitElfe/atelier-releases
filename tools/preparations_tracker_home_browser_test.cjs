@@ -72,6 +72,10 @@ async function api(path,method='GET',body){
     {id:habitId,day});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>homeCanvasReady&&document.querySelectorAll('#homeDailyTrackersList input').length===8);
+  // Wait for the actual saved checkbox state, not merely the existence of the
+  // widget DOM. If it never restores, this is a genuine regression failure.
+  await page.waitForFunction(()=>[...document.querySelectorAll('#homeDailyTrackersList label')]
+    .some(label=>label.textContent.includes('Rituel 0')&&label.querySelector('input')?.checked));
   assert.equal(await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').isChecked(),true);
   await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').uncheck();
   await page.waitForFunction(async({id,day})=>
