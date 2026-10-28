@@ -109,7 +109,7 @@ async function trackerConfigureRow(row){
   form.append(field('Jour fixe (facultatif)',weekday));
   let target=null;
   if(row.mode==='number'){
-    target=trackerMake('input');target.type='number';target.min=1;target.max=1000;target.required=true;
+    target=trackerMake('input');target.type='number';target.min=1;target.max=1000;target.required=false;
     target.value=row.target_count||'';
     form.append(field('Nombre de clics pour valider (ex. 10 verres)',target));
   }
@@ -162,7 +162,7 @@ async function trackerConfigureRow(row){
       ...(input.dataset.stepId?{id:Number(input.dataset.stepId)}:{}),title:input.value.trim()
     }));
     const payload={title:title.value.trim(),weekday:weekday.value===''?null:Number(weekday.value),
-      target_count:target?Number(target.value):null,
+      target_count:target&&target.value.trim()?Number(target.value):null,
       linked_type:linkType.value,linked_id:linkType.value?Number(linkId.value):null,steps};
     save.disabled=true;
     try{
