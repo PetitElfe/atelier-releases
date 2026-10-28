@@ -117,20 +117,39 @@ def _install_self(launch: bool = True) -> bool:
         _shortcut(destination)
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if destination.exists() and not _same_file(source, destination):
-        raise RuntimeError(
-            "Une autre version du lanceur Windows existe déjà.\n"
-            "Elle n'a pas été écrasée. Ferme l'ancienne application avant toute modification."
-        )
-    if not destination.exists():
+    # A previous TEST EXE may exist: replace it only while it is closed,
+    # after a verified copy and an independently verified backup.
+    if not destination.exists() or not _same_file(source, destination):
         staging = destination.with_suffix(".new")
         if staging.exists():
             raise RuntimeError("Une installation incomplète nécessite une vérification.")
-        shutil.copy2(source, staging)
-        if not _same_file(source, staging):
+        try:
+            shutil.copy2(source, staging)
+            if not _same_file(source, staging):
+                raise RuntimeError("La copie du fichier .exe n'a pas passé sa vérification.")
+            if destination.exists():
+                backup = destination.with_name(
+                    destination.name + ".backup-" +
+                    time.strftime("%Y%m%d_%H%M%S") + "-" + str(os.getpid()))
+                if backup.exists():
+                    raise RuntimeError("Une sauvegarde du lanceur porte déjà ce nom.")
+                shutil.copy2(destination, backup)
+                if not _same_file(destination, backup):
+                    raise RuntimeError("La sauvegarde de l'ancien lanceur est invalide.")
+                try:
+                    os.replace(staging, destination)
+                except PermissionError as exc:
+                    raise RuntimeError(
+                        "Ferme toutes les fenêtres L’Atelier TEST avant de remplacer "
+                        "son lanceur. L'ancien exécutable et sa sauvegarde sont conservés."
+                    ) from exc
+                if not _same_file(source, destination):
+                    os.replace(backup, destination)
+                    raise RuntimeError("Vérification du lanceur échouée : ancien EXE restauré.")
+            else:
+                staging.rename(destination)
+        finally:
             staging.unlink(missing_ok=True)
-            raise RuntimeError("La copie du fichier .exe n'a pas passé sa vérification.")
-        staging.rename(destination)
     _shortcut(destination)
     if launch:
         subprocess.Popen([str(destination)], cwd=str(destination.parent),
