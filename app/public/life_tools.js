@@ -577,6 +577,32 @@ function renderLifeAdmin(){
         {method:'PUT',body:JSON.stringify({archived:true})}));
     },'life-admin-archive-action'));
     const meta=lifeNode('div','life-muted',item.category+' · '+lifeDate(item.due_date));
+    const editDetails=lifeNode('details','life-admin-edit-details');
+    editDetails.append(lifeNode('summary','','Modifier le nom, la catégorie ou la date'));
+    const editForm=lifeNode('form','life-admin-edit-form');
+    const titleLabel=lifeNode('label','','Démarche'),titleField=lifeNode('input','');
+    titleField.name='title';titleField.value=item.title;titleField.maxLength=180;titleField.required=true;
+    titleLabel.append(titleField);
+    const categoryLabel=lifeNode('label','','Catégorie'),categoryField=lifeNode('input','');
+    categoryField.name='category';categoryField.maxLength=80;categoryField.value=item.category;
+    categoryLabel.append(categoryField);
+    const dueLabel=lifeNode('label','','Échéance'),dueField=lifeNode('input','');
+    dueField.name='due_date';dueField.type='date';dueField.value=item.due_date||'';
+    dueLabel.append(dueField);
+    const editSave=lifeNode('button','primary','Enregistrer la démarche');editSave.type='submit';
+    editForm.append(titleLabel,categoryLabel,dueLabel,editSave);
+    editForm.addEventListener('submit',async event=>{
+      event.preventDefault();if(editSave.disabled)return;
+      editSave.disabled=true;
+      try{
+        await lifeAction('Modifier la démarche',()=>lifeApi('/api/admin/'+item.id,{
+          method:'PUT',body:JSON.stringify({
+            title:titleField.value,category:categoryField.value,due_date:dueField.value
+          })
+        }));
+      }finally{editSave.disabled=false}
+    });
+    editDetails.append(editForm);
     const select=lifeNode('select','life-status');
     Object.entries(statusNames).forEach(([value,label])=>{
       const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);
@@ -666,7 +692,7 @@ function renderLifeAdmin(){
       finally{uploader.disabled=false;uploader.value=''}
     });
     files.append(uploadLabel);
-    card.append(heading,meta,select,notes,save,eventPanel,files);root.append(card);
+    card.append(heading,meta,editDetails,select,notes,save,eventPanel,files);root.append(card);
   });
   const archivedRoot=$('#adminArchivedList'),toggle=$('#adminArchivesToggle');
   if(toggle){
