@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -290,6 +290,33 @@ CREATE TABLE IF NOT EXISTS personal_tracker_entries (
  UNIQUE(tracker_id,entry_date)
 );
 CREATE INDEX IF NOT EXISTS idx_tracker_entries ON personal_tracker_entries(tracker_id,entry_date);
+-- Tableaux de suivi façon bullet journal : distincts des mesures historiques.
+-- Chaque tableau contient des lignes et une marque par jour, conservées à l'archive.
+CREATE TABLE IF NOT EXISTS tracker_boards (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ color TEXT NOT NULL DEFAULT 'sage',
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tracker_board_rows (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ board_id INTEGER NOT NULL REFERENCES tracker_boards(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ mode TEXT NOT NULL DEFAULT 'check' CHECK(mode IN ('check','number')),
+ order_index INTEGER NOT NULL DEFAULT 0,
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tracker_board_marks (
+ row_id INTEGER NOT NULL REFERENCES tracker_board_rows(id) ON DELETE CASCADE,
+ day TEXT NOT NULL,
+ value TEXT NOT NULL,
+ updated_at TEXT NOT NULL,
+ PRIMARY KEY(row_id,day)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_board_rows ON tracker_board_rows(board_id,archived,order_index,id);
+CREATE INDEX IF NOT EXISTS idx_tracker_board_marks ON tracker_board_marks(day,row_id);
 CREATE TABLE IF NOT EXISTS admin_documents (
  id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
  category TEXT NOT NULL DEFAULT 'Général', due_date TEXT,
