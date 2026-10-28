@@ -272,7 +272,14 @@ async function api(path,method='GET',body){
     .setInputFiles({name:fileName,mimeType:'text/plain',buffer:Buffer.from(sample,'utf8')});
   await page.waitForFunction(async id=>(await (await fetch('/api/admin')).json())
     .find(x=>x.id===id)?.attachments?.length===1,admin.id);
-  const att=(await api('/api/admin')).find(x=>x.id===admin.id).attachments[0];
+  let att;
+  for(let retry=0;retry<35;retry++){
+    const fresh=(await api('/api/admin')).find(x=>x.id===admin.id);
+    att=fresh?.attachments?.[0];
+    if(att)break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  assert.ok(att,'Uploaded file must remain in SQLite after asynchronous UI reload');
   const attachmentResponse=await fetch(base+'/api/admin/'+admin.id+'/attachments/'+att.id);
   assert.equal(attachmentResponse.status,200);
   assert.equal(await attachmentResponse.text(),sample);
