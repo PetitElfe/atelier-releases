@@ -43,6 +43,9 @@ async function api(path,method='GET',body){
       renderMonth();
     });
 
+    assert.equal(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')),true,
+      'Le menu doit se replier lors du passage à Calendrier depuis un raccourci');
+
     // Création ordinaire depuis le mois, sans URL ni rappel ni heures.
     await page.locator('#monthGrid .day-add').first().click();
     await page.locator('#eventForm input[name="title"]').fill('Création mensuelle sans rappel E2E');
