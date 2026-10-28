@@ -15,6 +15,7 @@ $fixedCommit = 'bb24fd99e22458eebad8e47220be88a6fdd82ee9'
 $url = 'https://raw.githubusercontent.com/PetitElfe/atelier-releases/' + $fixedCommit + '/app/updater.py'
 $stage = $null
 $backup = $null
+$swapBackup = $null
 $replaced = $false
 
 function FileSha([string]$path) {
@@ -80,7 +81,8 @@ try {
     }
 
     # File.Replace is atomic on the same NTFS volume; no CODE directory rename.
-    [IO.File]::Replace($stage, $target, $null)
+    $swapBackup = Join-Path $app ('updater.py.swap-backup-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    [IO.File]::Replace($stage, $target, $swapBackup)
     $replaced = $true
     $stage = $null
     if ((FileSha $target) -ne $expectedSha) {
@@ -97,7 +99,12 @@ try {
         $restore = Join-Path $app ('updater.py.restore-' + [guid]::NewGuid().ToString('N') + '.tmp')
         try {
             Copy-Item -LiteralPath (Join-Path $backup 'updater.py') -Destination $restore -ErrorAction Stop
-            [IO.File]::Replace($restore, $target, $null)
+            $restoreBackup = Join-Path $app ('updater.py.restore-backup-' + [guid]::NewGuid().ToString('N') + '.tmp')
+            try {
+                [IO.File]::Replace($restore, $target, $restoreBackup)
+            } finally {
+                if (Test-Path -LiteralPath $restoreBackup) { Remove-Item -LiteralPath $restoreBackup -Force }
+            }
             $detail += ' Ancien fichier restaure.'
         } catch {
             $detail += ' ATTENTION : restauration manuelle necessaire. Sauvegarde : ' + $backup
@@ -111,5 +118,8 @@ try {
 } finally {
     if ($stage -and (Test-Path -LiteralPath $stage)) {
         Remove-Item -LiteralPath $stage -Force -ErrorAction SilentlyContinue
+    }
+    if ($swapBackup -and (Test-Path -LiteralPath $swapBackup)) {
+        Remove-Item -LiteralPath $swapBackup -Force -ErrorAction SilentlyContinue
     }
 }
