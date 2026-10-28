@@ -33,7 +33,23 @@ try {
   if((Get-Content (Join-Path $data 'test_important.txt') -Raw) -notmatch 'Ne jamais écraser') {
     throw 'The shortcut installation modified test data.'
   }
-  Write-Host 'PASS: one-click .exe installation, correct Desktop shortcut, matching bytes and preserved data.'
+  # A pre-existing outdated EXE must be backed up, then replaced safely.
+  [IO.File]::WriteAllBytes($target,[Text.Encoding]::ASCII.GetBytes('legacy-test-executable'))
+  $legacyHash=(Get-FileHash $target -Algorithm SHA256).Hash
+  $upgrade=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_TEST.exe') -ArgumentList '--install-only' -Wait -PassThru
+  if($upgrade.ExitCode -ne 0){throw ('TEST desktop EXE upgrade failed: '+$upgrade.ExitCode)}
+  if((Get-FileHash $target -Algorithm SHA256).Hash -ne $sourceHash){
+    throw 'Upgraded EXE does not match the verified source.'
+  }
+  $backups=@(Get-ChildItem (Join-Path $root 'desktop') -File -Filter 'LAtelierDuGoblin_TEST.exe.backup-*')
+  if($backups.Count -ne 1){throw 'Previous EXE was not backed up exactly once.'}
+  if((Get-FileHash $backups[0].FullName -Algorithm SHA256).Hash -ne $legacyHash){
+    throw 'The previous EXE backup is corrupt.'
+  }
+  if((Get-Content (Join-Path $data 'test_important.txt') -Raw) -notmatch 'Ne jamais écraser') {
+    throw 'Upgrading the launcher modified user data.'
+  }
+  Write-Host 'PASS: one-click .exe install + safe upgrade, verified backup, shortcut and preserved data.'
 } finally {
   if($link -and (Test-Path $link)) {Remove-Item $link -Force -ErrorAction SilentlyContinue}
   if($mapped) { & subst.exe E: /D | Out-Null }
