@@ -4,10 +4,10 @@
 const lifeDestinations=[
   {key:'carnet',tag:'#Carnet',label:'Carnet / boîte de réception'},
   {key:'taches',tag:'#Tâches',label:'Tâches'},
-  {key:'rappels',tag:'#Rappels',label:'Rappels'},
+  {key:'rappels',tag:'#Rappels',label:'Rappels · à planifier dans la boîte de réception'}, 
   {key:'postit',tag:'#Post-it',label:'Post-it'},
   {key:'administratif',tag:'#Administratif',label:'Administratif'},
-  {key:'tracker',tag:'#Tracker',label:'Tracker'}
+  {key:'tracker',tag:'#Tracker',label:'Tracker · à affecter à un tableau'}
 ];
 let lifeTrackers=[],lifeAdmin=[],lifeArchivedAdmin=[],lifeCaptures=[],lifeJournalPage=0;
 let lifeAdminArchivesVisible=false;
@@ -742,11 +742,38 @@ function renderLifeCaptures(){
     const tag=lifeDestinations.find(d=>d.key===item.destination)?.tag||'#Carnet';
     const head=lifeNode('div','life-card-head');
     head.append(lifeNode('strong','',tag+(item.seen?'':' · Nouveau')),
-      lifeButton('Supprimer',async()=>{if(!confirm('Supprimer cette note ?'))return;await lifeAction('Supprimer la note',()=>lifeApi('/api/captures/'+item.id,{method:'DELETE'}))},'life-danger'));
+      lifeButton('Supprimer',async()=>{
+        if(!await askUiConfirm('Supprimer cette capture',
+          'Supprimer définitivement cette capture rapide ?','Supprimer',true))return;
+        await lifeAction('Supprimer la note',()=>lifeApi('/api/captures/'+item.id,{method:'DELETE'}));
+      },'life-danger'));
     const content=lifeNode('button','life-capture-body',item.body);
     content.title='Consulter et marquer comme lu';
     content.onclick=async()=>{if(!item.seen)await lifeAction('Marquer comme consulté',()=>lifeApi('/api/captures/'+item.id,{method:'PUT',body:JSON.stringify({seen:true})}));};
-    card.append(head,content,lifeNode('small','life-muted',item.created_at.replace('T',' ')));root.append(card);
+    const waiting=item.destination==='rappels'||item.destination==='tracker'||item.destination==='carnet';
+    const help=waiting?lifeNode('p','life-capture-pending',
+      item.destination==='rappels'?'À planifier : cette capture n’est pas encore un rappel daté.':
+      item.destination==='tracker'?'À affecter : aucune ligne de Tracker n’a été créée automatiquement.':
+      'Note gardée dans la boîte de réception ; aucun carnet n’est modifié automatiquement.'):null;
+    const actions=lifeNode('div','life-capture-actions');
+    if(item.destination==='rappels'){
+      const plan=lifeButton('Planifier un vrai rappel',()=>{
+        // La date et l'heure restent à choisir par l'utilisateur.
+        if(typeof openReminderModal!=='function'){
+          showUiError(new Error('Le formulaire de rappels est indisponible.'),'Capture rapide');return;
+        }
+        openReminderModal({title:item.body.split(String.fromCharCode(10))[0].slice(0,120)});
+      });
+      actions.append(plan);
+    }
+    if(item.destination==='tracker'){
+      actions.append(lifeButton('Ouvrir mes Trackers',()=>showView('trackers'),'secondary'));
+    }
+    card.append(head,content);
+    if(help)card.append(help);
+    if(actions.childElementCount)card.append(actions);
+    card.append(lifeNode('small','life-muted',item.created_at.replace('T',' ')));
+    root.append(card);
   });
 }
 function renderJournalLifePage(){
@@ -844,8 +871,13 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
     }
     lifeCloseCapture();await loadLifeTools();await refresh();
     const toast=lifeNode('div','toast');
-    toast.append(lifeNode('strong','','✓ Idée rangée'),lifeNode('div','task-meta',
-      destination==='carnet'?'Ta note attend dans la boîte de réception #Carnet.':'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination)));
+    const pending=['carnet','rappels','tracker'].includes(destination);
+    const pendingText=destination==='rappels'?'À planifier dans la boîte de réception ; aucun rappel daté n’a été créé.':
+      destination==='tracker'?'Dans la boîte de réception ; aucune ligne de Tracker n’a été créée.':
+      'Ta note attend dans la boîte de réception #Carnet.';
+    toast.append(lifeNode('strong','',pending?'✓ Capture conservée':'✓ Élément créé'),
+      lifeNode('div','task-meta',pending?pendingText:
+        'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination)));
     $('#toastArea').append(toast);setTimeout(()=>toast.remove(),4500);
   }catch(err){showUiError(err,'Impossible de ranger la note')}
   finally{btn.disabled=false}

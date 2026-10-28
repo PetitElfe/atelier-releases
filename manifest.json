@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "6d985f815f15794390093f4db21c7635bca5008f79dfeb6605d9903b60657903"
+      "sha256": "13fa46a2c682d8c521de47ea18d1c8d93772e0555150255abd643a060ce97eef"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "01346d33107567ae38e9b18bb2279219a457792ac9a4b6c5cbc9da0a6230c7ba"
+      "sha256": "06c7d8916540f125d00bc95048c93b3775f4641744a5195aad8454ab9e535657"
     },
     {
       "path": "quick_capture_native.py",

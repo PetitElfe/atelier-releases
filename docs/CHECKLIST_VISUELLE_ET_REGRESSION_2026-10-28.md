@@ -106,7 +106,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Archiver ≠ supprimer définitivement ; aucun effacement sans confirmation claire.
 - [ ] Zone de notification discrète, aucune fenêtre gênante dans la barre des tâches.
 - [ ] Capture rapide depuis plume/clic/raccourci choisi ; clavier global si activé.
-- [ ] #Carnet, #Tâches, #Rappels, #Post-it, #Administratif, #Tracker : classement réel ou boîte d’attente explicitée.
+- [ ] #Carnet, #Tâches, #Rappels, #Post-it, #Administratif, #Tracker : destinations explicites. #Tâches/#Post-it/#Administratif créent un élément ; #Carnet/#Rappels/#Tracker vont dans la boîte d’attente ; #Rappels propose le formulaire de planification sans date/heure inventées. À valider sur Windows.
 - [ ] Texte multiligne conservé, destination visuellement marquée jusqu’à consultation.
 - [ ] Plusieurs captures consécutives sans écrasement ou doublon.
 
