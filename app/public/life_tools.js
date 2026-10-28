@@ -356,8 +356,9 @@ function renderTrackerBoards(){
       cell.title=item.title;days.append(cell);
     }
     grid.append(days);
-    board.rows.forEach(line=>{
+    board.rows.forEach((line,lineIndex)=>{
       const row=lifeNode('div','tracker-grid-line');
+      row.dataset.trackerRowId=String(line.id);
       const name=lifeNode('span','tracker-row-label');
       const open=lifeButton(line.title,()=>{
         if(line.steps?.length)trackerOpenRitual(line,today);
@@ -368,6 +369,22 @@ function renderTrackerBoards(){
       edit.title='Objectif, étapes, jour fixe et lien de cette ligne';
       edit.setAttribute('aria-label','Configurer '+line.title);
       name.append(open,edit);
+      const reorder=lifeNode('span','tracker-row-order');
+      for(const [direction,glyph,allowed] of [
+        ['up','↑',lineIndex>0],['down','↓',lineIndex<board.rows.length-1]
+      ]){
+        const move=lifeButton(glyph,async()=>{
+          const result=await runUiAction('Déplacer la ligne',()=>lifeApi(
+            '/api/tracker-board-rows/'+line.id+'/move',
+            {method:'PUT',body:JSON.stringify({direction})}));
+          if(result.ok)await loadLifeTools();
+        },'tracker-row-move');
+        move.title=(direction==='up'?'Monter ':'Descendre ')+line.title;
+        move.setAttribute('aria-label',move.title);
+        move.disabled=!allowed;
+        reorder.append(move);
+      }
+      name.append(reorder);
       if(line.linked_type&&line.linked_id){
         const linked=lifeButton('↗',()=>{
           const type=line.linked_type;
