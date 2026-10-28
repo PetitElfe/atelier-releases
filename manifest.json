@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "845ff5c5df68a63ea025a8da58cddeeb0c91fedaeffd4a49a6a8c162631cb162"
+      "sha256": "d90844bd18d65a2d54b33a5f42c17347d9f80f1c9d73aedc6207d08bf8571f60"
     },
     {
       "path": "app_part2.py",
-      "sha256": "657634305144f24543a5d61d3cf78408c0a1e60abd98016965510686be247129"
+      "sha256": "43446e4e9f9392fe5fe131ba31134f0dd2b0f1180f1acf8d7eced799301af555"
     },
     {
       "path": "app_part3.py",
@@ -29,19 +29,19 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "4fddc70bd6195c6557ea1efb35ffa1b864fcebe0ffa75b1d4b789ffa1b27036f"
+      "sha256": "0b8b61524b2616433f185b9539230a9383de59ac3c54a50af2ef9fd7817363d8"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "a96fd5e61fbd90100998538433ef1ac726a6404fdc28e55e44f1a6546bba8961"
+      "sha256": "650c5afee0e053f5d7fc2d2d32aa12572157f55d8623a5974ea7a8551dbbb342"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c4f1ea9d0d291df6a073068dca23903500d8b3b6005abb5bb7072c11d9045891"
+      "sha256": "4de72baf5924ea6ac5e1af2e98e835d796998e45cad8569bf0f7ea4d27a88227"
     },
     {
       "path": "public/index.html",
-      "sha256": "37057405f67a5791198b647511c7fdd52c23cdd4932054f976b3e70aecce65f1"
+      "sha256": "a6eaf6c2e14016498bfe6d8192f5b178aaeec08f3421e46c9fa544bf87228302"
     },
     {
       "path": "public/styles.css",
@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "d5e93baa481ad2feffdf8fff6083d34a644ff949051066ea54a0c2e9364bc4c4"
+      "sha256": "b410a59b8c3331e94e2cf5f0862e354e6d3a5c752c29690677f604275bd73585"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "da57b96691500a4577b1cf189f34d372b5b0a01e7c41c4b4a55e10c8bc28ee54"
+      "sha256": "97ea53e1c2c9e2816b2c16b3bebdaf10023f8c3eb5e5cd96d58fe3a4e19e173d"
     },
     {
       "path": "quick_capture_native.py",
@@ -130,7 +130,15 @@
     {
       "path": "public/standalone_preparations.css",
       "sha256": "be38687ac1738d0c358eb4784db2bf7f5e30ebe78517eefc0c92b9aafe87a507"
+    },
+    {
+      "path": "tracker_rituals.py",
+      "sha256": "a500209c81e5133581a74075cc17c2107abdfc0dde550ecde74ada42d039fb7f"
+    },
+    {
+      "path": "public/tracker_ritual_ui.js",
+      "sha256": "95e7aa6495545081fe10f645af70b1c8cf97f0eabea215f9cf1b4188f02a0c6a"
     }
   ],
-  "notes": "ALPHA 0.18.0 — Préparatifs désormais une rubrique indépendante du tiroir : listes nommées, étapes cochables, date facultative, archives/restauration, sans faux rendez-vous ; les préparatifs de RDV restent dans le Calendrier et s'affichent aussi dans Préparatifs à J-1. Accueil : cinq lignes quotidiennes de Trackers visibles, toutes les autres par scroll, coches partagées avec les tableaux, persistance et synchronisation. Les grilles mensuelles/annuelles à colonnes par mois ne sont pas présentées comme des tâches quotidiennes. Migration SQLite 11→12 sauvegardée ; stable 0.17.0 et profils indépendants intacts. Tests automatiques et validation réelle requis."
+  "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
 }
