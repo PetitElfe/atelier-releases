@@ -22,3 +22,12 @@
 #weekGrid .week-timed-event:focus-within{outline:2px solid #e3bc73}
 
 #trackerBoardCreateForm.hidden{display:none!important}
+#trackersView .tracker-heading{align-items:center;gap:15px;margin-bottom:13px}
+#trackersView .tracker-heading h2{font-size:24px}
+#trackersView .tracker-heading p{margin:4px 0 0;line-height:1.4;font-size:13px}
+#trackerBoardCreateForm{margin:5px 0 14px;padding:14px;border:1px solid #675744;border-radius:12px;background:#24201c}
+.tracker-board-period{gap:7px;align-items:center}
+.tracker-board-period .tracker-board-range{min-width:180px;max-width:100%;font-size:15px;text-align:center}
+.tracker-board-period .tracker-board-cadence:empty{display:none}
+.tracker-grid-line{grid-template-columns:205px repeat(var(--tracker-days),32px);min-height:39px}
+.tracker-row-label{padding:7px 10px;font-size:13px;line-height:1.25}
