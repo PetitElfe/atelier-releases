@@ -84,6 +84,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('settings'));
   await page.waitForFunction(()=>document.querySelector('#settingsLegacyPreparations')?.textContent.includes('Préparer un voyage'));
   await page.locator('.tracker-old-preps > summary').click();
+  await page.locator('#settingsLegacyPreparations details > summary').first().click();
   assert.match(await page.locator('#settingsLegacyPreparations').innerText(),/Vérifier les papiers/);
   assert.equal((await api('/api/standalone-preparations'))[0].items[0].done,1);
   assert.equal((await api('/api/tracker-boards/daily?day='+day)).items.length,8);
