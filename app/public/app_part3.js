@@ -1665,6 +1665,7 @@ function initGlobalLayoutEditor(){
       const handle=event.currentTarget,pointerId=event.pointerId;
       try{handle.setPointerCapture?.(pointerId)}catch(_){}
       const d=readGlobalLayout(item),rect=item.el.getBoundingClientRect();
+      const original={...d};
       const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
       const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
       const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
@@ -1683,7 +1684,9 @@ function initGlobalLayoutEditor(){
         if(!active||ev.pointerId!==pointerId)return;
         const next=layoutResizeGeometry(axis,initial,
           ev.clientX-sx,ev.clientY-sy+window.scrollY-scrollY,bounds,ev.shiftKey);
-        d.x=next.x;d.y=next.y;d.width=next.width;d.height=next.height;d.scale=1;
+        d.x=next.x;d.y=next.y;d.scale=1;
+        if(!['top','bottom','height'].includes(axis))d.width=next.width;
+        if(!['left','right','width'].includes(axis))d.height=next.height;
         applyGlobalLayout(item,d);
         // Enregistrer également pendant le glisser si Windows perd le pointerup.
         saveGlobalLayout(item,d);
@@ -1697,7 +1700,7 @@ function initGlobalLayoutEditor(){
         window.removeEventListener('blur',cancelDrag);
         try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
         if(cancel){
-          Object.assign(d,{x:initial.x,y:initial.y,width:initial.width,height:initial.height,scale:1});
+          Object.assign(d,original);
         }
         saveGlobalLayout(item,d);
         applyGlobalLayout(item,d);
