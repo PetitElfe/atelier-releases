@@ -412,6 +412,38 @@ async function api(path,method='GET',body){
   await page.locator('#quickCaptureText').fill('#Tâches Nouvelle tâche via capture');
   await page.locator('#quickCaptureSend').click();
   await page.waitForFunction(async()=>(await (await fetch('/api/tasks')).json()).some(x=>x.title==='Nouvelle tâche via capture'));
+  // Une idée destinée aux Rappels attend une vraie date et une heure, sans
+  // déclencher de notification fantôme.
+  const remindersBefore=(await api('/api/reminders')).length;
+  await page.evaluate(()=>lifeOpenCapture());
+  await page.locator('#quickCaptureText').fill('#Rappels Faire le dossier CAF\navec justificatif');
+  await page.locator('#quickCaptureSend').click();
+  await page.waitForFunction(async()=>{
+    const c=await (await fetch('/api/captures')).json();
+    return c.some(x=>x.destination==='rappels'&&x.body.includes('justificatif'));
+  });
+  assert.equal((await api('/api/reminders')).length,remindersBefore);
+  await page.evaluate(()=>showView('captures'));
+  const reminderCapture=page.locator('.life-capture').filter({hasText:'Faire le dossier CAF'});
+  assert.match(await reminderCapture.locator('.life-capture-pending').innerText(),/pas encore un rappel/);
+  await reminderCapture.getByRole('button',{name:'Planifier un vrai rappel'}).click();
+  assert.equal(await page.locator('#standaloneReminderForm [name=title]').inputValue(),'Faire le dossier CAF');
+  assert.equal(await page.locator('#standaloneReminderForm [name=time]').inputValue(),'');
+  await page.locator('#cancelStandaloneReminder').click();
+  // La capture reste consultable sans être prétendue convertie.
+  assert.ok((await api('/api/captures')).some(x=>x.destination==='rappels'&&!x.seen));
+  await page.evaluate(()=>lifeOpenCapture());
+  await page.locator('#quickCaptureText').fill('#Tracker Ranger les dossiers');
+  await page.locator('#quickCaptureSend').click();
+  await page.waitForFunction(async()=>(
+    await (await fetch('/api/captures')).json()
+  ).some(x=>x.destination==='tracker'&&x.body==='Ranger les dossiers'));
+  await page.evaluate(()=>showView('captures'));
+  const trackerCapture=page.locator('.life-capture').filter({hasText:'Ranger les dossiers'});
+  assert.match(await trackerCapture.locator('.life-capture-pending').innerText(),/aucune ligne de Tracker/);
+  await trackerCapture.getByRole('button',{name:'Ouvrir mes Trackers'}).click();
+  assert.equal(await page.evaluate(()=>state.view),'trackers');
+  assert.ok((await api('/api/captures')).filter(x=>['tracker','rappels'].includes(x.destination)).length>=2);
   // Both Windows editions must accept only their own localhost origin.
   // This disposable test server uses a third port and must not start a real updater.
   for(const [path,header,body] of [
