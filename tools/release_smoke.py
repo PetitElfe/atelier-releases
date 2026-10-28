@@ -439,11 +439,14 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 10:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 11:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             cols={row[1] for row in c.execute("PRAGMA table_info(desktop_postit_layout)")}
             if "locked" not in cols:
                 fail("Le verrouillage des positions Post-it manque à la migration.")
+            rhythm_cols={row[1] for row in c.execute("PRAGMA table_info(tracker_boards)")}
+            if not {"period_unit","period_count","anchor_date"} <= rhythm_cols:
+                fail("Les périodes indépendantes des trackers manquent à la migration.")
             c.execute("PRAGMA user_version = 0")
             c.commit()
 
