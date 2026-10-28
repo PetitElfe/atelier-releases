@@ -1,4 +1,75 @@
 
+# Tracker boards: each board has its own recurring window. Month/day marks
+# are indexed by ISO dates and are NEVER migrated/deleted on rhythm changes.
+TRACKER_PERIOD_LIMITS={'days':90,'weeks':12,'months':24,'years':5}
+TRACKER_MONTH_NAMES=('janvier','février','mars','avril','mai','juin',
+                     'juillet','août','septembre','octobre','novembre','décembre')
+
+def tracker_period_choice(unit,count):
+    try:
+        if unit not in TRACKER_PERIOD_LIMITS or isinstance(count,bool):raise ValueError()
+        count=int(count)
+        if count<1 or count>TRACKER_PERIOD_LIMITS[unit]:raise ValueError()
+    except (ValueError,TypeError):
+        raise ValueError('Choisis une période entre 1 et 90 jours, 12 semaines, 24 mois ou 5 ans.')
+    return unit,count
+
+def tracker_period_anchor(unit,today=None):
+    today=today or date.today()
+    if unit in ('days','weeks'):
+        return (today-timedelta(days=today.weekday())) if unit=='weeks' else today
+    return date(today.year,1 if unit=='years' else today.month,1)
+
+def tracker_month_offset(when,months):
+    index=(when.year*12+when.month-1)+months
+    if index<12 or index>119987:raise ValueError('Période hors calendrier.')
+    return date(index//12,index%12+1,1)
+
+def tracker_window(board,offset=0,today=None):
+    today=today or date.today()
+    unit,count=tracker_period_choice(board['period_unit'],board['period_count'])
+    try:anchor=date.fromisoformat(board['anchor_date'])
+    except (ValueError,TypeError):anchor=tracker_period_anchor(unit,today)
+    if isinstance(offset,bool) or not isinstance(offset,int) or abs(offset)>60:
+        raise ValueError('Déplacement de période invalide.')
+    if unit in ('days','weeks'):
+        days=count*(7 if unit=='weeks' else 1)
+        index=(today-anchor).days//days+offset
+        start=anchor+timedelta(days=index*days)
+        end=start+timedelta(days=days-1)
+        monthly=False
+    else:
+        months=count*(12 if unit=='years' else 1)
+        diff=(today.year-anchor.year)*12+today.month-anchor.month
+        start=tracker_month_offset(anchor,(diff//months+offset)*months)
+        end=tracker_month_offset(start,months)-timedelta(days=1)
+        monthly=months>=4
+    columns=[]
+    if monthly:
+        cursor=start
+        while cursor<=end:
+            label=TRACKER_MONTH_NAMES[cursor.month-1][:3].capitalize()
+            columns.append({'day':cursor.isoformat(),'label':label,
+                            'secondary':str(cursor.year)[-2:],
+                            'title':TRACKER_MONTH_NAMES[cursor.month-1].capitalize()+' '+str(cursor.year)})
+            cursor=tracker_month_offset(cursor,1)
+    else:
+        cursor=start
+        weekday=('L','M','M','J','V','S','D')
+        while cursor<=end:
+            columns.append({'day':cursor.isoformat(),
+                            'label':weekday[cursor.weekday()],
+                            'secondary':str(cursor.day),
+                            'title':cursor.strftime('%d/%m/%Y')})
+            cursor+=timedelta(days=1)
+    if unit=='weeks': cadence=f'{count} semaine'+('s' if count>1 else '')
+    elif unit=='days':cadence=f'{count} jour'+('s' if count>1 else '')
+    elif unit=='years':cadence=f'{count} an'+('s' if count>1 else '')
+    else:cadence=f'{count} mois'
+    return {'start':start.isoformat(),'end':end.isoformat(),'columns':columns,
+            'cadence':cadence,'granularity':'months' if monthly else 'days',
+            'label':start.strftime('%d/%m/%Y')+' – '+end.strftime('%d/%m/%Y')}
+
 # Budget ALPHA 0.15.0 : montants en centimes, aucune connexion bancaire.
 def budget_amount(value):
     from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -199,18 +270,34 @@ class Handler(BaseHTTPRequestHandler):
                     if len(month)!=7 or date.fromisoformat(month+'-01').strftime('%Y-%m')!=month:
                         raise ValueError()
                     archived=str(q.get('archived',['0'])[0])=='1'
+                    view=str(q.get('periods',['0'])[0])=='1'
+                    shifts=json.loads(str(q.get('offsets',['{}'])[0])) if view else {}
+                    if not isinstance(shifts,dict) or len(shifts)>48:raise ValueError()
+                    if any(not str(k).isdigit() or isinstance(v,bool) or
+                           not isinstance(v,int) or abs(v)>60 for k,v in shifts.items()):
+                        raise ValueError()
                 except (ValueError,TypeError):
-                    return self._json({'error':'Mois invalide.'},400)
+                    return self._json({'error':'Mois ou périodes invalides.'},400)
                 boards=[dict(row) for row in c.execute(
                     'SELECT * FROM tracker_boards WHERE archived=? ORDER BY id DESC',(int(archived),))]
-                for board in boards:
-                    board['rows']=[dict(row) for row in c.execute(
-                        'SELECT id,title,mode,order_index FROM tracker_board_rows '
-                        'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],))]
-                    for line in board['rows']:
-                        line['marks']={row['day']:row['value'] for row in c.execute(
-                            'SELECT day,value FROM tracker_board_marks WHERE row_id=? AND day LIKE ?',
-                            (line['id'],month+'-%'))}
+                try:
+                    for board in boards:
+                        if view:board['period']=tracker_window(board,shifts.get(str(board['id']),0))
+                        board['rows']=[dict(row) for row in c.execute(
+                            'SELECT id,title,mode,order_index FROM tracker_board_rows '
+                            'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],))]
+                        for line in board['rows']:
+                            if view:
+                                line['marks']={row['day']:row['value'] for row in c.execute(
+                                    'SELECT day,value FROM tracker_board_marks '
+                                    'WHERE row_id=? AND day BETWEEN ? AND ?',
+                                    (line['id'],board['period']['start'],board['period']['end']))}
+                            else:
+                                line['marks']={row['day']:row['value'] for row in c.execute(
+                                    'SELECT day,value FROM tracker_board_marks WHERE row_id=? AND day LIKE ?',
+                                    (line['id'],month+'-%'))}
+                except (ValueError,OverflowError):
+                    return self._json({'error':'Période hors calendrier.'},400)
                 return self._json(boards)
             if p == '/api/trackers':
                 trackers=[dict(row) for row in c.execute('SELECT * FROM personal_trackers WHERE archived=0 ORDER BY id')]
@@ -428,11 +515,17 @@ class Handler(BaseHTTPRequestHandler):
             if not title:return self._json({'error':'Nom du tableau requis.'},400)
             if color not in ('sage','rose','mauve','gold','blue','peach'):
                 return self._json({'error':'Couleur de tableau invalide.'},400)
+            try:
+                unit,count=tracker_period_choice(
+                    body.get('period_unit','months'),body.get('period_count',1))
+            except ValueError as ex:return self._json({'error':str(ex)},400)
+            anchor=tracker_period_anchor(unit).isoformat()
             with conn() as c:
                 if c.execute('SELECT COUNT(*) FROM tracker_boards WHERE archived=0').fetchone()[0]>=48:
                     return self._json({'error':'Archive un tableau avant d’en créer un autre.'},409)
-                cur=c.execute('INSERT INTO tracker_boards(title,color,created_at,updated_at) VALUES(?,?,?,?)',
-                              (title,color,ts,ts))
+                cur=c.execute('INSERT INTO tracker_boards(title,color,period_unit,period_count,anchor_date,'
+                              'created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
+                              (title,color,unit,count,anchor,ts,ts))
                 c.commit();return self._json({'id':cur.lastrowid},201)
         if p.startswith('/api/tracker-boards/') and p.endswith('/rows'):
             parts=p.strip('/').split('/')
@@ -715,14 +808,28 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
         if len(parts)==3 and parts[:2]==['api','tracker-boards']:
-            try:
-                board_id=int(parts[2])
+            try:board_id=int(parts[2])
+            except (ValueError,TypeError):return self._json({'error':'Tableau invalide.'},400)
+            if 'archived' in body:
                 archived=body['archived']
-                if type(archived) is not bool:raise ValueError()
-            except (ValueError,TypeError,KeyError):return self._json({'error':'Archivage invalide.'},400)
+                if type(archived) is not bool:
+                    return self._json({'error':'Archivage invalide.'},400)
+                with conn() as c:
+                    updated=c.execute('UPDATE tracker_boards SET archived=?,updated_at=? WHERE id=?',
+                                      (int(archived),ts,board_id))
+                    c.commit()
+                    return self._json({'ok':bool(updated.rowcount)},200 if updated.rowcount else 404)
+            try:
+                unit,count=tracker_period_choice(body['period_unit'],body['period_count'])
+            except (ValueError,TypeError,KeyError) as ex:
+                return self._json({'error':'Périodicité invalide.'},400)
+            # A rhythm change never clears old cells. Restore the old rhythm to
+            # view its historic marks again; keep the same anchored date.
+            anchor=tracker_period_anchor(unit).isoformat()
             with conn() as c:
-                updated=c.execute('UPDATE tracker_boards SET archived=?,updated_at=? WHERE id=?',
-                                  (int(archived),ts,board_id))
+                updated=c.execute(
+                    'UPDATE tracker_boards SET period_unit=?,period_count=?,anchor_date=?,updated_at=? '
+                    'WHERE id=? AND archived=0',(unit,count,anchor,ts,board_id))
                 c.commit()
                 return self._json({'ok':bool(updated.rowcount)},200 if updated.rowcount else 404)
         if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='mark':
