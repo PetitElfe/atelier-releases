@@ -306,8 +306,34 @@ function renderTrackerBoards(){
         board.period.label;
     periodLabel.textContent=readablePeriod;
     periodLabel.title='Période de '+board.title;
-    head.insertBefore(periodLabel,action);
-    periodBar.append(cadence,before,after,current,change);
+    periodBar.append(cadence,before,periodLabel,after,current,change);
+    // Les actions restent disponibles au clic droit sans supprimer les données.
+    section.addEventListener('contextmenu',event=>{
+      if(event.target.closest('input,select,textarea'))return;
+      event.preventDefault();
+      document.querySelector('.tracker-board-popup')?.remove();
+      const popup=lifeNode('div','tracker-board-popup');
+      popup.setAttribute('role','menu');
+      popup.setAttribute('aria-label','Actions du tableau '+board.title);
+      const outside=e=>{if(!popup.contains(e.target))dismiss()};
+      const escape=e=>{if(e.key==='Escape')dismiss()};
+      const dismiss=()=>{
+        popup.remove();
+        document.removeEventListener('pointerdown',outside,true);
+        document.removeEventListener('keydown',escape,true);
+      };
+      const archive=lifeButton('Archiver le tableau',()=>{dismiss();action.click()},'');
+      const rhythm=lifeButton('Changer le rythme',()=>{dismiss();change.click()},'');
+      archive.setAttribute('role','menuitem');
+      rhythm.setAttribute('role','menuitem');
+      popup.append(archive,rhythm);
+      document.body.append(popup);
+      popup.style.left=Math.max(4,Math.min(event.clientX,innerWidth-popup.offsetWidth-8))+'px';
+      popup.style.top=Math.max(4,Math.min(event.clientY,innerHeight-popup.offsetHeight-8))+'px';
+      document.addEventListener('pointerdown',outside,true);
+      document.addEventListener('keydown',escape,true);
+      archive.focus();
+    });
     const viewport=lifeNode('div','tracker-board-scroll');
     viewport.tabIndex=0;
     viewport.setAttribute('aria-label','Tableau '+board.title+' du '+board.period.label);
@@ -448,6 +474,13 @@ function lifeBoardToggleCustom(form){
   const panel=$('#trackerBoardCustomPeriod');
   panel?.classList.toggle('hidden',preset.value!=='custom');
 }
+$('#trackerBoardCreateToggle')?.addEventListener('click',()=>{
+  const form=$('#trackerBoardCreateForm'),button=$('#trackerBoardCreateToggle');
+  const closed=form.classList.toggle('hidden');
+  button.setAttribute('aria-expanded',String(!closed));
+  button.textContent=closed?'＋ Nouveau tableau':'− Fermer';
+  if(!closed)form.elements.title.focus();
+});
 $('#trackerBoardCreateForm')?.addEventListener('submit',async e=>{
   e.preventDefault();const form=e.currentTarget,v=Object.fromEntries(new FormData(form).entries());
   let choice;
