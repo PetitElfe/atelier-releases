@@ -47,7 +47,11 @@ async function api(path,method='GET',body){
   await dayToggle.click();
   assert.ok(await page.locator('#modalBody .calendar-day-list .event-pill').count()>=5);
   await page.locator('#calendarDayAdd').click();
-  assert.equal(await page.locator('#eventForm [name=event_date]').inputValue(),date);
+  const dayForm=page.locator('#eventForm');
+  assert.ok(await dayForm.count(),
+    'Bouton Ajouter dans la liste du jour doit ouvrir le formulaire. Modale : '+
+    (await page.locator('#modalBody').innerText())+' · JS : '+JSON.stringify(errors));
+  assert.equal(await dayForm.locator('[name=event_date]').inputValue(),date);
   await page.locator('#cancelEvent').click();
   await page.evaluate(()=>showView('home'));
   const expand=page.locator('#homeUpcoming .home-upcoming-toggle');
