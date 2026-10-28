@@ -65,10 +65,10 @@ jobs:
           # Les bibliothèques graphiques de l'agent Ubuntu suffisent pour l'exécution headless.
           # Éviter apt-get --with-deps (très lent, timeout de 10 min avant les tests).
           npx playwright install --only-shell chromium
-      - name: Validate independent preparatives and daily Home checkboxes
-        run: node tools/preparations_tracker_home_browser_test.cjs
       - name: Verify tracker habits with targets, steps, weekly day rules and Settings archives
         run: node tools/tracker_ritual_browser_test.cjs
+      - name: Verify preserved old preparatives and daily Home checkboxes
+        run: node tools/preparations_tracker_home_browser_test.cjs
       - name: Reproduce Accueil after refresh, drawer and edit mode
         run: node tools/home_refresh_browser_test.cjs
       - name: Reproduce save / Accueil / return
