@@ -345,6 +345,7 @@ class Handler(BaseHTTPRequestHandler):
                     'SELECT * FROM tracker_boards WHERE archived=? ORDER BY id DESC',(int(archived),))]
                 try:
                     for board in boards:
+                        if archived:board['archive_summary']=tracker_rituals.archive_month_summary(c,board)
                         if view:board['period']=tracker_window(board,shifts.get(str(board['id']),0))
                         board['rows']=[dict(row) for row in c.execute(
                             'SELECT id,title,mode,order_index,target_count,weekday,linked_type,linked_id FROM tracker_board_rows '

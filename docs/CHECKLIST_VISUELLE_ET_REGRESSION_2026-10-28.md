@@ -66,7 +66,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Jour fixe par ligne (ex. mardi poubelles) : les autres jours sont grisés et rejetés aussi par l’API.
 - [ ] Ligne liée à Tâche/Objectif/Administratif ouvre la bonne fiche sans duplication.
 - [ ] Aucun Tracker n’est recoplié artificiellement dans le journal ; accueil et grille partagent le même état SQLite.
-- [ ] Archives du mois écoulé montrent un bilan du type 28/30, calculé uniquement sur les jours éligibles.
+- [ ] Archives du mois écoulé : bilan 28/30 calculé uniquement sur jours éligibles, jours fixes inclus, compteurs avec objectif et dates de création respectés ; aucune ancienne coche modifiée. À vérifier sur Windows.
 - [ ] Les anciens Trackers de valeurs datées restent consultables et intacts.
 - [ ] Pas de rubrique Préparatifs autonome ni de préparatifs de rendez-vous dans l’interface ; données historiques non effacées.
 
