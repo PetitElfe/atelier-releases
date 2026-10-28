@@ -54,6 +54,7 @@ class AdminDocumentsTests(unittest.TestCase):
         self.assertEqual(admin_docs.summaries(c,1)[0]['filename'],'document.pdf')
         c.commit()  # La sauvegarde SQLite attendrait un COMMIT pour une écriture en cours.
         snapshot=sqlite3.connect(':memory:')
+        snapshot.row_factory=sqlite3.Row
         c.backup(snapshot)
         self.assertEqual(admin_docs.detail(snapshot,1,1)['content'],b'%PDF-test')
         c.execute('DELETE FROM admin_documents WHERE id=1')
