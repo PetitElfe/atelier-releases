@@ -132,3 +132,61 @@
  #journalBook .deadline-time{grid-column:2}
  .quick-capture-foot{flex-wrap:wrap}
 }
+
+
+/* Tableaux mensuels de trackers : inspiration bullet journal, sans IA graphique. */
+.tracker-board-create{grid-template-columns:minmax(200px,2fr) minmax(150px,1fr) auto}
+.tracker-board-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 17px}
+.tracker-month-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tracker-month-controls strong{font:600 17px Georgia,serif;color:var(--text);min-width:160px;text-align:center;text-transform:capitalize}
+.tracker-month-controls button,.tracker-board-toolbar>button{border:1px solid var(--line);border-radius:9px;min-height:35px;padding:6px 12px;background:var(--panel);color:var(--text)}
+.tracker-month-controls button:hover,.tracker-board-toolbar>button:hover{border-color:#b69b68}
+.tracker-board-list{display:grid;gap:19px}
+.tracker-empty{padding:36px 25px;border:1px dashed #88765e;border-radius:12px;color:var(--muted);text-align:center}
+.tracker-board{--tracker-ink:#9bb5a3;--tracker-ink-light:#d8e5d9;display:flex;flex-direction:column;gap:10px;min-width:0;padding:17px 15px 18px;border:1px solid #594e40;border-radius:15px;background:linear-gradient(160deg,#27221e,#211d1a 80%);box-shadow:0 4px 16px #0002}
+.tracker-board-rose{--tracker-ink:#cf9d9f;--tracker-ink-light:#f1d5d7}
+.tracker-board-mauve{--tracker-ink:#ae9bbd;--tracker-ink-light:#e8dfef}
+.tracker-board-gold{--tracker-ink:#c3a15b;--tracker-ink-light:#f2dfb4}
+.tracker-board-blue{--tracker-ink:#98adc8;--tracker-ink-light:#e0e9f7}
+.tracker-board-peach{--tracker-ink:#d7a482;--tracker-ink-light:#f7ddc8}
+.tracker-board-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tracker-board-head h3{margin:0;color:var(--tracker-ink-light);font:700 21px Georgia,serif;overflow-wrap:anywhere}
+.tracker-board-head .tracker-archive-button{font-size:12px;padding:6px 11px;border:1px solid #655747;border-radius:8px;background:transparent;color:var(--muted)}
+.tracker-board-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 1px 10px;border:1px solid #514538;border-radius:8px;background:#1c1916;scrollbar-color:#786752 #211c17}
+.tracker-board-scroll:focus-visible{outline:2px solid var(--tracker-ink);outline-offset:2px}
+.tracker-board-grid{width:max-content;min-width:100%}
+.tracker-grid-line{display:grid;grid-template-columns:176px repeat(var(--tracker-days),29px);align-items:stretch;min-height:37px}
+.tracker-grid-line:nth-child(2n){background:#ffffff04}
+.tracker-grid-dates{min-height:49px;background:#312a24;position:relative}
+.tracker-row-label{position:sticky;left:0;z-index:2;min-width:0;display:flex;align-items:center;align-self:stretch;padding:7px 10px;border-right:1px solid #76644c;border-bottom:1px solid #493f34;background:#26211c;color:var(--text);font:500 13px/1.2 Georgia,serif;overflow-wrap:anywhere}
+.tracker-grid-dates>.tracker-row-label{z-index:3;background:#312a24;color:var(--tracker-ink-light);font-weight:700}
+.tracker-grid-day{display:flex;align-items:center;justify-content:center;border-right:1px solid #53483b;border-bottom:1px solid #685743;color:#c7b8a1;font:11px/1.4 sans-serif;white-space:pre-line;text-align:center}
+.tracker-grid-day.tracker-today{color:#fff1c5;background:#70573577;font-weight:700}
+.tracker-cell-wrap{display:grid;place-items:center;border-right:1px solid #423b34;border-bottom:1px solid #423b34;min-width:0;min-height:34px}
+.tracker-cell-wrap.tracker-today{background:#b9904330}
+.tracker-cell-wrap .tracker-day-cell{display:grid;place-items:center;width:25px;height:27px;padding:0!important;margin:0;border:1px solid transparent;border-radius:5px;background:transparent;color:#b9afa4;box-shadow:none;font:600 13px/1.1 sans-serif;touch-action:manipulation}
+.tracker-cell-wrap .tracker-day-cell:hover,.tracker-cell-wrap .tracker-day-cell:focus-visible{border-color:var(--tracker-ink);background:#ffffff13;outline:none}
+.tracker-cell-wrap .tracker-day-cell.tracker-day-done{color:var(--tracker-ink-light);background:color-mix(in srgb,var(--tracker-ink) 32%,transparent)}
+.tracker-cell-wrap .tracker-day-cell.tracker-day-number{font-size:12px}
+.tracker-cell-wrap .tracker-day-cell:disabled{opacity:.6;cursor:progress}
+.tracker-cell-wrap .tracker-number-editor{box-sizing:border-box;width:28px;height:30px;min-width:0;padding:1px;border:1px solid var(--tracker-ink);border-radius:4px;background:#eee1d3;color:#241b18;font:11px sans-serif;text-align:center;appearance:textfield}
+.tracker-cell-wrap .tracker-number-editor::-webkit-outer-spin-button,.tracker-cell-wrap .tracker-number-editor::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.tracker-add-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,145px) auto;gap:9px;margin-top:5px}
+.tracker-add-row input,.tracker-add-row select{min-width:0}
+.tracker-add-row button{white-space:nowrap}
+.tracker-legacy-section{margin-top:27px;padding:18px 16px;border:1px solid var(--line);background:var(--panel);border-radius:12px}
+.tracker-legacy-section>summary{cursor:pointer;color:#d9c49d;font-weight:700;margin-bottom:8px}
+.tracker-legacy-section .life-card-list{margin-top:14px}
+.tracker-legacy-section .life-form{margin-top:16px}
+.tracker-board-archive-list{display:grid;gap:8px;margin:0 0 20px}
+.tracker-archived-entry{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);background:var(--panel);border-radius:9px}
+.tracker-archived-entry strong{font-weight:500}
+.tracker-archived-entry button{min-height:32px}
+@media(max-width:750px){
+ .tracker-board-create{grid-template-columns:minmax(0,1fr)}
+ .tracker-add-row{grid-template-columns:minmax(0,1fr) minmax(95px,1fr)}
+ .tracker-add-row button{grid-column:1/-1}
+ .tracker-board{padding:12px 9px}
+ .tracker-grid-line{grid-template-columns:132px repeat(var(--tracker-days),29px)}
+ .tracker-row-label{font-size:12px}
+}
