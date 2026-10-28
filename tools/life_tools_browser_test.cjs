@@ -35,6 +35,34 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async id=>(await (await fetch('/api/tasks')).json()).some(x=>x.id===id&&x.completed),task.id);
   const event=await api('/api/events','POST',{title:'RDV du journal',event_date:date,start_time:'16:30',category:'important'});
   await page.evaluate(()=>refresh());
+  // Joindre un fichier réel depuis le formulaire du calendrier, le relire et
+  // vérifier qu'un autre rendez-vous n'a pas accès aux mêmes octets.
+  const eventDetails=(await api('/api/events?start='+date+'&end='+date))
+    .find(x=>x.id===event.id);
+  await page.evaluate(e=>openEventModal(e),eventDetails);
+  const fileText='Pièce jointe du rendez-vous, conservée dans SQLite.';
+  await page.locator('#eventAttachmentInput').setInputFiles({
+    name:'convocation.txt',mimeType:'text/plain',buffer:Buffer.from(fileText,'utf8')
+  });
+  await page.waitForFunction(()=>document.querySelectorAll('.event-document-row').length===1);
+  const files=await api('/api/events/'+event.id+'/attachments');
+  assert.equal(files.length,1);
+  assert.equal((await fetch(base+'/api/events/'+event.id+'/attachments/'+files[0].id)).status,200);
+  assert.equal(await (await fetch(base+'/api/events/'+event.id+'/attachments/'+files[0].id)).text(),fileText);
+  const stranger=await fetch(base+'/api/events/'+(event.id+9999)+'/attachments/'+files[0].id);
+  assert.equal(stranger.status,404);
+  const fakePdf=await fetch(base+'/api/events/'+event.id+'/attachments',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filename:'mensonge.pdf',mime_type:'application/pdf',
+      base64:Buffer.from('not actually a pdf').toString('base64')})
+  });
+  assert.equal(fakePdf.status,400);
+  await page.locator('#cancelEvent').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>refresh());
+  assert.equal((await api('/api/events?start='+date+'&end='+date))
+    .find(x=>x.id===event.id)?.attachments?.length,1,
+    'Documents du rendez-vous toujours présents après F5');
   assert.ok((await page.locator('#homeDeadlineLines').innerText()).includes('16h30'));
   for(let i=0;i<4;i++)await api('/api/events','POST',{
     title:'Autre rendez-vous '+i,event_date:date,start_time:'18:'+String(i*10).padStart(2,'0'),category:'general'
