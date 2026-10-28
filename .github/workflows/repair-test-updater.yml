@@ -1,0 +1,43 @@
+name: L'Atelier TEST — reparateur autonome WinError 5
+
+on:
+  push:
+    branches: ['feature/0180-*']
+    paths:
+      - 'tools/Reparer_LAtelier_TEST.ps1'
+      - 'tools/Lancer_reparation_TEST.cmd'
+      - 'tools/test_repair_test_updater.ps1'
+      - '.github/workflows/repair-test-updater.yml'
+  pull_request:
+    branches: ['feature/0180-progression-foundations']
+    paths:
+      - 'tools/Reparer_LAtelier_TEST.ps1'
+      - 'tools/Lancer_reparation_TEST.cmd'
+      - 'tools/test_repair_test_updater.ps1'
+      - '.github/workflows/repair-test-updater.yml'
+  workflow_dispatch:
+
+jobs:
+  repair-on-real-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test actual one-click repair with an old updater and a locked folder
+        shell: pwsh
+        run: ./tools/test_repair_test_updater.ps1
+      - name: Upload the verified one-click TEST repair
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAtelier_TEST_Reparation_WinError5
+          path: |
+            tools/Reparer_LAtelier_TEST.ps1
+            tools/Lancer_reparation_TEST.cmd
+          if-no-files-found: error
+          retention-days: 30
