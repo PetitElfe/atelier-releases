@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "6cbe887d03bc7e7108fd13bce23eb22fb1298294ec8fe4318265eac76beedd9c"
+      "sha256": "a588ea776a82e5e37d8d4791d8ac1dfa37ac06efa8bd55e8833e403587dea7bb"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "19530c2b0d0c875a29fa98e5b055faf76ba6a434a5202f7a4b1ff6ea84cb1a48"
+      "sha256": "2e3bfc03b8d34b0f7d109fb44290b0c1f1c5d277c2588de3e81eb9b7726152e4"
     },
     {
       "path": "progression.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST/Nathan — Fermeture WebView2 : arrêt propre du serveur lancé par la fenêtre, même après remplacement par une mise à jour ; attente de libération du port ; protection des mises à jour en cours ; fenêtre unique par édition ; tests Windows sur vrai serveur et contrôle du verrou. Nouveau lanceur TEST : mise à niveau de l'EXE déjà installé avec sauvegarde vérifiée et remplacement atomique si l'ancien EXE est fermé. Données et stable 0.17.0 inchangées. La mise à jour de l'EXE nécessite un paquet Windows distinct et validation utilisateur."
+  "notes": "ALPHA 0.18.0 — ergonomie du mode Modifier de l'Accueil : poignées de redimensionnement visibles ET cliquables sur les 4 coins et 4 côtés, ancrage du bord opposé, coins proportionnels (Maj pour étirer librement), tailles minimales adaptées, positions et tailles enregistrées, tests de glisser dans le navigateur. Pas de modification des contenus ni de la stable 0.17.0 ; données de Nathan séparées."
 }
