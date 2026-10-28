@@ -321,3 +321,8 @@
 .event-document-delete{padding:5px 8px;min-height:28px;border:1px solid #9c6f68;border-radius:5px;color:#ffdbcf;background:#47302b}
 .event-document-upload{display:grid;gap:7px;color:#dcc49e;font-size:13px}
 .event-document-upload input{max-width:100%;min-width:0;font-size:12px}
+
+/* Une capture en attente n'est ni un rappel planifié, ni un Tracker créé. */
+.life-capture-pending{margin:7px 0;font:12px/1.45 system-ui,sans-serif;color:#dfc79e;border-left:3px solid #b18b57;padding:6px 9px;background:#3d302433}
+.life-capture-actions{display:flex;flex-wrap:wrap;gap:7px}
+.life-capture-actions button{min-height:31px;padding:5px 10px}
