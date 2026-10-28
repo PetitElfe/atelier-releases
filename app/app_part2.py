@@ -350,11 +350,13 @@ class Handler(BaseHTTPRequestHandler):
                         'SELECT id,entry_date,value,notes FROM personal_tracker_entries WHERE tracker_id=? ORDER BY entry_date DESC LIMIT 90',(item['id'],))]
                 return self._json(trackers)
             if p == '/api/admin':
+                archived=str(q.get('archived',['0'])[0])=='1'
                 items=[dict(row) for row in c.execute(
                     "SELECT a.*,e.title AS event_title,e.event_date AS linked_event_date "
                     "FROM admin_documents a LEFT JOIN events e ON a.event_id=e.id "
+                    "WHERE a.archived=? "
                     "ORDER BY CASE a.status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, "
-                    "COALESCE(a.due_date,'9999'),a.id DESC")]
+                    "COALESCE(a.due_date,'9999'),a.id DESC",(int(archived),))]
                 for item in items:item['attachments']=admin_docs.summaries(c,item['id'])
                 return self._json(items)
             if p == '/api/captures':
@@ -1102,8 +1104,10 @@ class Handler(BaseHTTPRequestHandler):
                 except (TypeError,ValueError):return self._json({'error':'Rendez-vous invalide.'},400)
                 if event_id is not None and not c.execute('SELECT 1 FROM events WHERE id=?',(event_id,)).fetchone():
                     return self._json({'error':'Rendez-vous introuvable.'},404)
-                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,event_id=?,updated_at=? WHERE id=?',
-                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],event_id,ts,doc_id))
+                raw_archive=body.get('archived',bool(row['archived']))
+                if type(raw_archive) is not bool:return self._json({'error':'Archivage invalide.'},400)
+                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,event_id=?,archived=?,updated_at=? WHERE id=?',
+                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],event_id,int(raw_archive),ts,doc_id))
                 c.commit();return self._json({'ok':True})
         if len(parts)==3 and parts[:2]==['api','captures']:
             try:capture_id=int(parts[2])
