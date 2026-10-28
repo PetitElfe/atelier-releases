@@ -200,6 +200,15 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('settings'));
   await page.waitForFunction(()=>document.getElementById('settingsTrackerHistory')?.textContent);
   await page.locator('#trackerBoardArchivesToggle').click();
+  const archivedWellness=(await api('/api/tracker-boards?archived=1'))
+    .find(x=>x.id===wellness.id);
+  assert.ok(archivedWellness?.archive_summary,'Archived board exposes a dated report');
+  assert.equal(archivedWellness.archive_summary.done,0,
+    'Current-month marks should not be fabricated in the previous completed month');
+  assert.equal(archivedWellness.archive_summary.eligible,0,
+    'Rows created after the last completed month are not penalized');
+  const archivedCard=page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'});
+  assert.match(await archivedCard.locator('.tracker-archive-recap').innerText(),/Aucun jour éligible/);
   await page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'})
     .getByRole('button',{name:'Restaurer'}).click();
   await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
