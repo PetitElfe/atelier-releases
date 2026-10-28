@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "5839ce0d6255ca33b94eba38ed11c57906d5bbc715d802ed2a092b246e57ad7a"
+      "sha256": "845ff5c5df68a63ea025a8da58cddeeb0c91fedaeffd4a49a6a8c162631cb162"
     },
     {
       "path": "app_part2.py",
-      "sha256": "f99160cdd550a080d7b7aa1f76d9a967ecff0939fa373d8b91c3fedc0f607d4f"
+      "sha256": "657634305144f24543a5d61d3cf78408c0a1e60abd98016965510686be247129"
     },
     {
       "path": "app_part3.py",
@@ -37,11 +37,11 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "e82bea17aee6783923f41c12697f97f9d90eb1619489948d21dbaece92bbf57a"
+      "sha256": "c4f1ea9d0d291df6a073068dca23903500d8b3b6005abb5bb7072c11d9045891"
     },
     {
       "path": "public/index.html",
-      "sha256": "4737c184002ac1384d2732c0170250e468e5f0212d65507b910453fbc2e8097b"
+      "sha256": "37057405f67a5791198b647511c7fdd52c23cdd4932054f976b3e70aecce65f1"
     },
     {
       "path": "public/styles.css",
@@ -113,7 +113,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "9fb93b58c0139f4ad8487db85145262abca8c8651cedb6287cee4810a441870a"
+      "sha256": "d5e93baa481ad2feffdf8fff6083d34a644ff949051066ea54a0c2e9364bc4c4"
     },
     {
       "path": "public/life_tools.css",
@@ -122,7 +122,15 @@
     {
       "path": "quick_capture_native.py",
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
+    },
+    {
+      "path": "public/standalone_preparations.js",
+      "sha256": "5e07dcff329b3567df83db73764d75b7d131f78e2f41efbfed9db4f789a040de"
+    },
+    {
+      "path": "public/standalone_preparations.css",
+      "sha256": "be38687ac1738d0c358eb4784db2bf7f5e30ebe78517eefc0c92b9aafe87a507"
     }
   ],
-  "notes": "ALPHA 0.18.0 — Accueil F5/refresh : le mini-calendrier ne prend plus toute la largeur sur écran >=1800px, et la position visible de chaque carte est bornée aux dimensions actuelles sans écraser les coordonnées d'origine en localStorage. Recalcul après redimensionnement/rendu tardif ; le scroll horizontal de page est neutralisé en gardant le scroll vertical. Tests dédiés sur tiroir, mode Modifier, rafraîchissements et 1100–1920px. Stable 0.17.0 et profils/données séparés inchangés."
+  "notes": "ALPHA 0.18.0 — Préparatifs désormais une rubrique indépendante du tiroir : listes nommées, étapes cochables, date facultative, archives/restauration, sans faux rendez-vous ; les préparatifs de RDV restent dans le Calendrier et s'affichent aussi dans Préparatifs à J-1. Accueil : cinq lignes quotidiennes de Trackers visibles, toutes les autres par scroll, coches partagées avec les tableaux, persistance et synchronisation. Les grilles mensuelles/annuelles à colonnes par mois ne sont pas présentées comme des tâches quotidiennes. Migration SQLite 11→12 sauvegardée ; stable 0.17.0 et profils indépendants intacts. Tests automatiques et validation réelle requis."
 }
