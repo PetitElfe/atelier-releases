@@ -69,7 +69,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "2ed0ddd5f05800cf6f8fa0766d9e8c23caaaa575a907b55019c2635d9b732497"
+      "sha256": "cbbe1a4e4e09ab5df6f4a5cb3938917f95fe569be9268a12d838dda64dd1e028"
     },
     {
       "path": "public/postits.js",
@@ -81,7 +81,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "4d8467e7e5854077ca4e9984e0641bdb405a07e0b87ff430aad1a756ccc5317f"
+      "sha256": "fda63d41b5022c692285fd86075b56512b435cecead91fe4f58506f56b45fda3"
     },
     {
       "path": "windows_tray.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 TEST et Nathan — mises à jour et actions natives autorisées uniquement depuis le bon port local de chaque édition (TEST 8876, Nathan 8877), affichage correct du canal dans Paramètres et tests d'origine renforcés. Fonctionnalités journal, trackers, administratif, capture et semainier préservées ; stable 0.17.0 non modifiée."
+  "notes": "ALPHA 0.18.0 TEST/Nathan — correctif WinError 5 : l’updater TEST ne renomme plus le dossier de code utilisé par les Post-it Windows ; installation atomique fichier par fichier avec copie complète de l’ancien code, validation des empreintes, retour arrière et protection des données. Les Post-it natifs sont désormais lancés avec leur dossier de travail dans data. Tests Windows avec dossier code occupé et tests unitaires de rollback. Stable 0.17.0 intacte."
 }
