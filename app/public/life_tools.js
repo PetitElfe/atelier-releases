@@ -312,9 +312,16 @@ $('#trackerBoardCreateForm')?.addEventListener('submit',async e=>{
   let choice;
   try{choice=lifeBoardPeriodChoice(v.period_preset,v.custom_count,v.custom_unit)}
   catch(error){showUiError(error,'Création du tableau');return}
-  const ok=await lifeAction('Créer un tableau',()=>lifeApi('/api/tracker-boards',
-    {method:'POST',body:JSON.stringify({title:v.title,color:v.color,...choice})}));
-  if(ok){form.reset();lifeBoardToggleCustom(form)}
+  const button=form.querySelector('[type="submit"]');
+  if(button)button.disabled=true;
+  try{
+    const result=await runUiAction('Créer un tableau',()=>lifeApi('/api/tracker-boards',
+      {method:'POST',body:JSON.stringify({title:v.title,color:v.color,...choice})}));
+    if(result.ok){
+      form.reset();lifeBoardToggleCustom(form);
+      await loadLifeTools();
+    }
+  }finally{if(button)button.disabled=false}
 });
 $('#trackerBoardPeriodPreset')?.addEventListener('change',e=>
   lifeBoardToggleCustom(e.currentTarget.form));
