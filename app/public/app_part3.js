@@ -351,11 +351,12 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',preparations:'Préparatifs',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings')renderSettings();
   if(view==='budget')loadBudget();
   if(['trackers','admin','captures'].includes(view)&&typeof loadLifeTools==='function')loadLifeTools();
+  if(view==='preparations'&&typeof loadStandalonePreparations==='function')loadStandalonePreparations();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -872,16 +873,18 @@ const homeShortcutDefs=[
   {id:'organisation',title:'Habitudes & cycle',description:'Accéder à tes suivis personnels.',view:'organisation'},
   {id:'kitchen',title:'Courses & repas',description:'Retrouver les listes et les aliments.',view:'kitchen'},
   {id:'cuisine',title:'Recettes',description:'Ouvrir la bibliothèque de recettes.',view:'cuisine'},
-  {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
+  {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'},
+  {id:'preparations',title:'Préparatifs',description:'Mes listes à cocher, sans rendez-vous.',view:'preparations'}
 ];
 const homeModuleOrder=[
   ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],
+  ['dailyTrackers','Trackers du jour'],
   ...homeShortcutDefs.map(item=>[item.id,item.title])
 ];
 const homeModuleVisibilityKey=id=>'atelierHomeModuleVisible_'+id;
 function homeModuleIsVisible(id){
   const stored=localStorage.getItem(homeModuleVisibilityKey(id));
-  return stored===null?['budget','calendar','upcoming','journal'].includes(id):stored==='1';
+  return stored===null?['budget','calendar','upcoming','journal','dailyTrackers'].includes(id):stored==='1';
 }
 function syncHomeModuleVisibility(){
   const sections=[...document.querySelectorAll('#homeView [data-home-module]')];
@@ -979,7 +982,7 @@ function getGlobalLayoutSpecs(){
   // Ajouter toutes les cartes et sections stables de chaque rubrique,
   // y compris la Bibliothèque, le Budget et les sections du journal.
   const selector=[
-    '#homeBudgetWidget','#homeShortcutShelf .home-shortcut-card','#homeView .journal-section',
+    '#homeBudgetWidget','#homeDailyTrackersWidget','#homeShortcutShelf .home-shortcut-card','#homeView .journal-section',
     '#organisationView .organisation-module',
     '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
     '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
@@ -1201,7 +1204,8 @@ function homeSuggestedLayout(item){
     homeBudgetWidget:[left,12],
     upcoming:[left,narrow?220:210],
     journal:[narrow?left:center,narrow?465:12],
-    calendar:[narrow?left:right,narrow?800:12]
+    calendar:[narrow?left:right,narrow?800:12],
+    homeDailyTrackersWidget:[left,narrow?1190:545]
   };
   const shortcutIndex=homeShortcutDefs.findIndex(entry=>entry.id===item.id.replace(/^homeShortcut_/,''));
   const x=shortcutIndex<0?0:narrow?left:12+(shortcutIndex%3)*Math.max(210,Math.floor((width-34)/3));
@@ -1227,8 +1231,8 @@ function activateHomeCanvas(){
   canvas.id='homeCanvas';
   toolbar.after(canvas);
   const budget=$('#homeBudgetWidget'),row=home.querySelector('.desk-top-row');
-  const journal=$('#journalBook'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
-  for(const element of [budget,row,journal,shelf,empty])if(element)canvas.appendChild(element);
+  const journal=$('#journalBook'),daily=$('#homeDailyTrackersWidget'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
+  for(const element of [budget,row,journal,daily,shelf,empty])if(element)canvas.appendChild(element);
   homeCanvas=canvas;
   canvas.insertAdjacentHTML('beforeend','<div id="homeAlignmentGuideX" class="home-alignment-guide vertical" aria-hidden="true"></div><div id="homeAlignmentGuideY" class="home-alignment-guide horizontal" aria-hidden="true"></div>');
   canvas.addEventListener('pointerdown',event=>{
@@ -1246,7 +1250,10 @@ function activateHomeCanvas(){
     }catch(_){return false}})();
     if(!saved){
       let next;
-      if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
+      if(item.id==='homeDailyTrackersWidget'){
+        // A new module must not adopt an arbitrary legacy-flow position.
+        next=homeSuggestedLayout(item);
+      }else if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
         next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};
       }else{
         next=homeSuggestedLayout(item);
