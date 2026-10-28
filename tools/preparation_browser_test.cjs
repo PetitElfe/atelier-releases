@@ -24,52 +24,39 @@ function ymd(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padSt
   const page=await browser.newPage({viewport:{width:1400,height:900}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="calendar"]').click();
-  await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
-  await page.locator('#addEventWeek').click();
+  // Retired calendar-preparation controls are hidden, not erased from SQLite.
+  assert.equal(await page.locator('#eventAddPreparation').count(),0);
+  assert.equal(await page.locator('#sideNav [data-view="preparations"]').count(),0);
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
-  await page.locator('#eventForm [name="title"]').fill('Rendez-vous préparation E2E');
-  await page.locator('#eventForm [name="event_date"]').fill(ymd(tomorrow));
-  await page.locator('#eventForm [name="start_time"]').fill('10:00');
-  await page.locator('#eventForm [name="end_time"]').fill('11:00');
-  await page.locator('#eventForm [name="recurrence"]').selectOption('weekly');
-  await page.locator('#eventAddPreparation').click();
-  await page.locator('#eventPreparationFields input').fill('Préparer le dossier');
-  await page.locator('#saveEvent').click();
-  await page.locator('#eventForm').waitFor({state:'detached'});
   const next=new Date(tomorrow);next.setDate(next.getDate()+7);
-  const events=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
-  assert.equal(events.length,2);
-  assert.equal(events[0].preparations.length,1);
-  assert.equal(events[1].preparations_remaining,1);
-  // Le tiroir du semainier ne change pas la hauteur des créneaux.
-  const card=page.locator('.week-timed-event').filter({hasText:'Rendez-vous préparation E2E'}).first();
-  await card.hover();
-  const weekHeight=await page.locator('#weekGrid').evaluate(el=>el.getBoundingClientRect().height);
-  await card.locator('.calendar-hover-action.prepare').click();
-  await page.locator('.event-prep-drawer').waitFor({state:'visible'});
-  assert.match(await page.locator('.event-prep-drawer').innerText(),/Préparer le dossier/);
-  assert.equal(await page.locator('#weekGrid').evaluate(el=>el.getBoundingClientRect().height),weekHeight);
-  await page.locator('.event-prep-drawer-head button').click();
-  const badge=page.locator('#homePreparationBadge');
-  await page.locator('#globalHomeShortcut').click();
-  await badge.waitFor({state:'visible'});
-  assert.match(await badge.innerText(),/1/);
-  await badge.click();
-  await page.locator('#upcomingPreparationList input[type=checkbox]').check();
-  await page.waitForFunction(async()=>{
-    const r=await fetch('/api/preparations/upcoming');
-    return (await r.json()).length===0;
+  const created=await api('/api/events','POST',{
+    title:'Ancien rendez-vous avec préparatifs',
+    event_date:ymd(tomorrow),start_time:'10:00',end_time:'11:00',
+    recurrence:'weekly',preparations:[{title:'Préparer le dossier'}]
   });
-  await page.locator('#closeUpcomingPreparation').click();
-  await page.reload();
-  await page.locator('#homePreparationBadge').waitFor({state:'hidden'});
-  const updated=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
-  assert.equal(updated[0].preparations_remaining,0);
-  assert.equal(updated[1].preparations_remaining,1);
+  let events=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
+  assert.equal(events.length,2);assert.equal(events[0].preparations.length,1);
+  assert.equal(events[1].preparations_remaining,1);
+  // Saving the appointment WITHOUT a preparations field must NEVER erase
+  // existing preparative templates.
+  await api('/api/events/'+created.id,'PUT',{
+    title:'Ancien rendez-vous avec préparatifs',event_date:ymd(tomorrow),
+    start_time:'10:00',end_time:'11:00',recurrence:'weekly',notes:'Mise à jour sans perte'
+  });
+  events=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
+  assert.equal(events[0].preparations.length,1);
+  const id=events[0].preparations[0].id;
+  await api('/api/events/'+created.id+'/preparations/'+id,'PUT',
+    {instance_date:ymd(tomorrow),done:true});
+  events=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
+  assert.equal(events[0].preparations_remaining,0);
+  assert.equal(events[1].preparations_remaining,1);
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('#homePreparationBadge').count(),0);
+  const preserved=await api('/api/events?start='+ymd(tomorrow)+'&end='+ymd(next));
+  assert.equal(preserved[0].preparations_remaining,0);
   assert.deepEqual(errors,[]);
-  console.log('PASS: preparation editor, J-1 badge, independent weekly checks, reload');
+  console.log('PASS: retired appointment prep UI hides old controls, preserves historical templates and per-occurrence checks');
  }finally{
   if(browser)await browser.close();
   server.kill();
