@@ -439,9 +439,11 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 14:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 15:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             admin_cols={row[1] for row in c.execute("PRAGMA table_info(admin_documents)")}
+            if "archived" not in admin_cols:
+                fail("La colonne des archives administratives manque à la migration.")
             if "event_id" not in admin_cols:
                 fail("Le lien Administratif vers Calendrier manque à la migration.")
             if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='admin_attachments'").fetchone():
