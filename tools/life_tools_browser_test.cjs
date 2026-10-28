@@ -471,7 +471,7 @@ async function api(path,method='GET',body){
   // Le dernier Post-it peut être récupéré depuis Paramètres, sans avoir
   // besoin d'un compagnon Windows déjà ouvert ni d'une fenêtre dans l'Atelier.
   const postit=await api('/api/postits','POST',{
-    title:'Archives E2E',body:'Première ligne\\nDeuxième ligne',
+    title:'Archives E2E',body:'Première ligne'+String.fromCharCode(10)+'Deuxième ligne',
     color:'mauve',shape:'rounded'
   });
   await api('/api/postits/'+postit.id,'PUT',{archived:true});
@@ -494,7 +494,7 @@ async function api(path,method='GET',body){
     return notes.some(n=>n.id===id&&n.archived===0);
   },postit.id);
   const restored=(await api('/api/postits')).find(n=>n.id===postit.id);
-  assert.equal(restored.body,'Première ligne\\nDeuxième ligne');
+  assert.equal(restored.body,'Première ligne'+String.fromCharCode(10)+'Deuxième ligne');
   assert.equal(restored.color,'mauve');
   assert.equal((await api('/api/postits?archived=1')).some(n=>n.id===postit.id),false);
   assert.equal(await page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]').count(),0);
