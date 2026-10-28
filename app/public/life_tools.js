@@ -104,28 +104,45 @@ function renderHomeDailyTrackers(){
   }
   for(const item of current){
     const row=lifeNode('label','home-daily-tracker-row');
-    const check=lifeNode('input');check.type='checkbox';check.checked=!!item.done;
+    const check=item.mode==='number'?lifeNode('button','home-daily-counter',
+      (item.value||0)+'/'+item.target_count):lifeNode('input');
+    if(item.mode!=='number'){check.type='checkbox';check.checked=!!item.done;}
+    else check.type='button';
     check.setAttribute('aria-label',item.title+' — '+item.board_title+' — aujourd’hui');
     const title=lifeNode('span','home-daily-tracker-name',item.title);
     const board=lifeNode('small','home-daily-tracker-board',item.board_title);
     const body=lifeNode('span','home-daily-tracker-text');body.append(title,board);
     row.append(check,body);
+    if(item.steps?.length){
+      body.title='Ouvrir les étapes de cette habitude';
+      body.style.cursor='pointer';
+      body.addEventListener('click',event=>{event.preventDefault();trackerOpenRitual(item,day)});
+    }
     row.classList.toggle('home-daily-done',!!item.done);
     row.classList.add('home-daily-color-'+item.color);
-    check.addEventListener('change',async()=>{
-      const wanted=check.checked;
+    const edit=async()=>{
+      if(item.steps?.length){check.checked=!!item.done;trackerOpenRitual(item,day);return}
       check.disabled=true;
+      const wanted=item.mode==='number'?
+        Math.min(Number(item.target_count),Number(item.value||0)+1):check.checked;
+      if(item.mode==='number'&&item.done){
+        check.disabled=false;trackerOpenCounter(item,day);return;
+      }
       try{
         await lifeApi('/api/tracker-board-rows/'+item.row_id+'/mark',{
-          method:'PUT',body:JSON.stringify({day,value:wanted?true:null})
+          method:'PUT',body:JSON.stringify({day,value:item.mode==='number'?wanted:wanted?true:null})
         });
-        item.done=wanted;row.classList.toggle('home-daily-done',wanted);
+        item.done=item.mode==='number'?wanted>=item.target_count:wanted;
+        item.value=item.mode==='number'?wanted:null;
+        row.classList.toggle('home-daily-done',item.done);
         await loadLifeTools();
       }catch(err){
-        check.checked=!wanted;row.classList.toggle('home-daily-done',!wanted);
-        showUiError(err,'Impossible d’enregistrer la coche du jour');
+        if(item.mode!=='number')check.checked=!wanted;
+        row.classList.toggle('home-daily-done',!!item.done);
+        showUiError(err,'Impossible d’enregistrer le suivi du jour');
       }finally{check.disabled=false}
-    });
+    };
+    check.addEventListener(item.mode==='number'?'click':'change',edit);
     root.append(row);
   }
   root.scrollTop=oldScroll;
