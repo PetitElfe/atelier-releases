@@ -1856,3 +1856,46 @@ body.home-active{overflow-y:auto}
   overflow-x:clip;
   overflow-y:visible;
 }
+
+/* ALPHA 0.18 — poignées Canva : toutes les arêtes et tous les coins sont actifs.
+   Le calque de contrôle ignore les clics ; seules les véritables poignées
+   reçoivent la souris ou le tactile. */
+.layout-editing .layout-object>.layout-controls .layout-corner,
+.layout-editing .layout-object>.layout-controls .layout-side{
+  position:absolute;display:grid;place-items:center;
+  width:23px;height:23px;border:1px solid #bfa16c;border-radius:6px;
+  background:#261e18;color:#ecd7ab;font-size:13px;line-height:1;
+  pointer-events:auto!important;touch-action:none;user-select:none;
+  z-index:34;box-shadow:0 2px 8px #0008;
+}
+.layout-editing .layout-object>.layout-controls .layout-corner-nw{
+  left:-12px;top:-12px;cursor:nwse-resize;
+}
+.layout-editing .layout-object>.layout-controls .layout-corner-ne{
+  right:-12px;top:-12px;cursor:nesw-resize;
+}
+.layout-editing .layout-object>.layout-controls .layout-corner-sw{
+  left:-12px;bottom:-12px;cursor:nesw-resize;
+}
+.layout-editing .layout-object>.layout-controls .layout-side-left{
+  left:-9px;top:50%;transform:translateY(-50%);width:17px;height:32px;
+  cursor:ew-resize;
+}
+.layout-editing .layout-object>.layout-controls .layout-side-top{
+  top:-9px;left:50%;transform:translateX(-50%);width:32px;height:17px;
+  cursor:ns-resize;
+}
+.layout-editing .layout-object>.layout-controls .layout-width-handle,
+.layout-editing .layout-object>.layout-controls .layout-height-handle,
+.layout-editing .layout-object>.layout-controls .layout-resize-handle{
+  touch-action:none;user-select:none;
+}
+#homeView.home-free-ready.layout-editing [data-home-module].layout-selected>.layout-controls>.layout-scale-value{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  top:-39px;right:0;left:auto;bottom:auto;min-width:102px;height:30px;
+  border:1px solid #816b4a;border-radius:7px;background:#211b16;
+  font-size:11px;white-space:nowrap;z-index:28;
+}
+#homeView.home-free-ready.layout-editing [data-home-module].layout-selected{
+  will-change:left,top,width,min-height;
+}
