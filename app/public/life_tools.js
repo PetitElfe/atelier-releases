@@ -9,7 +9,8 @@ const lifeDestinations=[
   {key:'administratif',tag:'#Administratif',label:'Administratif'},
   {key:'tracker',tag:'#Tracker',label:'Tracker'}
 ];
-let lifeTrackers=[],lifeAdmin=[],lifeCaptures=[],lifeJournalPage=0;
+let lifeTrackers=[],lifeAdmin=[],lifeArchivedAdmin=[],lifeCaptures=[],lifeJournalPage=0;
+let lifeAdminArchivesVisible=false;
 let lifeTodayChecks=[],lifeTodayDay=ymd(new Date());
 let lifeBoards=[],lifeArchivedBoards=[],lifeBoardMonth=ymd(new Date()).slice(0,7),lifeBoardArchivesVisible=false;
 let lifeBoardOffsets={},lifeBoardLoadVersion=0;
@@ -66,7 +67,8 @@ async function loadLifeTools(){
   const settled=await Promise.allSettled([
     lifeApi('/api/trackers'),lifeApi('/api/admin'),lifeApi('/api/captures'),
     lifeApi('/api/tracker-boards'+windows),lifeApi('/api/tracker-boards'+windows+'&archived=1'),
-    lifeApi('/api/tracker-boards/daily?day='+encodeURIComponent(ymd(new Date())))
+    lifeApi('/api/tracker-boards/daily?day='+encodeURIComponent(ymd(new Date()))),
+    lifeApi('/api/admin?archived=1')
   ]);
   if(version!==lifeBoardLoadVersion)return;
   if(settled[0].status==='fulfilled')lifeTrackers=settled[0].value;
@@ -78,6 +80,7 @@ async function loadLifeTools(){
     lifeTodayChecks=settled[5].value.items||[];
     lifeTodayDay=settled[5].value.day;
   }
+  if(settled[6].status==='fulfilled')lifeArchivedAdmin=settled[6].value;
   const failures=settled.filter(x=>x.status==='rejected');
   if(failures.length)showUiError(failures[0].reason,'Chargement du suivi et de l’administratif');
   renderLifeTools();
@@ -567,11 +570,12 @@ function renderLifeAdmin(){
     const card=lifeNode('article','life-card'+(item.status==='done'?' life-complete':''));
     card.dataset.adminId=String(item.id);
     const heading=lifeNode('div','life-card-head');
-    heading.append(lifeNode('strong','',item.title),lifeButton('Supprimer',async()=>{
-      const yes=await askUiConfirm('Supprimer cette démarche',
-        'Supprimer « '+item.title+' » et ses documents joints ? Le rendez-vous lié sera conservé.','Supprimer',true);
-      if(yes)await lifeAction('Supprimer la démarche',()=>lifeApi('/api/admin/'+item.id,{method:'DELETE'}));
-    },'life-danger'));
+    heading.append(lifeNode('strong','',item.title),lifeButton('Archiver',async()=>{
+      const yes=await askUiConfirm('Archiver cette démarche',
+        'Ranger « '+item.title+' » dans les archives ? Ses notes, ses documents et son rendez-vous seront conservés.','Archiver');
+      if(yes)await lifeAction('Archiver la démarche',()=>lifeApi('/api/admin/'+item.id,
+        {method:'PUT',body:JSON.stringify({archived:true})}));
+    },'life-admin-archive-action'));
     const meta=lifeNode('div','life-muted',item.category+' · '+lifeDate(item.due_date));
     const select=lifeNode('select','life-status');
     Object.entries(statusNames).forEach(([value,label])=>{
@@ -664,7 +668,44 @@ function renderLifeAdmin(){
     files.append(uploadLabel);
     card.append(heading,meta,select,notes,save,eventPanel,files);root.append(card);
   });
+  const archivedRoot=$('#adminArchivedList'),toggle=$('#adminArchivesToggle');
+  if(toggle){
+    toggle.textContent=(lifeAdminArchivesVisible?'▾':'▸')+' Mes démarches archivées ('+lifeArchivedAdmin.length+')';
+    toggle.setAttribute('aria-expanded',String(lifeAdminArchivesVisible));
+  }
+  if(archivedRoot){
+    archivedRoot.classList.toggle('hidden',!lifeAdminArchivesVisible);
+    archivedRoot.replaceChildren();
+    if(lifeAdminArchivesVisible){
+      if(!lifeArchivedAdmin.length)archivedRoot.append(lifeNode('p','life-muted','Aucune démarche archivée.'));
+      lifeArchivedAdmin.forEach(item=>{
+        const line=lifeNode('article','life-card life-admin-archived');
+        line.dataset.adminId=String(item.id);
+        const head=lifeNode('div','life-card-head');
+        const title=lifeNode('strong','',item.title);
+        const info=lifeNode('p','life-muted',item.category+' · '+(item.attachments||[]).length+
+          ' document(s) conservé(s)'+(item.event_id?' · rendez-vous lié':''));
+        const buttons=lifeNode('div','life-admin-archive-actions');
+        const restore=lifeButton('Restaurer',()=>lifeAction('Restaurer la démarche',()=>lifeApi(
+          '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({archived:false})})));
+        const remove=lifeButton('Supprimer définitivement',async()=>{
+          const yes=await askUiConfirm('Suppression définitive',
+            'Supprimer définitivement « '+item.title+' » et toutes ses pièces jointes ? Cette action est irréversible. Le rendez-vous lié sera conservé.',
+            'Supprimer définitivement',true);
+          if(yes)await lifeAction('Supprimer définitivement la démarche',()=>lifeApi('/api/admin/'+item.id,{method:'DELETE'}));
+        },'life-danger');
+        buttons.append(restore,remove);
+        head.append(title,buttons);
+        line.append(head,info);
+        archivedRoot.append(line);
+      });
+    }
+  }
 }
+$('#adminArchivesToggle')?.addEventListener('click',()=>{
+  lifeAdminArchivesVisible=!lifeAdminArchivesVisible;
+  renderLifeAdmin();
+});
 function renderLifeCaptures(){
   const root=$('#captureInbox');if(!root)return;root.replaceChildren();
   const unread=lifeCaptures.filter(x=>!x.seen).length;
