@@ -366,14 +366,29 @@
 
 
     <section id="trackersView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL · BULLET JOURNAL</span><h2>Mes tableaux de suivi</h2><p class="muted">Plusieurs tableaux à toi, avec tes habitudes en lignes et les jours du mois en colonnes. Un clic sur une case suffit, sans obligation de régularité.</p></div></div>
+      <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL · BULLET JOURNAL</span><h2>Mes tableaux de suivi</h2><p class="muted">Habitudes, ménage, projets : crée autant de tableaux que tu veux, avec leur propre rythme (semaine, deux semaines, plusieurs mois, année ou durée personnalisée). Coche ou renseigne les cases à ton rythme.</p></div></div>
       <form id="trackerBoardCreateForm" class="life-form tracker-board-create">
         <label>Nom du tableau<input name="title" maxlength="100" required placeholder="Ex. : Bien-être, lectures, projets…"></label>
         <label>Couleur des cases<select name="color"><option value="sage">Sauge</option><option value="rose">Rose poudré</option><option value="mauve">Mauve</option><option value="gold">Miel</option><option value="blue">Bleu brume</option><option value="peach">Pêche</option></select></label>
+        <label>Rythme du tableau<select id="trackerBoardPeriodPreset" name="period_preset">
+          <option value="months:1">1 mois (comme Habitudes)</option>
+          <option value="weeks:1">1 semaine</option>
+          <option value="weeks:2">2 semaines</option>
+          <option value="months:2">2 mois</option>
+          <option value="months:3">3 mois</option>
+          <option value="months:6">6 mois</option>
+          <option value="years:1">1 an</option>
+          <option value="years:2">2 ans</option>
+          <option value="custom">Durée personnalisée…</option>
+        </select></label>
+        <div id="trackerBoardCustomPeriod" class="tracker-custom-period hidden">
+          <label>Durée<input name="custom_count" type="number" min="1" max="90" value="2"></label>
+          <label>Unité<select name="custom_unit"><option value="days">Jours</option><option value="weeks">Semaines</option><option value="months">Mois</option><option value="years">Années</option></select></label>
+        </div>
         <button type="submit" class="primary">+ Créer un tableau</button>
       </form>
       <div class="tracker-board-toolbar">
-        <div class="tracker-month-controls" aria-label="Mois des tableaux"><button id="trackerMonthPrev" type="button" aria-label="Mois précédent">‹</button><strong id="trackerMonthLabel"></strong><button id="trackerMonthNext" type="button" aria-label="Mois suivant">›</button><button id="trackerMonthToday" type="button">Ce mois-ci</button></div>
+        <div class="tracker-month-controls" aria-label="Navigation des tableaux mensuels"><button id="trackerMonthPrev" type="button" aria-label="Mois précédent">‹</button><strong id="trackerMonthLabel"></strong><button id="trackerMonthNext" type="button" aria-label="Mois suivant">›</button><button id="trackerMonthToday" type="button">Ce mois-ci</button></div>
         <button id="trackerBoardArchivesToggle" type="button" aria-expanded="false">Mes tableaux archivés</button>
       </div>
       <div id="trackerBoardList" class="tracker-board-list" aria-live="polite"></div>

@@ -11,17 +11,62 @@ const lifeDestinations=[
 ];
 let lifeTrackers=[],lifeAdmin=[],lifeCaptures=[],lifeJournalPage=0;
 let lifeBoards=[],lifeArchivedBoards=[],lifeBoardMonth=ymd(new Date()).slice(0,7),lifeBoardArchivesVisible=false;
+let lifeBoardOffsets={},lifeBoardLoadVersion=0;
+const lifeBoardPeriodPresets=[
+  ['months',1,'1 mois'],['weeks',1,'1 semaine'],['weeks',2,'2 semaines'],
+  ['months',2,'2 mois'],['months',3,'3 mois'],['months',6,'6 mois'],
+  ['years',1,'1 an'],['years',2,'2 ans']
+];
+const lifeBoardPeriodLimits={days:90,weeks:12,months:24,years:5};
+function lifeBoardPeriodChoice(preset,count,unit){
+  let resultUnit,resultCount;
+  if(preset==='custom'){resultUnit=String(unit);resultCount=Number(count)}
+  else [resultUnit,resultCount]=String(preset).split(':').map((x,i)=>i===1?Number(x):x);
+  if(!(resultUnit in lifeBoardPeriodLimits)||!Number.isInteger(resultCount)||
+     resultCount<1||resultCount>lifeBoardPeriodLimits[resultUnit])
+    throw new Error('Choisis 1 à 90 jours, 1 à 12 semaines, 1 à 24 mois ou 1 à 5 ans.');
+  return {period_unit:resultUnit,period_count:resultCount};
+}
+function lifeBoardPreset(unit,count){
+  return lifeBoardPeriodPresets.some(x=>x[0]===unit&&x[1]===count)?
+    unit+':'+count:'custom';
+}
+function lifeBoardMonthOffset(){
+  const [y,m]=lifeBoardMonth.split('-').map(Number),now=new Date();
+  return (y-now.getFullYear())*12+m-1-now.getMonth();
+}
+function lifeBoardRequestedOffset(board){
+  let n=lifeBoardOffsets[board.id]||0;
+  if(board.period_unit==='months'&&Number(board.period_count)===1)
+    n+=lifeBoardMonthOffset();
+  return Math.max(-60,Math.min(60,n));
+}
+function lifeBoardRequestedOffsets(){
+  const o={};lifeBoards.forEach(board=>o[board.id]=lifeBoardRequestedOffset(board));
+  return o;
+}
+function lifeBoardLabel(board,day){
+  if(board.period?.granularity==='months'){
+    const [year,month]=day.split('-').map(Number);
+    return new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date(year,month-1,1));
+  }
+  return lifeDate(day);
+}
+
 let lifeCaptureChoice='carnet',lifeAudioContext=null;
 function lifeApi(path,opts){return api(path,opts)}
 function lifeDate(s){return s?parseYMD(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'Sans échéance'}
 function lifeNumber(v){return Number(v).toLocaleString('fr-FR',{maximumFractionDigits:2})}
 function lifeSetText(id,text){const el=$(id);if(el)el.textContent=text}
 async function loadLifeTools(){
+  const version=++lifeBoardLoadVersion;
   const month='?month='+encodeURIComponent(lifeBoardMonth);
+  const windows=month+'&periods=1&offsets='+encodeURIComponent(JSON.stringify(lifeBoardRequestedOffsets()));
   const settled=await Promise.allSettled([
     lifeApi('/api/trackers'),lifeApi('/api/admin'),lifeApi('/api/captures'),
-    lifeApi('/api/tracker-boards'+month),lifeApi('/api/tracker-boards'+month+'&archived=1')
+    lifeApi('/api/tracker-boards'+windows),lifeApi('/api/tracker-boards'+windows+'&archived=1')
   ]);
+  if(version!==lifeBoardLoadVersion)return;
   if(settled[0].status==='fulfilled')lifeTrackers=settled[0].value;
   if(settled[1].status==='fulfilled')lifeAdmin=settled[1].value;
   if(settled[2].status==='fulfilled')lifeCaptures=settled[2].value;
@@ -49,6 +94,7 @@ function lifeTrackerChangeMonth(offset){
   loadLifeTools();
 }
 function lifeTrackerMarkButton(board,line,day){
+  const cellLabel=lifeBoardLabel(board,day);
   const raw=line.marks?.[day];
   const active=raw!==undefined;
   const numeric=line.mode==='number';
@@ -56,7 +102,7 @@ function lifeTrackerMarkButton(board,line,day){
     async()=>{if(numeric){lifeEditTrackerNumber(button,board,line,day);return}
       const changed=active?null:true;
       button.disabled=true;
-      const result=await runUiAction('Marquer un jour',()=>
+      const result=await runUiAction('Marquer une période',()=>
         lifeApi('/api/tracker-board-rows/'+line.id+'/mark',
           {method:'PUT',body:JSON.stringify({day,value:changed})}));
       if(result.ok){
@@ -68,17 +114,17 @@ function lifeTrackerMarkButton(board,line,day){
     },'tracker-day-cell'+(active?' tracker-day-done':'')+
        (numeric?' tracker-day-number':''));
   button.type='button';
-  button.setAttribute('aria-label',line.title+' · '+lifeDate(day)+' : '+
+  button.setAttribute('aria-label',line.title+' · '+cellLabel+' : '+
     (numeric?(active?'Valeur '+raw:'Saisir une valeur'):(active?'marqué':'non marqué')));
   if(!numeric)button.setAttribute('aria-pressed',String(active));
-  button.title=(numeric?'Saisir une valeur pour ':'Cocher ou décocher ')+lifeDate(day);
+  button.title=(numeric?'Saisir une valeur pour ':'Cocher ou décocher ')+cellLabel;
   return button;
 }
 function lifeEditTrackerNumber(button,board,line,day){
   const input=lifeNode('input','tracker-number-editor');
   input.type='number';input.step='any';input.min='-1000000';input.max='1000000';
   input.value=line.marks?.[day]??'';
-  input.setAttribute('aria-label','Valeur '+line.title+' · '+lifeDate(day));
+  input.setAttribute('aria-label','Valeur '+line.title+' · '+lifeBoardLabel(board,day));
   const original=input.value,holder=button.parentElement;
   holder.replaceChildren(input);input.focus();input.select();
   let finished=false;
@@ -133,7 +179,6 @@ function renderTrackerBoards(){
   root.replaceChildren();
   if(!lifeBoards.length)root.append(lifeNode('p','tracker-empty',
     'Aucun tableau pour l’instant. Crée ton premier tableau, puis ajoute une ligne par habitude ou activité.'));
-  const total=new Date(year,month,0).getDate();
   const today=ymd(new Date());
   lifeBoards.forEach(board=>{
     const section=lifeNode('section','tracker-board tracker-board-'+board.color);
@@ -148,19 +193,34 @@ function renderTrackerBoards(){
           {method:'PUT',body:JSON.stringify({archived:true})}));
     },'tracker-archive-button');
     head.append(h,action);
-    const hint=lifeNode('p','life-muted','Clique sur une case pour marquer ta journée. Pour les lignes chiffrées, saisis une valeur. Fais défiler les jours horizontalement.');
+    const periodBar=lifeNode('div','tracker-board-period');
+    const cadence=lifeNode('span','tracker-board-cadence','Rythme : '+board.period.cadence);
+    const before=lifeButton('‹',()=>{lifeBoardOffsets[board.id]=(lifeBoardOffsets[board.id]||0)-1;loadLifeTools()},'tracker-period-back');
+    before.setAttribute('aria-label','Période précédente pour '+board.title);
+    const periodLabel=lifeNode('span','tracker-board-range',board.period.label);
+    const after=lifeButton('›',()=>{lifeBoardOffsets[board.id]=(lifeBoardOffsets[board.id]||0)+1;loadLifeTools()},'tracker-period-next');
+    after.setAttribute('aria-label','Période suivante pour '+board.title);
+    const current=lifeButton('Aujourd’hui',()=>{
+      lifeBoardOffsets[board.id]=-(board.period_unit==='months'&&Number(board.period_count)===1?lifeBoardMonthOffset():0);
+      loadLifeTools();
+    },'tracker-period-today');
+    const change=lifeButton('Changer le rythme',()=>lifeBoardPeriodEditor(section,board),'tracker-period-change');
+    periodBar.append(cadence,before,periodLabel,after,current,change);
+    const hint=lifeNode('p','life-muted',
+      board.period.granularity==='months'?
+        'Une case représente un mois. Le rythme et les marques restent propres à ce tableau.':
+        'Une case représente un jour. Tu peux faire défiler les colonnes et retrouver tes anciennes périodes.');
     const viewport=lifeNode('div','tracker-board-scroll');
-    viewport.tabIndex=0;viewport.setAttribute('aria-label','Tableau '+board.title+' pour '+label);
+    viewport.tabIndex=0;
+    viewport.setAttribute('aria-label','Tableau '+board.title+' du '+board.period.label);
     const grid=lifeNode('div','tracker-board-grid');
-    grid.style.setProperty('--tracker-days',String(total));
+    const columns=board.period.columns;
+    grid.style.setProperty('--tracker-days',String(columns.length));
     const days=lifeNode('div','tracker-grid-line tracker-grid-dates');
     days.append(lifeNode('span','tracker-row-label','Mes suivis'));
-    for(let d=1;d<=total;d++){
-      const day=lifeTrackerDay(year,month,d),dateObj=new Date(year,month-1,d);
-      const week=new Intl.DateTimeFormat('fr-FR',{weekday:'narrow'}).format(dateObj);
-      const cell=lifeNode('span','tracker-grid-day'+(day===today?' tracker-today':''),week+'\n'+d);
-      cell.title=lifeDate(day);
-      days.append(cell);
+    for(const item of columns){
+      const cell=lifeNode('span','tracker-grid-day'+(item.day===today?' tracker-today':''),item.label+'\n'+item.secondary);
+      cell.title=item.title;days.append(cell);
     }
     grid.append(days);
     board.rows.forEach(line=>{
@@ -168,10 +228,9 @@ function renderTrackerBoards(){
       const name=lifeNode('span','tracker-row-label',line.title);
       name.title=line.title+' · '+(line.mode==='number'?'nombre':'case à cocher');
       row.append(name);
-      for(let d=1;d<=total;d++){
-        const day=lifeTrackerDay(year,month,d);
-        const holder=lifeNode('span','tracker-cell-wrap'+(day===today?' tracker-today':''));
-        holder.append(lifeTrackerMarkButton(board,line,day));row.append(holder);
+      for(const item of columns){
+        const holder=lifeNode('span','tracker-cell-wrap'+(item.day===today?' tracker-today':''));
+        holder.append(lifeTrackerMarkButton(board,line,item.day));row.append(holder);
       }
       grid.append(row);
     });
@@ -191,20 +250,91 @@ function renderTrackerBoards(){
     form.append(title,mode,submit);
     form.onsubmit=async e=>{
       e.preventDefault();
-      const ok=await lifeAction('Ajouter une ligne',()=>lifeApi(
-        '/api/tracker-boards/'+board.id+'/rows',
-        {method:'POST',body:JSON.stringify({title:title.value,mode:mode.value})}));
-      if(ok)title.value='';
+      if(submit.disabled)return;
+      submit.disabled=true;
+      const requestedTitle=title.value,requestedMode=mode.value;
+      try{
+        const result=await runUiAction('Ajouter une ligne',()=>lifeApi(
+          '/api/tracker-boards/'+board.id+'/rows',
+          {method:'POST',body:JSON.stringify({title:requestedTitle,mode:requestedMode})}));
+        if(result.ok){
+          title.value='';
+          await loadLifeTools();
+        }
+      }finally{submit.disabled=false}
     };
-    section.append(head,hint,viewport,form);root.append(section);
+    section.append(head,periodBar,hint,viewport,form);root.append(section);
   });
+}
+function lifeBoardPeriodEditor(section,board){
+  let wrap=section.querySelector('.tracker-period-editor');
+  if(wrap){wrap.remove();return}
+  wrap=lifeNode('form','tracker-period-editor');
+  const preset=lifeNode('select','');
+  preset.setAttribute('aria-label','Nouvelle périodicité du tableau');
+  for(const [unit,count,label] of lifeBoardPeriodPresets){
+    const option=lifeNode('option','',label);option.value=unit+':'+count;preset.append(option);
+  }
+  const custom=lifeNode('option','','Personnalisée…');custom.value='custom';preset.append(custom);
+  preset.value=lifeBoardPreset(board.period_unit,Number(board.period_count));
+  const controls=lifeNode('div','tracker-custom-period');
+  const count=lifeNode('input','');count.type='number';count.min=1;count.max=90;
+  count.value=board.period_count;count.setAttribute('aria-label','Nombre de périodes');
+  const unit=lifeNode('select','');unit.setAttribute('aria-label','Unité de la période');
+  [['days','Jours'],['weeks','Semaines'],['months','Mois'],['years','Années']].forEach(([value,label])=>{
+    const opt=lifeNode('option','',label);opt.value=value;unit.append(opt);
+  });
+  unit.value=board.period_unit;
+  const showCustom=()=>controls.classList.toggle('hidden',preset.value!=='custom');
+  preset.addEventListener('change',showCustom);showCustom();
+  controls.append(count,unit);
+  const submit=lifeNode('button','primary','Enregistrer le rythme');submit.type='submit';
+  const cancel=lifeButton('Annuler',()=>wrap.remove());
+  wrap.append(lifeNode('span','','Choisis la durée de ce tableau :'),preset,controls,submit,cancel);
+  wrap.onsubmit=async event=>{
+    event.preventDefault();
+    let choice;
+    try{choice=lifeBoardPeriodChoice(preset.value,count.value,unit.value)}
+    catch(error){showUiError(error,'Rythme du tableau');return}
+    if(choice.period_unit===board.period_unit&&choice.period_count===Number(board.period_count)){
+      wrap.remove();return;
+    }
+    const ok=await askUiConfirm('Changer la période de « '+board.title+' »',
+      'Les marques déjà enregistrées seront conservées, mais elles peuvent être '
+      +'visibles dans l’ancien rythme. Tu pourras toujours revenir au rythme précédent.',
+      'Changer le rythme');
+    if(!ok)return;
+    lifeBoardOffsets[board.id]=0;
+    await lifeAction('Modifier le rythme',()=>lifeApi('/api/tracker-boards/'+board.id,
+      {method:'PUT',body:JSON.stringify(choice)}));
+  };
+  section.querySelector('.tracker-board-period')?.after(wrap);
+}
+function lifeBoardToggleCustom(form){
+  const preset=form.elements.period_preset;
+  const panel=$('#trackerBoardCustomPeriod');
+  panel?.classList.toggle('hidden',preset.value!=='custom');
 }
 $('#trackerBoardCreateForm')?.addEventListener('submit',async e=>{
   e.preventDefault();const form=e.currentTarget,v=Object.fromEntries(new FormData(form).entries());
-  const ok=await lifeAction('Créer un tableau',()=>lifeApi('/api/tracker-boards',
-    {method:'POST',body:JSON.stringify(v)}));
-  if(ok)form.reset();
+  let choice;
+  try{choice=lifeBoardPeriodChoice(v.period_preset,v.custom_count,v.custom_unit)}
+  catch(error){showUiError(error,'Création du tableau');return}
+  // Freeze *all* fields until the create+reload finishes. Otherwise users
+  // typing a second board immediately can lose its title to the old form reset.
+  const controls=[...form.querySelectorAll('input,select,button')];
+  controls.forEach(control=>control.disabled=true);
+  try{
+    const result=await runUiAction('Créer un tableau',()=>lifeApi('/api/tracker-boards',
+      {method:'POST',body:JSON.stringify({title:v.title,color:v.color,...choice})}));
+    if(result.ok){
+      form.reset();lifeBoardToggleCustom(form);
+      await loadLifeTools();
+    }
+  }finally{controls.forEach(control=>control.disabled=false)}
 });
+$('#trackerBoardPeriodPreset')?.addEventListener('change',e=>
+  lifeBoardToggleCustom(e.currentTarget.form));
 $('#trackerMonthPrev')?.addEventListener('click',()=>lifeTrackerChangeMonth(-1));
 $('#trackerMonthNext')?.addEventListener('click',()=>lifeTrackerChangeMonth(1));
 $('#trackerMonthToday')?.addEventListener('click',()=>{

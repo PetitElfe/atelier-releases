@@ -51,18 +51,20 @@ async function api(path,method='GET',body){
   let boards=await api('/api/tracker-boards');
   const wellness=boards.find(b=>b.title==='Bien-être');
   const projects=boards.find(b=>b.title==='Projets');
-  assert.ok(wellness&&projects&&wellness.id!==projects.id);
+  assert.ok(wellness&&projects&&wellness.id!==projects.id,'Expected distinct named boards: '+JSON.stringify(boards.map(b=>({id:b.id,title:b.title}))));
   const wellnessCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')});
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Boire de l’eau');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
   await wellnessCard.locator('.tracker-add-row button').click();
   await page.waitForFunction(async id=>(
-    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===1,wellness.id);
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.some(r=>r.title==='Boire de l’eau'),wellness.id);
+  await wellnessCard.locator('.tracker-grid-line').filter({hasText:'Boire de l’eau'}).waitFor();
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Sommeil');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('number');
   await wellnessCard.locator('.tracker-add-row button').click();
   await page.waitForFunction(async id=>(
-    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.length===2,wellness.id);
+    await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===id)?.rows.some(r=>r.title==='Sommeil'),wellness.id);
+  await wellnessCard.locator('.tracker-grid-line').filter({hasText:'Sommeil'}).waitFor();
   boards=await api('/api/tracker-boards');
   let current=boards.find(b=>b.id===wellness.id);
   const checkRow=current.rows.find(x=>x.title==='Boire de l’eau');
@@ -102,6 +104,7 @@ async function api(path,method='GET',body){
     .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5',{id:wellness.id,day:date});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
   assert.equal(await page.locator('.tracker-board').count(),2,'All boards survive a full reload');
   assert.equal(await page.locator('.tracker-board-rose .tracker-day-done').count(),2);
   await api('/api/tracker-boards/'+wellness.id,'PUT',{archived:true});
@@ -114,6 +117,97 @@ async function api(path,method='GET',body){
   boards=await api('/api/tracker-boards');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
+  // Different boards can have their own schedules and navigation; one
+  // bimonthly board must not affect the monthly Habitudes board.
+  const createScheduled=async(title,preset)=>{
+    await boardForm.locator('[name=title]').fill(title);
+    await boardForm.locator('[name=period_preset]').selectOption(preset);
+    await boardForm.locator('button[type=submit]').click();
+    await page.waitForFunction(async title=>
+      (await (await fetch('/api/tracker-boards')).json()).some(b=>b.title===title),title);
+    await page.locator('#trackerBoardCreateForm [name=title]').waitFor({state:'visible'});
+    await page.waitForFunction(()=>
+      !document.querySelector('#trackerBoardCreateForm [name=title]')?.disabled);
+    const rows=await api('/api/tracker-boards');
+    return rows.find(b=>b.title===title);
+  };
+  const fortnight=await createScheduled('Ménage 2 semaines','weeks:2');
+  const twoMonths=await createScheduled('Entretien 2 mois','months:2');
+  const yearly=await createScheduled('Administratif annuel','years:1');
+  await boardForm.locator('[name=title]').fill('Projet 10 jours');
+  await boardForm.locator('[name=period_preset]').selectOption('custom');
+  await boardForm.locator('[name=custom_count]').fill('10');
+  await boardForm.locator('[name=custom_unit]').selectOption('days');
+  await boardForm.locator('button[type=submit]').click();
+  await page.waitForFunction(async()=>(await (await fetch('/api/tracker-boards')).json())
+    .some(b=>b.title==='Projet 10 jours'));
+  await page.waitForFunction(()=>
+    !document.querySelector('#trackerBoardCreateForm [name=title]')?.disabled);
+  const allWindows=await page.evaluate(async()=>(await (await fetch(
+    '/api/tracker-boards?periods=1')).json()));
+  assert.equal(allWindows.length,6,'All named boards must be present: '+JSON.stringify(allWindows.map(b=>b.title)));
+  for(const title of ['Bien-être','Projets','Ménage 2 semaines','Entretien 2 mois','Administratif annuel','Projet 10 jours'])
+    assert.ok(allWindows.some(b=>b.title===title),'Board missing: '+title);
+  const weekWindow=allWindows.find(x=>x.id===fortnight.id).period;
+  const bimonthWindow=allWindows.find(x=>x.id===twoMonths.id).period;
+  const yearlyWindow=allWindows.find(x=>x.id===yearly.id).period;
+  const customWindow=allWindows.find(x=>x.title==='Projet 10 jours').period;
+  assert.equal(weekWindow.columns.length,14,'Two weeks contain 14 daily cells');
+  assert.ok([59,60,61,62].includes(bimonthWindow.columns.length),
+    'Two months need daily columns, including leap years');
+  assert.equal(yearlyWindow.columns.length,12,'An annual grid has 12 months');
+  assert.equal(yearlyWindow.granularity,'months');
+  assert.equal(customWindow.columns.length,10);
+  const cleaningCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Ménage 2 semaines")')});
+  assert.match(await cleaningCard.locator('.tracker-board-cadence').innerText(),/2 semaines/);
+  await cleaningCard.locator('.tracker-add-row [name=title]').fill('Passer l’aspirateur');
+  await cleaningCard.locator('.tracker-add-row button[type=submit]').click();
+  await page.waitForFunction(async id=>(await (await fetch('/api/tracker-boards')).json())
+    .find(b=>b.id===id)?.rows.length===1,fortnight.id);
+  await cleaningCard.locator('.tracker-day-cell').first().click();
+  const firstDay=weekWindow.columns[0].day;
+  await page.waitForFunction(async({id,day})=>{
+    const list=await (await fetch('/api/tracker-boards?periods=1')).json();
+    return list.find(b=>b.id===id)?.rows[0]?.marks[day]==='1';
+  },{id:fortnight.id,day:firstDay});
+  const oldLabel=await cleaningCard.locator('.tracker-board-range').innerText();
+  await cleaningCard.locator('.tracker-period-next').click();
+  await page.waitForFunction(({label})=>{
+    const card=[...document.querySelectorAll('.tracker-board')]
+      .find(x=>x.querySelector('h3')?.textContent==='Ménage 2 semaines');
+    return card&&card.querySelector('.tracker-board-range')?.textContent!==label;
+  },{label:oldLabel});
+  assert.equal(await page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')})
+    .locator('.tracker-grid-dates .tracker-grid-day').count(),new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate(),
+    'Navigating one board leaves the existing monthly board untouched');
+  await cleaningCard.locator('.tracker-period-back').click();
+  await page.waitForFunction(({label})=>{
+    const card=[...document.querySelectorAll('.tracker-board')]
+      .find(x=>x.querySelector('h3')?.textContent==='Ménage 2 semaines');
+    return card?.querySelector('.tracker-board-range')?.textContent===label;
+  },{label:oldLabel});
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===6);
+  assert.equal(await page.locator('.tracker-board').count(),6);
+  assert.ok(await page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Ménage 2 semaines")')})
+    .locator('.tracker-day-done').first().isVisible());
+  // Rhythm may be changed without erasing the original, date-keyed record.
+  const response=await page.evaluate(async id=>{
+    const res=await fetch('/api/tracker-boards/'+id,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({period_unit:'months',period_count:2})
+    });return res.status;
+  },fortnight.id);
+  assert.equal(response,200);
+  const updated=(await api('/api/tracker-boards')).find(b=>b.id===fortnight.id);
+  assert.equal(updated.period_unit,'months');
+  assert.equal(updated.period_count,2);
+  // The historic entry remains in SQLite (even if the new time window differs).
+  assert.equal((await page.evaluate(async day=>{
+    const list=await (await fetch('/api/tracker-boards?month='+day.slice(0,7))).json();
+    return list.find(b=>b.title==='Ménage 2 semaines')?.rows[0]?.marks?.[day];
+  },firstDay)),'1');
   await page.locator('.tracker-legacy-section summary').click();
   await page.locator('#trackerCreateForm [name=title]').fill('Lecture');
   await page.locator('#trackerCreateForm [name=unit]').fill('pages');
