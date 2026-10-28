@@ -227,6 +227,24 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'version': atelier_version()})
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
+        parts=p.strip('/').split('/')
+        if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+            try:admin_id=int(parts[2]);file_id=int(parts[4])
+            except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+            with conn() as c:
+                attachment=admin_docs.detail(c,admin_id,file_id)
+                if not attachment:return self._json({'error':'Fichier introuvable.'},404)
+                content=attachment['content']
+                self.send_response(200)
+                self.send_header('Content-Type',attachment['mime_type'])
+                self.send_header('Content-Length',str(len(content)))
+                self.send_header('X-Content-Type-Options','nosniff')
+                self.send_header('Cache-Control','no-store, max-age=0')
+                self.send_header('Content-Disposition',
+                    "attachment; filename=\"fichier\"; filename*=UTF-8''"+quote(attachment['filename']))
+                self.end_headers()
+                self.wfile.write(content)
+                return
         if p == '/api/quick-capture/hotkey':
             return self._json({'shortcut':quick_capture_native.read_preference(DATA/'quick-capture-hotkey.json')})
         if p == '/api/desktop-postits/status':
@@ -332,8 +350,13 @@ class Handler(BaseHTTPRequestHandler):
                         'SELECT id,entry_date,value,notes FROM personal_tracker_entries WHERE tracker_id=? ORDER BY entry_date DESC LIMIT 90',(item['id'],))]
                 return self._json(trackers)
             if p == '/api/admin':
-                return self._json([dict(row) for row in c.execute(
-                    "SELECT * FROM admin_documents ORDER BY CASE status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, COALESCE(due_date,'9999'),id DESC")])
+                items=[dict(row) for row in c.execute(
+                    "SELECT a.*,e.title AS event_title,e.event_date AS linked_event_date "
+                    "FROM admin_documents a LEFT JOIN events e ON a.event_id=e.id "
+                    "ORDER BY CASE a.status WHEN 'todo' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, "
+                    "COALESCE(a.due_date,'9999'),a.id DESC")]
+                for item in items:item['attachments']=admin_docs.summaries(c,item['id'])
+                return self._json(items)
             if p == '/api/captures':
                 return self._json([dict(row) for row in c.execute('SELECT * FROM quick_captures ORDER BY seen,created_at DESC,id DESC LIMIT 300')])
             if p == '/api/habits':
