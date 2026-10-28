@@ -40,6 +40,9 @@ async function api(path,method='GET',body){
   // Nouvelle interprétation validée par les visuels : plusieurs tableaux,
   // lignes (habitudes) x jours, couleurs, valeurs optionnelles et archives.
   const boardForm=page.locator('#trackerBoardCreateForm');
+  assert.equal(await boardForm.isVisible(),false,'Creation form should be collapsed by default');
+  await page.locator('#trackerBoardCreateToggle').click();
+  assert.equal(await boardForm.isVisible(),true,'New board opens its form');
   await boardForm.locator('[name=title]').fill('Bien-être');
   await boardForm.locator('[name=color]').selectOption('rose');
   await boardForm.locator('button[type=submit]').click();
