@@ -8,8 +8,10 @@ function bindCalendarEventActions(button,event){
   button.addEventListener('dragend',()=>button.classList.remove('calendar-dragging'));
 }
 function showCalendarEventMenu(event,anchor){
+  const validUrl=safeCalendarEventUrl(event.url);
   showAtelierContextMenu(anchor,[
     {label:'Modifier',run:()=>openEventModal(event)},
+    ...(validUrl?[{label:'↗ Ouvrir le lien',run:()=>window.open(validUrl,'_blank','noopener,noreferrer')}]:[]),
     {label:'Dupliquer',run:()=>openEventModal(event,event.instance_date||event.event_date,event.start_time,true)},
     ...((event.recurrence&&event.recurrence!=='none'&&(event.instance_action==='postponed'||event.instance_action==='cancelled'||event.instance_done))?[{label:'Masquer cette occurrence barrée',run:async()=>{
       const result=await runUiAction('Impossible de masquer l’ancienne occurrence',()=>api(`/api/events/${event.id}/hide-instance`,{
