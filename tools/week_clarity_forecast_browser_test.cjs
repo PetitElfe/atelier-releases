@@ -40,13 +40,15 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
     return {viewWidth:view.width,weekWidth:scroll.width,dayWidth:day.width,
       slotHeight:slots[0].getBoundingClientRect().height,
       todaySlots:slots.filter(s=>s.classList.contains('week-current-day')).length,
-      horizontalScroll:document.querySelector('#weekPanel .week-scroll').scrollWidth>scroll.width+2};
+      horizontalScroll:document.querySelector('#weekPanel .week-scroll').scrollWidth>scroll.width+2,
+      verticalScroll:(()=>{const el=document.querySelector('#weekPanel .week-scroll');return el.scrollHeight>el.clientHeight+10&&getComputedStyle(el).overflowY==='auto'})()};
   });
   assert.ok(dimensions.weekWidth>dimensions.viewWidth*.94,'Semainier should use available width '+JSON.stringify(dimensions));
   assert.ok(dimensions.dayWidth>=156,'Readable columns '+JSON.stringify(dimensions));
   assert.ok(dimensions.slotHeight>=54&&dimensions.slotHeight<=58,'Readable one-hour rows '+JSON.stringify(dimensions));
   assert.equal(dimensions.todaySlots,16);
   assert.equal(dimensions.horizontalScroll,false,'2K width should fit without horizontal scroll');
+  assert.equal(dimensions.verticalScroll,true,'Large hourly rows must remain vertically scrollable at 900px');
   // Reuse a temporary SQLite instance; test only real date entries.
   const today=new Date(),todayStr=ymd(today),starts=[-84,-56,-26].map(d=>ymd(add(today,d)));
   for(const start of starts)await api('/api/cycle-periods','POST',{start_date:start,end_date:null});
