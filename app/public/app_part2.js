@@ -471,7 +471,7 @@ function openDayList(ds,items){
       `<button role="listitem" type="button" class="event-pill ${eventClass(e)}" data-occurrence="${index}">${e.start_time?fmtTime(e.start_time)+' ':''}${esc(e.title)}</button>`
     ).join(''):'<p class="muted">Aucun rendez-vous ce jour.</p>'}</div>
     <div class="form-actions"><button type="button" id="calendarDayAdd" class="primary">+ Ajouter un rendez-vous</button></div>`);
-  $('#modalBody [data-occurrence]').forEach(button=>
+  $$('#modalBody [data-occurrence]').forEach(button=>
     button.addEventListener('click',()=>openEventModal(sorted[Number(button.dataset.occurrence)])));
   $('#calendarDayAdd').onclick=()=>openEventModal(null,ds);
 }
