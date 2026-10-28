@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "12ffabdde91648ae69668abec847b5db4f8b81c581720e355319662b4849cfa5"
+      "sha256": "58023c30de2cf89fc019c9ee9faf10a75a14428d404333acb2ae21a62f4d2204"
     },
     {
       "path": "app_part3.py",
@@ -113,11 +113,11 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "13fa46a2c682d8c521de47ea18d1c8d93772e0555150255abd643a060ce97eef"
+      "sha256": "dfe3dd015214e42cee3ad4a5f011620da1fca299340f7a1f4e9727708008f338"
     },
     {
       "path": "public/life_tools.css",
-      "sha256": "06c7d8916540f125d00bc95048c93b3775f4641744a5195aad8454ab9e535657"
+      "sha256": "9ab250371a548e992daec9120c0d65f88cd26eaa842b4f05649b506abbd53293"
     },
     {
       "path": "quick_capture_native.py",
@@ -133,7 +133,7 @@
     },
     {
       "path": "tracker_rituals.py",
-      "sha256": "a500209c81e5133581a74075cc17c2107abdfc0dde550ecde74ada42d039fb7f"
+      "sha256": "6aefc931c9bed98b673884ca9506741f13b1de68badde030af42277627da742e"
     },
     {
       "path": "public/tracker_ritual_ui.js",
