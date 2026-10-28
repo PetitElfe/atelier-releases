@@ -223,3 +223,50 @@
  .tracker-board-period .tracker-period-change{margin-left:0}
  #trackerBoardCustomPeriod:not(.hidden){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
+
+
+/* Rituels personnalisables : journées fixes, sous-étapes, archivage mensuel.
+   Ne jamais affecter les données du Journal. */
+.tracker-board-head .tracker-board-range{color:var(--tracker-ink-light);font:600 16px Georgia,serif;text-transform:capitalize;flex:1;min-width:140px}
+.tracker-board-head h3{flex:0 1 auto}
+.tracker-board-period .tracker-board-cadence:empty{display:none}
+.tracker-row-label{gap:3px}
+.tracker-row-title{flex:1;min-width:0;border:0;background:transparent;text-align:left;color:inherit;font:inherit;padding:2px 0;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.tracker-row-title:hover{text-decoration:underline;text-decoration-color:var(--tracker-ink)}
+.tracker-row-setup{flex:none;border:1px solid #706047;background:transparent;border-radius:6px;color:var(--tracker-ink-light);width:25px;height:25px;padding:1px;font-size:13px}
+.tracker-cell-wrap:has(.tracker-day-unavailable){background:#0b0a0980}
+.tracker-cell-wrap .tracker-day-unavailable{opacity:.16!important;pointer-events:none;cursor:not-allowed}
+.tracker-cell-wrap .tracker-day-target-reached{color:var(--tracker-ink-light);background:var(--tracker-ink)!important}
+.tracker-add-row{grid-template-columns:minmax(160px,2fr) 115px minmax(105px,120px) minmax(120px,150px) auto}
+.tracker-add-row .tracker-row-target.hidden{display:none}
+.tracker-add-row button{white-space:normal}
+.tracker-ritual-steps{display:grid;gap:7px;margin:15px 0;max-height:45vh;overflow-y:auto}
+.tracker-ritual-step{display:flex;align-items:center;gap:12px;padding:10px 11px;border:1px solid #6e5c4455;border-radius:7px;cursor:pointer}
+.tracker-ritual-step input{width:19px;height:19px;accent-color:#78977d;flex:none}
+.tracker-ritual-step:has(input:checked) span{text-decoration:line-through;opacity:.65}
+.tracker-ritual-progress,.tracker-counter-status{font-weight:600;color:#dcc8ac}
+.tracker-ritual-complete{color:#9dbf9d}
+.tracker-ritual-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+.tracker-ritual-actions button{min-height:35px;padding:8px 12px}
+.tracker-counter-amount{display:block;font:700 30px Georgia,serif;color:#e2cca1}
+.tracker-setup-form{display:grid;gap:12px;margin-top:12px}
+.tracker-setup-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tracker-setup-field>input,.tracker-setup-field>select{width:100%;min-width:0}
+.tracker-setup-links{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tracker-setup-steps{border:1px solid #6e5c4477;border-radius:10px;padding:12px}
+.tracker-setup-steps h3{margin:0 0 7px}
+.tracker-setup-step-fields{display:grid;gap:6px}
+.tracker-setup-step-row{display:flex;gap:8px}
+.tracker-setup-step-row input{min-width:0;flex:1}
+.tracker-setup-step-row button{width:36px;flex:none}
+.tracker-setup-steps>button{margin-top:9px}
+.settings-archive-actions{display:flex;flex-wrap:wrap;gap:9px}
+.tracker-history-list{display:grid;gap:7px;max-height:310px;overflow-y:auto;overscroll-behavior:contain;margin-top:12px}
+.tracker-month-archive{border:1px solid #705f4a66;border-radius:8px;padding:8px 10px;background:#211b16}
+.tracker-month-archive summary{cursor:pointer;font-weight:600;color:#dbc89f}
+.tracker-archive-line{margin:5px 0 0 12px;color:#c8bba6;font-size:13px}
+.tracker-old-preps{margin-top:14px}
+.tracker-old-preps>summary{cursor:pointer}
+.home-daily-counter{border:1px solid #766045;border-radius:8px;background:#342a21;color:#e8d3ab;min-width:49px;min-height:31px;padding:4px 6px;cursor:pointer}
+@media(max-width:920px){.tracker-add-row{grid-template-columns:minmax(0,1fr) 120px minmax(105px,1fr)}.tracker-add-row button{grid-column:1/-1}}
+@media(max-width:600px){.tracker-add-row{grid-template-columns:minmax(0,1fr)}.tracker-add-row button{grid-column:auto}.tracker-setup-links{grid-template-columns:1fr}}

@@ -974,7 +974,7 @@ async function api(path,method='GET',body){
   await page.locator('#openHomeModuleLibrary').click();
   const picker=page.locator('#homeModulePicker');
   await picker.waitFor({state:'visible'});
-  assert.equal(await picker.locator('input[data-module]').count(),13,'Home modules exclude desktop-only Post-it; five widgets and eight shortcuts');
+  assert.equal(await picker.locator('input[data-module]').count(),12,'Home modules exclude desktop-only Post-it and retired Preparatifs; five widgets and seven shortcuts');
   await picker.locator('input[data-module="tasks"]').check();
   await picker.locator('input[data-module="upcoming"]').uncheck();
   await picker.locator('button[type="submit"]').click();

@@ -104,28 +104,45 @@ function renderHomeDailyTrackers(){
   }
   for(const item of current){
     const row=lifeNode('label','home-daily-tracker-row');
-    const check=lifeNode('input');check.type='checkbox';check.checked=!!item.done;
+    const check=item.mode==='number'?lifeNode('button','home-daily-counter',
+      (item.value||0)+'/'+item.target_count):lifeNode('input');
+    if(item.mode!=='number'){check.type='checkbox';check.checked=!!item.done;}
+    else check.type='button';
     check.setAttribute('aria-label',item.title+' — '+item.board_title+' — aujourd’hui');
     const title=lifeNode('span','home-daily-tracker-name',item.title);
     const board=lifeNode('small','home-daily-tracker-board',item.board_title);
     const body=lifeNode('span','home-daily-tracker-text');body.append(title,board);
     row.append(check,body);
+    if(item.steps?.length){
+      body.title='Ouvrir les étapes de cette habitude';
+      body.style.cursor='pointer';
+      body.addEventListener('click',event=>{event.preventDefault();trackerOpenRitual(item,day)});
+    }
     row.classList.toggle('home-daily-done',!!item.done);
     row.classList.add('home-daily-color-'+item.color);
-    check.addEventListener('change',async()=>{
-      const wanted=check.checked;
+    const edit=async()=>{
+      if(item.steps?.length){check.checked=!!item.done;trackerOpenRitual(item,day);return}
       check.disabled=true;
+      const wanted=item.mode==='number'?
+        Math.min(Number(item.target_count),Number(item.value||0)+1):check.checked;
+      if(item.mode==='number'&&item.done){
+        check.disabled=false;trackerOpenCounter(item,day);return;
+      }
       try{
         await lifeApi('/api/tracker-board-rows/'+item.row_id+'/mark',{
-          method:'PUT',body:JSON.stringify({day,value:wanted?true:null})
+          method:'PUT',body:JSON.stringify({day,value:item.mode==='number'?wanted:wanted?true:null})
         });
-        item.done=wanted;row.classList.toggle('home-daily-done',wanted);
+        item.done=item.mode==='number'?wanted>=item.target_count:wanted;
+        item.value=item.mode==='number'?wanted:null;
+        row.classList.toggle('home-daily-done',item.done);
         await loadLifeTools();
       }catch(err){
-        check.checked=!wanted;row.classList.toggle('home-daily-done',!wanted);
-        showUiError(err,'Impossible d’enregistrer la coche du jour');
+        if(item.mode!=='number')check.checked=!wanted;
+        row.classList.toggle('home-daily-done',!!item.done);
+        showUiError(err,'Impossible d’enregistrer le suivi du jour');
       }finally{check.disabled=false}
-    });
+    };
+    check.addEventListener(item.mode==='number'?'click':'change',edit);
     root.append(row);
   }
   root.scrollTop=oldScroll;
@@ -147,8 +164,29 @@ function lifeTrackerMarkButton(board,line,day){
   const raw=line.marks?.[day];
   const active=raw!==undefined;
   const numeric=line.mode==='number';
-  const button=lifeButton(numeric?(active?String(raw):'·'):(active?'●':''),
-    async()=>{if(numeric){lifeEditTrackerNumber(button,board,line,day);return}
+  const target=numeric?Number(line.target_count||0):0;
+  const progress=active?Number(raw):0;
+  const closed=!!target&&progress>=target;
+  const locked=line.weekday!=null&&board.period?.granularity==='days'&&parseYMD(day).getDay()!==((Number(line.weekday)+1)%7);
+  const button=lifeButton(numeric?(target?(closed?'✓':String(progress||'·')):(active?String(raw):'·')):(active?'●':''),
+    async()=>{
+      if(locked)return;
+      if(!numeric && line.steps?.length){trackerOpenRitual(line,day);return}
+      if(numeric){
+        if(!target){lifeEditTrackerNumber(button,board,line,day);return}
+        if(closed){trackerOpenCounter(line,day);return}
+        const nextValue=Math.min(target,progress+1);
+        button.disabled=true;
+        const saved=await runUiAction('Compter le suivi',()=>lifeApi(
+          '/api/tracker-board-rows/'+line.id+'/mark',
+          {method:'PUT',body:JSON.stringify({day,value:nextValue})}));
+        if(saved.ok){
+          line.marks[day]=String(nextValue);
+          button.replaceWith(lifeTrackerMarkButton(board,line,day));
+          await loadLifeTools();
+        }else button.disabled=false;
+        return;
+      }
       const changed=active?null:true;
       button.disabled=true;
       const result=await runUiAction('Marquer une période',()=>
@@ -161,12 +199,18 @@ function lifeTrackerMarkButton(board,line,day){
         button.replaceWith(next);
       }else button.disabled=false;
     },'tracker-day-cell'+(active?' tracker-day-done':'')+
-       (numeric?' tracker-day-number':''));
+       (numeric?' tracker-day-number':'')+
+       (closed?' tracker-day-target-reached':''));
   button.type='button';
   button.setAttribute('aria-label',line.title+' · '+cellLabel+' : '+
     (numeric?(active?'Valeur '+raw:'Saisir une valeur'):(active?'marqué':'non marqué')));
   if(!numeric)button.setAttribute('aria-pressed',String(active));
-  button.title=(numeric?'Saisir une valeur pour ':'Cocher ou décocher ')+cellLabel;
+  button.title=locked?'Prévu un autre jour':
+    numeric?(target?'Ajouter 1 ('+progress+'/'+target+'). Après validation, ouvrir les réglages du compteur.':
+      'Saisir une valeur pour '+cellLabel):
+    line.steps?.length?'Ouvrir les étapes à cocher pour '+cellLabel:
+      'Cocher ou décocher '+cellLabel;
+  if(locked){button.disabled=true;button.classList.add('tracker-day-unavailable')}
   return button;
 }
 function lifeEditTrackerNumber(button,board,line,day){
@@ -243,7 +287,8 @@ function renderTrackerBoards(){
     },'tracker-archive-button');
     head.append(h,action);
     const periodBar=lifeNode('div','tracker-board-period');
-    const cadence=lifeNode('span','tracker-board-cadence','Rythme : '+board.period.cadence);
+    const cadence=lifeNode('span','tracker-board-cadence',
+      board.period_unit==='months'&&Number(board.period_count)===1?'':board.period.cadence);
     const before=lifeButton('‹',()=>{lifeBoardOffsets[board.id]=(lifeBoardOffsets[board.id]||0)-1;loadLifeTools()},'tracker-period-back');
     before.setAttribute('aria-label','Période précédente pour '+board.title);
     const periodLabel=lifeNode('span','tracker-board-range',board.period.label);
@@ -254,11 +299,15 @@ function renderTrackerBoards(){
       loadLifeTools();
     },'tracker-period-today');
     const change=lifeButton('Changer le rythme',()=>lifeBoardPeriodEditor(section,board),'tracker-period-change');
-    periodBar.append(cadence,before,periodLabel,after,current,change);
-    const hint=lifeNode('p','life-muted',
-      board.period.granularity==='months'?
-        'Une case représente un mois. Le rythme et les marques restent propres à ce tableau.':
-        'Une case représente un jour. Tu peux faire défiler les colonnes et retrouver tes anciennes périodes.');
+    const readablePeriod=board.period_unit==='weeks'?
+      'Semaine'+(Number(board.period_count)>1?'s':'')+' · '+board.period.label:
+      board.period_unit==='months'&&Number(board.period_count)===1?
+        board.period.columns[0]?.title?.replace(/^./,letter=>letter.toUpperCase())||board.period.label:
+        board.period.label;
+    periodLabel.textContent=readablePeriod;
+    periodLabel.title='Période de '+board.title;
+    head.insertBefore(periodLabel,action);
+    periodBar.append(cadence,before,after,current,change);
     const viewport=lifeNode('div','tracker-board-scroll');
     viewport.tabIndex=0;
     viewport.setAttribute('aria-label','Tableau '+board.title+' du '+board.period.label);
@@ -274,8 +323,29 @@ function renderTrackerBoards(){
     grid.append(days);
     board.rows.forEach(line=>{
       const row=lifeNode('div','tracker-grid-line');
-      const name=lifeNode('span','tracker-row-label',line.title);
-      name.title=line.title+' · '+(line.mode==='number'?'nombre':'case à cocher');
+      const name=lifeNode('span','tracker-row-label');
+      const open=lifeButton(line.title,()=>{
+        if(line.steps?.length)trackerOpenRitual(line,today);
+        else trackerConfigureRow(line);
+      },'tracker-row-title');
+      open.title=line.steps?.length?'Ouvrir les étapes du jour':'Configurer cette ligne';
+      const edit=lifeButton('✎',()=>trackerConfigureRow(line),'tracker-row-setup');
+      edit.title='Objectif, étapes, jour fixe et lien de cette ligne';
+      edit.setAttribute('aria-label','Configurer '+line.title);
+      name.append(open,edit);
+      if(line.linked_type&&line.linked_id){
+        const linked=lifeButton('↗',()=>{
+          const type=line.linked_type;
+          if(type==='task'){
+            const task=state.tasks.find(x=>Number(x.id)===Number(line.linked_id));
+            if(task)openTaskModal(task);else showView('tasks');
+          }else showView(type==='admin'?'admin':'library');
+        },'tracker-row-linked');
+        linked.title='Ouvrir le lien avec '+(line.linked_type==='task'?'la tâche':
+          line.linked_type==='admin'?'la démarche':'l’objectif');
+        linked.setAttribute('aria-label',linked.title+' · '+line.title);
+        name.append(linked);
+      }
       row.append(name);
       for(const item of columns){
         const holder=lifeNode('span','tracker-cell-wrap'+(item.day===today?' tracker-today':''));
@@ -295,24 +365,38 @@ function renderTrackerBoards(){
       const opt=lifeNode('option','',text);opt.value=value;mode.append(opt);
     });
     mode.setAttribute('aria-label','Type de suivi');
+    const target=lifeNode('input','tracker-row-target');
+    target.type='number';target.min='1';target.max='1000';target.step='1';
+    target.placeholder='But (ex. 10)';target.setAttribute('aria-label','Nombre à atteindre');
+    target.classList.add('hidden');
+    const weekday=lifeNode('select','tracker-row-weekday');weekday.setAttribute('aria-label','Jour fixe facultatif');
+    [['','Tous les jours'],['0','Lundi'],['1','Mardi'],['2','Mercredi'],['3','Jeudi'],
+     ['4','Vendredi'],['5','Samedi'],['6','Dimanche']].forEach(([value,text])=>{
+      const op=lifeNode('option','',text);op.value=value;weekday.append(op);
+    });
+    const updateTarget=()=>{target.classList.toggle('hidden',mode.value!=='number');target.required=false};
+    mode.addEventListener('change',updateTarget);updateTarget();
     const submit=lifeNode('button','primary','+ Ajouter une ligne');submit.type='submit';
-    form.append(title,mode,submit);
+    form.append(title,mode,target,weekday,submit);
     form.onsubmit=async e=>{
       e.preventDefault();
       if(submit.disabled)return;
       submit.disabled=true;
-      const requestedTitle=title.value,requestedMode=mode.value;
+      const requestedTitle=title.value,requestedMode=mode.value,
+        requestedTarget=requestedMode==='number'&&target.value.trim()?Number(target.value):null,
+        requestedDay=weekday.value===''?null:Number(weekday.value);
       try{
         const result=await runUiAction('Ajouter une ligne',()=>lifeApi(
           '/api/tracker-boards/'+board.id+'/rows',
-          {method:'POST',body:JSON.stringify({title:requestedTitle,mode:requestedMode})}));
+          {method:'POST',body:JSON.stringify({title:requestedTitle,mode:requestedMode,
+            target_count:requestedTarget,weekday:requestedDay})}));
         if(result.ok){
-          title.value='';
+          title.value='';target.value='';
           await loadLifeTools();
         }
       }finally{submit.disabled=false}
     };
-    section.append(head,periodBar,hint,viewport,form);root.append(section);
+    section.append(head,periodBar,viewport,form);root.append(section);
   });
 }
 function lifeBoardPeriodEditor(section,board){

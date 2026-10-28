@@ -44,10 +44,13 @@ async function api(path,method='GET',body){
   await boardForm.locator('[name=color]').selectOption('rose');
   await boardForm.locator('button[type=submit]').click();
   await page.locator('.tracker-board-rose').waitFor();
+  await page.waitForFunction(()=>{const form=document.querySelector('#trackerBoardCreateForm');
+    return form&&!form.elements.title.disabled&&!form.elements.title.value;});
   await boardForm.locator('[name=title]').fill('Projets');
   await boardForm.locator('[name=color]').selectOption('mauve');
   await boardForm.locator('button[type=submit]').click();
-  await page.waitForFunction(async()=> (await (await fetch('/api/tracker-boards')).json()).length===2);
+  await page.waitForFunction(async()=>{const names=(await (await fetch('/api/tracker-boards')).json()).map(b=>b.title);
+    return names.includes('Bien-être')&&names.includes('Projets');});
   let boards=await api('/api/tracker-boards');
   const wellness=boards.find(b=>b.title==='Bien-être');
   const projects=boards.find(b=>b.title==='Projets');
@@ -110,6 +113,8 @@ async function api(path,method='GET',body){
   await api('/api/tracker-boards/'+wellness.id,'PUT',{archived:true});
   await page.evaluate(()=>loadLifeTools());
   await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===1);
+  await page.evaluate(()=>showView('settings'));
+  await page.waitForFunction(()=>document.getElementById('settingsTrackerHistory')?.textContent);
   await page.locator('#trackerBoardArchivesToggle').click();
   await page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'})
     .getByRole('button',{name:'Restaurer'}).click();
@@ -117,6 +122,7 @@ async function api(path,method='GET',body){
   boards=await api('/api/tracker-boards');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
+  await page.evaluate(()=>showView('trackers'));
   // Different boards can have their own schedules and navigation; one
   // bimonthly board must not affect the monthly Habitudes board.
   const createScheduled=async(title,preset)=>{
@@ -225,7 +231,8 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async()=>(await (await fetch('/api/admin')).json()).some(x=>x.title==='Dossier CAF'&&x.status==='waiting'));
   await page.evaluate(()=>showView('home'));
   await page.locator('#journalNextPage').click();
-  assert.match(await page.locator('#journalTrackerSummary').innerText(),/Lecture/);
+  assert.equal(await page.locator('#journalTrackerSummary').count(),0,
+    'Trackers must not be copied into the Journal. Daily Tracker lives on Home.');
   assert.match(await page.locator('#journalAdminSummary').innerText(),/Dossier CAF/);
   await page.evaluate(()=>lifeOpenCapture());
   await page.locator('#quickCaptureText').fill('#Car');

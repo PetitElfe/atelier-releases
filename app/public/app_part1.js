@@ -79,7 +79,6 @@ function renderHome(){
   const now=new Date(), today=ymd(now);
   $('#homeDate').textContent=fmtFrenchDate(now).replace(/^./,c=>c.toUpperCase());
   renderHomeMiniCalendar();
-  renderHomePreparationBadge();
 
   const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
   const urgentTasks=state.tasks.filter(t=>!t.completed&&t.important&&t.due_date).map(t=>({type:'task',date:t.due_date,title:t.title,item:t}));

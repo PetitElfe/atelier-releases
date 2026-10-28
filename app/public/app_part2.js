@@ -148,9 +148,6 @@ function addCalendarHoverActions(wrapper,event){
     await refresh();
   });
   action('↪','Reporter','postpone',async()=>openPostponeEventModal(event));
-  if(event.preparations?.length){
-    action('☷','Préparatifs','prepare',async()=>openEventPreparationDrawer(event,wrapper));
-  }
   wrapper.appendChild(actions);
 }
 
