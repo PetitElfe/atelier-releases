@@ -2,9 +2,9 @@ name: L'Atelier — validation
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/0180-progression-foundations]
   push:
-    branches: [main]
+    branches: [main, feature/0180-progression-foundations]
 
 permissions:
   contents: read
