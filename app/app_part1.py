@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native
+import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
