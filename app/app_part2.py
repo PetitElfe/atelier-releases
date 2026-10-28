@@ -922,6 +922,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='move':
+            try:row_id=int(parts[2])
+            except (ValueError,TypeError):return self._json({'error':'Ligne invalide.'},400)
+            direction=body.get('direction')
+            if direction not in ('up','down'):
+                return self._json({'error':'Sens du déplacement invalide.'},400)
+            with conn() as c:
+                current=c.execute(
+                    'SELECT board_id FROM tracker_board_rows WHERE id=? AND archived=0',(row_id,)).fetchone()
+                if not current:return self._json({'error':'Ligne introuvable.'},404)
+                rows=[x['id'] for x in c.execute(
+                    'SELECT id FROM tracker_board_rows WHERE board_id=? AND archived=0 '
+                    'ORDER BY order_index,id',(current['board_id'],))]
+                position=rows.index(row_id)
+                target=position+(-1 if direction=='up' else 1)
+                if target<0 or target>=len(rows):
+                    return self._json({'ok':True,'moved':False})
+                rows[position],rows[target]=rows[target],rows[position]
+                for index,identity in enumerate(rows,1):
+                    c.execute('UPDATE tracker_board_rows SET order_index=?,updated_at=? WHERE id=?',
+                              (index,ts,identity))
+                c.commit()
+                return self._json({'ok':True,'moved':True})
         if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='setup':
             try:row_id=int(parts[2])
             except (TypeError,ValueError):return self._json({'error':'Ligne invalide.'},400)
