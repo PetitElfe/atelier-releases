@@ -270,3 +270,17 @@
 .home-daily-counter{border:1px solid #766045;border-radius:8px;background:#342a21;color:#e8d3ab;min-width:49px;min-height:31px;padding:4px 6px;cursor:pointer}
 @media(max-width:920px){.tracker-add-row{grid-template-columns:minmax(0,1fr) 120px minmax(105px,1fr)}.tracker-add-row button{grid-column:1/-1}}
 @media(max-width:600px){.tracker-add-row{grid-template-columns:minmax(0,1fr)}.tracker-add-row button{grid-column:auto}.tracker-setup-links{grid-template-columns:1fr}}
+
+/* ALPHA 0.18 — vrais dossiers administratifs et fichiers locaux. */
+.life-admin-link-panel,.life-admin-files{display:grid;gap:8px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;background:#1c1916}
+.life-admin-link-label{display:grid;gap:5px;font-size:13px;color:var(--muted)}
+.life-admin-event-select{width:100%;max-width:100%;min-width:0}
+.life-admin-file-list{display:grid;gap:5px}
+.life-admin-file{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0}
+.life-admin-file a{flex:1;min-width:0;overflow-wrap:anywhere;color:#e2c28c}
+.life-admin-file button{font-size:12px;padding:5px 8px}
+.life-admin-upload-label{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.life-admin-upload{max-width:100%;font-size:12px}
+.life-admin-highlight{outline:2px solid var(--gold);outline-offset:3px}
+.event-admin-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:9px;padding:10px}
+.event-admin-links span{flex:1;min-width:140px;overflow-wrap:anywhere}
