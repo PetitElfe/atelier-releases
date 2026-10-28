@@ -23,6 +23,9 @@ class DesktopPostitArchiveTests(unittest.TestCase):
                 INSERT INTO home_postits VALUES
                   (1,'Notes multiline','Un\\ndeux\\ntrois','mauve','rounded',0,'2026-10-28','2026-10-28');
             """)
+        with sqlite3.connect(self.db) as c:
+            c.execute('UPDATE home_postits SET body=? WHERE id=1',
+                      ('Un'+chr(10)+'deux'+chr(10)+'trois',))
         desktop_postits.create_layout_table(self.db)
         desktop_postits.save_layout(1,321,245,420,310,self.db)
         desktop_postits.set_layout_lock(1,True,self.db)
@@ -38,7 +41,7 @@ class DesktopPostitArchiveTests(unittest.TestCase):
         self.assertEqual(len(desktop_postits.archived_notes(self.db)),1)
         self.assertTrue(desktop_postits.restore_note(1,self.db))
         row=desktop_postits.note_rows(self.db)[0]
-        self.assertEqual(row['body'],'Un\\ndeux\\ntrois')
+        self.assertEqual(row['body'],'Un'+chr(10)+'deux'+chr(10)+'trois')
         self.assertEqual((row['title'],row['color'],row['shape']),
                          ('Notes multiline','mauve','rounded'))
         self.assertEqual((row['x'],row['y'],row['width'],row['height'],row['locked']),
