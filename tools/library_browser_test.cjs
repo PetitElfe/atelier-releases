@@ -448,8 +448,8 @@ async function api(path,method='GET',body){
     'Deux rendez-vous simultanés doivent tenir côte à côte : '+JSON.stringify(compactWeek));
   assert.ok(compactWeek.cardHeight>compactWeek.hourHeight*2.7,
     'La hauteur du rendez-vous doit représenter sa durée : '+JSON.stringify(compactWeek));
-  assert.ok(compactWeek.noVerticalOverflow,
-    'La grille hebdomadaire compacte doit tenir sans défilement interne : '+JSON.stringify(compactWeek));
+  assert.ok(compactWeek.scrollHeight>compactWeek.clientHeight && compactWeek.overflowY==='auto',
+    'La grille hebdomadaire agrandie doit permettre le défilement vertical : '+JSON.stringify(compactWeek));
   const timedCard=page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve');
   await timedCard.hover();
   assert.ok(await timedCard.locator('.calendar-hover-action.done').isVisible(),

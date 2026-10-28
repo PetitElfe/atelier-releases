@@ -168,7 +168,9 @@ function renderHome(){
   });
 
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
-  const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,3);
+  const upcomingAll=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||'')));
+  const expanded=upcomingRoot.dataset.expanded==='1';
+  const upcoming=expanded?upcomingAll:upcomingAll.slice(0,3);
   if(!upcoming.length) upcomingRoot.innerHTML='<div class="home-empty">Aucun rendez-vous à venir.</div>';
   upcoming.forEach(e=>{
     const row=document.createElement('div');
@@ -203,7 +205,21 @@ function renderHome(){
       actions.append(done,postpone,cancel);
     }
     row.append(main,actions); upcomingRoot.appendChild(row);
+
   });
+  if(upcomingAll.length>3){
+    const toggle=document.createElement('button');
+    toggle.type='button';toggle.className='home-upcoming-toggle';
+    toggle.textContent=expanded?'Réduire la liste':'Voir les '+upcomingAll.length+' rendez-vous';
+    toggle.setAttribute('aria-expanded',String(expanded));
+    toggle.addEventListener('click',()=>{
+      upcomingRoot.dataset.expanded=expanded?'0':'1';
+      renderHome();
+    });
+    upcomingRoot.appendChild(toggle);
+  }
+  upcomingRoot.style.maxHeight=expanded?'min(45vh,310px)':'';
+  upcomingRoot.style.overflowY=expanded?'auto':'';
 
 }
 

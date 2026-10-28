@@ -36,10 +36,25 @@ async function api(path,method='GET',body){
   const event=await api('/api/events','POST',{title:'RDV du journal',event_date:date,start_time:'16:30',category:'important'});
   await page.evaluate(()=>refresh());
   assert.ok((await page.locator('#homeDeadlineLines').innerText()).includes('16h30'));
+  for(let i=0;i<4;i++)await api('/api/events','POST',{
+    title:'Autre rendez-vous '+i,event_date:date,start_time:'18:'+String(i*10).padStart(2,'0'),category:'general'
+  });
+  await page.evaluate(()=>refresh());
+  const expand=page.locator('#homeUpcoming .home-upcoming-toggle');
+  await expand.waitFor();
+  assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
+  await expand.click();
+  assert.ok(await page.locator('#homeUpcoming .home-appt-row').count()>=5);
+  assert.equal(await page.locator('#homeUpcoming .home-upcoming-toggle').getAttribute('aria-expanded'),'true');
+  await page.locator('#homeUpcoming .home-upcoming-toggle').click();
+  assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
   await page.evaluate(()=>showView('trackers'));
   // Nouvelle interprétation validée par les visuels : plusieurs tableaux,
   // lignes (habitudes) x jours, couleurs, valeurs optionnelles et archives.
   const boardForm=page.locator('#trackerBoardCreateForm');
+  assert.equal(await boardForm.isVisible(),false,'Creation form should be collapsed by default');
+  await page.locator('#trackerBoardCreateToggle').click();
+  assert.equal(await boardForm.isVisible(),true,'New board opens its form');
   await boardForm.locator('[name=title]').fill('Bien-être');
   await boardForm.locator('[name=color]').selectOption('rose');
   await boardForm.locator('button[type=submit]').click();
@@ -63,6 +78,12 @@ async function api(path,method='GET',body){
   const projects=boards.find(b=>b.title==='Projets');
   assert.ok(wellness&&projects&&wellness.id!==projects.id,'Expected distinct named boards: '+JSON.stringify(boards.map(b=>({id:b.id,title:b.title}))));
   const wellnessCard=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Bien-être")')});
+  await wellnessCard.click({button:'right'});
+  const boardMenu=page.locator('.tracker-board-popup');
+  await boardMenu.waitFor();
+  assert.match(await boardMenu.innerText(),/Archiver le tableau/);
+  await page.keyboard.press('Escape');
+  assert.equal(await boardMenu.count(),0,'Right-click menu dismisses without changing the board');
   await wellnessCard.locator('.tracker-add-row [name=title]').fill('Boire de l’eau');
   await wellnessCard.locator('.tracker-add-row [name=mode]').selectOption('check');
   await wellnessCard.locator('.tracker-add-row button').click();
@@ -89,6 +110,7 @@ async function api(path,method='GET',body){
     const boards=await (await fetch('/api/tracker-boards')).json();
     return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]==='1';
   },{id:wellness.id,day:date});
+  await page.waitForFunction(()=>[...document.querySelectorAll('.tracker-grid-line')].some(row=>row.textContent.includes('Boire de l’eau')&&row.querySelector('.tracker-day-cell[aria-pressed="true"]')));
   assert.equal(await checked.getAttribute('aria-pressed'),'true');
   await checked.click();
   await page.waitForFunction(async({id,day})=>{
@@ -130,6 +152,7 @@ async function api(path,method='GET',body){
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Sommeil').marks[date],'7.5');
   assert.equal(boards.find(b=>b.id===wellness.id).rows.find(r=>r.title==='Boire de l’eau').marks[date],'1');
   await page.evaluate(()=>showView('trackers'));
+  await page.locator('#trackerBoardCreateToggle').click();
   // Different boards can have their own schedules and navigation; one
   // bimonthly board must not affect the monthly Habitudes board.
   const createScheduled=async(title,preset)=>{
