@@ -366,9 +366,24 @@
 
 
     <section id="trackersView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL</span><h2>Mes trackers</h2><p class="muted">Suis ce qui t’intéresse, sans jugement ni obligation de régularité.</p></div></div>
-      <form id="trackerCreateForm" class="life-form"><label>Nom du tracker<input name="title" maxlength="120" required placeholder="Ex. : Lecture, marche, humeur…"></label><label>Unité<input name="unit" maxlength="32" placeholder="pages, minutes, /10…"></label><label>Objectif facultatif<input name="target" type="number" step="any" placeholder="—"></label><button type="submit" class="primary">+ Créer</button></form>
-      <div id="trackerList" class="life-card-list"></div>
+      <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL · BULLET JOURNAL</span><h2>Mes tableaux de suivi</h2><p class="muted">Plusieurs tableaux à toi, avec tes habitudes en lignes et les jours du mois en colonnes. Un clic sur une case suffit, sans obligation de régularité.</p></div></div>
+      <form id="trackerBoardCreateForm" class="life-form tracker-board-create">
+        <label>Nom du tableau<input name="title" maxlength="100" required placeholder="Ex. : Bien-être, lectures, projets…"></label>
+        <label>Couleur des cases<select name="color"><option value="sage">Sauge</option><option value="rose">Rose poudré</option><option value="mauve">Mauve</option><option value="gold">Miel</option><option value="blue">Bleu brume</option><option value="peach">Pêche</option></select></label>
+        <button type="submit" class="primary">+ Créer un tableau</button>
+      </form>
+      <div class="tracker-board-toolbar">
+        <div class="tracker-month-controls" aria-label="Mois des tableaux"><button id="trackerMonthPrev" type="button" aria-label="Mois précédent">‹</button><strong id="trackerMonthLabel"></strong><button id="trackerMonthNext" type="button" aria-label="Mois suivant">›</button><button id="trackerMonthToday" type="button">Ce mois-ci</button></div>
+        <button id="trackerBoardArchivesToggle" type="button" aria-expanded="false">Mes tableaux archivés</button>
+      </div>
+      <div id="trackerBoardList" class="tracker-board-list" aria-live="polite"></div>
+      <div id="trackerBoardArchiveList" class="tracker-board-archive-list hidden"></div>
+      <details class="tracker-legacy-section">
+        <summary>Mes anciennes mesures chiffrées (conservées séparément)</summary>
+        <p class="life-muted">Tes anciennes valeurs, notes et historiques sont toujours ici. Elles ne sont jamais effacées ni converties automatiquement.</p>
+        <form id="trackerCreateForm" class="life-form"><label>Nom de la mesure<input name="title" maxlength="120" required placeholder="Ex. : Lecture, marche, humeur…"></label><label>Unité<input name="unit" maxlength="32" placeholder="pages, minutes, /10…"></label><label>Objectif facultatif<input name="target" type="number" step="any" placeholder="—"></label><button type="submit" class="primary">+ Créer une mesure</button></form>
+        <div id="trackerList" class="life-card-list"></div>
+      </details>
     </section>
     <section id="adminView" class="view life-view">
       <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
