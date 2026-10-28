@@ -120,7 +120,7 @@ Date de préparation : 28 octobre 2026. Support : quatre captures annotées + pa
 - [ ] Cuisine/Courses/Repas/Budget : pas de régression des valeurs, menus et interactions.
 - [ ] Notifications : son facultatif et bouton test Windows ; désactivation effective.
 - [ ] Android : synchronisation Wi-Fi, retour après arrière-plan, notifications sonores **natives** (ne pas confondre avec navigateur).
-- [ ] Sauvegarde/restauration complète TEST sur copie, y compris documents joints quand la fonction existera.
+- [ ] Sauvegarde/restauration complète TEST sur copie : test automatisé de restauration de base SQLite avec rendez-vous, documents joints (octets exacts), tâches, Trackers, archives et Post-it. À vérifier manuellement avec une vraie copie TEST, jamais sur les données de production.
 
 ## Tableau de suivi des problèmes
 | Identifiant | Partie | Résultat réel (OK / KO / non testé) | Capture / description | Correctif / commit |
