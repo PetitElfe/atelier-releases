@@ -1074,8 +1074,13 @@ class Handler(BaseHTTPRequestHandler):
                 due=str(body.get('due_date',row['due_date']) or '').strip()
                 try:due=date.fromisoformat(due).isoformat() if due else None
                 except ValueError:return self._json({'error':'Date invalide.'},400)
-                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,updated_at=? WHERE id=?',
-                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],ts,doc_id))
+                raw_event=body.get('event_id',row['event_id'])
+                try:event_id=int(raw_event) if raw_event not in (None,'') else None
+                except (TypeError,ValueError):return self._json({'error':'Rendez-vous invalide.'},400)
+                if event_id is not None and not c.execute('SELECT 1 FROM events WHERE id=?',(event_id,)).fetchone():
+                    return self._json({'error':'Rendez-vous introuvable.'},404)
+                c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,event_id=?,updated_at=? WHERE id=?',
+                    (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],event_id,ts,doc_id))
                 c.commit();return self._json({'ok':True})
         if len(parts)==3 and parts[:2]==['api','captures']:
             try:capture_id=int(parts[2])
@@ -1646,6 +1651,14 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError,IndexError,ValueError,TypeError) as ex:
                 return self._json({'error':str(ex)},400)
         with conn() as c:
+            if len(parts)==5 and parts[:2]==['api','admin'] and parts[3]=='attachments':
+                try:admin_id=int(parts[2]);file_id=int(parts[4])
+                except ValueError:return self._json({'error':'Identifiant invalide.'},400)
+                deleted=c.execute('DELETE FROM admin_attachments WHERE admin_id=? AND id=?',
+                                  (admin_id,file_id))
+                c.commit()
+                return self._json({'ok':True} if deleted.rowcount else {'error':'Fichier introuvable.'},
+                                  200 if deleted.rowcount else 404)
             if len(parts)==3 and parts[:2]==['api','events']:
                 eid=int(parts[2])
                 if not c.execute('SELECT id FROM events WHERE id=?',(eid,)).fetchone():
