@@ -25,8 +25,8 @@ jobs:
           node --check app/public/app_part3.js
           node --check app/public/life_tools.js
           node --check app/public/tracker_ritual_ui.js
-          node tools/life_tools_browser_test.cjs
           node tools/tracker_ritual_browser_test.cjs
+          node tools/life_tools_browser_test.cjs
           node tools/week_clarity_forecast_browser_test.cjs
           node tools/cycle_compact_browser_test.cjs
           node tools/preparation_browser_test.cjs
