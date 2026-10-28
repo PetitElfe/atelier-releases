@@ -37,7 +37,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "6284ad35af19d0a2578cdab87b170e6b520ba312c15c14e1d1d5217c4177eb06"
+      "sha256": "e82bea17aee6783923f41c12697f97f9d90eb1619489948d21dbaece92bbf57a"
     },
     {
       "path": "public/index.html",
@@ -45,7 +45,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "6edceb6b5fcf5254230eb2b67eb39c9e8520ae883e678c556a7f3ef754ed66ff"
+      "sha256": "307fa2e6122517444f9d323aac77a5b9edc85b6be0ba8d0f8fb81cb817b3630b"
     },
     {
       "path": "progression.py",
@@ -124,5 +124,5 @@
       "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
     }
   ],
-  "notes": "ALPHA 0.18.0 — Trackers à rythmes indépendants : grilles quotidiennes à la semaine, aux 2 semaines, sur plusieurs mois, vues annuelles par mois, et périodes personnalisées (jours 1–90, semaines 1–12, mois 1–24, années 1–5) ; navigation propre à chaque tableau et changement de rythme sans effacer les anciennes cases. Migration SQLite 11 avec sauvegarde. Données, trackers existants et stable 0.17.0 préservés. Validation CI et sur PC utilisateur nécessaire."
+  "notes": "ALPHA 0.18.0 — Accueil F5/refresh : le mini-calendrier ne prend plus toute la largeur sur écran >=1800px, et la position visible de chaque carte est bornée aux dimensions actuelles sans écraser les coordonnées d'origine en localStorage. Recalcul après redimensionnement/rendu tardif ; le scroll horizontal de page est neutralisé en gardant le scroll vertical. Tests dédiés sur tiroir, mode Modifier, rafraîchissements et 1100–1920px. Stable 0.17.0 et profils/données séparés inchangés."
 }

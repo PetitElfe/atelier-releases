@@ -62,6 +62,8 @@ jobs:
           # Les bibliothèques graphiques de l'agent Ubuntu suffisent pour l'exécution headless.
           # Éviter apt-get --with-deps (très lent, timeout de 10 min avant les tests).
           npx playwright install --only-shell chromium
+      - name: Reproduce Accueil after refresh, drawer and edit mode
+        run: node tools/home_refresh_browser_test.cjs
       - name: Reproduce save / Accueil / return
         run: |
           node tools/objective_map_browser_test.cjs

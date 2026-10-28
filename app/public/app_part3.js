@@ -1142,6 +1142,25 @@ let homeCanvasReady=false;
 let homeCanvasActivationReady=false;
 let homeCanvas=null;
 let homeCanvasMeasurePending=false;
+let homeCanvasReflowPending=false;
+function homeVisibleX(savedX,canvasWidth,elementWidth){
+  const x=Number.isFinite(Number(savedX))?Number(savedX):0;
+  return Math.round(Math.max(0,Math.min(x,Math.max(0,canvasWidth-elementWidth))));
+}
+// Display-only adaptation: never mutate the saved layout on resize or F5.
+function reflowHomeCanvasViewport(){
+  if(!homeCanvasReady||!homeCanvas||state.view!=='home'||homeCanvasReflowPending)return;
+  homeCanvasReflowPending=true;
+  requestAnimationFrame(()=>{
+    homeCanvasReflowPending=false;
+    if(!homeCanvasReady||!homeCanvas||state.view!=='home')return;
+    for(const item of globalLayoutItems.filter(isHomeCanvasItem)){
+      if(!item.el.classList.contains('home-module-off'))
+        applyGlobalLayout(item,readGlobalLayout(item));
+    }
+    requestHomeCanvasMeasure();
+  });
+}
 function isHomeCanvasItem(item){return item.view==='home'&&Boolean(item.el.dataset.homeModule)}
 function homeCanvasStorageKey(item){return 'atelierHomeCanvasV2_'+item.id}
 function requestHomeCanvasMeasure(){
@@ -1244,11 +1263,18 @@ function activateHomeCanvas(){
   home.classList.add('home-free-ready');
   items.forEach(item=>applyGlobalLayout(item,readGlobalLayout(item)));
   if(typeof ResizeObserver==='function'){
-    const observer=new ResizeObserver(()=>requestHomeCanvasMeasure());
+    const observer=new ResizeObserver(()=>{
+      requestHomeCanvasMeasure();
+      reflowHomeCanvasViewport();
+    });
     items.forEach(item=>observer.observe(item.el));
   }
-  window.addEventListener('resize',requestHomeCanvasMeasure);
+  window.addEventListener('resize',reflowHomeCanvasViewport);
+  reflowHomeCanvasViewport();
   requestHomeCanvasMeasure();
+  // Old versions let the calendar protrude outside the page. WebView could
+  // restore that horizontal scroll after F5, hiding cards at the left.
+  if(window.scrollX!==0)window.scrollTo({left:0,top:window.scrollY,behavior:'instant'});
 }
 
 /* ALPHA 0.16.4 — édition visuelle de l'Accueil : une sélection à la fois.
@@ -1278,7 +1304,7 @@ function homeCanvasMagnet(item,x,y,event){
     if(other===item||other.el.classList.contains('home-module-off'))continue;
     const r=other.el.getBoundingClientRect();
     if(!r.width||!r.height)continue;
-    const left=readGlobalLayout(other).x,top=readGlobalLayout(other).y;
+    const left=parseFloat(other.el.style.left)||0,top=readGlobalLayout(other).y;
     candidatesX.push({value:left,line:left},{value:left+r.width-w,line:left+r.width},
       {value:left+(r.width-w)/2,line:left+r.width/2});
     candidatesY.push({value:top,line:top},{value:top+r.height-h,line:top+r.height},
@@ -1308,6 +1334,7 @@ function setupHomeCanvasKeyboard(){
     if(!selectedHomeCanvasItem||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;
     event.preventDefault();
     const item=selectedHomeCanvasItem,d=readGlobalLayout(item),step=event.shiftKey?10:1;
+    d.x=parseFloat(item.el.style.left)||0;
     const w=item.el.getBoundingClientRect().width;
     if(event.key==='ArrowLeft')d.x-=step;
     if(event.key==='ArrowRight')d.x+=step;
@@ -1329,7 +1356,7 @@ function beginHomeCanvasDrag(event,item){
   try{handle.setPointerCapture?.(pointerId)}catch(_){}
   selectHomeCanvasItem(item);
   const d=readGlobalLayout(item);
-  const initial={x:d.x,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
+  const initial={x:parseFloat(item.el.style.left)||0,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
   let clientX=event.clientX,clientY=event.clientY,altHeld=event.altKey,active=true,frameId=0;
   item.el.classList.add('layout-selected');
   function updatePosition(){
@@ -1417,13 +1444,18 @@ function ensureLayoutNaturalHeight(item){
 }
 function applyGlobalLayout(item,d){
   if(homeCanvasReady&&isHomeCanvasItem(item)){
-    // Aucun décalage via transform : la position n'est plus dépendante d'une grille.
-    item.el.style.left=(d.x||0)+'px';
-    item.el.style.top=(d.y||0)+'px';
+    // Apply size first, then clamp the DISPLAY coordinate. The user's original
+    // x/width remain in localStorage and return when the window gets wider.
+    const canvasWidth=Math.max(1,homeCanvas.clientWidth);
+    item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
+    item.el.style.maxWidth=canvasWidth+'px';
+    item.el.style.left='0px';
+    const renderedWidth=item.el.getBoundingClientRect().width;
+    item.el.style.left=homeVisibleX(d.x,canvasWidth,renderedWidth)+'px';
+    item.el.style.top=Math.max(0,d.y||0)+'px';
     item.el.style.setProperty('--layout-x','0px');
     item.el.style.setProperty('--layout-y','0px');
     item.el.style.setProperty('--layout-scale',String(d.scale||1));
-    item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
     item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
     item.el.style.marginBottom='';
     const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
