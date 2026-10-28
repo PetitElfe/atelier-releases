@@ -762,7 +762,7 @@ function renderLifeCaptures(){
         if(typeof openReminderModal!=='function'){
           showUiError(new Error('Le formulaire de rappels est indisponible.'),'Capture rapide');return;
         }
-        openReminderModal({title:item.body.split('\\n')[0].slice(0,120)});
+        openReminderModal({title:item.body.split(String.fromCharCode(10))[0].slice(0,120)});
       });
       actions.append(plan);
     }
