@@ -1455,6 +1455,43 @@ function syncGlobalLayoutEditing(){
   if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem(layoutUndoKey(state.view)));
   if(homeCanvasReady&&state.view==='home')requestHomeCanvasMeasure();
 }
+/* ALPHA 0.18 — géométrie type Canva, indépendante de la souris et du DOM.
+   Le bord opposé reste ancré. Un coin garde les proportions par défaut ;
+   maintenir Maj permet un étirement libre des deux axes. */
+function layoutResizeGeometry(axis,start,dx,dy,limits,freeform=false){
+  const directions={nw:[-1,-1],ne:[1,-1],sw:[-1,1],se:[1,1],
+    left:[-1,0],right:[1,0],top:[0,-1],bottom:[0,1],
+    width:[1,0],height:[0,1]};
+  const [horizontal,vertical]=directions[axis]||[0,0];
+  const x0=start.x,y0=start.y,w0=start.width,h0=start.height;
+  const right=x0+w0,bottom=y0+h0;
+  const minX=limits.minX??-Infinity,minY=limits.minY??-Infinity;
+  const maxRight=limits.maxRight??Infinity;
+  const capW=Math.max(1,Math.min(limits.maxWidth??Infinity,
+    horizontal<0?right-minX:maxRight-x0));
+  const capH=Math.max(1,Math.min(limits.maxHeight??Infinity,
+    vertical<0?bottom-minY:Infinity));
+  const minW=Math.min(capW,limits.minWidth??1),minH=Math.min(capH,limits.minHeight??1);
+  const clampSize=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  let width=w0,height=h0;
+  if(horizontal&&vertical&&!freeform){
+    // The movement in the stronger proportional direction controls the corner.
+    const dw=horizontal*dx/w0,dh=vertical*dy/h0;
+    const amount=Math.abs(dw)>=Math.abs(dh)?dw:dh;
+    const factor=clampSize(1+amount,Math.max(minW/w0,minH/h0),
+      Math.min(capW/w0,capH/h0));
+    width=w0*factor;height=h0*factor;
+  }else{
+    if(horizontal)width=clampSize(w0+horizontal*dx,minW,capW);
+    if(vertical)height=clampSize(h0+vertical*dy,minH,capH);
+  }
+  return {
+    x:Math.round(horizontal<0?right-width:x0),
+    y:Math.round(vertical<0?bottom-height:y0),
+    width:Math.round(width),height:Math.round(height)
+  };
+}
+
 function initGlobalLayoutEditor(){
   globalLayoutItems=getGlobalLayoutSpecs();
   setupHomeCanvasKeyboard();
@@ -1554,45 +1591,54 @@ function initGlobalLayoutEditor(){
     const beginResize=(axis,event)=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
       event.preventDefault();event.stopPropagation();
-      try{event.currentTarget.setPointerCapture?.(event.pointerId)}catch(_){}
-      const d=readGlobalLayout(item);
-      const rect=item.el.getBoundingClientRect();
-      const sx=event.clientX,sy=event.clientY;
-      const baseWidth=rect.width,baseHeight=rect.height;
-      const isSmallCard=item.el.closest('#budgetSummaryPanel')&&item.el.tagName==='ARTICLE';
-      const minWidth=isSmallCard?165:item.el.id==='openCalendarCard'?175:200;
-      const maxWidth=Math.max(minWidth,Math.min(1400,window.innerWidth-48));
-      const minHeight=isSmallCard?90:item.el.id==='openCalendarCard'?130:105;
-      const maxHeight=1600;
-      d.scale=1;
-      if(homeCanvasReady&&isHomeCanvasItem(item))selectHomeCanvasItem(item);
+      const handle=event.currentTarget,pointerId=event.pointerId;
+      try{handle.setPointerCapture?.(pointerId)}catch(_){}
+      const d=readGlobalLayout(item),rect=item.el.getBoundingClientRect();
+      const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
+      const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
+      const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
+      const minHeight=item.id==='journal'?345:item.id==='calendar'?130:90;
+      const bounds={
+        minX:canvasItem?0:-Infinity,minY:canvasItem?0:-Infinity,
+        maxRight:canvasItem?homeCanvas.clientWidth:Infinity,
+        minWidth,maxWidth:Math.max(minWidth,Math.min(1600,window.innerWidth-32)),
+        minHeight,maxHeight:2000
+      };
+      if(canvasItem)selectHomeCanvasItem(item);
       else item.el.classList.add('layout-selected');
-      const originX=d.x,originY=d.y;
-      const move=ev=>{
-        const dx=ev.clientX-sx,dy=ev.clientY-sy;
-        const fromLeft=['nw','sw','left'].includes(axis);
-        const fromTop=['nw','ne','top'].includes(axis);
-        const hasWidth=!['height','top','bottom'].includes(axis);
-        const hasHeight=!['width','left','right'].includes(axis);
-        if(hasWidth){
-          d.width=clamp(baseWidth+(fromLeft?-dx:dx),minWidth,maxWidth);
-          if(fromLeft)d.x=originX+baseWidth-d.width;
-        }
-        if(hasHeight){
-          d.height=clamp(baseHeight+(fromTop?-dy:dy),minHeight,maxHeight);
-          if(fromTop)d.y=originY+baseHeight-d.height;
-        }
+      const sx=event.clientX,sy=event.clientY,scrollY=window.scrollY;
+      let active=true;
+      const apply=ev=>{
+        if(!active||ev.pointerId!==pointerId)return;
+        const next=layoutResizeGeometry(axis,initial,
+          ev.clientX-sx,ev.clientY-sy+window.scrollY-scrollY,bounds,ev.shiftKey);
+        d.x=next.x;d.y=next.y;d.width=next.width;d.height=next.height;d.scale=1;
         applyGlobalLayout(item,d);
+        // Enregistrer également pendant le glisser si Windows perd le pointerup.
         saveGlobalLayout(item,d);
       };
-      const up=()=>finishInteraction(d,move,up,cancel);
-      const cancel=()=>finishInteraction(d,move,up,cancel);
-      // Capture ensures release is received even when the pointer leaves the handle.
-      event.currentTarget.addEventListener('pointerup',up,{once:true});
-      event.currentTarget.addEventListener('pointercancel',cancel,{once:true});
-      window.addEventListener('pointermove',move);
+      const cleanup=(cancel=false)=>{
+        if(!active)return;
+        active=false;
+        window.removeEventListener('pointermove',apply);
+        window.removeEventListener('pointerup',up);
+        window.removeEventListener('pointercancel',cancelDrag);
+        window.removeEventListener('blur',cancelDrag);
+        try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
+        if(cancel){
+          Object.assign(d,{x:initial.x,y:initial.y,width:initial.width,height:initial.height,scale:1});
+        }
+        saveGlobalLayout(item,d);
+        applyGlobalLayout(item,d);
+        if(!canvasItem)item.el.classList.remove('layout-selected');
+        if(canvasItem)requestHomeCanvasMeasure();
+      };
+      const up=ev=>{if(ev.pointerId===pointerId)cleanup()};
+      const cancelDrag=ev=>{if(ev?.pointerId!=null&&ev.pointerId!==pointerId)return;cleanup(true)};
+      window.addEventListener('pointermove',apply);
       window.addEventListener('pointerup',up);
-      window.addEventListener('pointercancel',cancel);
+      window.addEventListener('pointercancel',cancelDrag);
+      window.addEventListener('blur',cancelDrag);
     };
     controls.querySelector('.layout-move-handle')?.addEventListener('pointerdown',beginMove);
     controls.querySelector('.layout-width-handle')?.addEventListener('pointerdown',event=>beginResize('width',event));
