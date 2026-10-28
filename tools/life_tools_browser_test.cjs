@@ -51,7 +51,14 @@ async function api(path,method='GET',body){
   await boardForm.locator('button[type=submit]').click();
   await page.waitForFunction(async()=>{const names=(await (await fetch('/api/tracker-boards')).json()).map(b=>b.title);
     return names.includes('Bien-être')&&names.includes('Projets');});
-  let boards=await api('/api/tracker-boards');
+  let boards=[];
+  // Wait for a *separate* client to see both committed rows. The browser's
+  // prior wait can otherwise race the API read after rapid saves.
+  for(let attempt=0;attempt<40;attempt++){
+    boards=await api('/api/tracker-boards');
+    if(boards.some(b=>b.title==='Bien-être')&&boards.some(b=>b.title==='Projets'))break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
   const wellness=boards.find(b=>b.title==='Bien-être');
   const projects=boards.find(b=>b.title==='Projets');
   assert.ok(wellness&&projects&&wellness.id!==projects.id,'Expected distinct named boards: '+JSON.stringify(boards.map(b=>({id:b.id,title:b.title}))));

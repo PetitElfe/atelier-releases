@@ -361,7 +361,7 @@ function renderTrackerBoards(){
     title.maxLength=100;title.placeholder='Nouvelle ligne (ex. : Lecture)';
     title.setAttribute('aria-label','Nouvelle ligne dans '+board.title);
     const mode=lifeNode('select','');mode.name='mode';
-    [['check','À cocher'],['number','Chiffre']].forEach(([value,text])=>{
+    [['check','À cocher'],['number','Numéro']].forEach(([value,text])=>{
       const opt=lifeNode('option','',text);opt.value=value;mode.append(opt);
     });
     mode.setAttribute('aria-label','Type de suivi');
