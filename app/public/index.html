@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/calendar_cycle_compact.css" />
   <link rel="stylesheet" href="/week_clarity.css" />
   <link rel="stylesheet" href="/life_tools.css" />
+  <link rel="stylesheet" href="/standalone_preparations.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -43,6 +44,7 @@
       <button data-view="reminders">Rappels</button>
       <button data-view="organisation">Habitudes & routines</button>
       <button data-view="trackers">Trackers</button>
+      <button data-view="preparations">Préparatifs</button>
       <button data-view="admin">Administratif</button>
       <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
@@ -122,6 +124,11 @@
         <div class="journal-page-turn"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
       </div>
 
+      <section id="homeDailyTrackersWidget" data-home-module="dailyTrackers" class="home-daily-trackers-widget" aria-label="Mes trackers à cocher aujourd’hui">
+        <div class="home-daily-trackers-head"><strong>Mes coches du jour</strong><button id="openDailyTrackers" type="button">Tout voir →</button></div>
+        <p id="homeDailyTrackersDate" class="muted"></p>
+        <div id="homeDailyTrackersList" class="home-daily-trackers-list" aria-label="Cases du jour, cinq lignes visibles à la fois"></div>
+      </section>
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
 
@@ -365,6 +372,31 @@
     </section>
 
 
+    <section id="preparationsView" class="view life-view">
+      <div class="panel-head"><div>
+        <span class="section-kicker">ORGANISATION · À COCHER</span>
+        <h2>Préparatifs</h2>
+        <p class="muted">Prépare un voyage, un dossier, une journée, un ménage ou un projet, sans créer de rendez-vous. Les préparatifs d’un RDV restent aussi dans le calendrier.</p>
+      </div></div>
+      <form id="standalonePreparationCreateForm" class="life-form standalone-preparation-create">
+        <label>Nom de la liste<input name="title" required maxlength="150" placeholder="Ex. : Préparer mon départ, dossier, randonnée…"></label>
+        <label>Date facultative<input name="due_date" type="date"></label>
+        <button type="submit" class="primary">+ Créer une liste</button>
+      </form>
+      <div class="standalone-preparation-toolbar">
+        <h3>Mes listes de préparatifs</h3>
+        <button id="standalonePreparationArchiveToggle" type="button" aria-expanded="false">Archives</button>
+      </div>
+      <div id="standalonePreparationList" class="standalone-preparation-lists" aria-live="polite"></div>
+      <div id="standalonePreparationArchiveList" class="standalone-preparation-archives hidden" aria-live="polite"></div>
+      <section class="standalone-rdv-section">
+        <div class="standalone-rdv-head"><h3>Préparatifs liés aux rendez-vous</h3>
+          <button id="standaloneOpenCalendar" type="button">Ouvrir le calendrier →</button>
+        </div>
+        <p class="muted">Ceux d’aujourd’hui et de demain restent synchronisés avec les fiches du calendrier.</p>
+        <div id="standaloneRdvUpcoming"></div>
+      </section>
+    </section>
     <section id="trackersView" class="view life-view">
       <div class="panel-head"><div><span class="section-kicker">SUIVI PERSONNEL · BULLET JOURNAL</span><h2>Mes tableaux de suivi</h2><p class="muted">Habitudes, ménage, projets : crée autant de tableaux que tu veux, avec leur propre rythme (semaine, deux semaines, plusieurs mois, année ou durée personnalisée). Coche ou renseigne les cases à ton rythme.</p></div></div>
       <form id="trackerBoardCreateForm" class="life-form tracker-board-create">
@@ -589,5 +621,6 @@
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
   <script src="/life_tools.js"></script>
+  <script src="/standalone_preparations.js"></script>
 </body>
 </html>

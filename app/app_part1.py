@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -327,6 +327,30 @@ CREATE TABLE IF NOT EXISTS admin_documents (
  notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_admin_due ON admin_documents(status,due_date);
+-- Préparatifs autonomes : listes indépendantes des rendez-vous et des Trackers.
+-- Pas de conversion automatique : chaque source reste distincte et retrouvable.
+CREATE TABLE IF NOT EXISTS standalone_preparation_lists (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ due_date TEXT,
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS standalone_preparation_items (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ list_id INTEGER NOT NULL REFERENCES standalone_preparation_lists(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ done INTEGER NOT NULL DEFAULT 0,
+ archived INTEGER NOT NULL DEFAULT 0,
+ order_index INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_standalone_prep_lists
+ ON standalone_preparation_lists(archived,due_date,id);
+CREATE INDEX IF NOT EXISTS idx_standalone_prep_items
+ ON standalone_preparation_items(list_id,archived,order_index,id);
 CREATE TABLE IF NOT EXISTS quick_captures (
  id INTEGER PRIMARY KEY AUTOINCREMENT, destination TEXT NOT NULL,
  body TEXT NOT NULL, seen INTEGER NOT NULL DEFAULT 0,

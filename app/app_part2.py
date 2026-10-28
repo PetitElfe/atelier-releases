@@ -257,6 +257,43 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':'GitHub ou manifeste indisponible : '+str(exc)},502)
 
         with conn() as c:
+            if p == '/api/standalone-preparations':
+                archived=q.get('archived',['0'])[0]=='1'
+                lists=[dict(row) for row in c.execute(
+                    'SELECT id,title,due_date,archived,created_at,updated_at '
+                    'FROM standalone_preparation_lists WHERE archived=? '
+                    'ORDER BY CASE WHEN due_date IS NULL THEN 1 ELSE 0 END,due_date,id',
+                    (int(archived),))]
+                for item in lists:
+                    item['items']=[dict(row) for row in c.execute(
+                        'SELECT id,title,done,order_index FROM standalone_preparation_items '
+                        'WHERE list_id=? AND archived=0 ORDER BY order_index,id',(item['id'],))]
+                return self._json(lists)
+            if p == '/api/tracker-boards/daily':
+                # Only day-based boards appear in today's quick-check list.
+                # Annual/6-month boards have MONTH cells and are excluded.
+                try:
+                    day=date.fromisoformat(q.get('day',[date.today().isoformat()])[0])
+                    if abs((day-date.today()).days)>366:raise ValueError()
+                except (TypeError,ValueError):
+                    return self._json({'error':'Date de suivi invalide.'},400)
+                result=[]
+                for board in c.execute(
+                    'SELECT * FROM tracker_boards WHERE archived=0 ORDER BY id'):
+                    try:period=tracker_window(board,today=day)
+                    except (ValueError,OverflowError):continue
+                    if period['granularity']!='days' or not period['start']<=day.isoformat()<=period['end']:
+                        continue
+                    for row in c.execute(
+                        'SELECT r.id,r.title,r.order_index,m.value FROM tracker_board_rows r '
+                        'LEFT JOIN tracker_board_marks m ON m.row_id=r.id AND m.day=? '
+                        'WHERE r.board_id=? AND r.archived=0 AND r.mode=? '
+                        'ORDER BY r.order_index,r.id',
+                        (day.isoformat(),board['id'],'check')):
+                        result.append({'board_id':board['id'],'board_title':board['title'],
+                          'color':board['color'],'row_id':row['id'],'title':row['title'],
+                          'done':row['value'] is not None})
+                return self._json({'day':day.isoformat(),'items':result})
             if p == '/api/preparations/upcoming':
                 try:
                     return self._json(event_preparations.upcoming(c,expand_events,q.get('today',[None])[0]))
@@ -509,6 +546,39 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(desktop_postits.launch())
             except (RuntimeError,OSError) as exc:
                 return self._json({'error':str(exc)},409)
+        if p == '/api/standalone-preparations':
+            title=str(body.get('title') or '').strip()[:150]
+            if not title:return self._json({'error':'Nom du préparatif requis.'},400)
+            try:
+                due=date.fromisoformat(str(body['due_date'])).isoformat() if body.get('due_date') else None
+            except (TypeError,ValueError):return self._json({'error':'Date incorrecte.'},400)
+            with conn() as c:
+                if c.execute('SELECT COUNT(*) FROM standalone_preparation_lists WHERE archived=0').fetchone()[0]>=60:
+                    return self._json({'error':'Archive une liste avant d’en ajouter.'},409)
+                cur=c.execute('INSERT INTO standalone_preparation_lists '
+                              '(title,due_date,created_at,updated_at) VALUES(?,?,?,?)',
+                              (title,due,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
+        if p.startswith('/api/standalone-preparations/') and p.endswith('/items'):
+            parts=p.strip('/').split('/')
+            if len(parts)!=4:return self._json({'error':'Adresse invalide.'},404)
+            try:list_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Liste invalide.'},400)
+            title=str(body.get('title') or '').strip()[:180]
+            if not title:return self._json({'error':'Élément requis.'},400)
+            with conn() as c:
+                if not c.execute('SELECT 1 FROM standalone_preparation_lists WHERE id=? AND archived=0',
+                                 (list_id,)).fetchone():
+                    return self._json({'error':'Liste introuvable ou archivée.'},404)
+                if c.execute('SELECT COUNT(*) FROM standalone_preparation_items WHERE list_id=? AND archived=0',
+                             (list_id,)).fetchone()[0]>=80:
+                    return self._json({'error':'Maximum 80 éléments par liste.'},409)
+                order=c.execute('SELECT COALESCE(MAX(order_index),0)+1 FROM standalone_preparation_items '
+                                'WHERE list_id=?',(list_id,)).fetchone()[0]
+                cur=c.execute('INSERT INTO standalone_preparation_items '
+                              '(list_id,title,order_index,created_at,updated_at) VALUES(?,?,?,?,?)',
+                              (list_id,title,order,ts,ts))
+                c.commit();return self._json({'id':cur.lastrowid},201)
         if p == '/api/tracker-boards':
             title=str(body.get('title') or '').strip()[:100]
             color=str(body.get('color') or 'sage')
@@ -807,6 +877,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        if len(parts)==3 and parts[:2]==['api','standalone-preparation-items']:
+            try:entry_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Élément invalide.'},400)
+            if type(body.get('done')) is not bool:
+                return self._json({'error':'Case à cocher incorrecte.'},400)
+            with conn() as c:
+                changed=c.execute(
+                    'UPDATE standalone_preparation_items SET done=?,updated_at=? '
+                    'WHERE id=? AND archived=0 AND list_id IN '
+                    '(SELECT id FROM standalone_preparation_lists WHERE archived=0)',
+                    (int(body['done']),ts,entry_id))
+                c.commit()
+                return self._json({'ok':bool(changed.rowcount)},200 if changed.rowcount else 404)
+        if len(parts)==3 and parts[:2]==['api','standalone-preparations']:
+            try:list_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Liste invalide.'},400)
+            if type(body.get('archived')) is not bool:
+                return self._json({'error':'Archivage incorrect.'},400)
+            with conn() as c:
+                changed=c.execute('UPDATE standalone_preparation_lists SET archived=?,updated_at=? WHERE id=?',
+                                  (int(body['archived']),ts,list_id))
+                c.commit()
+                return self._json({'ok':bool(changed.rowcount)},200 if changed.rowcount else 404)
         if len(parts)==3 and parts[:2]==['api','tracker-boards']:
             try:board_id=int(parts[2])
             except (ValueError,TypeError):return self._json({'error':'Tableau invalide.'},400)

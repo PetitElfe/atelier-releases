@@ -10,6 +10,7 @@ const lifeDestinations=[
   {key:'tracker',tag:'#Tracker',label:'Tracker'}
 ];
 let lifeTrackers=[],lifeAdmin=[],lifeCaptures=[],lifeJournalPage=0;
+let lifeTodayChecks=[],lifeTodayDay=ymd(new Date());
 let lifeBoards=[],lifeArchivedBoards=[],lifeBoardMonth=ymd(new Date()).slice(0,7),lifeBoardArchivesVisible=false;
 let lifeBoardOffsets={},lifeBoardLoadVersion=0;
 const lifeBoardPeriodPresets=[
@@ -64,7 +65,8 @@ async function loadLifeTools(){
   const windows=month+'&periods=1&offsets='+encodeURIComponent(JSON.stringify(lifeBoardRequestedOffsets()));
   const settled=await Promise.allSettled([
     lifeApi('/api/trackers'),lifeApi('/api/admin'),lifeApi('/api/captures'),
-    lifeApi('/api/tracker-boards'+windows),lifeApi('/api/tracker-boards'+windows+'&archived=1')
+    lifeApi('/api/tracker-boards'+windows),lifeApi('/api/tracker-boards'+windows+'&archived=1'),
+    lifeApi('/api/tracker-boards/daily?day='+encodeURIComponent(ymd(new Date())))
   ]);
   if(version!==lifeBoardLoadVersion)return;
   if(settled[0].status==='fulfilled')lifeTrackers=settled[0].value;
@@ -72,6 +74,10 @@ async function loadLifeTools(){
   if(settled[2].status==='fulfilled')lifeCaptures=settled[2].value;
   if(settled[3].status==='fulfilled')lifeBoards=settled[3].value;
   if(settled[4].status==='fulfilled')lifeArchivedBoards=settled[4].value;
+  if(settled[5].status==='fulfilled'){
+    lifeTodayChecks=settled[5].value.items||[];
+    lifeTodayDay=settled[5].value.day;
+  }
   const failures=settled.filter(x=>x.status==='rejected');
   if(failures.length)showUiError(failures[0].reason,'Chargement du suivi et de l’administratif');
   renderLifeTools();
@@ -80,8 +86,51 @@ function lifeNode(tag,cls,text){const el=document.createElement(tag);if(cls)el.c
 function lifeButton(label,callback,cls=''){const b=lifeNode('button',cls,label);b.type='button';b.onclick=callback;return b}
 async function lifeAction(label,fn){const result=await runUiAction(label,fn);if(result.ok)await loadLifeTools();return result.ok}
 function renderLifeTools(){
-  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();
+  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();renderHomeDailyTrackers();
 }
+/* Accueil : CINQ lignes visibles, mais aucune limite de lignes à cocher.
+   Les cases utilisent directement les mêmes tracker_board_marks que les grilles. */
+function renderHomeDailyTrackers(){
+  const root=$('#homeDailyTrackersList');if(!root)return;
+  const oldScroll=root.scrollTop;
+  root.replaceChildren();
+  const day=ymd(new Date());
+  const current=lifeTodayDay===day?lifeTodayChecks:[];
+  const label=$('#homeDailyTrackersDate');
+  if(label)label.textContent='Aujourd’hui · '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  if(!current.length){
+    root.append(lifeNode('p','home-daily-empty',
+      'Aucune case quotidienne pour l’instant. Ajoute des lignes « À cocher » dans Trackers.'));
+  }
+  for(const item of current){
+    const row=lifeNode('label','home-daily-tracker-row');
+    const check=lifeNode('input');check.type='checkbox';check.checked=!!item.done;
+    check.setAttribute('aria-label',item.title+' — '+item.board_title+' — aujourd’hui');
+    const title=lifeNode('span','home-daily-tracker-name',item.title);
+    const board=lifeNode('small','home-daily-tracker-board',item.board_title);
+    const body=lifeNode('span','home-daily-tracker-text');body.append(title,board);
+    row.append(check,body);
+    row.classList.toggle('home-daily-done',!!item.done);
+    row.classList.add('home-daily-color-'+item.color);
+    check.addEventListener('change',async()=>{
+      const wanted=check.checked;
+      check.disabled=true;
+      try{
+        await lifeApi('/api/tracker-board-rows/'+item.row_id+'/mark',{
+          method:'PUT',body:JSON.stringify({day,value:wanted?true:null})
+        });
+        item.done=wanted;row.classList.toggle('home-daily-done',wanted);
+        await loadLifeTools();
+      }catch(err){
+        check.checked=!wanted;row.classList.toggle('home-daily-done',!wanted);
+        showUiError(err,'Impossible d’enregistrer la coche du jour');
+      }finally{check.disabled=false}
+    });
+    root.append(row);
+  }
+  root.scrollTop=oldScroll;
+}
+$('#openDailyTrackers')?.addEventListener('click',()=>showView('trackers'));
 /* Trackers visuels : tableaux indépendants, lignes x jours, un geste = une case.
    Le stockage n'est PAS le même que les anciens trackers numériques. */
 function lifeTrackerDay(year,month,number){
