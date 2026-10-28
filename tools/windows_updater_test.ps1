@@ -2,6 +2,7 @@
 # The user's E:\00_LATELIER path must never be read or written.
 $ErrorActionPreference='Stop'
 $mapped=$false
+$holder=$null
 try {
   if (Test-Path 'E:\') { throw 'E: is already in use; cannot run isolated updater test.' }
   & subst.exe E: $env:RUNNER_TEMP
@@ -38,6 +39,13 @@ try {
   if(-not $check.available){throw 'Outdated test manifest not detected.'}
   if($check.installed_build -notmatch '^[0-9a-f]{8}$'){throw 'Installed build fingerprint not reported.'}
   Write-Host ('Candidate GitHub revision: '+$check.revision)
+  # Simulate an independent Windows Post-it with CODE/app as its cwd.
+  # The previous whole-directory rename failed with WinError 5 in this case.
+  $holdScript=Join-Path $data 'hold-directory-open.py'
+  'import time; time.sleep(300)' | Set-Content -Path $holdScript -Encoding ascii
+  $holder=Start-Process -FilePath python -ArgumentList @('-u',$holdScript) -WorkingDirectory (Join-Path $code 'app') -NoNewWindow -PassThru
+  Start-Sleep -Seconds 2
+  if($holder.HasExited){throw 'Cannot simulate the desktop Post-it directory lock.'}
   $body=@{revision=$check.revision} | ConvertTo-Json
   $start=Invoke-RestMethod "$base/api/update/start" -Method Post -Body $body -ContentType 'application/json' -Headers @{'Origin'=$base;'X-Atelier-Update'='1'} -TimeoutSec 30
   if(-not $start.ok){throw 'Updater did not start.'}
@@ -62,7 +70,8 @@ try {
   if(-not (Test-Path (Join-Path $backups[0].FullName 'data\atelier.db'))){throw 'Database backup missing.'}
   $note=Get-Content (Join-Path $data 'note_test.txt') -Raw
   if($note -notmatch 'Donnée fictive préservée'){throw 'User test data changed.'}
-  Write-Host 'PASS: full Windows in-app update, local backup, automatic restart, preserved data.'
+  if($holder.HasExited){throw 'The independent desktop companion was unexpectedly stopped.'}
+  Write-Host 'PASS: update while CODE/app is the active cwd of another process, rollback-safe backup, preserved data.'
   try{Invoke-RestMethod "$base/api/shutdown" -Method Post -Body '{}' -ContentType 'application/json' -TimeoutSec 3 | Out-Null}catch{}
 } catch {
   Write-Error $_
@@ -70,6 +79,7 @@ try {
   if(Test-Path $log){Get-Content $log -Tail 70 | Write-Host}
   throw
 } finally {
+  if($null -ne $holder -and -not $holder.HasExited){Stop-Process -Id $holder.Id -Force}
   Start-Sleep -Seconds 1
   if($mapped){ & subst.exe E: /D }
 }

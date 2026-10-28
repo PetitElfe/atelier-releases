@@ -47,8 +47,8 @@ def customize_postits(source):
         '    return subprocess.list2cmdline([_pythonw(), str(SCRIPT)])',
         '    return subprocess.list2cmdline([_pythonw(), "--nathan-postits"])')
     src=replace_one(src,
-        'subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(CODE / "app"),',
-        'subprocess.Popen([_pythonw(), "--nathan-postits"], cwd=str(CODE / "app"),')
+        'subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(DATA),',
+        'subprocess.Popen([_pythonw(), "--nathan-postits"], cwd=str(DATA),')
     src=replace_one(src,
         'BASE / "desktop" / "LAtelierDuGoblin_TEST.exe"',
         'BASE / "desktop" / "LAtelierDuGoblin_Nathan.exe"')

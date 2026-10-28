@@ -1,4 +1,4 @@
-"""L'Atelier: automatic updates for the isolated Windows TEST copy only."""
+"""L'Atelier: safe in-place updates for the isolated Windows TEST copy only."""
 import hashlib, io, json, os, re, shutil, socket, sqlite3, subprocess, sys, time
 from pathlib import Path, PurePosixPath
 from datetime import datetime
@@ -227,8 +227,75 @@ def _start():
         time.sleep(.2)
     raise RuntimeError('Serveur TEST inaccessible après installation.')
 
+def _atomic_copy(source, target):
+    """Replace a single verified code file, never the live code directory.
+
+    Windows keeps a directory busy while a desktop Post-it process uses it as
+    its working directory. File-level replacements avoid that WinError 5.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp = target.with_name(target.name + '.atelier-install-' + str(os.getpid()))
+    if temp.exists():
+        raise RuntimeError('Installation temporaire déjà présente : ' + str(temp))
+    try:
+        shutil.copy2(source, temp)
+        for attempt in range(12):
+            try:
+                os.replace(temp, target)
+                return
+            except PermissionError as exc:
+                if attempt == 11:
+                    raise RuntimeError(
+                        'Windows bloque un fichier de L’Atelier : ' + str(target) +
+                        '. Ferme les Post-it Windows depuis leur icône près de '
+                        'l’horloge et réessaie. La sauvegarde est conservée.'
+                    ) from exc
+                time.sleep(0.4)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def _install_staged(stage, backup, applied):
+    """Keep CODE in place; snapshot all existing code before changing any file."""
+    shutil.copytree(CODE, backup / 'code_avant')
+    manifest = _manifest((stage / 'manifest.json').read_bytes())
+    changes = []
+    for entry in manifest['files']:
+        rel = Path('app') / Path(*PurePosixPath(entry['path']).parts)
+        source, target = stage / rel, CODE / rel
+        if _sha(source.read_bytes()) != entry['sha256']:
+            raise RuntimeError('Fichier préparé invalide : ' + entry['path'])
+        if not target.is_file() or _sha(target.read_bytes()) != entry['sha256']:
+            changes.append((rel, source, target))
+    # The manifest is the final commit marker: do not report the new build
+    # until all verified application files have been installed.
+    if (stage / 'manifest.json').read_bytes() != (CODE / 'manifest.json').read_bytes():
+        changes.append((Path('manifest.json'), stage / 'manifest.json',
+                        CODE / 'manifest.json'))
+    for rel, source, target in changes:
+        applied.append(rel)
+        _atomic_copy(source, target)
+        if _sha(source.read_bytes()) != _sha(target.read_bytes()):
+            raise RuntimeError('Contrôle de fichier installé invalide : ' + str(rel))
+
+
+def _rollback_code(backup, applied):
+    """Restore only files touched by this attempt; preserve other user files."""
+    old = backup / 'code_avant'
+    for rel in reversed(applied):
+        source, target = old / rel, CODE / rel
+        if source.is_file():
+            _atomic_copy(source, target)
+        elif target.is_file():
+            target.unlink()
+    if applied and _sha((old / 'manifest.json').read_bytes()) != _sha(
+            (CODE / 'manifest.json').read_bytes()):
+        raise RuntimeError('Le manifeste de l’ancienne version n’a pas été restauré.')
+
+
 def worker(revision):
-    lock=None;stage=None;backup=None;stopped=False;old_moved=False
+    lock=None;stage=None;backup=None;stopped=False;started_new=False
+    applied=[]
     try:
         guard()
         if not re.fullmatch(r'[a-f0-9]{40}',revision):raise RuntimeError('Révision incorrecte.')
@@ -243,19 +310,20 @@ def worker(revision):
         _status('backup','Sauvegarde de secours en cours…',revision)
         _backup(backup)
         _status('installing','Installation de la révision testée…',revision)
-        CODE.rename(backup/'code_avant');old_moved=True
-        stage.rename(CODE);stage=None
+        _install_staged(stage,backup,applied)
+        started_new=True
         _start()
         _status('success','L’Atelier TEST a redémarré avec succès.',revision)
     except Exception as exc:
         message=str(exc)
         if stopped:
             try:
-                if old_moved and backup and (backup/'code_avant').is_dir():
-                    if _port():_stop()
-                    if CODE.exists():CODE.rename(backup/'code_en_echec')
-                    (backup/'code_avant').rename(CODE)
-                if backup and (backup/'data'/'atelier.db').is_file():
+                if _port():_stop()
+                if applied and backup and (backup/'code_avant').is_dir():
+                    _rollback_code(backup,applied)
+                # Only a newly started server can have migrated user data.
+                # Never roll back a live SQLite DB merely because a file was locked.
+                if started_new and backup and (backup/'data'/'atelier.db').is_file():
                     for saved in (backup/'data').rglob('*'):
                         if saved.is_file() and saved.name!='atelier.db':
                             dest=DATA/saved.relative_to(backup/'data')
