@@ -273,11 +273,11 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async id=>(await (await fetch('/api/admin')).json())
     .find(x=>x.id===id)?.attachments?.length===1,admin.id);
   const att=(await api('/api/admin')).find(x=>x.id===admin.id).attachments[0];
-  const response=await fetch(base+'/api/admin/'+admin.id+'/attachments/'+att.id);
-  assert.equal(response.status,200);
-  assert.equal(await response.text(),sample);
-  assert.match(response.headers.get('content-disposition'),/attachment/);
-  assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+  const attachmentResponse=await fetch(base+'/api/admin/'+admin.id+'/attachments/'+att.id);
+  assert.equal(attachmentResponse.status,200);
+  assert.equal(await attachmentResponse.text(),sample);
+  assert.match(attachmentResponse.headers.get('content-disposition'),/attachment/);
+  assert.equal(attachmentResponse.headers.get('x-content-type-options'),'nosniff');
   const invalid=await fetch(base+'/api/admin/'+admin.id+'/attachments',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({filename:'../escape.txt',mime_type:'text/plain',
