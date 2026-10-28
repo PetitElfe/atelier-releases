@@ -80,7 +80,7 @@ async function api(path,method='GET',body){
     await page.evaluate(()=>document.querySelector('#homeUpcoming .home-upcoming-toggle').click());
     assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
     assert.equal(await page.locator('#homeUpcomingWidget').evaluate(el=>el.classList.contains('home-upcoming-expanded')),false,
-      'Réduire la liste doit restituer l'empilement normal');
+      'Réduire la liste doit restituer l’empilement normal');
     assert.deepEqual(errors,[],'Aucune erreur JavaScript sur l’Accueil');
     console.log('PASS: les 6 RDV passent devant le Carnet sans modifier les coordonnées sauvegardées');
   }finally{
