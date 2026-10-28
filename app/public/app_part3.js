@@ -55,12 +55,11 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
     <div class="field full"><label>Notes du rendez-vous</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
-    ${eventPreparationEditor(e?.preparations||[])}
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
-  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); wireEventPreparationEditor(); $('#cancelEvent').onclick=closeModal;
+  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
   // Link remains visible in the form while editing; changing the URL updates
   // its target immediately, without requiring a save or hidden menu.
   const urlInput=f.elements.url,link=$('#eventOpenUrl');
@@ -87,7 +86,6 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   $('#duplicateEventAction')?.addEventListener('click',()=>{
     const fd=new FormData(f); const copy=Object.fromEntries(fd.entries());
     copy.show_in_month=f.show_in_month.checked; copy.all_day=!copy.start_time;
-    copy.preparations=collectEventPreparations().map(({title})=>({title}));
     try{copy.reminders=collectReminders()}catch(err){
       const error=$('#eventSaveError');error.textContent=err.message;error.classList.remove('hidden');return;
     }
@@ -119,7 +117,6 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
     const payload=Object.fromEntries(fd.entries());
     payload.show_in_month=f.show_in_month.checked;
     payload.all_day=!payload.start_time;
-    payload.preparations=collectEventPreparations();
     try{payload.reminders=collectReminders()}catch(err){
       error.textContent=err.message;error.classList.remove('hidden');
       submit.disabled=false;submit.textContent=duplicate?'Créer la copie':'Enregistrer';return;
@@ -136,7 +133,6 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
         route=`/api/events/${e.id}/edit-instance`;
         payload.instance_date=instanceDate;
         payload.recurrence='none';
-        payload.preparations=payload.preparations.map(({title})=>({title}));
       }else{
         // Adapter la date de base de toute la série sans déplacer son ancrage
         // lorsque l'on édite une occurrence autre que la première.
@@ -343,6 +339,8 @@ document.querySelectorAll('#sideNav [data-view]').forEach(button=>button.addEven
   setSideNavCollapsed(true);
 }));
 function showView(view){
+  // Users who last visited a retired page must not get a blank view on F5.
+  if(!document.getElementById(view+'View'))view='home';
   const enteringLibrary=view==='library'&&state.view!=='library';
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
   if(state.view==='library'&&view!=='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
@@ -351,12 +349,14 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',preparations:'Préparatifs',admin:'Administratif',captures:'Boîte de réception'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
-  if(view==='settings')renderSettings();
+  if(view==='settings'){
+    renderSettings();
+    if(typeof loadTrackerArchiveHistory==='function')loadTrackerArchiveHistory();
+  }
   if(view==='budget')loadBudget();
   if(['trackers','admin','captures'].includes(view)&&typeof loadLifeTools==='function')loadLifeTools();
-  if(view==='preparations'&&typeof loadStandalonePreparations==='function')loadStandalonePreparations();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -873,8 +873,7 @@ const homeShortcutDefs=[
   {id:'organisation',title:'Habitudes & cycle',description:'Accéder à tes suivis personnels.',view:'organisation'},
   {id:'kitchen',title:'Courses & repas',description:'Retrouver les listes et les aliments.',view:'kitchen'},
   {id:'cuisine',title:'Recettes',description:'Ouvrir la bibliothèque de recettes.',view:'cuisine'},
-  {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'},
-  {id:'preparations',title:'Préparatifs',description:'Mes listes à cocher, sans rendez-vous.',view:'preparations'}
+  {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
 ];
 const homeModuleOrder=[
   ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],
