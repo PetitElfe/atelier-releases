@@ -190,3 +190,36 @@
  .tracker-grid-line{grid-template-columns:132px repeat(var(--tracker-days),29px)}
  .tracker-row-label{font-size:12px}
 }
+
+
+/* Chaque tableau a son propre rythme : 2 semaines, 2 mois, 1 an, etc.
+   Les grandes périodes montrent les mois pour rester lisibles. */
+.tracker-board-create{grid-template-columns:minmax(180px,2fr) minmax(130px,1fr) minmax(185px,1fr) auto;align-items:end}
+.tracker-custom-period:not(.hidden){display:flex;align-items:end;gap:9px;min-width:0}
+.tracker-custom-period label{flex:1;min-width:0}
+.tracker-custom-period input,.tracker-custom-period select{width:100%;min-width:0}
+#trackerBoardCustomPeriod:not(.hidden){grid-column:1/-1;display:grid;grid-template-columns:120px minmax(150px,230px);justify-content:start}
+.tracker-board-period{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 10px;border:1px solid #6a5a41;border-radius:9px;background:#1c1916}
+.tracker-board-period .tracker-board-cadence{padding-right:8px;color:var(--tracker-ink-light);font:600 13px Georgia,serif}
+.tracker-board-period .tracker-board-range{min-width:175px;text-align:center;color:var(--text);font:14px Georgia,serif}
+.tracker-board-period button{min-height:32px;padding:5px 11px;border:1px solid #715f47;border-radius:7px;background:#312920;color:var(--text)}
+.tracker-board-period button:hover,.tracker-period-editor button:hover{border-color:var(--tracker-ink)}
+.tracker-board-period .tracker-period-back,.tracker-board-period .tracker-period-next{font-size:18px;font-weight:700}
+.tracker-board-period .tracker-period-change{margin-left:auto;color:var(--tracker-ink-light)}
+.tracker-period-editor{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:12px;border:1px dashed #9f8b6a;border-radius:9px;background:#29221c}
+.tracker-period-editor>span{color:var(--text);font-size:14px}
+.tracker-period-editor select,.tracker-period-editor input{min-height:36px;max-width:195px;border-radius:7px}
+.tracker-period-editor .tracker-custom-period:not(.hidden) select,.tracker-period-editor .tracker-custom-period:not(.hidden) input{max-width:120px}
+.tracker-period-editor button{min-height:36px;padding:7px 12px;border:1px solid #715f47;border-radius:7px}
+.tracker-board-scroll{scroll-behavior:smooth}
+@media(max-width:900px){
+ .tracker-board-create{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tracker-board-create>button{grid-column:1/-1}
+}
+@media(max-width:640px){
+ .tracker-board-create{grid-template-columns:minmax(0,1fr)}
+ .tracker-board-create>button{grid-column:auto}
+ .tracker-board-period .tracker-board-range{min-width:125px}
+ .tracker-board-period .tracker-period-change{margin-left:0}
+ #trackerBoardCustomPeriod:not(.hidden){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
