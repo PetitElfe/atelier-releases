@@ -38,7 +38,7 @@ async function api(path,method='GET',body){
   browser=await chromium.launch({headless:true});const page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
   const root=page.locator('#objectiveMapRoot');
@@ -95,7 +95,7 @@ async function api(path,method='GET',body){
     return (await response.json()).nodes.find(x=>x.id===nodeId)?.required===0;
   },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
   await root.locator('.objective-map-node').first().waitFor();
