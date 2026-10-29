@@ -428,3 +428,124 @@ body.home-active #sideNavToggle{display:none!important}
   color:#cfad76;text-decoration:underline;text-underline-offset:3px
 }
 #homeView #homeBudgetOpen{display:none!important}
+
+
+/* ACCUEIL — 29/10 : corriger les dimensions du livre et remplacer les flèches
+   centrales volumineuses par un coin de page soulevable, sans image générée. */
+#homeView.home-free-ready #journalBook{
+  height:clamp(380px,57vh,520px);
+  min-height:340px!important;
+  max-height:none;
+}
+#homeView #journalBook .journal-page{
+  min-height:0!important;
+  overflow:hidden;
+}
+#homeView #journalBook .journal-primary-content,
+#homeView #journalBook .journal-secondary-content,
+#homeView #journalBook .journal-task-list{
+  /* Le contenu reste défilable avec la molette, le clavier et le tactile,
+     mais la grosse barre marron ne coupe plus visuellement la feuille. */
+  scrollbar-width:none!important;
+}
+#homeView #journalBook .journal-primary-content::-webkit-scrollbar,
+#homeView #journalBook .journal-secondary-content::-webkit-scrollbar,
+#homeView #journalBook .journal-task-list::-webkit-scrollbar{
+  display:none;width:0;height:0;
+}
+#homeView #journalBook .journal-page-turn{
+  z-index:8;bottom:4px;
+  padding:1px 3px!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;opacity:.58;
+}
+#homeView #journalBook .journal-page-turn button{
+  min-width:26px;min-height:24px;padding:0 5px;
+  font-size:15px;border-radius:5px
+}
+#homeView #journalBook .journal-page-turn button:hover,
+#homeView #journalBook .journal-page-turn button:focus-visible{
+  background:#aa916137;opacity:1;
+}
+#homeView #journalBook .journal-corner-turn{
+  position:absolute;bottom:0;z-index:19;
+  width:76px;height:76px;min-width:0;padding:0;
+  border:0;background:transparent;
+  cursor:pointer;overflow:visible;
+  -webkit-tap-highlight-color:transparent;
+}
+#homeView #journalBook .journal-corner-next{right:0}
+#homeView #journalBook .journal-corner-prev{left:0;display:none}
+#homeView #journalBook.journal-page-2 .journal-corner-next{display:none}
+#homeView #journalBook.journal-page-2 .journal-corner-prev{display:block}
+#homeView #journalBook .journal-corner-turn::before{
+  content:'';position:absolute;bottom:0;
+  width:27px;height:27px;
+  background:linear-gradient(135deg,#d3bd94 0%,#f8efd8 52%,#b59b73 100%);
+  box-shadow:-3px -3px 9px #62482945;
+  transition:width .19s ease,height .19s ease,filter .19s ease;
+}
+#homeView #journalBook .journal-corner-next::before{
+  right:0;clip-path:polygon(100% 0,0 100%,100% 100%);
+  border-radius:0 0 10px 0;
+}
+#homeView #journalBook .journal-corner-prev::before{
+  left:0;clip-path:polygon(0 0,100% 100%,0 100%);
+  border-radius:0 0 0 8px;
+  box-shadow:3px -3px 9px #62482945;
+}
+#homeView #journalBook .journal-corner-turn:hover::before,
+#homeView #journalBook .journal-corner-turn:focus-visible::before{
+  width:64px;height:64px;filter:brightness(1.06);
+}
+#homeView #journalBook .journal-corner-turn span{
+  position:absolute;bottom:12px;opacity:0;z-index:2;
+  font:700 24px/1 Georgia,serif;color:#6d5839;
+  transition:opacity .15s ease;
+}
+#homeView #journalBook .journal-corner-next span{right:13px}
+#homeView #journalBook .journal-corner-prev span{left:13px}
+#homeView #journalBook .journal-corner-turn:hover span,
+#homeView #journalBook .journal-corner-turn:focus-visible span{opacity:1}
+#homeView #journalBook .journal-corner-turn:focus-visible{
+  outline:2px solid #8f754d;outline-offset:-4px;border-radius:8px;
+}
+#homeView.layout-editing #journalBook .journal-corner-turn{
+  visibility:hidden;pointer-events:none;
+}
+#homeView #journalBook.journal-flip-next .journal-right,
+#homeView #journalBook.journal-flip-prev .journal-left{
+  animation:atelier-leaf-flip .4s ease-out;
+}
+@keyframes atelier-leaf-flip{
+  0%{filter:brightness(.91)}
+  30%{filter:brightness(1.08)}
+  100%{filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  #homeView #journalBook .journal-corner-turn::before{transition:none}
+  #homeView #journalBook.journal-flip-next .journal-right,
+  #homeView #journalBook.journal-flip-prev .journal-left{animation:none}
+}
+/* TO-DO / HABITUDES : titres plus contrastés et moins de vide dans la carte ;
+   les dimensions personnelles restent ajustables avec Modifier. */
+#homeView #homeDailyTrackersWidget .home-todo-columns{
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:12px;
+}
+#homeView #homeDailyTrackersWidget .home-todo-columns .home-heading-button{
+  color:#f1dcb9!important;font-size:15px!important;
+  font-weight:700;line-height:1.2;
+}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  min-height:24px!important;margin-bottom:5px!important;
+}
+#homeView #homeDailyTrackersWidget #homeTodoPreview,
+#homeView #homeDailyTrackersWidget #homeDailyTrackersList{
+  max-height:206px;
+}
+#homeView #homeDailyTrackersWidget #homeDailyTrackersDate{margin-bottom:5px!important}
+#homeView #homeDailyTrackersWidget .home-todo-row{min-height:30px;padding:3px 1px}
+#homeView #homeDailyTrackersWidget .home-todo-row>button{
+  font-size:12px;line-height:1.25;color:#f1e1cc;
+}
