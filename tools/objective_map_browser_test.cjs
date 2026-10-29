@@ -144,6 +144,19 @@ async function api(path,method='GET',body){
     contextOpened=await root.locator('.objective-map-context').count()>0;
     if(contextOpened)break;
   }
+  if(!contextOpened){
+    const debug=await edge.evaluate(path=>{
+      const point=path.getPointAtLength(path.getTotalLength()/2);
+      const loc=new DOMPoint(point.x,point.y).matrixTransform(path.getScreenCTM());
+      const hit=document.elementFromPoint(loc.x,loc.y);
+      const vp=path.closest('.objective-map-viewport');
+      const rect=vp?.getBoundingClientRect();
+      return {midpoint:{x:loc.x,y:loc.y},target:hit?.outerHTML.slice(0,240),
+        viewport:rect&&{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom},
+        hits:[...vp.querySelectorAll('.objective-map-edge')].map(x=>x.getAttribute('d'))};
+    });
+    console.log('OBJECTIVE CONTEXT RIGHT CLICK DEBUG',JSON.stringify(debug));
+  }
   assert.ok(contextOpened,'Un clic droit sur le tracé doit ouvrir Supprimer la liaison');
   await root.locator('.objective-map-context').click();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===0,domain.id,{timeout:10000});
