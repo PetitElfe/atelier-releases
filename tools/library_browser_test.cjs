@@ -575,7 +575,16 @@ async function api(path,method='GET',body){
     const reminders=await response.json();
     return reminders.some(r=>r.entity_type==='event'&&r.entity_id===id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
   },movable.id,{timeout:12000});
-  const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
+  // La lecture du navigateur peut précéder la visibilité sur une seconde
+  // connexion HTTP. Ne pas comparer une unique réponse concurrente.
+  let movedReminder;
+  for(let attempt=0;attempt<40;attempt++){
+    movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&
+      r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E'&&
+      r.remind_at.startsWith('2026-10-20T08:00'));
+    if(movedReminder)break;
+    await new Promise(resolve=>setTimeout(resolve,125));
+  }
   assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
   // ALPHA 0.14.5 : créer un rappel sans taper d'heure ne doit pas l'effacer.
   await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
