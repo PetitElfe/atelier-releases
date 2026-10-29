@@ -867,14 +867,27 @@ function renderJournalLifePage(){
   }
 }
 function lifeSetJournalPage(index){
-  lifeJournalPage=Math.max(0,Math.min(1,index));
-  const book=$('#journalBook');book?.classList.toggle('journal-page-2',lifeJournalPage===1);
-  lifeSetText('#journalPageNumber',lifeJournalPage?'3–4':'1–2');
-  $('#journalPrevPage').disabled=lifeJournalPage===0;
-  $('#journalNextPage').disabled=lifeJournalPage===1;
+  const next=Math.max(0,Math.min(1,index));
+  const previous=lifeJournalPage;
+  lifeJournalPage=next;
+  const book=$('#journalBook');
+  book?.classList.toggle('journal-page-2',next===1);
+  if(book&&next!==previous){
+    // Animation de feuillet purement visuelle : le contenu change aussitôt.
+    // L'ancienne page reste accessible par le coin opposé et par le clavier.
+    book.classList.remove('journal-flip-next','journal-flip-prev');
+    void book.offsetWidth;
+    book.classList.add(next>previous?'journal-flip-next':'journal-flip-prev');
+    window.setTimeout(()=>book.classList.remove('journal-flip-next','journal-flip-prev'),430);
+  }
+  lifeSetText('#journalPageNumber',next?'3–4':'1–2');
+  $('#journalPrevPage').disabled=next===0;
+  $('#journalNextPage').disabled=next===1;
 }
 $('#journalPrevPage')?.addEventListener('click',()=>lifeSetJournalPage(0));
 $('#journalNextPage')?.addEventListener('click',()=>lifeSetJournalPage(1));
+$('#journalCornerPrev')?.addEventListener('click',()=>lifeSetJournalPage(0));
+$('#journalCornerNext')?.addEventListener('click',()=>lifeSetJournalPage(1));
 $('#journalBackToToday')?.addEventListener('click',()=>lifeSetJournalPage(0));
 $('#journalQuickCapture')?.addEventListener('click',()=>lifeOpenCapture());
 $('#trackerCreateForm')?.addEventListener('submit',async e=>{
