@@ -34,7 +34,7 @@ const api=async(path,method='GET',body)=>{
   const page=await browser.newPage({viewport:{width:1550,height:960}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>!!window.homeCanvasReady&&!!document.getElementById('homeCanvas'),null,{timeout:15000});
+  await page.waitForFunction(()=>homeCanvasReady&&!!document.getElementById('homeCanvas'),null,{timeout:15000});
   await page.evaluate(async()=>{await refresh();showView('home');renderHome()});
   await page.waitForFunction(()=>document.querySelectorAll('#homeObjectiveSuggestions .objective-note').length===3);
   assert.equal(await page.locator('#homeObjectiveSuggestions .objective-note').count(),3,'Seulement trois objectifs prioritaires');
