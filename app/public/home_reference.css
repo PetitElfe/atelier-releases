@@ -420,3 +420,11 @@ body.home-active #sideNavToggle{display:none!important}
   #homeView #homeDailyTrackersWidget .home-todo-row>button{font-size:10px}
   #homeView #journalBook .deadline-line{grid-template-columns:55px 1fr!important}
 }
+
+/* Le titre Budget reste un <strong> pour les préférences de renommage.
+   Le bouton historique demeure dans le DOM, mais n'est plus un doublon visuel. */
+#homeView #homeBudgetTitle{cursor:pointer}
+#homeView #homeBudgetTitle:hover,#homeView #homeBudgetTitle:focus-visible{
+  color:#cfad76;text-decoration:underline;text-underline-offset:3px
+}
+#homeView #homeBudgetOpen{display:none!important}
