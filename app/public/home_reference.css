@@ -306,3 +306,117 @@
   #homeView #journalBook .journal-heading{font-size:14px!important}
   #sideNav{height:calc(100dvh - 76px)!important}
 }
+
+
+/* Accueil — deuxième retour annoté : les titres remplacent les actions redondantes,
+   les champs du carnet ont leur propre défilement et les icônes parlent d'une seule voix. */
+.topbar .top-ui-icon{width:22px;height:22px;display:block;flex:none}
+.topbar #globalHomeShortcut,.topbar #sideNavHeaderToggle,
+.topbar #quickPostitsHeader,.topbar #quickAddHomeModule,
+.topbar #settingsBtn,.topbar #globalLayoutEdit,.topbar #notifyBtn{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:43px!important;min-width:43px!important;height:43px!important;
+  padding:0!important;border:1px solid #554b3d!important;
+  border-radius:11px!important;color:#e9d6b5!important;
+  background:#241e18!important;box-shadow:none!important;cursor:pointer
+}
+.topbar #globalHomeShortcut:hover,.topbar #sideNavHeaderToggle:hover,
+.topbar #quickPostitsHeader:hover,.topbar #quickAddHomeModule:hover,
+.topbar #settingsBtn:hover,.topbar #globalLayoutEdit:hover,.topbar #notifyBtn:hover{
+  color:#fff0d1!important;border-color:#ba9b68!important;background:#382b1e!important
+}
+.topbar #globalLayoutEdit.is-active{background:#493724!important;border-color:#e1b97d!important}
+.topbar #globalLayoutEdit::before,.topbar #globalLayoutEdit.is-active::before{
+  content:none!important;display:none!important
+}
+.topbar #globalLayoutEdit{font-size:inherit!important}
+.topbar .top-action-label{
+  position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap
+}
+.topbar #topXpLevel{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:4px 0!important;min-width:142px
+}
+.topbar #topXpLevel .top-xp-track{border-color:#746345;background:#2b251d}
+/* Sur l'Accueil le hamburger remplace la languette latérale.
+   Les autres rubriques conservent la languette pour la compatibilité. */
+body.home-active #sideNavToggle{display:none!important}
+#homeView .home-heading-button{
+  display:inline-block;cursor:pointer;text-align:left;
+  color:inherit;border:0!important;background:transparent!important;
+  padding:0!important;min-width:0;font:inherit;line-height:inherit
+}
+#homeView .home-heading-button:hover,
+#homeView .home-heading-button:focus-visible{
+  color:#cfad76!important;text-decoration:underline;text-underline-offset:3px
+}
+#homeView #homeBudgetOpen{font-size:inherit!important;opacity:1!important;color:#f0e5d3!important}
+#homeView #homeBudgetOpen::before{content:none!important}
+#homeView .pinned-calendar-head span:last-child{display:none}
+#homeView #openCalendarFromUpcoming{display:none}
+#homeView #homeUpcomingWidget #upcomingTitle{font:italic 600 15px/1.3 Georgia,serif}
+#homeView #homeDailyTrackersWidget{padding:13px 13px 12px}
+#homeView #homeDailyTrackersWidget .home-todo-columns{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:13px;align-items:start;min-width:0
+}
+#homeView #homeDailyTrackersWidget .home-tasks-pane,
+#homeView #homeDailyTrackersWidget .home-habits-pane{min-width:0}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  height:auto;min-height:30px;margin:0 0 7px!important;padding:0!important;
+  border:0!important;align-items:center
+}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head .home-heading-button{
+  color:#e6cf9e;font:700 17px/1.2 Georgia,serif
+}
+#homeView #homeDailyTrackersWidget .home-trackers-subheading .home-heading-button{
+  color:#e6cf9e;font:700 14px/1.25 Georgia,serif
+}
+#homeView #homeDailyTrackersWidget #homeTodoPreview,
+#homeView #homeDailyTrackersWidget #homeDailyTrackersList{
+  max-height:255px;overflow-y:auto;overflow-x:hidden;min-height:0;
+  scrollbar-width:thin;overscroll-behavior:contain
+}
+#homeView #homeDailyTrackersWidget #homeDailyTrackersDate{
+  font-size:10px;margin:0 0 7px!important;line-height:1.2
+}
+#homeView #homeDailyTrackersWidget .home-todo-row{gap:5px}
+#homeView #homeDailyTrackersWidget .home-todo-row>button{font-size:11px;line-height:1.25}
+#homeView #journalBook .journal-title-row{margin:0 0 5px;align-items:center}
+#homeView #journalBook .journal-heading{
+  font-size:15px!important;line-height:1.22!important;margin-bottom:5px!important
+}
+#homeView #journalBook .journal-heading.home-heading-button{
+  font:italic 700 15px/1.22 Georgia,serif!important;color:#30271e!important
+}
+#homeView #journalBook .journal-heading.home-heading-button:hover{color:#805a33!important}
+#homeView #journalBook .deadline-line{
+  grid-template-columns:64px minmax(0,1fr)!important;gap:2px 6px!important;
+  min-height:25px!important;padding:3px 2px!important;line-height:1.2!important;
+  font-size:11px!important
+}
+#homeView #journalBook .deadline-time{
+  grid-column:2!important;line-height:1.1!important;font-size:10px!important
+}
+#homeView #journalBook .deadline-tag{line-height:1.2}
+#homeView #journalBook .journal-task-list{
+  max-height:155px!important;overflow-y:auto!important;scrollbar-width:thin;
+  overscroll-behavior:contain;padding-right:5px!important
+}
+#homeView #journalBook .journal-task{
+  min-height:28px!important;grid-template-columns:18px minmax(0,1fr) auto!important;
+  padding:3px 0!important;gap:5px!important;align-items:start;line-height:1.14!important
+}
+#homeView #journalBook .journal-task-open{
+  font-size:12px!important;line-height:1.22!important;padding:0!important
+}
+#homeView #journalBook .journal-section{margin-bottom:8px}
+#homeView #journalBook .journal-divider{margin:6px 0 8px}
+#homeView #journalBook #homeAllObjectives{font:italic 700 15px/1.22 Georgia,serif!important;opacity:1!important}
+@media(max-width:720px){
+  #homeView #homeDailyTrackersWidget .home-todo-columns{gap:8px}
+  #homeView #homeDailyTrackersWidget .home-todo-row>button{font-size:10px}
+  #homeView #journalBook .deadline-line{grid-template-columns:55px 1fr!important}
+}
