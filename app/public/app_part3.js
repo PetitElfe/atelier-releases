@@ -1331,7 +1331,7 @@ function homeSuggestedLayout(item){
   const defaults={
     homeBudgetWidget:{x:left,y:14,width:280},
     upcoming:{x:left,y:175,width:280},
-    journal:{x:bookX,y:narrow?530:88,width:bookWidth},
+    journal:{x:bookX,y:narrow?530:88,width:bookWidth,height:460},
     calendar:{x:right,y:14,width:calendarWidth},
     homeDailyTrackersWidget:{x:left,y:narrow?1130:510,width:280}
   };
@@ -1591,7 +1591,14 @@ function applyGlobalLayout(item,d){
     item.el.style.setProperty('--layout-x','0px');
     item.el.style.setProperty('--layout-y','0px');
     item.el.style.setProperty('--layout-scale',String(d.scale||1));
-    item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
+    // Le livre possède une hauteur CSS par défaut : un minHeight seul
+    // ne permettait pas de le RÉTRÉCIR. Appliquer une vraie hauteur.
+    if(item.id==='journal'){
+      item.el.style.height=d.height!=null?Math.round(d.height)+'px':'';
+      item.el.style.minHeight='';
+    }else{
+      item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
+    }
     item.el.style.marginBottom='';
     const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
     if(value){
@@ -1792,7 +1799,7 @@ function initGlobalLayoutEditor(){
       const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
       const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
       const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
-      const minHeight=item.id==='journal'?345:item.id==='calendar'?130:90;
+      const minHeight=item.id==='journal'?340:item.id==='calendar'?130:90;
       const bounds={
         minX:canvasItem?0:-Infinity,minY:canvasItem?0:-Infinity,
         maxRight:canvasItem?homeCanvas.clientWidth:Infinity,
