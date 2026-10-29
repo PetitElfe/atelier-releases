@@ -567,6 +567,11 @@ $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
 $('#upcomingTitle')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('calendar')});
+$('#homeBudgetTitle')?.addEventListener('keydown',event=>{
+  if(!globalLayoutEditing&&(event.key==='Enter'||event.key===' ')){
+    event.preventDefault();showView('budget');
+  }
+});
 $('#homeBudgetWidget')?.addEventListener('click',event=>{
   if(globalLayoutEditing||event.target.closest('button,a,input,[data-layout-control]'))return;
   showView('budget');
