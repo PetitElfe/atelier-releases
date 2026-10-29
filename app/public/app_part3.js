@@ -572,6 +572,7 @@ $('#homeBudgetWidget')?.addEventListener('click',event=>{
   showView('budget');
 });
 $('#homeTodoOpenTasks')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('tasks')});
+$('#homeDeadlineTitle')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('reminders')});
 $('#openCalendarFromUpcoming').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#addLibraryDomain').onclick=()=>openLibraryDomainCreateModal();
@@ -1633,7 +1634,7 @@ function syncGlobalLayoutEditing(){
   });
   const toggle=$('#globalLayoutEdit'),reset=$('#globalLayoutReset'),undo=$('#globalLayoutUndo');
   if(toggle){
-    toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+    toggle.innerHTML=globalLayoutEditing?"<svg class=\"top-ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m4 12 5 5L20 6\"/></svg><span class=\"top-action-label\">Terminer</span>":"<svg class=\"top-ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m4 20 4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20zM14.5 6.5l3 3\"/></svg><span class=\"top-action-label\">Modifier</span>";
     toggle.setAttribute('aria-label',globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules');
     toggle.title=globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules';
     toggle.classList.toggle('is-active',globalLayoutEditing);
