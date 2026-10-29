@@ -129,7 +129,9 @@
           <div class="journal-section"><button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button><div id="homeMealIdeas" class="meal-ideas"></div></div>
           <div class="journal-divider"></div><button id="journalQuickCapture" type="button" class="journal-heading journal-heading-button">✎ Noter une idée</button><div class="journal-divider"></div><button id="journalBackToToday" type="button" class="journal-heading journal-heading-button">← Revenir à aujourd’hui</button></div>
         </section>
-        <div class="journal-page-turn"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
+        <div class="journal-page-turn" aria-label="Pagination du carnet"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber" aria-live="polite">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
+        <button id="journalCornerPrev" class="journal-corner-turn journal-corner-prev" type="button" title="Revenir aux pages précédentes" aria-label="Tourner le coin gauche vers les pages précédentes"><span aria-hidden="true">‹</span></button>
+        <button id="journalCornerNext" class="journal-corner-turn journal-corner-next" type="button" title="Passer aux pages suivantes" aria-label="Tourner le coin droit vers les pages suivantes"><span aria-hidden="true">›</span></button>
       </div>
 
       <section id="homeDailyTrackersWidget" data-home-module="dailyTrackers" class="home-daily-trackers-widget" aria-label="Mes trackers à cocher aujourd’hui">
