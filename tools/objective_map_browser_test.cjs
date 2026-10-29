@@ -128,14 +128,46 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===1,domain.id,{timeout:10000});
   console.log('AFTER VISUAL LINK',JSON.stringify(await root.evaluate(el=>({edges:el.querySelectorAll('.objective-map-edge').length,handles:el.querySelectorAll('.objective-map-handle').length,notices:[...el.querySelectorAll('[role=alert]')].map(x=>x.textContent)}))),JSON.stringify((await api('/api/objective-map?domain_id='+domain.id)).edges));
+  // Le test peut conserver le scroll de la Bibliothèque après F5 :
+  // il faut repositionner la carte SOUS l'en-tête fixe avant le clic droit.
+  await page.evaluate(async()=>{
+    const viewport=document.querySelector('#objectiveMapRoot .objective-map-viewport');
+    const header=document.querySelector('.topbar');
+    const desiredTop=(header?.getBoundingClientRect().height||100)+25;
+    const absoluteTop=viewport.getBoundingClientRect().top+window.scrollY;
+    window.scrollTo({top:Math.max(0,absoluteTop-desiredTop),behavior:'instant'});
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+  });
   const edge=root.locator('.objective-map-edge').first();
   await edge.waitFor({state:'attached',timeout:10000});
-  const midpoint=await edge.evaluate(path=>{
-    const p=path.getPointAtLength(path.getTotalLength()/2);
-    const point=new DOMPoint(p.x,p.y).matrixTransform(path.getScreenCTM());
-    return {x:point.x,y:point.y};
-  });
-  await page.mouse.click(midpoint.x,midpoint.y,{button:'right'});
+  // Le trait ne mesure que quelques pixels ; selon le zoom du navigateur,
+  // son milieu peut être masqué par une étape. Essayer plusieurs points du
+  // trait par de VRAIS clics droits avant de conclure à un défaut du menu.
+  let contextOpened=false;
+  for(const fraction of [.5,.55,.45,.6,.4]){
+    const point=await edge.evaluate((path,part)=>{
+      const local=path.getPointAtLength(path.getTotalLength()*part);
+      const global=new DOMPoint(local.x,local.y).matrixTransform(path.getScreenCTM());
+      return {x:global.x,y:global.y};
+    },fraction);
+    await page.mouse.click(point.x,point.y,{button:'right'});
+    contextOpened=await root.locator('.objective-map-context').count()>0;
+    if(contextOpened)break;
+  }
+  if(!contextOpened){
+    const debug=await edge.evaluate(path=>{
+      const point=path.getPointAtLength(path.getTotalLength()/2);
+      const loc=new DOMPoint(point.x,point.y).matrixTransform(path.getScreenCTM());
+      const hit=document.elementFromPoint(loc.x,loc.y);
+      const vp=path.closest('.objective-map-viewport');
+      const rect=vp?.getBoundingClientRect();
+      return {midpoint:{x:loc.x,y:loc.y},target:hit?.outerHTML.slice(0,240),
+        viewport:rect&&{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom},
+        hits:[...vp.querySelectorAll('.objective-map-edge')].map(x=>x.getAttribute('d'))};
+    });
+    console.log('OBJECTIVE CONTEXT RIGHT CLICK DEBUG',JSON.stringify(debug));
+  }
+  assert.ok(contextOpened,'Un clic droit sur le tracé doit ouvrir Supprimer la liaison');
   await root.locator('.objective-map-context').click();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===0,domain.id,{timeout:10000});
   assert.deepEqual(errors,[]);

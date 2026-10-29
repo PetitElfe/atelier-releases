@@ -78,6 +78,8 @@ function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); ren
 function renderHome(){
   const now=new Date(), today=ymd(now);
   $('#homeDate').textContent=fmtFrenchDate(now).replace(/^./,c=>c.toUpperCase());
+  const weekLink=$('#homeJournalWeekLink');
+  if(weekLink)weekLink.onclick=()=>{state.cursor=new Date();showView('calendar');setCalendarMode('week');renderWeek();};
   renderHomeMiniCalendar();
 
   const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
@@ -132,6 +134,31 @@ function renderHome(){
     row.append(check,title,time);taskRoot.appendChild(row);
   });
 
+  // La To-do list de gauche reflète les mêmes tâches que le carnet.
+  // Aucune seconde base de tâches : chaque coche passe par /api/tasks et refresh().
+  const preview=$('#homeTodoPreview');
+  if(preview){
+    preview.replaceChildren();
+    for(const task of todayTasks.slice(0,6)){
+      const line=document.createElement('div');line.className='home-todo-row'+(task.completed?' is-done':'');
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!task.completed;
+      checkbox.setAttribute('aria-label','Terminer : '+task.title);
+      checkbox.onchange=async()=>{
+        const requested=checkbox.checked;checkbox.disabled=true;
+        const result=await runUiAction('Impossible de modifier la tâche',()=>api('/api/tasks/'+task.id,{
+          method:'PUT',body:JSON.stringify({completed:requested})}));
+        if(result.ok){
+          const next=new Set(keptToday);
+          if(requested)next.add(Number(task.id));else next.delete(Number(task.id));
+          localStorage.setItem(completedTodayKey,JSON.stringify([...next]));
+          await refresh();
+        }else{checkbox.checked=!requested;checkbox.disabled=false}
+      };
+      const title=document.createElement('button');title.type='button';title.textContent=task.title;
+      title.onclick=()=>openTaskModal(task);line.append(checkbox,title);preview.append(line);
+    }
+    if(!todayTasks.length){const empty=document.createElement('p');empty.textContent='Rien à faire pour aujourd’hui c:';preview.append(empty)}
+  }
   const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
   const allObjectives=$('#homeAllObjectives');
   if(allObjectives)allObjectives.onclick=()=>showView('library');
@@ -232,8 +259,9 @@ function renderHome(){
   if(upcomingAll.length>3){
     const toggle=document.createElement('button');
     toggle.type='button';toggle.className='home-upcoming-toggle';
-    toggle.textContent=expanded?'Réduire la liste':'Voir les '+upcomingAll.length+' rendez-vous';
+    toggle.textContent=expanded?'⌃  Réduire la liste':'⌄  Voir les '+upcomingAll.length+' rendez-vous';
     toggle.setAttribute('aria-expanded',String(expanded));
+    toggle.setAttribute('aria-label',expanded?'Réduire les rendez-vous à venir':'Afficher tous les '+upcomingAll.length+' rendez-vous');
     toggle.addEventListener('click',()=>{
       upcomingRoot.dataset.expanded=expanded?'0':'1';
       renderHome();
