@@ -118,7 +118,18 @@ function initDesktopPostitsControls(){
   const startup=$('#settingsDesktopPostitStartup');
   if(launch)launch.onclick=()=>startDesktopPostits(false);
   const header=$('#quickPostitsHeader');
-  if(header)header.onclick=()=>startDesktopPostits(false);
+  if(header)header.onclick=async()=>{
+    // Un premier clic ne doit pas sembler inactif quand il n'existe encore
+    // aucun Post-it : en créer un sur le Bureau plutôt qu'ouvrir le vide.
+    if(header.disabled)return;
+    header.disabled=true;
+    try{
+      const notes=await api('/api/postits');
+      await startDesktopPostits(Array.isArray(notes)&&notes.length===0);
+    }catch(error){
+      showUiError(error,'Post-it Windows');
+    }finally{header.disabled=false}
+  };
   if(make)make.onclick=()=>startDesktopPostits(true);
   const archives=$('#settingsDesktopPostitArchives');
   archives?.addEventListener('toggle',()=>{
