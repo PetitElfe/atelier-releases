@@ -1302,21 +1302,30 @@ function applyTodoTopRightReferenceOnce(items){
   if(localStorage.getItem(flag)==='1'||!homeCanvas||homeCanvas.clientWidth<1450)return;
   const todo=items.find(item=>item.id==='homeDailyTrackersWidget');
   if(!todo||todo.el.classList.contains('home-module-off'))return;
-  const width=640,height=250,marginRight=67;
-  const x=Math.max(0,Math.round(homeCanvas.clientWidth-width-marginRight)),y=12;
-  const rect={left:x,top:y,right:x+width,bottom:y+height};
-  const touches=(a,b,gap=14)=>a.left<b.right+gap&&a.right+gap>b.left&&
-    a.top<b.bottom+gap&&a.bottom+gap>b.top;
+  const width=640,marginRight=67;
+  const x=Math.max(0,Math.round(homeCanvas.clientWidth-width-marginRight)),y=10;
   const origin=homeCanvas.getBoundingClientRect();
-  // Le carnet, les RDV et le calendrier gardent exactement leurs positions.
+  // Le rectangle dessiné est juste au-dessus du livre. Si le livre est
+  // placé un peu plus haut que sur la capture, raccourcir légèrement la
+  // carte plutôt que recouvrir les pages ou bouger le livre.
+  const occupied=[];
   for(const item of items){
     if(item===todo||item.el.classList.contains('home-module-off'))continue;
     const elRect=item.el.getBoundingClientRect();
     if(!elRect.width||!elRect.height)continue;
-    const other={left:elRect.left-origin.left,top:elRect.top-origin.top,
-      right:elRect.right-origin.left,bottom:elRect.bottom-origin.top};
-    if(touches(rect,other))return;
+    occupied.push({left:elRect.left-origin.left,top:elRect.top-origin.top,
+      right:elRect.right-origin.left,bottom:elRect.bottom-origin.top});
   }
+  let height=250;
+  for(const other of occupied){
+    if(x>=other.right+8||x+width+8<=other.left)continue;
+    if(other.top>y+210&&other.top<y+height+10)
+      height=Math.min(height,Math.floor(other.top-y-10));
+  }
+  const rect={left:x,top:y,right:x+width,bottom:y+height};
+  const touches=(a,b,gap=8)=>a.left<b.right+gap&&a.right+gap>b.left&&
+    a.top<b.bottom+gap&&a.bottom+gap>b.top;
+  if(height<210||occupied.some(other=>touches(rect,other)))return;
   const previous=localStorage.getItem(homeCanvasStorageKey(todo));
   if(previous==null)return;
   if(localStorage.getItem(backup)==null)localStorage.setItem(backup,previous);
