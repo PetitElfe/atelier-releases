@@ -10,7 +10,8 @@
   };
   const call=async(path,opts)=>{
     if(typeof api!=='function')throw new Error('API indisponible');
-    return api(path,opts);
+    // Une liaison vient d'être modifiée : toujours relire son état réel.
+    return api(path,{cache:'no-store',...opts});
   };
   async function refreshMap(domainId){
     if(!domainId || !document.getElementById('objectiveMapRoot'))return;
@@ -33,6 +34,9 @@
   function draw(){
     const root=$map(); if(!root||!graph||isRendering)return;
     isRendering=true;
+    // Les rechargements de la carte ne doivent pas effacer les choix de liaison.
+    const oldFrom=root.querySelector('[data-action="from"]')?.value;
+    const oldTo=root.querySelector('[data-action="to"]')?.value;
     const nodes=graph.nodes||[], coords=new Map(nodes.map((n,i)=>[Number(n.id),position(n,i)]));
         const allNodes=nodes.map(n=>{
       const p=coords.get(Number(n.id)),status=n.status==='done'?' done':'';
@@ -48,6 +52,10 @@
        '<div class="objective-map-edit"><strong>Relier deux étapes</strong><select data-action="from" aria-label="Départ">'+opts+'</select><span>→</span><select data-action="to" aria-label="Arrivée">'+opts+'</select><button type="button" data-action="link">Relier</button><button type="button" data-action="unlink">Supprimer le lien</button></div>'+
        '<p class="muted">Glisse les cartes pour les déplacer, ou le fond pour naviguer. Clique sur une étape pour régler sa validation.</p>'+
        '<div class="objective-map-inspector" id="objectiveMapInspector"></div>';
+    for(const [action,oldValue] of [['from',oldFrom],['to',oldTo]]){
+      const select=root.querySelector('[data-action="'+action+'"]');
+      if(oldValue&&select&&[...select.options].some(option=>option.value===oldValue))select.value=oldValue;
+    }
     root.querySelector('[data-action="toggle"]').onclick=()=>{mode=mode==='map'?'list':'map';draw()};
     for(const action of ['zoomin','zoomout','reset']){
       root.querySelector('[data-action="'+action+'"]').onclick=()=>{
@@ -61,7 +69,7 @@
     };
     root.querySelector('[data-action="link"]').onclick=async()=>{
       const from_id=Number(root.querySelector('[data-action="from"]').value),to_id=Number(root.querySelector('[data-action="to"]').value);
-      try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});graph.edges=graph.edges||[];if(!graph.edges.some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))graph.edges.push({from_id,to_id});draw();await refreshMap(activeDomain)}
+      try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
       catch(err){showMapError('Liaison impossible : '+err.message)}
     };
     root.querySelector('[data-action="unlink"]').onclick=async()=>{
@@ -161,7 +169,7 @@
           const to_id=target?Number(target.dataset.node):null;
           connection=null;draft?.remove();draft=null;
           if(to_id!==null&&to_id!==from_id){
-            try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});graph.edges=graph.edges||[];if(!graph.edges.some(e=>Number(e.from_id)===from_id&&Number(e.to_id)===to_id))graph.edges.push({from_id,to_id});draw();await refreshMap(activeDomain)}
+            try{await call('/api/objective-map/edges',{method:'POST',body:JSON.stringify({from_id,to_id})});await refreshMap(activeDomain)}
             catch(err){showMapError('Liaison impossible : '+err.message)}
           }else if(to_id===from_id)showMapError('Choisis une autre étape pour créer la liaison.');
           return;

@@ -412,9 +412,14 @@ function showView(view){
   // Users who last visited a retired page must not get a blank view on F5.
   if(!document.getElementById(view+'View'))view='home';
   const enteringLibrary=view==='library'&&state.view!=='library';
+  const changingView=view!==state.view;
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
   if(state.view==='library'&&view!=='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
   state.view=view;
+  // Le menu flottant ne doit pas recouvrir les actions de la nouvelle rubrique,
+  // notamment « + Rendez-vous » du semainier ouvert depuis l'Accueil.
+  // Sa position mémorisée reste inchangée : seul le tiroir est replié.
+  if(changingView && !$('#sideNav').classList.contains('is-collapsed')) setSideNavCollapsed(true);
   if(view!=='recipe' && view!=='settings') localStorage.setItem('atelierLastView',view);
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
