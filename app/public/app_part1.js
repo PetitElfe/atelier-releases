@@ -174,9 +174,15 @@ function renderHome(){
     activeObjectives.forEach(obj=>{
       const el=document.createElement('button');
       el.type='button';el.className='objective-note objective-open';
-      const context=(obj.description||'').trim()||`${Number(obj.progress)||0}% d’avancement`;
+      // Afficher le domaine parent avant l'objectif courant, sans longue description.
+      let ancestor=obj,domain=null,seen=new Set();
+      while(ancestor && !seen.has(Number(ancestor.id))){
+        seen.add(Number(ancestor.id));
+        if(ancestor.node_type==='domain'){domain=ancestor;break}
+        ancestor=state.objectiveNodes.find(node=>Number(node.id)===Number(ancestor.parent_id));
+      }
       const percent=Math.max(0,Math.min(100,Number(obj.progress)||0));
-      el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><div class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></div>`;
+      el.innerHTML=`<div class="objective-domain">${esc(domain?.title||'Mes objectifs')}</div><div class="objective-name">${esc(obj.title)}</div><div class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></div>`;
       el.addEventListener('click',()=>openLibraryForNode(obj.id));
       objectiveRoot.appendChild(el);
     });
