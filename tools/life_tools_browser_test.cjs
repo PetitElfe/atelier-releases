@@ -341,8 +341,9 @@ async function api(path,method='GET',body){
     const response=await fetch('/api/events',{cache:'no-store'});
     return (await response.json()).find(e=>e.id===eid)?.admin_links?.some(x=>x.id===id);
   },{id:admin.id,eid:event.id},{timeout:12000});
-  const linked=(await api('/api/events')).find(x=>x.id===event.id);
-  assert.ok(linked.admin_links.some(x=>x.id===admin.id),'Event exposes linked admin without creating another event');
+  const linked=(await api('/api/events?start='+date+'&end='+date)).find(x=>x.id===event.id);
+  assert.ok(linked?.admin_links?.some(x=>Number(x.id)===Number(admin.id)),
+    'Event exposes linked admin without creating another event: '+JSON.stringify({linked,adminId:admin.id,eventId:event.id}));
   const fileName='pièce-test.txt',sample='Dossier de test — reste dans SQLite.';
   await page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"] input[type=file]')
     .setInputFiles({name:fileName,mimeType:'text/plain',buffer:Buffer.from(sample,'utf8')});
