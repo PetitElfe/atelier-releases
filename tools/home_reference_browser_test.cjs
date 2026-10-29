@@ -102,7 +102,7 @@ const api=async(path,method='GET',body)=>{
   // Important : une hauteur CSS fixe empêchait la poignée de réduire le livre.
   await page.locator('#globalLayoutEdit').click();
   await page.locator('#journalBook').click({position:{x:25,y:90}});
-  const heightHandle=page.locator('#journalBook .layout-height-handle');
+  const heightHandle=page.locator('#journalBook > .layout-controls > .layout-height-handle');
   await heightHandle.waitFor({state:'visible',timeout:8000});
   const hBefore=(await page.locator('#journalBook').boundingBox()).height;
   const hr=await heightHandle.boundingBox();
