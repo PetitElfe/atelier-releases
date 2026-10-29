@@ -337,6 +337,10 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id,eid})=>
     (await (await fetch('/api/admin')).json()).find(x=>x.id===id)?.event_id===eid,
     {id:admin.id,eid:event.id});
+  await page.waitForFunction(async({id,eid})=>{
+    const response=await fetch('/api/events',{cache:'no-store'});
+    return (await response.json()).find(e=>e.id===eid)?.admin_links?.some(x=>x.id===id);
+  },{id:admin.id,eid:event.id},{timeout:12000});
   const linked=(await api('/api/events')).find(x=>x.id===event.id);
   assert.ok(linked.admin_links.some(x=>x.id===admin.id),'Event exposes linked admin without creating another event');
   const fileName='pièce-test.txt',sample='Dossier de test — reste dans SQLite.';
