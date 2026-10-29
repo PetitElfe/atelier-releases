@@ -1,0 +1,152 @@
+/* Accueil — transposition du schéma annoté du 28 octobre.
+   Le canvas et toutes les clés locales de positions restent conservés. */
+#homeView .home-module-toolbar{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:0!important;overflow:hidden!important;
+  clip-path:inset(50%);white-space:nowrap;pointer-events:none
+}
+#homeView #homeCanvas{padding-top:3px}
+#homeView #homeBudgetWidget,
+#homeView #homeUpcomingWidget,
+#homeView #homeDailyTrackersWidget{
+  border-radius:13px;border-color:#665442;
+  box-shadow:0 12px 26px #0006;background:#201b17
+}
+#homeView #homeBudgetWidget{padding:12px 15px}
+#homeView #homeBudgetWidget .budget-home-title strong,
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head strong{
+  font-size:17px;letter-spacing:.01em
+}
+#homeView #homeBudgetOpen,#homeView #openDailyTrackers{
+  min-height:32px;border-radius:8px;padding:5px 9px;font-size:11px
+}
+#homeView #homeUpcomingWidget{
+  box-sizing:border-box;width:280px;
+  padding:11px 12px;overflow:visible
+}
+#homeUpcomingWidget .desk-note-head{font-size:14px;gap:6px;flex-wrap:wrap}
+#homeUpcomingWidget .desk-note-head .journal-link{white-space:nowrap}
+#homeUpcoming .home-appt-row{min-height:39px}
+#homeUpcoming .home-appt-main{grid-template-columns:48px minmax(0,1fr)}
+#homeUpcoming .home-appt-actions{opacity:.76;transition:opacity .13s}
+#homeUpcoming .home-appt-row:hover .home-appt-actions,
+#homeUpcoming .home-appt-row:focus-within .home-appt-actions{opacity:1}
+#homeUpcoming .home-appt-row .home-row-title{font-size:12px}
+#homeUpcoming .home-appt-row .home-row-meta{font-size:9px}
+/* L'extension devient un petit volet déroulant, pas une carte géante. */
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded{z-index:25!important}
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded #homeUpcoming{
+  max-height:min(50vh,370px)!important;overflow-y:auto!important;
+  background:#211b16;border:1px solid #806951;border-radius:8px;
+  padding:5px;box-shadow:0 18px 28px #000a;scrollbar-width:thin
+}
+#homeUpcoming .home-upcoming-toggle{
+  width:100%;min-height:32px;margin-top:5px;
+  border:1px solid #685541;border-radius:7px;
+  background:#30261d;font-size:11px
+}
+#homeView #journalBook{
+  width:min(820px,calc(100vw - 46px));
+  height:clamp(490px,70vh,680px);
+  min-height:490px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  border:1px solid #836d4e;border-radius:8px 13px 13px 8px;
+  box-shadow:12px 14px 0 -8px #ad956d,15px 18px 0 -9px #60462f,0 20px 45px #0009;
+}
+#homeView #journalBook::after{
+  z-index:2;width:20px;
+  background:linear-gradient(90deg,#b5a38933 0%,#4c39278a 45%,#21160db5 50%,#6c503c62 55%,#b5a38922 100%)
+}
+#homeView #journalBook .journal-page{
+  height:100%!important;min-height:0!important;box-sizing:border-box;
+  padding:24px 28px 46px;
+  background:radial-gradient(circle at 12% 15%,#f5e9d5 0 1px,transparent 2px),linear-gradient(105deg,#e5d4ba,#f0e2cb 58%,#e6d3b5);
+  background-size:24px 24px,auto;
+  gap:0
+}
+#homeView #journalBook .journal-left{border-radius:7px 0 0 7px;box-shadow:inset -22px 0 27px #866f4d33}
+#homeView #journalBook .journal-right{border-radius:0 12px 12px 0;box-shadow:inset 18px 0 28px #866f4d2e}
+#homeView #journalBook .journal-primary-content,
+#homeView #journalBook .journal-secondary-content{
+  min-width:0;min-height:0;flex:1 1 auto;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  scrollbar-width:thin;scrollbar-color:#b39b77 transparent;
+  padding:2px 7px 24px 0!important;overscroll-behavior:contain
+}
+#homeView #journalBook .journal-heading{
+  font-family:Georgia,serif;font-size:17px;line-height:1.35;
+  margin-bottom:8px;font-style:italic
+}
+#homeView #journalBook .journal-date{font-size:11px;margin-bottom:14px;color:#75634c}
+#homeView #journalBook .journal-section{margin:0 0 11px}
+#homeView #journalBook .journal-title-row{align-items:baseline;gap:8px}
+#homeView #journalBook .journal-link{font-size:11px;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+#homeView #journalBook .journal-task{
+  display:grid;grid-template-columns:20px minmax(0,1fr) auto;
+  gap:9px;min-height:36px;padding:5px 2px;font-size:12px
+}
+#homeView #journalBook .journal-task-open{
+  font-size:12px;line-height:1.35;text-align:left;white-space:normal;overflow-wrap:anywhere;
+}
+#homeView #journalBook .journal-task.is-completed{opacity:.6}
+#homeView #journalBook .journal-task.is-completed .journal-task-open{text-decoration:line-through}
+#homeView #journalBook .journal-task-check{width:17px;height:17px;accent-color:#81613d}
+#homeView #journalBook .deadline-line{
+  grid-template-columns:65px minmax(0,1fr) auto;gap:6px;
+  padding:7px 3px;font-size:11px;min-height:32px
+}
+#homeView #journalBook .deadline-empty{min-height:19px}
+#homeView #journalBook .deadline-time{white-space:nowrap}
+#homeView #journalBook .objective-suggestions{display:grid;gap:7px}
+#homeView #journalBook .objective-note{
+  display:block;text-align:left;padding:8px 9px;
+  border:1px solid #c9b695;border-left:3px solid #9d8563;
+  border-radius:7px;background:#f5ecd9a3;min-height:60px
+}
+#homeView #journalBook .objective-note:hover,
+#homeView #journalBook .objective-note:focus-visible{
+  background:#fff6e4;border-color:#9c8059;outline-offset:2px
+}
+#homeView #journalBook .objective-name{
+  font-size:13px;font-weight:700;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+#homeView #journalBook .objective-context{
+  font-size:11px;line-height:1.35;white-space:normal;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;margin:3px 0 5px
+}
+#homeView #journalBook .objective-progress-line{
+  display:flex;align-items:center;gap:9px;
+  font-style:normal;color:#66543f
+}
+#homeView #journalBook .objective-progress-track{
+  flex:1 1 auto;max-width:none;background:#d2c2a7;height:6px
+}
+#homeView #journalBook .objective-progress-track i{background:#8d7659}
+#homeView #journalBook .objective-percent{font-size:10px;min-width:32px;text-align:right}
+#homeView #journalBook #homeMealIdeaPicker{width:100%;display:flex;justify-content:space-between;align-items:center}
+#homeView #journalBook .meal-ideas{
+  padding:8px 12px;border:1px solid #c7b08e;border-radius:5px;
+  background:repeating-linear-gradient(#f6ead7,#f6ead7 27px,#b79d7b46 28px);
+  font-size:12px;min-height:45px
+}
+#homeView #journalBook .meal-line{
+  min-height:25px;font-size:12px;line-height:1.4
+}
+#homeView #journalBook .journal-page-turn{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  z-index:7;border:1px solid #ae9976;
+  background:#f3e7d0d9;border-radius:25px
+}
+#homeView #journalBook .journal-page-turn button{min-width:34px;min-height:32px}
+#homeView #journalBook .journal-page-turn span{color:#584936;font-size:12px}
+.home-layout-proposal{border-top:1px solid #675240;margin-top:14px;padding-top:12px}
+.home-layout-proposal strong{color:#dfc39d}
+.home-layout-proposal p{font-size:12px;color:#c8b9a4}
+.home-layout-proposal button{font-size:12px}
+@media(max-width:920px){
+  #homeView #journalBook{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  #homeView #journalBook .journal-page{padding:18px 16px 44px}
+  #homeView #journalBook .journal-heading{font-size:15px}
+}

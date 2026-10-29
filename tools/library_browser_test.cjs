@@ -971,7 +971,7 @@ async function api(path,method='GET',body){
     return title&&controls&&getComputedStyle(controls).display==='none';
   }),'À venir n’est plus recouvert par des commandes lorsqu’il n’est pas sélectionné');
   await page.locator('#globalLayoutEdit').click();
-  await page.locator('#openHomeModuleLibrary').click();
+  await page.locator('#quickAddHomeModule').click();
   const picker=page.locator('#homeModulePicker');
   await picker.waitFor({state:'visible'});
   assert.equal(await picker.locator('input[data-module]').count(),12,'Home modules exclude desktop-only Post-it and retired Preparatifs; five widgets and seven shortcuts');
@@ -1040,7 +1040,7 @@ async function api(path,method='GET',body){
   assert.equal(await page.evaluate(()=>state.view),'tasks','Shortcut navigation resumes after editing');
   // Les modules masqués restent accessibles depuis le catalogue.
   await page.evaluate(()=>showView('home'));
-  await page.locator('#openHomeModuleLibrary').click();
+  await page.locator('#quickAddHomeModule').click();
   await page.locator('#homeModulePicker input[data-module="upcoming"]').check();
   await page.locator('#homeModulePicker button[type="submit"]').click();
   assert.ok(await page.locator('#homeUpcomingWidget').isVisible(),'Hidden original widget can be restored');
