@@ -69,6 +69,8 @@ jobs:
         run: node tools/calendar_priority_browser_test.cjs
       - name: Verify expanded upcoming appointments above the journal
         run: node tools/home_upcoming_overlay_browser_test.cjs
+      - name: Verify redesigned Home book, tasks and reversible layout
+        run: node tools/home_reference_browser_test.cjs
       - name: Verify tracker duplication, drag order and calendar visual redesign
         run: node tools/big_refonte_browser_test.cjs
       - name: Verify native macro launcher in temporary data
