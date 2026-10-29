@@ -996,9 +996,41 @@ function initHomeModuleLibrary(){
       const name=title?.textContent.trim()||label;
       return '<label class="home-library-item"><input type="checkbox" data-module="'+esc(id)+'" '+(homeModuleIsVisible(id)?'checked':'')+'><span><strong>'+esc(name)+'</strong><small>'+(id==='journal'||id==='budget'||id==='calendar'||id==='upcoming'?'Module de l’Accueil':'Accès à une rubrique existante')+'</small></span></label>';
     }).join('');
-    openModal('<h2>Bibliothèque de modules</h2><p class="muted">Choisis ce que tu souhaites voir sur l’Accueil. Les modules retirés restent disponibles ici, sans suppression de données.</p><form id="homeModulePicker"><div class="home-library-list">'+controls+'</div><div class="form-actions"><button type="button" id="homeModuleAll">Tout afficher</button><button type="submit" class="primary">Appliquer</button></div></form>');
+    openModal('<h2>Bibliothèque de modules</h2><p class="muted">Choisis ce que tu souhaites voir sur l’Accueil. Les modules retirés restent disponibles ici, sans suppression de données.</p><form id="homeModulePicker"><div class="home-library-list">'+controls+'</div><div class="form-actions"><button type="button" id="homeModuleAll">Tout afficher</button><button type="submit" class="primary">Appliquer</button></div></form><div class="home-layout-proposal"><strong>Disposition de l’Accueil</strong><p>Replacer les modules autour du grand carnet, selon le schéma de référence. Tes positions actuelles seront conservées et récupérables.</p><div class="form-actions"><button type="button" id="homeRestorePreviousLayout">Restaurer mes positions</button><button type="button" id="homeApplyReferenceLayout">Essayer cette disposition</button></div></div>');
     const form=$('#homeModulePicker');
     $('#homeModuleAll').onclick=()=>form.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=true);
+    const backupKey='atelierHomeReferenceBackup_20261029';
+    const restoreButton=$('#homeRestorePreviousLayout');
+    restoreButton.disabled=!localStorage.getItem(backupKey);
+    $('#homeApplyReferenceLayout').onclick=()=>{
+      if(!homeCanvasReady)return;
+      const items=globalLayoutItems.filter(isHomeCanvasItem);
+      if(!localStorage.getItem(backupKey)){
+        const backup={};
+        for(const item of items)backup[item.id]=readGlobalLayout(item);
+        localStorage.setItem(backupKey,JSON.stringify(backup));
+      }
+      for(const item of items){
+        const spec=homeSuggestedLayout(item);
+        saveGlobalLayout(item,spec);
+        applyGlobalLayout(item,spec);
+      }
+      requestHomeCanvasMeasure();
+      closeModal();
+    };
+    restoreButton.onclick=()=>{
+      let backup;
+      try{backup=JSON.parse(localStorage.getItem(backupKey)||'{}');}catch(_){backup={}}
+      for(const item of globalLayoutItems.filter(isHomeCanvasItem)){
+        const value=backup[item.id];
+        if(!value)continue;
+        saveGlobalLayout(item,value);
+        applyGlobalLayout(item,value);
+      }
+      localStorage.removeItem(backupKey);
+      requestHomeCanvasMeasure();
+      closeModal();
+    };
     form.onsubmit=event=>{
       event.preventDefault();
       const inputs=[...form.querySelectorAll('input[data-module]')];
@@ -1272,20 +1304,23 @@ function requestHomeCanvasMeasure(){
 }
 function homeSuggestedLayout(item){
   const width=homeCanvas?.clientWidth||Math.max(700,window.innerWidth-40);
-  const narrow=width<900;
-  const left=12,center=Math.max(12,Math.round((width-540)/2)),right=Math.max(12,width-210);
+  const narrow=width<1160;
+  const left=14,bookWidth=narrow?Math.min(780,width-28):Math.min(820,Math.max(570,width-710));
+  const bookX=narrow?left:Math.max(312,Math.round((width-bookWidth)/2));
+  const calendarWidth=Math.min(255,Math.max(200,width-32));
+  const right=Math.max(left,width-calendarWidth-left);
   const defaults={
-    homeBudgetWidget:[left,12],
-    upcoming:[left,narrow?220:210],
-    journal:[narrow?left:center,narrow?465:12],
-    calendar:[narrow?left:right,narrow?800:12],
-    homeDailyTrackersWidget:[left,narrow?1190:545]
+    homeBudgetWidget:{x:left,y:14,width:280},
+    upcoming:{x:left,y:175,width:280},
+    journal:{x:bookX,y:narrow?530:88,width:bookWidth},
+    calendar:{x:right,y:14,width:calendarWidth},
+    homeDailyTrackersWidget:{x:left,y:narrow?1130:510,width:280}
   };
   const shortcutIndex=homeShortcutDefs.findIndex(entry=>entry.id===item.id.replace(/^homeShortcut_/,''));
-  const x=shortcutIndex<0?0:narrow?left:12+(shortcutIndex%3)*Math.max(210,Math.floor((width-34)/3));
-  const y=shortcutIndex<0?0:(narrow?1100+shortcutIndex*165:600+Math.floor(shortcutIndex/3)*165);
-  const [px,py]=defaults[item.id]||[x,y];
-  return {x:px,y:py,scale:1,width:null,height:null};
+  const x=shortcutIndex<0?left:narrow?left:14+(shortcutIndex%3)*Math.max(200,Math.floor((width-40)/3));
+  const y=shortcutIndex<0?0:(narrow?1550+shortcutIndex*170:770+Math.floor(shortcutIndex/3)*170);
+  const base=defaults[item.id]||{x,y,width:Math.min(300,width-28)};
+  return {...base,scale:1,height:null};
 }
 function activateHomeCanvas(){
   if(homeCanvasReady||state.view!=='home')return;

@@ -29,7 +29,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "3fc959ccdad430e044c0433c9cea822ac9210e5fa5fa9336244b0d0bf11205e1"
+      "sha256": "2a5795610c6fec98e9b952cf4089cba45218f15c966af8ba70874a507a9d7695"
     },
     {
       "path": "public/app_part2.js",
@@ -37,11 +37,11 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "1f0c3782abe1a779acb0107abc324981682de102b446757f4fc8358d4f8cff8e"
+      "sha256": "24dca10f62c2f302dba7c278a41e6c20da47c70b0095c7b49bcedf39375a5ea7"
     },
     {
       "path": "public/index.html",
-      "sha256": "a7f398d2d3c43f905df92ca159a3f38657e1191338dbdebacaa0d024338d2771"
+      "sha256": "a8a66c64fa94a1ad6648331eac0c13113f355ebe22ac72c4d51d6111e9e3746d"
     },
     {
       "path": "public/styles.css",
@@ -162,6 +162,10 @@
     {
       "path": "public/big_refonte.css",
       "sha256": "2c1c5cdc15ee02fa6869d69ffa280dca40f28f0f21c4bd9d429284d6336e7b2e"
+    },
+    {
+      "path": "public/home_reference.css",
+      "sha256": "6a02a7207343731aff192f5a1c99a9522bd07161dce1ae0954dfb2c5204983eb"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."

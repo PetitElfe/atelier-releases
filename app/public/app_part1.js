@@ -97,16 +97,33 @@ function renderHome(){
   }
 
   const taskRoot=$('#homeTodayTasks'); taskRoot.innerHTML='';
-  const todayTasks=state.tasks.filter(t=>!t.completed && (!t.due_date || t.due_date<=today)).slice(0,10);
+  // Une tâche cochée sur cette page reste lisible jusqu'au lendemain.
+  // La clé du jour n'affecte ni les tâches historiques ni le serveur.
+  const completedTodayKey='atelierHomeCompletedOn_'+today;
+  let checkedToday=[];
+  try{const stored=JSON.parse(localStorage.getItem(completedTodayKey)||'[]');
+      checkedToday=Array.isArray(stored)?stored.map(Number):[];}catch(_){}
+  const keptToday=new Set(checkedToday);
+  const todayTasks=state.tasks.filter(t=>(!t.due_date || t.due_date<=today)&&
+    (!t.completed || t.due_date===today || keptToday.has(Number(t.id))))
+    .sort((a,b)=>Number(a.completed)-Number(b.completed))
+    .slice(0,10);
   if(!todayTasks.length) taskRoot.innerHTML='<div class="journal-empty">Rien à faire pour le moment c:</div>';
   todayTasks.forEach(t=>{
-    const row=document.createElement('div');row.className='journal-task journal-task-interactive';
+    const row=document.createElement('div');row.className='journal-task journal-task-interactive'+(t.completed?' is-completed':'');
     const check=document.createElement('input');check.type='checkbox';check.className='journal-task-check';
+    check.checked=!!t.completed;
     check.setAttribute('aria-label','Terminer : '+t.title);
     check.addEventListener('change',async()=>{
       check.disabled=true;
-      const result=await runUiAction('Impossible de cocher la tâche',()=>api('/api/tasks/'+t.id,{method:'PUT',body:JSON.stringify({completed:check.checked})}));
-      if(result.ok)await refresh();else{check.checked=false;check.disabled=false}
+      const requested=check.checked;
+      const result=await runUiAction('Impossible de cocher la tâche',()=>api('/api/tasks/'+t.id,{method:'PUT',body:JSON.stringify({completed:requested})}));
+      if(result.ok){
+        const next=new Set(keptToday);
+        if(requested)next.add(Number(t.id));else next.delete(Number(t.id));
+        localStorage.setItem(completedTodayKey,JSON.stringify([...next]));
+        await refresh();
+      }else{check.checked=!requested;check.disabled=false}
     });
     const title=document.createElement('button');title.type='button';title.className='journal-task-open';
     title.textContent=(t.important?'✦ ':'')+t.title;title.title='Modifier la tâche';
@@ -116,10 +133,12 @@ function renderHome(){
   });
 
   const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
+  const allObjectives=$('#homeAllObjectives');
+  if(allObjectives)allObjectives.onclick=()=>showView('library');
   const activeObjectives=state.objectiveNodes
     .filter(x=>x.node_type==='objective'&&x.status!=='done')
     .sort((a,b)=>(a.order_index-b.order_index)||a.id-b.id)
-    .slice(0,5);
+    .slice(0,3);
   if(!activeObjectives.length){
     const empty=document.createElement('button');
     empty.type='button';empty.className='objective-note objective-open';
@@ -131,7 +150,8 @@ function renderHome(){
       const el=document.createElement('button');
       el.type='button';el.className='objective-note objective-open';
       const context=(obj.description||'').trim()||`${Number(obj.progress)||0}% d’avancement`;
-      el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${Number(obj.progress)||0}% · ouvrir →</li></ul>`;
+      const percent=Math.max(0,Math.min(100,Number(obj.progress)||0));
+      el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><div class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></div>`;
       el.addEventListener('click',()=>openLibraryForNode(obj.id));
       objectiveRoot.appendChild(el);
     });
@@ -220,7 +240,7 @@ function renderHome(){
     });
     upcomingRoot.appendChild(toggle);
   }
-  upcomingRoot.style.maxHeight=expanded?'min(45vh,310px)':'';
+  upcomingRoot.style.maxHeight=expanded?'min(50vh,370px)':'';
   upcomingRoot.style.overflowY=expanded?'auto':'';
 
 }

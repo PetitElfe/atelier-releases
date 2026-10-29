@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/standalone_preparations.css" />
   <link rel="stylesheet" href="/visual_polish_oct28.css" />
   <link rel="stylesheet" href="/big_refonte.css" />
+  <link rel="stylesheet" href="/home_reference.css" />
   <style id="alpha-home-clarity">
     .top-brand{display:flex;align-items:center;gap:10px;min-width:0}
     .top-brand-labels{min-width:0}
@@ -67,7 +68,7 @@
 
   <main>
     <section id="homeView" class="view active-view">
-      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary">＋ Bibliothèque de modules</button><span class="muted">Choisis les éléments visibles, puis place-les avec « Modifier ».</span></div>
+      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary" tabindex="-1">＋ Bibliothèque de modules</button><span class="muted">Ajoute des modules avec le bouton ＋ dans l’en-tête, puis place-les avec Modifier.</span></div>
       <section id="homeBudgetWidget" data-home-module="budget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
         <div class="budget-home-title"><strong>Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
         <div id="homeBudgetContent" class="muted">Chargement des échéances…</div>
@@ -80,10 +81,10 @@
 
         <section id="homeUpcomingWidget" data-home-module="upcoming" class="desk-object desk-note" aria-labelledby="upcomingTitle">
           <div class="desk-note-head">
-            <span id="upcomingTitle">À venir</span>
+            <span id="upcomingTitle">Rendez-vous à venir</span>
             <button id="openCalendarFromUpcoming" class="journal-link" type="button">calendrier →</button>
           </div>
-          <div id="homeUpcoming" class="desk-mini-list"></div>
+          <div id="homeUpcoming" class="desk-mini-list" aria-live="polite"></div>
         </section>
 
       </div>
@@ -102,7 +103,7 @@
 
           <div class="journal-section journal-tasks-section">
             <div class="journal-title-row">
-              <div class="journal-heading">Tâches du jour</div>
+              <div class="journal-heading">À faire aujourd’hui</div>
               <button id="openTasksFromHome" class="journal-link" type="button">tout voir →</button>
             </div>
             <div id="homeTodayTasks" class="journal-task-list"></div>
@@ -114,14 +115,14 @@
         <section class="journal-page journal-right">
           <div class="journal-primary-content">
           <div class="journal-section">
-            <div class="journal-heading">Que faire maintenant ?</div>
+            <div class="journal-title-row"><div class="journal-heading">Mes objectifs du moment</div><button type="button" id="homeAllObjectives" class="journal-link">bibliothèque →</button></div>
             <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
           </div>
 
           <div class="journal-divider"></div>
 
           <div class="journal-section">
-            <button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button>
+            <button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Mon livre de recettes <span>＋</span></button>
             <div id="homeMealIdeas" class="meal-ideas"></div>
           </div>
 
