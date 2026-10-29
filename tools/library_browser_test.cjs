@@ -744,6 +744,9 @@ async function api(path,method='GET',body){
     const k=new Date().toISOString().slice(0,7);
     return (await (await fetch('/api/budget?month='+k)).json()).entries.some(e=>e.title==='Dépense rapide E2E'&&e.amount_cents===1340&&e.status==='confirmed');
   },null,{timeout:10000});
+  // L'opération peut être visible en base avant que le modal soit fermé.
+  // Attendre la fermeture réelle du premier formulaire avant le second clic.
+  await page.locator('#budgetUnifiedForm').waitFor({state:'detached',timeout:12000});
   await page.locator('#budgetAddOperation').click();
   await page.locator('#budgetUnifiedForm .budget-kind[data-kind="income"]').click();
   await page.locator('#budgetUnifiedForm input[name="amount"]').fill('550');
