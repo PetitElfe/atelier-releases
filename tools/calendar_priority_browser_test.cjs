@@ -33,7 +33,16 @@ async function api(path,method='GET',body){
     browser=await chromium.launch({headless:true});
     const page=await browser.newPage({viewport:{width:1440,height:960}});
     const errors=[];
-    page.on('pageerror',error=>{errors.push(error.message);console.log('CALENDAR DEBUG PAGE ERROR STACK',error.stack)});
+    page.on('pageerror',error=>{
+       errors.push(error.message);
+       console.log('CALENDAR DEBUG PAGE ERROR STACK',error.stack);
+       page.evaluate(()=>({
+         hasHome:!!document.querySelector('#homeBudgetWidget'),
+         budgetOpen:document.querySelector('#homeBudgetOpen')?.outerHTML||null,
+         matches:[...document.querySelectorAll('[id*=Budget]')].map(x=>x.id).slice(0,15),
+         bodySize:document.body.innerHTML.length
+       })).then(data=>console.log('CALENDAR DEBUG DOM',JSON.stringify(data))).catch(()=>{});
+     });
     await page.goto(base,{waitUntil:'domcontentloaded'});
     await page.evaluate(async()=>{
       state.cursor=parseYMD('2026-10-20');
