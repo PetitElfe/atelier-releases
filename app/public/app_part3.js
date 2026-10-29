@@ -1291,6 +1291,50 @@ function reflowHomeCanvasViewport(){
 }
 function isHomeCanvasItem(item){return item.view==='home'&&Boolean(item.el.dataset.homeModule)}
 function homeCanvasStorageKey(item){return 'atelierHomeCanvasV2_'+item.id}
+/* Déplacement ponctuel demandé par Léo (capture 29/10) : la To-do list doit
+   occuper l'espace libre en haut à droite, autour de 640 × 250. Ne jamais
+   décaler silencieusement les autres cartes ni écraser un réglage manuel.
+   On photographie son ancien emplacement et on ne migre qu'une seule fois,
+   sur un écran suffisamment large et seulement si la place est libre. */
+function applyTodoTopRightReferenceOnce(items){
+  const flag='atelierTodoTopRightApplied_20261030';
+  const backup='atelierTodoTopRightPrevious_20261030';
+  if(localStorage.getItem(flag)==='1'||!homeCanvas||homeCanvas.clientWidth<1450)return;
+  const todo=items.find(item=>item.id==='homeDailyTrackersWidget');
+  if(!todo||todo.el.classList.contains('home-module-off'))return;
+  const width=640,marginRight=67;
+  const x=Math.max(0,Math.round(homeCanvas.clientWidth-width-marginRight)),y=10;
+  const origin=homeCanvas.getBoundingClientRect();
+  // Le rectangle dessiné est juste au-dessus du livre. Si le livre est
+  // placé un peu plus haut que sur la capture, raccourcir légèrement la
+  // carte plutôt que recouvrir les pages ou bouger le livre.
+  const occupied=[];
+  for(const item of items){
+    if(item===todo||item.el.classList.contains('home-module-off'))continue;
+    const elRect=item.el.getBoundingClientRect();
+    if(!elRect.width||!elRect.height)continue;
+    occupied.push({left:elRect.left-origin.left,top:elRect.top-origin.top,
+      right:elRect.right-origin.left,bottom:elRect.bottom-origin.top});
+  }
+  let height=250;
+  for(const other of occupied){
+    if(x>=other.right+8||x+width+8<=other.left)continue;
+    if(other.top>y+210&&other.top<y+height+10)
+      height=Math.min(height,Math.floor(other.top-y-10));
+  }
+  const rect={left:x,top:y,right:x+width,bottom:y+height};
+  const touches=(a,b,gap=8)=>a.left<b.right+gap&&a.right+gap>b.left&&
+    a.top<b.bottom+gap&&a.bottom+gap>b.top;
+  if(height<210||occupied.some(other=>touches(rect,other)))return;
+  const previous=localStorage.getItem(homeCanvasStorageKey(todo));
+  if(previous==null)return;
+  if(localStorage.getItem(backup)==null)localStorage.setItem(backup,previous);
+  const prior=readGlobalLayout(todo);
+  const next={...prior,x,y,width,height};
+  saveGlobalLayout(todo,next);
+  applyGlobalLayout(todo,next);
+  localStorage.setItem(flag,'1');
+}
 function requestHomeCanvasMeasure(){
   if(!homeCanvasReady||homeCanvasMeasurePending)return;
   homeCanvasMeasurePending=true;
@@ -1333,7 +1377,7 @@ function homeSuggestedLayout(item){
     upcoming:{x:left,y:175,width:280},
     journal:{x:bookX,y:narrow?530:88,width:bookWidth,height:460},
     calendar:{x:right,y:14,width:calendarWidth},
-    homeDailyTrackersWidget:{x:left,y:narrow?1130:510,width:280}
+    homeDailyTrackersWidget:{x:left,y:narrow?1130:510,width:280,height:250}
   };
   const shortcutIndex=homeShortcutDefs.findIndex(entry=>entry.id===item.id.replace(/^homeShortcut_/,''));
   const x=shortcutIndex<0?left:narrow?left:14+(shortcutIndex%3)*Math.max(200,Math.floor((width-40)/3));
@@ -1397,6 +1441,7 @@ function activateHomeCanvas(){
   homeCanvasReady=true;
   home.classList.add('home-free-ready');
   items.forEach(item=>applyGlobalLayout(item,readGlobalLayout(item)));
+  applyTodoTopRightReferenceOnce(items);
   if(typeof ResizeObserver==='function'){
     const observer=new ResizeObserver(()=>{
       requestHomeCanvasMeasure();
@@ -1593,7 +1638,9 @@ function applyGlobalLayout(item,d){
     item.el.style.setProperty('--layout-scale',String(d.scale||1));
     // Le livre possède une hauteur CSS par défaut : un minHeight seul
     // ne permettait pas de le RÉTRÉCIR. Appliquer une vraie hauteur.
-    if(item.id==='journal'){
+    if(item.id==='journal'||item.id==='homeDailyTrackersWidget'){
+      // Comme pour le livre, utiliser une vraie hauteur : le minHeight
+      // empêchait de ramener une liste déjà étirée à 250 px.
       item.el.style.height=d.height!=null?Math.round(d.height)+'px':'';
       item.el.style.minHeight='';
     }else{
@@ -1799,7 +1846,7 @@ function initGlobalLayoutEditor(){
       const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
       const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
       const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
-      const minHeight=item.id==='journal'?340:item.id==='calendar'?130:90;
+      const minHeight=item.id==='journal'?340:item.id==='homeDailyTrackersWidget'?185:item.id==='calendar'?130:90;
       const bounds={
         minX:canvasItem?0:-Infinity,minY:canvasItem?0:-Infinity,
         maxRight:canvasItem?homeCanvas.clientWidth:Infinity,

@@ -71,6 +71,8 @@ jobs:
         run: node tools/home_upcoming_overlay_browser_test.cjs
       - name: Verify redesigned Home book, tasks and reversible layout
         run: node tools/home_reference_browser_test.cjs
+      - name: Verify To-do list top-right size, no overlap and user layout preservation
+        run: node tools/home_todo_position_browser_test.cjs
       - name: Verify tracker duplication, drag order and calendar visual redesign
         run: node tools/big_refonte_browser_test.cjs
       - name: Verify native macro launcher in temporary data
