@@ -542,9 +542,17 @@ async function api(path,method='GET',body){
     const rows=await response.json();
     return rows.some(e=>e.id!==masterId&&e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
   },recurring.id,{timeout:12000});
-  const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
+  // Comparer une seconde connexion HTTP seulement lorsque l'exception
+  // devient visible ; le rendu navigateur peut précéder sa lecture Node.
+  let octoberEvents=[],exception;
+  for(let attempt=0;attempt<40;attempt++){
+    octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
+    exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&
+      e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
+    if(exception)break;
+    await new Promise(resolve=>setTimeout(resolve,120));
+  }
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
-  const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
   assert.ok(exception,'Editing one instance must create a separate event for that occurrence');
   const exceptionReminders=await api('/api/reminders');
   assert.ok(exceptionReminders.some(r=>r.entity_id===exception.id&&r.entity_type==='event'),'Edited instance must retain a linked reminder');
