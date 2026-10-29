@@ -60,8 +60,12 @@ async function api(path,method='GET',body){
       const widget=document.querySelector('#homeUpcomingWidget');
       const book=document.querySelector('#journalBook');
       const row=document.querySelectorAll('#homeUpcoming .home-appt-main')[3];
-      const r=row.getBoundingClientRect(),b=book.getBoundingClientRect();
-      const x=Math.max(r.left+12,b.left+20),y=r.top+r.height/2;
+      const r=row.getBoundingClientRect();
+      const x=r.left+Math.min(24,r.width/2),y=r.top+r.height/2;
+      const canvas=document.querySelector('#homeCanvas').getBoundingClientRect();
+      book.style.left=(x-canvas.left-10)+'px';
+      book.style.top=(y-canvas.top-25)+'px';
+      const b=book.getBoundingClientRect();
       const hit=document.elementFromPoint(x,y);
       return {expanded:widget.classList.contains('home-upcoming-expanded'),
         inBook:x>=b.left&&x<=b.right&&y>=b.top&&y<=b.bottom,
