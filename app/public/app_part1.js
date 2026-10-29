@@ -78,8 +78,6 @@ function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); ren
 function renderHome(){
   const now=new Date(), today=ymd(now);
   $('#homeDate').textContent=fmtFrenchDate(now).replace(/^./,c=>c.toUpperCase());
-  const weekLink=$('#homeJournalWeekLink');
-  if(weekLink)weekLink.onclick=()=>{state.cursor=new Date();showView('calendar');setCalendarMode('week');renderWeek();};
   renderHomeMiniCalendar();
 
   const deadlineRoot=$('#homeDeadlineLines'); deadlineRoot.innerHTML='';
