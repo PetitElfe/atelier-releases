@@ -28,7 +28,7 @@
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Retour à l’accueil"><svg class="home-shortcut-symbol" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="home-shortcut-text">Accueil</span></button>
-      <button id="sideNavHeaderToggle" class="icon-button secondary" type="button" title="Ouvrir le tiroir des rubriques" aria-label="Ouvrir le tiroir des rubriques" aria-expanded="false" aria-controls="sideNav">☰</button>
+      <button id="sideNavHeaderToggle" class="icon-button secondary" type="button" title="Ouvrir le tiroir des rubriques" aria-label="Ouvrir le tiroir des rubriques" aria-expanded="false" aria-controls="sideNav"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <div class="top-brand-labels"><div class="eyebrow">L’ATELIER DU GOBLIN · ALPHA 0.18.0</div><h1 id="pageTitle">Accueil</h1></div><div class="top-xp-level" id="topXpLevel" aria-label="Niveau de progression" title="XP gagnée grâce à tes accomplissements">Niv. 1 · 0 XP</div>
     </div>
     <div class="top-date-wrap">
@@ -36,13 +36,13 @@
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
-      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Ouvrir mes Post-it du bureau" aria-label="Ouvrir mes Post-it du bureau">▤</button>
-      <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil">＋</button>
-      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙<span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
-      <button id="globalLayoutEdit" class="secondary" type="button" aria-label="Modifier la disposition des modules" title="Modifier la disposition des modules" aria-pressed="false">Modifier</button>
+      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Ouvrir mes Post-it du bureau" aria-label="Ouvrir mes Post-it du bureau"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v12H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5M8 12h8M8 16h6"/></svg></button>
+      <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M2 12h2m16 0h2M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"/></svg><span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
+      <button id="globalLayoutEdit" class="secondary" type="button" aria-label="Modifier la disposition des modules" title="Modifier la disposition des modules" aria-pressed="false"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20zM14.5 6.5l3 3"/></svg><span class="top-action-label">Modifier</span></button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="globalLayoutUndo" class="secondary hidden" type="button">↶ Annuler la remise à zéro</button>
-      <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
+      <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/></svg></button>
     </div>
   </header>
 
@@ -72,12 +72,12 @@
     <section id="homeView" class="view active-view">
       <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary" tabindex="-1">＋ Bibliothèque de modules</button><span class="muted">Ajoute des modules avec le bouton ＋ dans l’en-tête, puis place-les avec Modifier.</span></div>
       <section id="homeBudgetWidget" data-home-module="budget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
-        <div class="budget-home-title"><strong>Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
+        <div class="budget-home-title"><strong id="homeBudgetTitle" role="button" tabindex="0" title="Ouvrir Budget">Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
         <div id="homeBudgetContent" class="muted">Chargement des échéances…</div>
       </section>
       <div class="desk-top-row">
         <button id="openCalendarCard" data-home-module="calendar" class="desk-object pinned-calendar" type="button">
-          <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
+          <div class="pinned-calendar-head"><span>Calendrier</span></div>
           <div id="homeMiniCalendar" class="home-mini-calendar"></div>
         </button>
 
@@ -95,10 +95,9 @@
         <section class="journal-page journal-left">
           <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
-          <button type="button" id="homeJournalWeekLink" class="journal-week-link" title="Afficher cette semaine dans le calendrier">Voir la semaine ›</button>
 
           <div class="journal-section">
-            <div class="journal-heading">Ne pas oublier</div>
+            <button id="homeDeadlineTitle" class="journal-heading journal-heading-button home-heading-button" type="button" title="Ouvrir les rappels">Ne pas oublier</button>
             <div id="homeDeadlineLines" class="deadline-lines"></div>
           </div>
 
@@ -106,8 +105,7 @@
 
           <div class="journal-section journal-tasks-section">
             <div class="journal-title-row">
-              <div class="journal-heading">À faire aujourd’hui</div>
-              <button id="openTasksFromHome" class="journal-link" type="button">tout voir →</button>
+              <button id="openTasksFromHome" class="journal-heading journal-heading-button home-heading-button" type="button" title="Ouvrir Tâches">À faire aujourd’hui</button>
             </div>
             <div id="homeTodayTasks" class="journal-task-list"></div>
           </div>
@@ -118,7 +116,7 @@
         <section class="journal-page journal-right">
           <div class="journal-primary-content">
           <div class="journal-section">
-            <div class="journal-title-row"><div class="journal-heading">Activité</div><button type="button" id="homeAllObjectives" class="journal-link" title="Voir tous mes objectifs dans la Bibliothèque" aria-label="Voir tous mes objectifs">↗</button></div>
+            <div class="journal-title-row"><button type="button" id="homeAllObjectives" class="journal-heading journal-heading-button home-heading-button" title="Ouvrir les objectifs dans la Bibliothèque">Activité</button></div>
             <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
           </div>
 
@@ -135,11 +133,17 @@
       </div>
 
       <section id="homeDailyTrackersWidget" data-home-module="dailyTrackers" class="home-daily-trackers-widget" aria-label="Mes trackers à cocher aujourd’hui">
-        <div class="home-daily-trackers-head"><strong>To-do list</strong><button type="button" id="homeTodoOpenTasks" title="Voir toutes les tâches">Tâches →</button></div>
-        <div id="homeTodoPreview" class="home-todo-preview" aria-label="Tâches à faire aujourd’hui"></div>
-        <div class="home-trackers-subheading"><strong>Habitudes du jour</strong><button id="openDailyTrackers" type="button">Tout voir →</button></div>
-        <p id="homeDailyTrackersDate" class="muted"></p>
-        <div id="homeDailyTrackersList" class="home-daily-trackers-list" aria-label="Cases du jour, cinq lignes visibles à la fois"></div>
+        <div class="home-todo-columns">
+          <div class="home-tasks-pane">
+            <div class="home-daily-trackers-head"><button type="button" id="homeTodoOpenTasks" class="home-heading-button" title="Ouvrir mes tâches">To-do list</button></div>
+            <div id="homeTodoPreview" class="home-todo-preview" aria-label="Tâches à faire aujourd’hui"></div>
+          </div>
+          <div class="home-habits-pane">
+            <div class="home-trackers-subheading"><button id="openDailyTrackers" class="home-heading-button" type="button" title="Ouvrir Trackers">Habitudes du jour</button></div>
+            <p id="homeDailyTrackersDate" class="muted"></p>
+            <div id="homeDailyTrackersList" class="home-daily-trackers-list" aria-label="Cases des habitudes du jour"></div>
+          </div>
+        </div>
       </section>
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
