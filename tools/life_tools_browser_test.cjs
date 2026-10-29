@@ -147,6 +147,14 @@ async function api(path,method='GET',body){
     const found=(await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===boardId);
     return found?.rows[0]?.id===rowId;
   },{boardId:wellness.id,rowId:numberRow.id});
+  // L'API confirme d'abord la transaction ; attendre ensuite le nouveau rendu
+  // avant de comparer la navigation serveur et la vraie position affichée.
+  await page.waitForFunction(({boardId,rowId})=>{
+    const boards=[...document.querySelectorAll('.tracker-board')];
+    const target=boards.find(el=>el.querySelector('h3')?.textContent==='Bien-être');
+    const first=target?.querySelector('.tracker-grid-line[data-tracker-row-id]');
+    return Number(first?.dataset.trackerRowId)===rowId;
+  },{boardId:wellness.id,rowId:numberRow.id},{timeout:12000});
   current=(await api('/api/tracker-boards')).find(b=>b.id===wellness.id);
   assert.equal(current.rows[0].id,numberRow.id);
   assert.equal(current.rows[1].id,checkRow.id);
