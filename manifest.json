@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "34e00fb9816bc8f91c47020acc80e9115e313369f7a42c0498d6806949eb54ed"
+      "sha256": "83eab9e5fed1ce85b9ee5982e82e7cc36ddf8ff1ae7d8d9bcdbc5cc99ca76cc3"
     },
     {
       "path": "app_part3.py",
@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "caa29fc5b5031302030bf822cc5133aca8ea1f5647b63acb43619660b37567ce"
+      "sha256": "1acddabd73a000d3b44f956f84e276b8d1f6e5f580b08bdbeca5b7ba9b009436"
     },
     {
       "path": "public/app_part3.js",
@@ -57,7 +57,7 @@
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "db4c4a0a383fac58f121586128925574b73dcf0c096465d72329bbc13b15f1a7"
+      "sha256": "db01eb7f649101a98f253d3a5424eb289145e95aa5a1f5b332adc617ff9a5b1c"
     },
     {
       "path": "public/objective_map.css",
@@ -81,7 +81,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "fda63d41b5022c692285fd86075b56512b435cecead91fe4f58506f56b45fda3"
+      "sha256": "8e43a2efde6de2008765eef4d969d2a0033863518f99b37263ee87f168ee5b6b"
     },
     {
       "path": "windows_tray.py",
@@ -113,7 +113,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "dfe3dd015214e42cee3ad4a5f011620da1fca299340f7a1f4e9727708008f338"
+      "sha256": "6082265dbd77f4600c50cb9fcbd610fd48cdcee9ef4b66d55bcb8fc1e64f80c8"
     },
     {
       "path": "public/life_tools.css",
@@ -121,7 +121,7 @@
     },
     {
       "path": "quick_capture_native.py",
-      "sha256": "5b6ca140b7540aa728f41f5dd3d52524ca2d6d26638cc137aaf1fdfb3fd3e247"
+      "sha256": "e447a436ece08f1e9538286ecf1e645294eae4aca6a7030769fd47ea5e6a5ef3"
     },
     {
       "path": "public/standalone_preparations.js",
@@ -146,6 +146,14 @@
     {
       "path": "admin_docs.py",
       "sha256": "3af1656d20a19d48dd7c671037d0f79cc6b57896585fcc6bf5b638885b4cd0a1"
+    },
+    {
+      "path": "quick_capture_macro.py",
+      "sha256": "9838680eb052f01816d0a93314fbb66d3b951a6cdbe292795e5c193e59d38433"
+    },
+    {
+      "path": "Lancer_Capture_Rapide.cmd",
+      "sha256": "2a5dd7e83f0e1d10b96f1bd3ddd6982c3707dc97168dfb3b8dfc26c71758e723"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."

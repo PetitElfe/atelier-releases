@@ -171,7 +171,7 @@ function lifeTrackerMarkButton(board,line,day){
   const progress=active?Number(raw):0;
   const closed=!!target&&progress>=target;
   const locked=line.weekday!=null&&board.period?.granularity==='days'&&parseYMD(day).getDay()!==((Number(line.weekday)+1)%7);
-  const button=lifeButton(numeric?(target?(closed?'✓':String(progress||'·')):(active?String(raw):'·')):(active?'●':''),
+  const button=lifeButton(numeric?(target?(closed?'✓ '+target+'/'+target:String(progress)+'/'+target):(active?String(raw):'·')):(active?'●':''),
     async()=>{
       if(locked)return;
       if(!numeric && line.steps?.length){trackerOpenRitual(line,day);return}
@@ -408,6 +408,41 @@ function renderTrackerBoards(){
         reorder.append(move);
       }
       name.append(reorder);
+      const duplicate=lifeButton('⧉',async()=>{
+        const result=await runUiAction('Dupliquer la ligne',()=>lifeApi(
+          '/api/tracker-board-rows/'+line.id+'/duplicate',{method:'POST',body:'{}'}));
+        if(result.ok)await loadLifeTools();
+      },'tracker-row-duplicate');
+      duplicate.title='Dupliquer '+line.title+' (configuration et sous-étapes, sans copier les coches)';
+      duplicate.setAttribute('aria-label',duplicate.title);
+      name.append(duplicate);
+      const grip=lifeNode('span','tracker-row-grip','⋮⋮');
+      grip.draggable=true;grip.title='Glisser pour déplacer '+line.title;
+      grip.setAttribute('aria-label',grip.title);
+      grip.setAttribute('role','button');grip.tabIndex=0;
+      grip.addEventListener('dragstart',event=>{
+        event.dataTransfer.effectAllowed='move';
+        event.dataTransfer.setData('text/plain',String(line.id));
+        row.classList.add('tracker-row-dragging');
+      });
+      grip.addEventListener('dragend',()=>row.classList.remove('tracker-row-dragging'));
+      name.prepend(grip);
+      row.addEventListener('dragover',event=>{
+        if(!event.dataTransfer.types.includes('text/plain'))return;
+        event.preventDefault();event.dataTransfer.dropEffect='move';row.classList.add('tracker-row-drop-target');
+      });
+      row.addEventListener('dragleave',event=>{
+        if(!row.contains(event.relatedTarget))row.classList.remove('tracker-row-drop-target');
+      });
+      row.addEventListener('drop',async event=>{
+        event.preventDefault();row.classList.remove('tracker-row-drop-target');
+        const source=Number(event.dataTransfer.getData('text/plain'));
+        if(!board.rows.some(r=>Number(r.id)===source)||source===Number(line.id))return;
+        const ok=await runUiAction('Réorganiser le tableau',()=>lifeApi(
+          '/api/tracker-board-rows/'+source+'/move',
+          {method:'PUT',body:JSON.stringify({before_id:line.id})}));
+        if(ok.ok)await loadLifeTools();
+      });
       if(line.linked_type&&line.linked_id){
         const linked=lifeButton('↗',()=>{
           const type=line.linked_type;

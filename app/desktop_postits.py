@@ -290,6 +290,7 @@ def _run_gui():
             self.dirty = False
             self.pending = None
             self.geo_pending = None
+            self.lock_restore_pending = None
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             self.window = tk.Toplevel(root)
             if tray is not None:
@@ -315,11 +316,12 @@ def _run_gui():
             self.title.pack(side="left", fill="x", expand=True)
             self.title.insert(0, note["title"])
             self.new_button = tk.Button(self.header, text="＋", relief="flat",
-                                        font=("Segoe UI", 12, "bold"), bg=paper, fg=ink,
-                                        command=self._new_note, cursor="hand2")
+                                        font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
+                                        padx=8,pady=5,command=self._new_note, cursor="hand2")
             self.new_button.pack(side="right", padx=(5, 0))
             self.lock_button = tk.Button(self.header, relief="flat",
                                         bg=paper, fg=ink, cursor="hand2",
+                                        font=("Segoe UI",12),padx=9,pady=6,
                                         command=self._toggle_lock)
             self.lock_button.pack(side="right", padx=(5, 0))
             self._refresh_lock_button()
@@ -338,12 +340,12 @@ def _run_gui():
             self.footer = tk.Frame(self.window, bg=paper)
             self.footer.pack(fill="x", padx=9, pady=(5, 2))
             self.ok_button = tk.Button(self.footer, text="✓ OK", bg=paper, fg=ink,
-                                       relief="groove", font=("Segoe UI", 10, "bold"),
-                                       command=self._close, cursor="hand2")
+                                       relief="groove", font=("Segoe UI", 11, "bold"),
+                                       padx=12,pady=6,command=self._close, cursor="hand2")
             self.ok_button.pack(side="right")
             self.delete_button = tk.Button(self.footer, text="Supprimer", bg=paper, fg=ink,
-                                           relief="flat", font=("Segoe UI", 9),
-                                           command=self._delete, cursor="hand2")
+                                           relief="flat", font=("Segoe UI", 10),
+                                           padx=9,pady=6,command=self._delete, cursor="hand2")
             self.delete_button.pack(side="left")
             self.hint = tk.Label(self.window, text="● Enregistré · Post-it indépendant",
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
@@ -386,6 +388,9 @@ def _run_gui():
             if self.geo_pending:
                 root.after_cancel(self.geo_pending)
                 self.geo_pending = None
+            if self.lock_restore_pending:
+                root.after_cancel(self.lock_restore_pending)
+                self.lock_restore_pending = None
             self.window.update_idletasks()
             geometry=(self.window.winfo_x(),self.window.winfo_y(),
                       self.window.winfo_width(),self.window.winfo_height())
@@ -519,15 +524,28 @@ def _run_gui():
             if event.widget != self.window or self.window.state() != "normal":
                 return
             if self.locked:
+                # Ne pas repositionner à chaque événement Configure : cela fait
+                # trembler la fenêtre lorsque Windows termine un glisser.
+                if self.lock_restore_pending:
+                    root.after_cancel(self.lock_restore_pending)
                 x,y,w,h=self.fixed_geometry
                 real=(self.window.winfo_x(),self.window.winfo_y(),
                       self.window.winfo_width(),self.window.winfo_height())
                 if real!=(x,y,w,h):
-                    self.window.geometry(f"{w}x{h}+{x}+{y}")
+                    self.lock_restore_pending=root.after(350,self._restore_locked_geometry)
                 return
             if self.geo_pending:
                 root.after_cancel(self.geo_pending)
             self.geo_pending = root.after(1200, self._save_geometry)
+
+        def _restore_locked_geometry(self):
+            self.lock_restore_pending=None
+            if not self.locked or not self.window.winfo_exists():return
+            x,y,w,h=self.fixed_geometry
+            actual=(self.window.winfo_x(),self.window.winfo_y(),
+                    self.window.winfo_width(),self.window.winfo_height())
+            if actual!=(x,y,w,h):
+                self.window.geometry(f"{w}x{h}+{x}+{y}")
 
         def _save_geometry(self):
             self.geo_pending = None
