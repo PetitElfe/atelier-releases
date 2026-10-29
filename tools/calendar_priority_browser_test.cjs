@@ -33,7 +33,7 @@ async function api(path,method='GET',body){
     browser=await chromium.launch({headless:true});
     const page=await browser.newPage({viewport:{width:1440,height:960}});
     const errors=[];
-    page.on('pageerror',error=>errors.push(error.message));
+    page.on('pageerror',error=>{errors.push(error.message);console.log('CALENDAR DEBUG PAGE ERROR STACK',error.stack)});
     await page.goto(base,{waitUntil:'domcontentloaded'});
     await page.evaluate(async()=>{
       state.cursor=parseYMD('2026-10-20');
