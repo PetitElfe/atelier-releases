@@ -69,6 +69,10 @@ jobs:
         run: node tools/calendar_priority_browser_test.cjs
       - name: Verify expanded upcoming appointments above the journal
         run: node tools/home_upcoming_overlay_browser_test.cjs
+      - name: Verify tracker duplication, drag order and calendar visual redesign
+        run: node tools/big_refonte_browser_test.cjs
+      - name: Verify native macro launcher in temporary data
+        run: python app/quick_capture_macro.py --self-test
       - name: Verify tracker habits with targets, steps, weekly day rules and Settings archives
         run: node tools/tracker_ritual_browser_test.cjs
       - name: Verify preserved old preparatives and daily Home checkboxes

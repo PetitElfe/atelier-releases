@@ -682,6 +682,32 @@ class Handler(BaseHTTPRequestHandler):
                               'created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
                               (title,color,unit,count,anchor,ts,ts))
                 c.commit();return self._json({'id':cur.lastrowid},201)
+        if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='duplicate':
+            try:row_id=int(parts[2])
+            except (ValueError,TypeError):return self._json({'error':'Ligne invalide.'},400)
+            with conn() as c:
+                row=c.execute('SELECT r.*, b.archived AS board_archived FROM tracker_board_rows r '
+                    'JOIN tracker_boards b ON b.id=r.board_id WHERE r.id=?',(row_id,)).fetchone()
+                if not row or row['archived'] or row['board_archived']:
+                    return self._json({'error':'Ligne introuvable ou archivée.'},404)
+                if c.execute('SELECT COUNT(*) FROM tracker_board_rows WHERE board_id=? AND archived=0',
+                             (row['board_id'],)).fetchone()[0]>=80:
+                    return self._json({'error':'Limite de lignes atteinte.'},409)
+                index=c.execute('SELECT COALESCE(MAX(order_index),0)+1 FROM tracker_board_rows WHERE board_id=?',
+                                (row['board_id'],)).fetchone()[0]
+                copy_title=(row['title']+' (copie)')[:100]
+                new=c.execute('INSERT INTO tracker_board_rows '
+                    '(board_id,title,mode,target_count,weekday,linked_type,linked_id,order_index,created_at,updated_at) '
+                    'VALUES(?,?,?,?,?,?,?,?,?,?)',
+                    (row['board_id'],copy_title,row['mode'],row['target_count'],row['weekday'],
+                     row['linked_type'],row['linked_id'],index,ts,ts)).lastrowid
+                # Les sous-étapes sont une configuration ; les coches restent propres à la ligne source.
+                for step in c.execute('SELECT title,order_index FROM tracker_row_steps '
+                                      'WHERE row_id=? AND active=1 ORDER BY order_index,id',(row_id,)).fetchall():
+                    c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,active) VALUES(?,?,?,1)',
+                              (new,step['title'],step['order_index']))
+                c.commit()
+                return self._json({'id':new,'title':copy_title},201)
         if p.startswith('/api/tracker-boards/') and p.endswith('/rows'):
             parts=p.strip('/').split('/')
             if len(parts)!=4:return self._json({'error':'Adresse invalide.'},404)
@@ -973,7 +999,8 @@ class Handler(BaseHTTPRequestHandler):
             try:row_id=int(parts[2])
             except (ValueError,TypeError):return self._json({'error':'Ligne invalide.'},400)
             direction=body.get('direction')
-            if direction not in ('up','down'):
+            dropping='before_id' in body
+            if not dropping and direction not in ('up','down'):
                 return self._json({'error':'Sens du déplacement invalide.'},400)
             with conn() as c:
                 current=c.execute(
@@ -983,10 +1010,21 @@ class Handler(BaseHTTPRequestHandler):
                     'SELECT id FROM tracker_board_rows WHERE board_id=? AND archived=0 '
                     'ORDER BY order_index,id',(current['board_id'],))]
                 position=rows.index(row_id)
-                target=position+(-1 if direction=='up' else 1)
-                if target<0 or target>=len(rows):
-                    return self._json({'ok':True,'moved':False})
-                rows[position],rows[target]=rows[target],rows[position]
+                if dropping:
+                    try:
+                        anchor=None if body['before_id'] is None else int(body['before_id'])
+                    except (TypeError,ValueError):
+                        return self._json({'error':'Position cible invalide.'},400)
+                    if anchor is not None and anchor not in rows:
+                        return self._json({'error':'La ligne cible doit être dans le même tableau.'},400)
+                    if anchor==row_id:return self._json({'ok':True,'moved':False})
+                    rows.remove(row_id)
+                    rows.insert(rows.index(anchor) if anchor is not None else len(rows),row_id)
+                else:
+                    target=position+(-1 if direction=='up' else 1)
+                    if target<0 or target>=len(rows):
+                        return self._json({'ok':True,'moved':False})
+                    rows[position],rows[target]=rows[target],rows[position]
                 for index,identity in enumerate(rows,1):
                     c.execute('UPDATE tracker_board_rows SET order_index=?,updated_at=? WHERE id=?',
                               (index,ts,identity))

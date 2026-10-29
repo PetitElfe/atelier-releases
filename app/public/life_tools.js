@@ -171,7 +171,7 @@ function lifeTrackerMarkButton(board,line,day){
   const progress=active?Number(raw):0;
   const closed=!!target&&progress>=target;
   const locked=line.weekday!=null&&board.period?.granularity==='days'&&parseYMD(day).getDay()!==((Number(line.weekday)+1)%7);
-  const button=lifeButton(numeric?(target?(closed?'✓':String(progress||'·')):(active?String(raw):'·')):(active?'●':''),
+  const button=lifeButton(numeric?(target?(closed?'✓ '+target+'/'+target:String(progress)+'/'+target):(active?String(raw):'·')):(active?'●':''),
     async()=>{
       if(locked)return;
       if(!numeric && line.steps?.length){trackerOpenRitual(line,day);return}
@@ -185,7 +185,8 @@ function lifeTrackerMarkButton(board,line,day){
           {method:'PUT',body:JSON.stringify({day,value:nextValue})}));
         if(saved.ok){
           line.marks[day]=String(nextValue);
-          button.replaceWith(lifeTrackerMarkButton(board,line,day));
+          // Ne pas réactiver une case avant la fin du rafraîchissement :
+          // cela pouvait envoyer deux valeurs obsolètes lors de clics rapides.
           await loadLifeTools();
         }else button.disabled=false;
         return;
@@ -408,6 +409,41 @@ function renderTrackerBoards(){
         reorder.append(move);
       }
       name.append(reorder);
+      const duplicate=lifeButton('⧉',async()=>{
+        const result=await runUiAction('Dupliquer la ligne',()=>lifeApi(
+          '/api/tracker-board-rows/'+line.id+'/duplicate',{method:'POST',body:'{}'}));
+        if(result.ok)await loadLifeTools();
+      },'tracker-row-duplicate');
+      duplicate.title='Dupliquer '+line.title+' (configuration et sous-étapes, sans copier les coches)';
+      duplicate.setAttribute('aria-label',duplicate.title);
+      name.append(duplicate);
+      const grip=lifeNode('span','tracker-row-grip','⋮⋮');
+      grip.draggable=true;grip.title='Glisser pour déplacer '+line.title;
+      grip.setAttribute('aria-label',grip.title);
+      grip.setAttribute('role','button');grip.tabIndex=0;
+      grip.addEventListener('dragstart',event=>{
+        event.dataTransfer.effectAllowed='move';
+        event.dataTransfer.setData('text/plain',String(line.id));
+        row.classList.add('tracker-row-dragging');
+      });
+      grip.addEventListener('dragend',()=>row.classList.remove('tracker-row-dragging'));
+      name.prepend(grip);
+      row.addEventListener('dragover',event=>{
+        if(!event.dataTransfer.types.includes('text/plain'))return;
+        event.preventDefault();event.dataTransfer.dropEffect='move';row.classList.add('tracker-row-drop-target');
+      });
+      row.addEventListener('dragleave',event=>{
+        if(!row.contains(event.relatedTarget))row.classList.remove('tracker-row-drop-target');
+      });
+      row.addEventListener('drop',async event=>{
+        event.preventDefault();row.classList.remove('tracker-row-drop-target');
+        const source=Number(event.dataTransfer.getData('text/plain'));
+        if(!board.rows.some(r=>Number(r.id)===source)||source===Number(line.id))return;
+        const ok=await runUiAction('Réorganiser le tableau',()=>lifeApi(
+          '/api/tracker-board-rows/'+source+'/move',
+          {method:'PUT',body:JSON.stringify({before_id:line.id})}));
+        if(ok.ok)await loadLifeTools();
+      });
       if(line.linked_type&&line.linked_id){
         const linked=lifeButton('↗',()=>{
           const type=line.linked_type;
@@ -586,8 +622,15 @@ function renderLifeAdmin(){
   const statusNames={todo:'À faire',waiting:'En attente',done:'Terminée'};
   const allEvents=[...new Map((state.events||[]).filter(e=>e.id).map(e=>[Number(e.id),e])).values()]
     .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
-  lifeAdmin.forEach(item=>{
-    const card=lifeNode('article','life-card'+(item.status==='done'?' life-complete':''));
+  const query=($('#adminSearch')?.value||'').trim().toLocaleLowerCase('fr-FR');
+  const statusFilter=$('#adminStatusFilter')?.value||'all';
+  const visible=lifeAdmin.filter(item=>(statusFilter==='all'||item.status===statusFilter)&&
+    (!query||[item.title,item.category,item.notes,item.event_title].some(part=>
+      String(part||'').toLocaleLowerCase('fr-FR').includes(query))));
+  lifeSetText('#adminVisibleCount',visible.length+' / '+lifeAdmin.length+' démarches');
+  if(lifeAdmin.length&&!visible.length)root.append(lifeNode('p','muted','Aucune démarche ne correspond à cette recherche.'));
+  visible.forEach(item=>{
+    const card=lifeNode('article','life-card life-admin-dossier'+(item.status==='done'?' life-complete':''));
     card.dataset.adminId=String(item.id);
     const heading=lifeNode('div','life-card-head');
     heading.append(lifeNode('strong','',item.title),lifeButton('Archiver',async()=>{
@@ -596,7 +639,9 @@ function renderLifeAdmin(){
       if(yes)await lifeAction('Archiver la démarche',()=>lifeApi('/api/admin/'+item.id,
         {method:'PUT',body:JSON.stringify({archived:true})}));
     },'life-admin-archive-action'));
-    const meta=lifeNode('div','life-muted',item.category+' · '+lifeDate(item.due_date));
+    const meta=lifeNode('div','life-admin-meta');
+    meta.append(lifeNode('span','life-admin-category',item.category),
+      lifeNode('span','life-admin-deadline',item.due_date?'Échéance · '+lifeDate(item.due_date):'Sans échéance'));
     const editDetails=lifeNode('details','life-admin-edit-details');
     editDetails.append(lifeNode('summary','','Modifier le nom, la catégorie ou la date'));
     const editForm=lifeNode('form','life-admin-edit-form');
@@ -633,7 +678,9 @@ function renderLifeAdmin(){
         {method:'PUT',body:JSON.stringify({status:select.value})}));
       if(!ok)select.value=item.status;
     };
+    const noteHeading=lifeNode('label','life-admin-notes-title','Notes et prochaine action');
     const notes=lifeNode('textarea','life-admin-notes');
+    notes.setAttribute('aria-label','Notes et prochaine action de '+item.title);
     notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
     const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi(
       '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
@@ -712,7 +759,13 @@ function renderLifeAdmin(){
       finally{uploader.disabled=false;uploader.value=''}
     });
     files.append(uploadLabel);
-    card.append(heading,meta,editDetails,select,notes,save,eventPanel,files);root.append(card);
+    const statusGroup=lifeNode('label','life-admin-status-group','Avancement');
+    statusGroup.append(select);
+    const notesGroup=lifeNode('section','life-admin-note-group');
+    notesGroup.append(noteHeading,notes,save);
+    const docsGroup=lifeNode('section','life-admin-documents-group');
+    docsGroup.append(eventPanel,files);
+    card.append(heading,meta,statusGroup,editDetails,notesGroup,docsGroup);root.append(card);
   });
   const archivedRoot=$('#adminArchivedList'),toggle=$('#adminArchivesToggle');
   if(toggle){
@@ -748,6 +801,8 @@ function renderLifeAdmin(){
     }
   }
 }
+$('#adminSearch')?.addEventListener('input',()=>renderLifeAdmin());
+$('#adminStatusFilter')?.addEventListener('change',()=>renderLifeAdmin());
 $('#adminArchivesToggle')?.addEventListener('click',()=>{
   lifeAdminArchivesVisible=!lifeAdminArchivesVisible;
   renderLifeAdmin();

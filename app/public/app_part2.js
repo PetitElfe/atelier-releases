@@ -204,7 +204,7 @@ function renderWeek(){
     const today=ds===ymd(new Date());
     const predicted=cycleForecastForDay(ds);
     const head=document.createElement('div');head.className='week-head'+(today?' week-current-day':'')+(predicted?' cycle-forecast':'');
-    head.innerHTML='<strong>'+days[i]+'</strong><br>'+d.getDate()+'/'+pad(d.getMonth()+1);
+    head.innerHTML='<strong class="week-day-name">'+days[i]+'</strong><span class="week-day-number">'+d.getDate()+'</span><small class="week-day-month">'+months[d.getMonth()].slice(0,3)+'</small>';
     if(cycleShowMarksPreference()&&isRecordedCycleDay(ds))head.classList.add('cycle-recorded');
     if(predicted)head.title='Règles possibles autour du '+fmtFrenchDate(parseYMD(predicted.start))+' (± '+predicted.spread+' jours).';
     if(today){const marker=document.createElement('span');marker.className='week-today-label';marker.textContent='AUJOURD’HUI';head.prepend(marker);}
@@ -323,6 +323,15 @@ function renderWeek(){
       cluster.push(item);clusterEnd=Math.max(clusterEnd,item.end);
     }
     paintCluster();
+    if(ds===ymd(new Date())){
+      const current=new Date(),minute=current.getHours()*60+current.getMinutes();
+      if(minute>=firstMinute&&minute<=lastMinute){
+        const now=document.createElement('div');now.className='week-now-line';
+        now.style.top=((minute-firstMinute)/spanMinutes*100)+'%';
+        now.setAttribute('aria-label','Heure actuelle : '+pad(current.getHours())+':'+pad(current.getMinutes()));
+        layer.appendChild(now);
+      }
+    }
     grid.appendChild(layer);
   }
 }

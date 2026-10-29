@@ -45,7 +45,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   });
   assert.ok(dimensions.weekWidth>dimensions.viewWidth*.94,'Semainier should use available width '+JSON.stringify(dimensions));
   assert.ok(dimensions.dayWidth>=156,'Readable columns '+JSON.stringify(dimensions));
-  assert.ok(dimensions.slotHeight>=54&&dimensions.slotHeight<=58,'Readable one-hour rows '+JSON.stringify(dimensions));
+  assert.ok(dimensions.slotHeight>=62&&dimensions.slotHeight<=70,'Agenda-style one-hour rows '+JSON.stringify(dimensions));
   assert.equal(dimensions.todaySlots,16);
   assert.equal(dimensions.horizontalScroll,false,'2K width should fit without horizontal scroll');
   assert.equal(dimensions.verticalScroll,true,'Large hourly rows must remain vertically scrollable at 900px');

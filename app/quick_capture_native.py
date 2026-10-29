@@ -8,6 +8,7 @@ import ctypes
 from ctypes import wintypes
 import json
 import sqlite3
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -80,6 +81,7 @@ def install(root,data_dir,db_path,on_postit=None):
     user32.PeekMessageW.argtypes=[ctypes.POINTER(wintypes.MSG),wintypes.HWND,wintypes.UINT,wintypes.UINT,wintypes.UINT]
     user32.PeekMessageW.restype=wintypes.BOOL
     pref=Path(data_dir)/"quick-capture-hotkey.json"
+    macro_request=Path(data_dir)/"quick-capture-open-request.txt"
     current=None
     registered=False
     popup=None
@@ -150,6 +152,16 @@ def install(root,data_dir,db_path,on_postit=None):
 
     def poll():
         nonlocal current,registered
+        # Un clavier à macros ou un bouton de souris peut lancer le fichier
+        # Lancer_Capture_Rapide.cmd plutôt que d'émuler une combinaison clavier.
+        try:
+            if macro_request.exists():
+                request_age=time.time()-float(macro_request.read_text(encoding='ascii').strip())
+                macro_request.unlink(missing_ok=True)
+                if 0<=request_age<=15:show()
+        except (OSError,ValueError):
+            try:macro_request.unlink(missing_ok=True)
+            except OSError:pass
         shortcut=read_preference(pref)
         if shortcut!=current:
             if registered:user32.UnregisterHotKey(None,HOTKEY_ID);registered=False

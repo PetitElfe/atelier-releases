@@ -147,6 +147,14 @@ async function api(path,method='GET',body){
     const found=(await (await fetch('/api/tracker-boards')).json()).find(b=>b.id===boardId);
     return found?.rows[0]?.id===rowId;
   },{boardId:wellness.id,rowId:numberRow.id});
+  // L'API confirme d'abord la transaction ; attendre ensuite le nouveau rendu
+  // avant de comparer la navigation serveur et la vraie position affichée.
+  await page.waitForFunction(({boardId,rowId})=>{
+    const boards=[...document.querySelectorAll('.tracker-board')];
+    const target=boards.find(el=>el.querySelector('h3')?.textContent==='Bien-être');
+    const first=target?.querySelector('.tracker-grid-line[data-tracker-row-id]');
+    return Number(first?.dataset.trackerRowId)===rowId;
+  },{boardId:wellness.id,rowId:numberRow.id},{timeout:12000});
   current=(await api('/api/tracker-boards')).find(b=>b.id===wellness.id);
   assert.equal(current.rows[0].id,numberRow.id);
   assert.equal(current.rows[1].id,checkRow.id);
@@ -329,8 +337,13 @@ async function api(path,method='GET',body){
   await page.waitForFunction(async({id,eid})=>
     (await (await fetch('/api/admin')).json()).find(x=>x.id===id)?.event_id===eid,
     {id:admin.id,eid:event.id});
-  const linked=(await api('/api/events')).find(x=>x.id===event.id);
-  assert.ok(linked.admin_links.some(x=>x.id===admin.id),'Event exposes linked admin without creating another event');
+  await page.waitForFunction(async({id,eid})=>{
+    const response=await fetch('/api/events',{cache:'no-store'});
+    return (await response.json()).find(e=>e.id===eid)?.admin_links?.some(x=>x.id===id);
+  },{id:admin.id,eid:event.id},{timeout:12000});
+  const linked=(await api('/api/events?start='+date+'&end='+date)).find(x=>x.id===event.id);
+  assert.ok(linked?.admin_links?.some(x=>Number(x.id)===Number(admin.id)),
+    'Event exposes linked admin without creating another event: '+JSON.stringify({linked,adminId:admin.id,eventId:event.id}));
   const fileName='pièce-test.txt',sample='Dossier de test — reste dans SQLite.';
   await page.locator('#adminList .life-card[data-admin-id="'+admin.id+'"] input[type=file]')
     .setInputFiles({name:fileName,mimeType:'text/plain',buffer:Buffer.from(sample,'utf8')});
