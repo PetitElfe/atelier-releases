@@ -28,6 +28,7 @@
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Retour à l’accueil"><svg class="home-shortcut-symbol" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="home-shortcut-text">Accueil</span></button>
+      <button id="sideNavHeaderToggle" class="icon-button secondary" type="button" title="Ouvrir le tiroir des rubriques" aria-label="Ouvrir le tiroir des rubriques" aria-expanded="false" aria-controls="sideNav">☰</button>
       <div class="top-brand-labels"><div class="eyebrow">L’ATELIER DU GOBLIN · ALPHA 0.18.0</div><h1 id="pageTitle">Accueil</h1></div><div class="top-xp-level" id="topXpLevel" aria-label="Niveau de progression" title="XP gagnée grâce à tes accomplissements">Niv. 1 · 0 XP</div>
     </div>
     <div class="top-date-wrap">
@@ -35,9 +36,10 @@
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
+      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Ouvrir mes Post-it du bureau" aria-label="Ouvrir mes Post-it du bureau">▤</button>
       <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil">＋</button>
       <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙<span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
-      <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
+      <button id="globalLayoutEdit" class="secondary" type="button" aria-label="Modifier la disposition des modules" title="Modifier la disposition des modules" aria-pressed="false">Modifier</button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="globalLayoutUndo" class="secondary hidden" type="button">↶ Annuler la remise à zéro</button>
       <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
@@ -81,7 +83,7 @@
 
         <section id="homeUpcomingWidget" data-home-module="upcoming" class="desk-object desk-note" aria-labelledby="upcomingTitle">
           <div class="desk-note-head">
-            <span id="upcomingTitle">Rendez-vous à venir</span>
+            <button id="upcomingTitle" class="home-widget-heading-button" type="button" title="Ouvrir le calendrier">Rendez-vous à venir</button>
             <button id="openCalendarFromUpcoming" class="journal-link" type="button">calendrier →</button>
           </div>
           <div id="homeUpcoming" class="desk-mini-list" aria-live="polite"></div>
@@ -93,6 +95,7 @@
         <section class="journal-page journal-left">
           <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
+          <button type="button" id="homeJournalWeekLink" class="journal-week-link" title="Afficher cette semaine dans le calendrier">Voir la semaine ›</button>
 
           <div class="journal-section">
             <div class="journal-heading">Ne pas oublier</div>
@@ -115,15 +118,8 @@
         <section class="journal-page journal-right">
           <div class="journal-primary-content">
           <div class="journal-section">
-            <div class="journal-title-row"><div class="journal-heading">Mes objectifs du moment</div><button type="button" id="homeAllObjectives" class="journal-link">bibliothèque →</button></div>
+            <div class="journal-title-row"><div class="journal-heading">Activité</div><button type="button" id="homeAllObjectives" class="journal-link" title="Voir tous mes objectifs dans la Bibliothèque" aria-label="Voir tous mes objectifs">↗</button></div>
             <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
-          </div>
-
-          <div class="journal-divider"></div>
-
-          <div class="journal-section">
-            <button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Mon livre de recettes <span>＋</span></button>
-            <div id="homeMealIdeas" class="meal-ideas"></div>
           </div>
 
           <div id="homeExpiryBlock" class="journal-section expiry-block hidden">
@@ -131,13 +127,17 @@
             <div id="homeExpiryList"></div>
           </div>
           </div>
-          <div class="journal-secondary-content"><div class="journal-heading">Courrier arrivé</div><div id="journalCaptureSummary"></div><div class="journal-divider"></div><button id="journalQuickCapture" type="button" class="journal-heading journal-heading-button">✎ Noter une idée</button><div class="journal-divider"></div><button id="journalBackToToday" type="button" class="journal-heading journal-heading-button">← Revenir à aujourd’hui</button></div>
+          <div class="journal-secondary-content"><div class="journal-heading">Courrier arrivé</div><div id="journalCaptureSummary"></div><div class="journal-divider"></div>
+          <div class="journal-section"><button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button><div id="homeMealIdeas" class="meal-ideas"></div></div>
+          <div class="journal-divider"></div><button id="journalQuickCapture" type="button" class="journal-heading journal-heading-button">✎ Noter une idée</button><div class="journal-divider"></div><button id="journalBackToToday" type="button" class="journal-heading journal-heading-button">← Revenir à aujourd’hui</button></div>
         </section>
         <div class="journal-page-turn"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
       </div>
 
       <section id="homeDailyTrackersWidget" data-home-module="dailyTrackers" class="home-daily-trackers-widget" aria-label="Mes trackers à cocher aujourd’hui">
-        <div class="home-daily-trackers-head"><strong>Mes coches du jour</strong><button id="openDailyTrackers" type="button">Tout voir →</button></div>
+        <div class="home-daily-trackers-head"><strong>To-do list</strong><button type="button" id="homeTodoOpenTasks" title="Voir toutes les tâches">Tâches →</button></div>
+        <div id="homeTodoPreview" class="home-todo-preview" aria-label="Tâches à faire aujourd’hui"></div>
+        <div class="home-trackers-subheading"><strong>Habitudes du jour</strong><button id="openDailyTrackers" type="button">Tout voir →</button></div>
         <p id="homeDailyTrackersDate" class="muted"></p>
         <div id="homeDailyTrackersList" class="home-daily-trackers-list" aria-label="Cases du jour, cinq lignes visibles à la fois"></div>
       </section>

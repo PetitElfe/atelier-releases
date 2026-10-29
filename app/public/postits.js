@@ -117,6 +117,8 @@ function initDesktopPostitsControls(){
   const make=$('#settingsNewDesktopPostit');
   const startup=$('#settingsDesktopPostitStartup');
   if(launch)launch.onclick=()=>startDesktopPostits(false);
+  const header=$('#quickPostitsHeader');
+  if(header)header.onclick=()=>startDesktopPostits(false);
   if(make)make.onclick=()=>startDesktopPostits(true);
   const archives=$('#settingsDesktopPostitArchives');
   archives?.addEventListener('toggle',()=>{

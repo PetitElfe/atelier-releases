@@ -476,6 +476,12 @@ function setSideNavCollapsed(collapsed){
   syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
+  const headerButton=$('#sideNavHeaderToggle');
+  if(headerButton){
+    headerButton.setAttribute('aria-expanded',String(!collapsed));
+    headerButton.setAttribute('aria-label',collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques');
+    headerButton.title=collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques';
+  }
   const toggle=$('#sideNavToggle');
   if(toggle){
     toggle.setAttribute('aria-label',collapsed?'Afficher le menu':'Masquer le menu');
@@ -556,9 +562,16 @@ window.addEventListener('resize',()=>{
   if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
 });
 $('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
+$('#sideNavHeaderToggle')?.addEventListener('click',()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed')));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
+$('#upcomingTitle')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('calendar')});
+$('#homeBudgetWidget')?.addEventListener('click',event=>{
+  if(globalLayoutEditing||event.target.closest('button,a,input,[data-layout-control]'))return;
+  showView('budget');
+});
+$('#homeTodoOpenTasks')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('tasks')});
 $('#openCalendarFromUpcoming').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#addLibraryDomain').onclick=()=>openLibraryDomainCreateModal();
@@ -1621,6 +1634,8 @@ function syncGlobalLayoutEditing(){
   const toggle=$('#globalLayoutEdit'),reset=$('#globalLayoutReset'),undo=$('#globalLayoutUndo');
   if(toggle){
     toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+    toggle.setAttribute('aria-label',globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules');
+    toggle.title=globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules';
     toggle.classList.toggle('is-active',globalLayoutEditing);
     toggle.setAttribute('aria-pressed',globalLayoutEditing?'true':'false');
   }

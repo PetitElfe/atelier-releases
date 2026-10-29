@@ -150,3 +150,159 @@
   #homeView #journalBook .journal-page{padding:18px 16px 44px}
   #homeView #journalBook .journal-heading{font-size:15px}
 }
+
+
+/* 29 octobre — corrections fidèles aux annotations par thème sur la capture Accueil. */
+.top-brand #globalHomeShortcut{
+  min-width:44px!important;width:44px!important;height:44px!important;padding:0!important;
+  border-radius:10px!important;
+}
+.top-brand #globalHomeShortcut .home-shortcut-text{display:none!important}
+#sideNavHeaderToggle{
+  min-width:40px;width:40px;height:40px;border:0;background:transparent;
+  color:#d7b985;font:600 24px/1 system-ui,sans-serif;border-radius:7px
+}
+#sideNavHeaderToggle:hover,#sideNavHeaderToggle:focus-visible{background:#433627;outline-color:#dfc28e}
+#topXpLevel{
+  display:flex;flex-direction:column;gap:5px;min-width:155px;max-width:200px;width:180px;
+  padding:7px 11px;border:1px solid #927a53;border-radius:10px;background:#29221a;
+  color:#f3dfb9;font-style:normal!important
+}
+#topXpLevel .top-xp-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#topXpLevel .top-xp-head strong{font:700 12px/1.2 system-ui,sans-serif}
+#topXpLevel .top-xp-head span{font:500 11px/1.2 system-ui,sans-serif;white-space:nowrap}
+#topXpLevel .top-xp-track{
+  width:100%;height:8px;border:1px solid #695338;border-radius:12px;
+  background:#1b1713;overflow:hidden
+}
+#topXpLevel .top-xp-fill{
+  display:block;height:100%;border-radius:12px;
+  background:linear-gradient(90deg,#9b8057,#dfbd78);transition:width .3s ease
+}
+.top-actions #quickPostitsHeader{font-size:23px;color:#e7d3aa}
+.top-actions #quickPostitsHeader:hover{background:#3b3022}
+.top-actions #globalLayoutEdit{
+  width:45px;min-width:45px;height:44px;padding:0!important;
+  font-size:0!important;border-radius:11px;display:grid;place-items:center
+}
+.top-actions #globalLayoutEdit::before{content:'✎';font:700 26px/1 Georgia,serif;display:block}
+.top-actions #globalLayoutEdit.is-active::before{content:'✓';font:700 23px/1 system-ui,sans-serif}
+#sideNav{
+  height:calc(100dvh - 96px)!important;max-height:calc(100dvh - 20px)!important;
+  display:flex!important;flex-direction:column;overflow:visible!important
+}
+#sideNav .side-nav-links{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;padding:4px 2px 12px
+}
+#sideNav.side-nav-on-left{border-left:0;border-right:1px solid #7c6347;border-radius:0 12px 12px 0}
+#sideNav:not(.side-nav-on-left){border-radius:12px 0 0 12px}
+#homeView #homeBudgetWidget:not(.layout-editing){cursor:pointer}
+#homeView #homeBudgetOpen,#homeView #openDailyTrackers,
+#homeView #homeTodoOpenTasks{transition:opacity .13s,border-color .13s}
+#homeView #homeBudgetOpen{
+  background:transparent;border:0;color:#e2c59a;font-size:0;min-width:33px
+}
+#homeView #homeBudgetOpen::before{content:'↗';font:600 19px/1.1 system-ui,sans-serif}
+#homeView #homeBudgetOpen:not(:focus-visible){opacity:.23}
+#homeView #homeBudgetWidget:hover #homeBudgetOpen,
+#homeView #homeBudgetOpen:focus-visible{opacity:1}
+#homeView #upcomingTitle{
+  padding:0;border:0;background:none;color:#d8b987;font:italic 600 14px/1.35 Georgia,serif;
+  text-align:left;min-width:0
+}
+#homeView #upcomingTitle:hover,#homeView #upcomingTitle:focus-visible{color:#f4dbad;text-decoration:underline}
+#homeView #homeUpcoming .home-upcoming-toggle{
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  min-height:27px;padding:4px 9px;margin-top:1px;
+  background:transparent;border:0;border-radius:7px;color:#e8cb95;
+  font:600 10px/1.2 system-ui,sans-serif;opacity:.12;
+  transition:opacity .15s ease,background .15s ease
+}
+#homeView #homeUpcomingWidget:hover .home-upcoming-toggle,
+#homeView #homeUpcomingWidget:focus-within .home-upcoming-toggle,
+#homeView #homeUpcomingWidget.home-upcoming-expanded .home-upcoming-toggle{
+  opacity:1;background:#32271b
+}
+@media(hover:none){#homeView #homeUpcoming .home-upcoming-toggle{opacity:1!important}}
+#homeView #journalBook .journal-title-row{gap:6px}
+#homeView #journalBook .journal-heading{font-size:15px!important;line-height:1.3;margin-bottom:6px}
+#homeView #journalBook .objective-suggestions{display:block}
+#homeView #journalBook .objective-note{
+  display:block!important;width:100%;min-height:0!important;padding:7px 2px 8px!important;
+  margin:0!important;border:0!important;border-bottom:1px dotted #a99678!important;
+  border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:#3a2e20;text-align:left
+}
+#homeView #journalBook .objective-note:hover,
+#homeView #journalBook .objective-note:focus-visible{
+  background:#6b573214!important;color:#241b13;outline-offset:1px
+}
+#homeView #journalBook .objective-name{
+  font-size:12px!important;font-weight:600!important;line-height:1.3!important;
+  white-space:normal;overflow-wrap:anywhere
+}
+#homeView #journalBook .objective-context{
+  font-size:10px!important;font-style:normal;line-height:1.35!important;
+  margin:3px 0 5px!important;
+}
+#homeView #journalBook .objective-progress-track{
+  background:transparent!important;border-bottom:1px solid #b7a583;
+  height:5px!important;overflow:hidden
+}
+#homeView #journalBook .objective-progress-track i{
+  display:block;height:4px!important;background:#aa9068
+}
+#homeView #journalBook .objective-percent{font-size:10px!important}
+#homeView #journalBook #homeAllObjectives{
+  padding:0 5px;font:600 17px/1 Georgia,serif;opacity:.28;text-decoration:none
+}
+#homeView #journalBook .journal-title-row:hover #homeAllObjectives,
+#homeView #journalBook #homeAllObjectives:focus-visible{opacity:1}
+#homeView #journalBook .journal-week-link{
+  display:block;width:fit-content;margin:0 0 10px auto;padding:2px 0;
+  border:0;border-bottom:1px dotted #a18c70;border-radius:0;background:transparent;
+  color:#6a533c;font-size:11px;font-style:italic
+}
+#homeView #journalBook .journal-week-link:hover{text-decoration:underline}
+#homeView #journalBook .meal-ideas{
+  padding:4px 2px;border:0!important;border-radius:0!important;background:transparent!important;
+  font-size:11px;min-height:0
+}
+#homeView #journalBook .meal-line{padding:5px 1px}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head{align-items:center}
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:12px 0 6px;padding:8px 0 0;border-top:1px solid #695743;
+  color:#e2c69a;font:600 12px/1.2 system-ui,sans-serif
+}
+#homeView #homeDailyTrackersWidget #homeTodoOpenTasks,
+#homeView #homeDailyTrackersWidget #openDailyTrackers{
+  border:0!important;background:transparent!important;color:#c8b38e;font:500 11px/1.2 system-ui,sans-serif
+}
+#homeView #homeTodoPreview{
+  display:flex;flex-direction:column;gap:1px;max-height:170px;overflow-y:auto;
+  scrollbar-width:thin;overscroll-behavior:contain
+}
+#homeView #homeTodoPreview .home-todo-row{
+  display:flex;align-items:center;gap:8px;min-height:35px;
+  padding:4px 2px;border-bottom:1px solid #554638;background:transparent
+}
+#homeView #homeTodoPreview .home-todo-row input{
+  width:16px;height:16px;flex:none;accent-color:#a88b60;cursor:pointer
+}
+#homeView #homeTodoPreview .home-todo-row>button{
+  flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:4px 2px;
+  color:#e2d2bc;font:500 12px/1.3 Georgia,serif;
+  white-space:normal;overflow-wrap:anywhere
+}
+#homeView #homeTodoPreview .home-todo-row.is-done>button{
+  color:#948674;text-decoration:line-through
+}
+#homeView #homeTodoPreview p{margin:8px 0;color:#b9a890;font-size:12px}
+#homeView #homeDailyTrackersDate{font-size:10px;margin:0 0 5px}
+@media(max-width:1100px){
+  #topXpLevel{width:155px;min-width:130px}
+  #homeView #journalBook .journal-heading{font-size:14px!important}
+  #sideNav{height:calc(100dvh - 76px)!important}
+}
