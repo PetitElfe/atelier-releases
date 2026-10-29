@@ -185,7 +185,8 @@ function lifeTrackerMarkButton(board,line,day){
           {method:'PUT',body:JSON.stringify({day,value:nextValue})}));
         if(saved.ok){
           line.marks[day]=String(nextValue);
-          button.replaceWith(lifeTrackerMarkButton(board,line,day));
+          // Ne pas réactiver une case avant la fin du rafraîchissement :
+          // cela pouvait envoyer deux valeurs obsolètes lors de clics rapides.
           await loadLifeTools();
         }else button.disabled=false;
         return;
