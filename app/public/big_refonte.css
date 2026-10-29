@@ -129,3 +129,8 @@
 .life-admin-note-group .life-admin-notes{min-height:110px}
 .life-admin-note-group>button{justify-self:start;min-height:36px}
 @media(max-width:680px){.admin-workspace-toolbar label{flex:1;min-width:min(100%,180px)}}
+
+/* Les nouvelles commandes ne doivent pas réduire le titre d'habitude à zéro. */
+#trackersView .tracker-grid-line{grid-template-columns:330px repeat(var(--tracker-days),32px)!important}
+#trackersView .tracker-row-label{min-width:330px}
+#trackersView .tracker-row-title{min-width:90px!important}

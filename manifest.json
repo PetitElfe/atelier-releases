@@ -153,7 +153,7 @@
     },
     {
       "path": "Lancer_Capture_Rapide.cmd",
-      "sha256": "2a5dd7e83f0e1d10b96f1bd3ddd6982c3707dc97168dfb3b8dfc26c71758e723"
+      "sha256": "1d39ec3470c10af938ea9b97fb338fc5b6f9db62a6ee4b9cc19d798aaa485b81"
     },
     {
       "path": "public/editor_flow.js",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/big_refonte.css",
-      "sha256": "be2fc154583cbd6bb23bc2a822e999c70fbbc9bffbe5481cdd0c765200b7adee"
+      "sha256": "2c1c5cdc15ee02fa6869d69ffa280dca40f28f0f21c4bd9d429284d6336e7b2e"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
