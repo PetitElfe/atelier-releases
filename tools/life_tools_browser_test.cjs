@@ -341,7 +341,15 @@ async function api(path,method='GET',body){
     const response=await fetch('/api/events',{cache:'no-store'});
     return (await response.json()).find(e=>e.id===eid)?.admin_links?.some(x=>x.id===id);
   },{id:admin.id,eid:event.id},{timeout:12000});
-  const linked=(await api('/api/events?start='+date+'&end='+date)).find(x=>x.id===event.id);
+  // La liste sans bornes peut refléter le lien avant la liste bornée
+  // utilisée par le Calendrier : contrôler aussi cette vue jusqu'à sa
+  // synchronisation, sans masquer une liaison réellement absente.
+  let linked;
+  for(let retry=0;retry<40;retry++){
+    linked=(await api('/api/events?start='+date+'&end='+date)).find(x=>x.id===event.id);
+    if(linked?.admin_links?.some(x=>Number(x.id)===Number(admin.id)))break;
+    await new Promise(resolve=>setTimeout(resolve,125));
+  }
   assert.ok(linked?.admin_links?.some(x=>Number(x.id)===Number(admin.id)),
     'Event exposes linked admin without creating another event: '+JSON.stringify({linked,adminId:admin.id,eventId:event.id}));
   const fileName='pièce-test.txt',sample='Dossier de test — reste dans SQLite.';
