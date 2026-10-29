@@ -100,7 +100,7 @@ async function api(path,method='GET',body){
   assert.equal((await api('/api/postits')).find(note=>note.id===created.id)?.title,
     'Note conservée','Les notes persistantes restent disponibles dans SQLite');
 
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -125,7 +125,7 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   const restored=await page.locator('#libraryPageBody').innerText();
@@ -135,13 +135,13 @@ async function api(path,method='GET',body){
   // Tester aussi la navigation avant la fin des 650 ms d'autosauvegarde.
   await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   await page.waitForTimeout(1500);
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -160,7 +160,7 @@ async function api(path,method='GET',body){
   // recharger pour rafraîchir les domaines, sans perdre le brouillon local.
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Santé mentale E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Traitement et ressentis E2E'}).click();
@@ -173,7 +173,7 @@ async function api(path,method='GET',body){
   // Le sélecteur de domaines est masqué lorsqu'un carnet est ouvert.
   // Recharger la page pour retrouver la vue des domaines avant de rouvrir Test E2E.
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -321,7 +321,7 @@ async function api(path,method='GET',body){
 
   // Régression calendrier : créer un rendez-vous depuis l'interface, attendre l'API,
   // puis vérifier sa persistance dans une base temporaire après rechargement.
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.locator('#monthGrid .day-add').first().click();
   await page.locator('#eventForm input[name="title"]').fill('Rendez-vous persistant E2E');
@@ -473,7 +473,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>setCalendarMode('month'));
 
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.evaluate(()=>{state.cursor=parseYMD('2026-10-20');renderMonth()});
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
@@ -613,7 +613,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('reminders'));
   const firstReminder=await api('/api/reminders','POST',{title:'Rappel modèle E2E',remind_at:'2026-10-21T09:00'});
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.evaluate(()=>showView('reminders'));
   await page.locator('.reminder-row').filter({hasText:'Rappel modèle E2E'}).locator('.duplicate').click();
   assert.equal(await page.locator('#standaloneReminderForm input[name="title"]').inputValue(),'Rappel modèle E2E');
@@ -624,7 +624,7 @@ async function api(path,method='GET',body){
   assert.ok(remindersAfter.some(r=>r.title==='Rappel modèle E2E')&&remindersAfter.some(r=>r.title==='Rappel copie E2E'),'Both original reminder and copy must be kept');
   await page.locator('#globalHomeShortcut').click();
   // Organisation 0.14 : test de bout en bout sur des données temporaires.
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="organisation"]').click();
   await page.locator('#habitTitle').fill('Marche quotidienne E2E');
   await page.locator('#habitCreateForm button[type="submit"]').click();
