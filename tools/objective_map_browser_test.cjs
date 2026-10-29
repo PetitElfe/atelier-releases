@@ -11,7 +11,7 @@ const appPath=resolve(__dirname,'..','app','app.py');
 const server=spawn('python',[appPath],{env:{...process.env,ATELIER_DATA_DIR:data,ATELIER_NO_BROWSER:'1',ATELIER_PORT:String(port)},stdio:'ignore'});
 async function ready(){for(let i=0;i<120;i++){try{if((await fetch(base+'/api/runtime-version')).ok)return}catch{}await new Promise(r=>setTimeout(r,120))}throw Error('Server startup timeout')}
 async function api(path,method='GET',body){
- const response=await fetch(base+path,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+ const response=await fetch(base+path,{method,cache:'no-store',headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
  const result=await response.json();if(!response.ok)throw Error(path+' '+response.status+' '+JSON.stringify(result));return result;
 }
 (async()=>{
@@ -46,13 +46,22 @@ async function api(path,method='GET',body){
   assert.equal(await root.locator('.objective-map-node').count(),2);
   assert.ok(await root.locator('[data-action="ordering"]').isVisible());
   await root.locator('[data-action="ordering"]').selectOption('sequential');
-  await page.waitForFunction(async id=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).ordering==='sequential'},domain.id,{timeout:10000});
+  await page.waitForFunction(async id=>{const response=await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'});return (await response.json()).ordering==='sequential'},domain.id,{timeout:10000});
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
+  // Vérifier la réponse 201 ET la persistance réelle par une seconde connexion.
+  const posted=page.waitForResponse(r=>r.url().includes('/api/objective-map/edges')&&r.request().method()==='POST',{timeout:10000});
   await root.locator('[data-action="link"]').click();
-  await page.waitForFunction(async({id,fromId,toId})=>{const response=await fetch('/api/objective-map?domain_id='+id);return (await response.json()).edges.some(e=>e.from_id===fromId&&e.to_id===toId)},{id:domain.id,fromId:a.id,toId:b.id});
+  const created=await posted;
+  assert.equal(created.status(),201,'La création de liaison doit être confirmée par le serveur');
   const map=await api('/api/objective-map?domain_id='+domain.id);
-  assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}]);
+  assert.deepEqual(map.edges,[{from_id:a.id,to_id:b.id}],'La liaison doit être persistée avant le rendu graphique');
+  await page.waitForFunction(async({id,fromId,toId})=>{
+    const fresh=await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'});
+    return (await fresh.json()).edges.some(e=>e.from_id===fromId&&e.to_id===toId);
+  },{id:domain.id,fromId:a.id,toId:b.id},{timeout:10000});
+  assert.equal(await root.locator('[data-action="from"]').inputValue(),String(a.id));
+  assert.equal(await root.locator('[data-action="to"]').inputValue(),String(b.id));
   await root.locator('path[marker-end]').first().waitFor({state:'attached',timeout:10000});
   await root.locator('[data-node="'+a.id+'"]').hover();
   const dragRequests=[];
@@ -79,10 +88,10 @@ async function api(path,method='GET',body){
 
   await root.locator('[data-node="'+a.id+'"]').click();
   await root.locator('[data-action="validation"]').selectOption('tasks');
-  await page.waitForFunction(async({domainId,nodeId})=>{const response=await fetch('/api/objective-map?domain_id='+domainId);const map=await response.json();return map.nodes.find(x=>x.id===nodeId)?.validation_mode==='tasks'},{domainId:domain.id,nodeId:a.id},{timeout:10000});
+  await page.waitForFunction(async({domainId,nodeId})=>{const response=await fetch('/api/objective-map?domain_id='+domainId,{cache:'no-store'});const map=await response.json();return map.nodes.find(x=>x.id===nodeId)?.validation_mode==='tasks'},{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await root.locator('[data-action="required"]').uncheck();
   await page.waitForFunction(async({domainId,nodeId})=>{
-    const response=await fetch('/api/objective-map?domain_id='+domainId);
+    const response=await fetch('/api/objective-map?domain_id='+domainId,{cache:'no-store'});
     return (await response.json()).nodes.find(x=>x.id===nodeId)?.required===0;
   },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await page.reload({waitUntil:'domcontentloaded'});
@@ -91,6 +100,8 @@ async function api(path,method='GET',body){
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
   await root.locator('.objective-map-node').first().waitFor();
   assert.equal(await root.locator('[data-action="ordering"]').inputValue(),'sequential');
+  assert.deepEqual((await api('/api/objective-map?domain_id='+domain.id)).edges,[{from_id:a.id,to_id:b.id}],
+    'La liaison doit persister après rechargement complet du navigateur');
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id).required,0);
 
   assert.ok(await root.locator('path[marker-end]').count()>0);
@@ -99,10 +110,10 @@ async function api(path,method='GET',body){
   const beforeUnlinkCanvas=await root.locator('.objective-map-canvas').elementHandle();
   await root.locator('[data-action="unlink"]').click();
   await page.waitForFunction(async id=>{
-    const response=await fetch('/api/objective-map?domain_id='+id);
+    const response=await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'});
     return (await response.json()).edges.length===0;
   },domain.id,{timeout:10000});
-  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===0,domain.id,{timeout:10000});
   // Wait for the previous asynchronous UI refresh before starting a new gesture.
   await page.waitForFunction(element=>!element.isConnected,beforeUnlinkCanvas,{timeout:10000});
   await page.waitForFunction(()=>document.querySelectorAll('#objectiveMapRoot .objective-map-edge').length===0,null,{timeout:10000});
@@ -115,7 +126,7 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(t.x+t.width/2,t.y+t.height/2,{steps:8});
   await page.mouse.up();
-  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===1,domain.id,{timeout:10000});
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===1,domain.id,{timeout:10000});
   console.log('AFTER VISUAL LINK',JSON.stringify(await root.evaluate(el=>({edges:el.querySelectorAll('.objective-map-edge').length,handles:el.querySelectorAll('.objective-map-handle').length,notices:[...el.querySelectorAll('[role=alert]')].map(x=>x.textContent)}))),JSON.stringify((await api('/api/objective-map?domain_id='+domain.id)).edges));
   const edge=root.locator('.objective-map-edge').first();
   await edge.waitFor({state:'attached',timeout:10000});
@@ -126,7 +137,7 @@ async function api(path,method='GET',body){
   });
   await page.mouse.click(midpoint.x,midpoint.y,{button:'right'});
   await root.locator('.objective-map-context').click();
-  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id)).json()).edges.length===0,domain.id,{timeout:10000});
+  await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===0,domain.id,{timeout:10000});
   assert.deepEqual(errors,[]);
   console.log('PASS: objective map integration, links, validation and reload persistence');
  }finally{

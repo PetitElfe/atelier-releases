@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "4ee16af6e24fe2293db1862026faa2b6a089549aebac0f83f8442bf9cd6ec0f8"
+      "sha256": "34e00fb9816bc8f91c47020acc80e9115e313369f7a42c0498d6806949eb54ed"
     },
     {
       "path": "app_part3.py",
@@ -57,7 +57,7 @@
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "0dcb94739257a62177672f4b385d10caa9257a7a4bf2303a238bd56eb789a58e"
+      "sha256": "db4c4a0a383fac58f121586128925574b73dcf0c096465d72329bbc13b15f1a7"
     },
     {
       "path": "public/objective_map.css",
