@@ -83,11 +83,41 @@ const api=async(path,method='GET',body)=>{
     'Le volet des rendez-vous garde une hauteur compacte');
   await page.locator('#homeUpcoming .home-upcoming-toggle').click();
   assert.equal(await page.locator('#homeUpcoming .home-appt-row').count(),3);
+  // Le coin de feuille se soulève au survol et tourne réellement le carnet.
+  const nextCorner=page.locator('#journalCornerNext');
+  assert.ok(await nextCorner.isVisible(),'Coin droit visible sur pages 1–2');
+  assert.equal(await page.locator('#journalCornerPrev').isVisible(),false,'Coin gauche masqué sur pages 1–2');
+  await nextCorner.hover();
+  await page.waitForFunction(()=>parseFloat(getComputedStyle(document.querySelector('#journalCornerNext'),'::before').width)>=55);
+  await nextCorner.click();
+  assert.ok(await page.locator('#journalBook').evaluate(el=>el.classList.contains('journal-page-2')),'Tourner le coin droit mène aux pages 3–4');
+  assert.ok(await page.locator('#homeMealIdeaPicker').isVisible(),'Les recettes restent accessibles');
+  assert.ok(await page.locator('#journalCornerPrev').isVisible(),'Coin gauche visible sur pages 3–4');
+  await page.locator('#journalCornerPrev').click();
+  assert.equal(await page.locator('#journalPageNumber').innerText(),'1–2');
+  // Les anciennes commandes restent fonctionnelles (clavier / accessibilité).
   await page.locator('#journalNextPage').click();
   assert.ok(await page.locator('#journalBook').evaluate(el=>el.classList.contains('journal-page-2')));
-  assert.ok(await page.locator('#homeMealIdeaPicker').isVisible(),'Recettes conservées aux pages suivantes');
   await page.locator('#journalPrevPage').click();
-  assert.equal(await page.locator('#journalPageNumber').innerText(),'1–2');
+  // Important : une hauteur CSS fixe empêchait la poignée de réduire le livre.
+  await page.locator('#globalLayoutEdit').click();
+  await page.locator('#journalBook').click({position:{x:25,y:90}});
+  const heightHandle=page.locator('#journalBook > .layout-controls > .layout-height-handle');
+  await heightHandle.waitFor({state:'visible',timeout:8000});
+  const hBefore=(await page.locator('#journalBook').boundingBox()).height;
+  const hr=await heightHandle.boundingBox();
+  await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2);
+  await page.mouse.down();
+  await page.mouse.move(hr.x+hr.width/2,hr.y+hr.height/2-105,{steps:7});
+  await page.mouse.up();
+  const hAfter=(await page.locator('#journalBook').boundingBox()).height;
+  assert.ok(hAfter<hBefore-40&&hAfter>=335,
+    'Le mode Modifier doit pouvoir rétrécir le livre : '+hBefore+' → '+hAfter);
+  await page.locator('#globalLayoutEdit').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>homeCanvasReady,null,{timeout:15000});
+  assert.ok(Math.abs((await page.locator('#journalBook').boundingBox()).height-hAfter)<3,
+    'La hauteur réduite doit être conservée après F5');
   const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierHomeCanvasV2_journal')));
   await page.locator('#quickAddHomeModule').click();
   await page.locator('#homeApplyReferenceLayout').waitFor();
