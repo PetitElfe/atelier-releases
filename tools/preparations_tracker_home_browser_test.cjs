@@ -72,6 +72,11 @@ async function api(path,method='GET',body){
     {id:habitId,day});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>homeCanvasReady&&document.querySelectorAll('#homeDailyTrackersList input').length===8);
+  // La carte Accueil peut afficher un premier rendu avant que la lecture
+  // asynchrone des coches sauvegardées soit terminée.
+  await page.waitForFunction(()=>[...document.querySelectorAll('#homeDailyTrackersList label')]
+    .find(el=>el.textContent.includes('Rituel 0'))?.querySelector('input')?.checked===true,
+    null,{timeout:15000});
   assert.equal(await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').isChecked(),true);
   await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').uncheck();
   await page.waitForFunction(async({id,day})=>
