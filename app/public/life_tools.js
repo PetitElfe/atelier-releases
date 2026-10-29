@@ -621,8 +621,15 @@ function renderLifeAdmin(){
   const statusNames={todo:'À faire',waiting:'En attente',done:'Terminée'};
   const allEvents=[...new Map((state.events||[]).filter(e=>e.id).map(e=>[Number(e.id),e])).values()]
     .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
-  lifeAdmin.forEach(item=>{
-    const card=lifeNode('article','life-card'+(item.status==='done'?' life-complete':''));
+  const query=($('#adminSearch')?.value||'').trim().toLocaleLowerCase('fr-FR');
+  const statusFilter=$('#adminStatusFilter')?.value||'all';
+  const visible=lifeAdmin.filter(item=>(statusFilter==='all'||item.status===statusFilter)&&
+    (!query||[item.title,item.category,item.notes,item.event_title].some(part=>
+      String(part||'').toLocaleLowerCase('fr-FR').includes(query))));
+  lifeSetText('#adminVisibleCount',visible.length+' / '+lifeAdmin.length+' démarches');
+  if(lifeAdmin.length&&!visible.length)root.append(lifeNode('p','muted','Aucune démarche ne correspond à cette recherche.'));
+  visible.forEach(item=>{
+    const card=lifeNode('article','life-card life-admin-dossier'+(item.status==='done'?' life-complete':''));
     card.dataset.adminId=String(item.id);
     const heading=lifeNode('div','life-card-head');
     heading.append(lifeNode('strong','',item.title),lifeButton('Archiver',async()=>{
@@ -631,7 +638,9 @@ function renderLifeAdmin(){
       if(yes)await lifeAction('Archiver la démarche',()=>lifeApi('/api/admin/'+item.id,
         {method:'PUT',body:JSON.stringify({archived:true})}));
     },'life-admin-archive-action'));
-    const meta=lifeNode('div','life-muted',item.category+' · '+lifeDate(item.due_date));
+    const meta=lifeNode('div','life-admin-meta');
+    meta.append(lifeNode('span','life-admin-category',item.category),
+      lifeNode('span','life-admin-deadline',item.due_date?'Échéance · '+lifeDate(item.due_date):'Sans échéance'));
     const editDetails=lifeNode('details','life-admin-edit-details');
     editDetails.append(lifeNode('summary','','Modifier le nom, la catégorie ou la date'));
     const editForm=lifeNode('form','life-admin-edit-form');
@@ -668,7 +677,9 @@ function renderLifeAdmin(){
         {method:'PUT',body:JSON.stringify({status:select.value})}));
       if(!ok)select.value=item.status;
     };
+    const noteHeading=lifeNode('label','life-admin-notes-title','Notes et prochaine action');
     const notes=lifeNode('textarea','life-admin-notes');
+    notes.setAttribute('aria-label','Notes et prochaine action de '+item.title);
     notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
     const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi(
       '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
@@ -747,7 +758,13 @@ function renderLifeAdmin(){
       finally{uploader.disabled=false;uploader.value=''}
     });
     files.append(uploadLabel);
-    card.append(heading,meta,editDetails,select,notes,save,eventPanel,files);root.append(card);
+    const statusGroup=lifeNode('label','life-admin-status-group','Avancement');
+    statusGroup.append(select);
+    const notesGroup=lifeNode('section','life-admin-note-group');
+    notesGroup.append(noteHeading,notes,save);
+    const docsGroup=lifeNode('section','life-admin-documents-group');
+    docsGroup.append(eventPanel,files);
+    card.append(heading,meta,statusGroup,editDetails,notesGroup,docsGroup);root.append(card);
   });
   const archivedRoot=$('#adminArchivedList'),toggle=$('#adminArchivesToggle');
   if(toggle){
@@ -783,6 +800,8 @@ function renderLifeAdmin(){
     }
   }
 }
+$('#adminSearch')?.addEventListener('input',()=>renderLifeAdmin());
+$('#adminStatusFilter')?.addEventListener('change',()=>renderLifeAdmin());
 $('#adminArchivesToggle')?.addEventListener('click',()=>{
   lifeAdminArchivesVisible=!lifeAdminArchivesVisible;
   renderLifeAdmin();

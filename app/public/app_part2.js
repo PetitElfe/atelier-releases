@@ -323,6 +323,15 @@ function renderWeek(){
       cluster.push(item);clusterEnd=Math.max(clusterEnd,item.end);
     }
     paintCluster();
+    if(ds===ymd(new Date())){
+      const current=new Date(),minute=current.getHours()*60+current.getMinutes();
+      if(minute>=firstMinute&&minute<=lastMinute){
+        const now=document.createElement('div');now.className='week-now-line';
+        now.style.top=((minute-firstMinute)/spanMinutes*100)+'%';
+        now.setAttribute('aria-label','Heure actuelle : '+pad(current.getHours())+':'+pad(current.getMinutes()));
+        layer.appendChild(now);
+      }
+    }
     grid.appendChild(layer);
   }
 }

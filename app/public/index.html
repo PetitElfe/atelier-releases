@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/life_tools.css" />
   <link rel="stylesheet" href="/standalone_preparations.css" />
   <link rel="stylesheet" href="/visual_polish_oct28.css" />
+  <link rel="stylesheet" href="/big_refonte.css" />
   <style id="alpha-home-clarity">
     .top-brand{display:flex;align-items:center;gap:10px;min-width:0}
     .top-brand-labels{min-width:0}
@@ -420,6 +421,11 @@
     <section id="adminView" class="view life-view">
       <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
       <form id="adminCreateForm" class="life-form"><label>Démarche<input name="title" maxlength="180" required placeholder="Ex. : Envoyer un dossier"></label><label>Catégorie<select name="category"><option>Santé</option><option>Logement</option><option>CAF</option><option>Emploi</option><option>Identité</option><option>Autre</option></select></label><label>Échéance<input name="due_date" type="date"></label><label class="life-form-wide">Notes<textarea name="notes" rows="2" placeholder="Pièces à réunir, contact, référence…"></textarea></label><button type="submit" class="primary">+ Ajouter</button></form>
+      <div class="admin-workspace-toolbar" role="search" aria-label="Trouver une démarche">
+        <label>Rechercher une démarche<input id="adminSearch" type="search" placeholder="Nom, catégorie ou notes…" autocomplete="off"></label>
+        <label>Afficher<select id="adminStatusFilter"><option value="all">Toutes les démarches</option><option value="todo">À faire</option><option value="waiting">En attente</option><option value="done">Terminées</option></select></label>
+        <span class="admin-workspace-count" id="adminVisibleCount" aria-live="polite"></span>
+      </div>
       <div id="adminList" class="life-card-list"></div>
       <section class="life-admin-archives-section" aria-label="Démarches archivées">
         <button id="adminArchivesToggle" type="button" aria-expanded="false"
@@ -484,6 +490,10 @@
               <input id="settingsDesktopPostitStartup" type="checkbox">
             </label>
             <p id="settingsDesktopPostitsStatus" class="muted" role="status" aria-live="polite">Vérification du compagnon Windows…</p>
+            <p class="muted">Pour une touche macro de clavier ou un bouton programmable de souris, associe un lancement de programme au fichier :
+              <code>E:\LATELIER_TEST_0180\code_0180\app\Lancer_Capture_Rapide.cmd</code>
+              (édition TEST uniquement ; le compagnon de Post-it doit être actif près de l’horloge).
+              Le raccourci clavier Ctrl+Shift+Espace reste disponible.</p>
             <details id="settingsDesktopPostitArchives" class="postit-settings-archives">
               <summary>▸ Mes Post-it archivés <span id="settingsDesktopPostitArchiveCount">(0)</span></summary>
               <p class="muted">Les Post-it restent sur le Bureau Windows. Leur texte, couleur, sauts de ligne et emplacement sont conservés lors de l’archivage.</p>
@@ -631,5 +641,6 @@
   <script src="/life_tools.js"></script>
   <script src="/standalone_preparations.js"></script>
   <script src="/tracker_ritual_ui.js"></script>
+  <script src="/editor_flow.js"></script>
 </body>
 </html>

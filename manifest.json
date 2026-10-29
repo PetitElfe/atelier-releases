@@ -33,7 +33,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "1acddabd73a000d3b44f956f84e276b8d1f6e5f580b08bdbeca5b7ba9b009436"
+      "sha256": "695d776b0d9b198a056bb75d2d202cdf98b4392554d0bb9cf7cbbebaee4fe910"
     },
     {
       "path": "public/app_part3.js",
@@ -41,7 +41,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "c5b2814632f65cde2104325b11a6de738c7b9e6f8d48de3b3e0bff5e89375a81"
+      "sha256": "a7f398d2d3c43f905df92ca159a3f38657e1191338dbdebacaa0d024338d2771"
     },
     {
       "path": "public/styles.css",
@@ -113,7 +113,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "6082265dbd77f4600c50cb9fcbd610fd48cdcee9ef4b66d55bcb8fc1e64f80c8"
+      "sha256": "3dda647ec8dec7163c1cd5c917f2219047ce7b7980862248ae7f3b502f2a0a00"
     },
     {
       "path": "public/life_tools.css",
@@ -154,6 +154,14 @@
     {
       "path": "Lancer_Capture_Rapide.cmd",
       "sha256": "2a5dd7e83f0e1d10b96f1bd3ddd6982c3707dc97168dfb3b8dfc26c71758e723"
+    },
+    {
+      "path": "public/editor_flow.js",
+      "sha256": "ab53c2389b6c0bf716f5cf9d5fda76648442d373e34554a7c90ac916f70e84ac"
+    },
+    {
+      "path": "public/big_refonte.css",
+      "sha256": "be2fc154583cbd6bb23bc2a822e999c70fbbc9bffbe5481cdd0c765200b7adee"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
