@@ -128,6 +128,16 @@ async function api(path,method='GET',body){
   await page.mouse.up();
   await page.waitForFunction(async id=>(await(await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'})).json()).edges.length===1,domain.id,{timeout:10000});
   console.log('AFTER VISUAL LINK',JSON.stringify(await root.evaluate(el=>({edges:el.querySelectorAll('.objective-map-edge').length,handles:el.querySelectorAll('.objective-map-handle').length,notices:[...el.querySelectorAll('[role=alert]')].map(x=>x.textContent)}))),JSON.stringify((await api('/api/objective-map?domain_id='+domain.id)).edges));
+  // Le test peut conserver le scroll de la Bibliothèque après F5 :
+  // il faut repositionner la carte SOUS l'en-tête fixe avant le clic droit.
+  await page.evaluate(async()=>{
+    const viewport=document.querySelector('#objectiveMapRoot .objective-map-viewport');
+    const header=document.querySelector('.topbar');
+    const desiredTop=(header?.getBoundingClientRect().height||100)+25;
+    const absoluteTop=viewport.getBoundingClientRect().top+window.scrollY;
+    window.scrollTo({top:Math.max(0,absoluteTop-desiredTop),behavior:'instant'});
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+  });
   const edge=root.locator('.objective-map-edge').first();
   await edge.waitFor({state:'attached',timeout:10000});
   // Le trait ne mesure que quelques pixels ; selon le zoom du navigateur,
