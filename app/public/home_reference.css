@@ -549,3 +549,60 @@ body.home-active #sideNavToggle{display:none!important}
 #homeView #homeDailyTrackersWidget .home-todo-row>button{
   font-size:12px;line-height:1.25;color:#f1e1cc;
 }
+
+
+/* 30/10 — Repositionnement final de la To-do list.
+   Le panneau prend la forme large et basse esquissée, sans toucher au livre.
+   La largeur et la hauteur sont pilotées par les dimensions personnalisées. */
+#homeView.home-free-ready #homeDailyTrackersWidget{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-sizing:border-box;
+  min-height:0;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-todo-columns{
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);
+  flex:1 1 auto;
+  height:100%;
+  min-height:0;
+  min-width:0;
+  align-items:stretch;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-tasks-pane,
+#homeView.home-free-ready #homeDailyTrackersWidget .home-habits-pane{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  min-width:0;
+  overflow:hidden;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView.home-free-ready #homeDailyTrackersWidget .home-trackers-subheading,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersDate{
+  flex:0 0 auto;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget #homeTodoPreview,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersList{
+  flex:1 1 auto;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-width:none!important;
+  overscroll-behavior:contain;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget #homeTodoPreview::-webkit-scrollbar,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersList::-webkit-scrollbar{
+  display:none;width:0;height:0;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-todo-row{
+  flex:none;
+}
+@media(max-width:750px){
+  #homeView.home-free-ready #homeDailyTrackersWidget .home-todo-columns{
+    column-gap:9px;
+  }
+}
