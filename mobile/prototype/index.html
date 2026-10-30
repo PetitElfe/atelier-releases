@@ -98,7 +98,7 @@ async function syncPull(){
   const result=await Promise.all([callPc('GET','/api/tasks'),callPc('GET','/api/shopping'),callPc('GET','/api/recipes'),callPc('GET','/api/mobile/notes'),callPc('GET','/api/events?start='+isoDay(from)+'&end='+isoDay(until))]);
   if(requestVersion!==loadId)return;
   pc={tasks:result[0],shopping:result[1],recipes:result[2],notes:result[3],events:result[4]};online=true;error='';render();
- }catch(e){online=false;error=e.message;render()}
+ }catch(e){if(requestVersion===loadId){online=false;error=e.message;render()}}
 }
 async function syncWrite(method,path,payload){try{await callPc(method,path,payload);await syncPull()}catch(e){alert('Modification non confirmée : '+e.message)}}
 function connectedSettings(root){
