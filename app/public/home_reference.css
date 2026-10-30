@@ -698,3 +698,52 @@ body.home-active #sideNavToggle{display:none!important}
  #homeView #homeDailyTrackersWidget .home-habits-pane{padding-left:8px}
  #homeView #homeDailyTrackersWidget .home-todo-columns .home-heading-button{font-size:14px!important}
 }
+
+
+/* 30 octobre — finitions suivant TOUTES les annotations de la capture.
+   Ne pas toucher aux positions, tailles des cartes ni aux données personnelles. */
+/* Date du bandeau : rendre les lettres nettement plus grandes, sans déplacer la date. */
+.topbar .top-date-wrap #jumpDateLabel.top-date-label{
+  font-size:clamp(29px,2.25vw,39px)!important;
+  line-height:1.12!important;
+  font-weight:700!important;
+  white-space:nowrap;
+}
+/* Cases petites et pastel, dans la To-do, les habitudes ET les pages du journal. */
+#homeView #homeDailyTrackersWidget input[type="checkbox"],
+#homeView #journalBook input[type="checkbox"].journal-task-check{
+  appearance:none!important;-webkit-appearance:none!important;
+  display:inline-block!important;position:relative!important;
+  width:15px!important;height:15px!important;
+  min-width:15px!important;min-height:15px!important;
+  flex:0 0 15px!important;
+  margin:0 5px 0 0!important;
+  padding:0!important;box-sizing:border-box!important;
+  border:1px solid #9c8b74!important;border-radius:3px!important;
+  background:#d5c6aa!important;
+  box-shadow:inset 0 1px 2px #5e50321f!important;
+  vertical-align:middle!important;
+  cursor:pointer;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked,
+#homeView #journalBook input[type="checkbox"].journal-task-check:checked{
+  background:#acb9a5!important;border-color:#778b75!important;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked::after,
+#homeView #journalBook input[type="checkbox"].journal-task-check:checked::after{
+  content:""!important;position:absolute!important;
+  left:4px!important;top:1px!important;width:4px!important;height:8px!important;
+  border:solid #29402f!important;border-width:0 2px 2px 0!important;
+  transform:rotate(45deg)!important;
+}
+#homeView #journalBook input[type="checkbox"].journal-task-check:focus-visible{
+  outline:2px solid #876a47;outline-offset:2px;
+}
+/* Activité : raccourcir la hauteur verticale de chaque domaine + objectif. */
+#homeView #journalBook .objective-note{
+  padding:1px 2px 2px!important;margin:0!important;
+}
+#homeView #journalBook .objective-domain{margin:0!important;line-height:1.08!important}
+#homeView #journalBook .objective-name{margin:0 0 1px!important;line-height:1.13!important}
+#homeView #journalBook .objective-progress-line{margin:0!important;min-height:0!important}
+#homeView #journalBook .objective-progress-track{height:4px!important}
