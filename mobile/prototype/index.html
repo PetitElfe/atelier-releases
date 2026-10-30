@@ -147,7 +147,7 @@ function connectedView(root){
   const body=el('textarea',{placeholder:'Une idée que je pourrai copier et envoyer…'}),btn=el('button',{class:'action'},'Enregistrer sur mon PC');
   btn.onclick=async()=>{if(!body.value.trim())return;try{const latest=await callPc('GET','/api/mobile/notes');const note={id:'apk-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Sans titre',category:cat.value,content:body.value,updated:new Date().toISOString()};await callPc('POST','/api/mobile/notes',{notes:[...latest,note]});await syncPull()}catch(e){alert('Enregistrement non confirmé : '+e.message)}};
   p.append(title,cat,body,btn);
-  pc.notes.slice().reverse().forEach(n=>{const d=el('details',{class:'panel'}),text=el('p',{},n.content);d.append(el('summary',{},'['+n.category+'] '+n.title),text);p.append(d)});
+  pc.notes.slice().reverse().forEach(n=>{const d=el('details',{class:'panel'}),text=el('p',{},n.content);text.style.userSelect='text';d.append(el('summary',{},'['+n.category+'] '+n.title),text);p.append(d)});
  }else if(tab==='calendar'){
   const modes=el('div',{class:'arrows'});
   [['month','Mois'],['week','Semaine'],['day','Jour']].forEach(([k,t])=>{const b=el('button',{},(calendarView===k?'● ':'')+t);b.onclick=()=>{calendarView=k;render()};modes.append(b)});p.append(modes);
