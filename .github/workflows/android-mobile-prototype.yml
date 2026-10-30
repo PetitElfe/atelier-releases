@@ -7,7 +7,7 @@ on:
       - 'mobile/**'
       - '.github/workflows/android-mobile-prototype.yml'
   push:
-    branches: [main]
+    branches: [main, feature/mobile-journal-navigation-20261027]
     paths:
       - 'mobile/**'
       - '.github/workflows/android-mobile-prototype.yml'
