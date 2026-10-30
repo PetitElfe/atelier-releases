@@ -222,3 +222,15 @@
   font-weight:750!important;
 }
 #weekGrid .week-head.week-current-day{border-bottom-color:#87ad92!important}
+
+/* Lisibilite des rendez-vous du semainier, y compris ceux deja coches. */
+#weekGrid .week-timed-event.event-instance-closed{opacity:1!important}
+#weekGrid .week-timed-event .week-card-open,
+#weekGrid .week-timed-event .week-card-title,
+#weekGrid .week-timed-event .week-card-time,
+#weekGrid .week-timed-event.event-instance-closed .week-card-open,
+#weekGrid .week-timed-event.event-instance-closed .week-card-title,
+#weekGrid .week-timed-event.event-instance-closed .week-card-time{
+  color:#ffffff!important;opacity:1!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.85)!important;
+}
