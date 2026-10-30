@@ -1,0 +1,4 @@
+/* Onglet 2 : présentation plus compacte, sans toucher aux données. */
+#trackersView .tracker-board-toolbar{display:none!important}
+#trackersView .tracker-add-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#trackersView .tracker-add-row input[name="title"]{flex:1 1 210px;min-width:140px}
