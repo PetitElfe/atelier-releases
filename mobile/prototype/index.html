@@ -92,6 +92,7 @@ function callPc(method,path,data,base=pcUrl){
 function isoDay(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 async function syncPull(){
  if(!pcUrl)return;
+ const requestVersion=++loadId;
  try{
   const period=selected,from=new Date(period.getFullYear(),period.getMonth()-1,1),until=new Date(period.getFullYear(),period.getMonth()+2,0);
   const result=await Promise.all([callPc('GET','/api/tasks'),callPc('GET','/api/shopping'),callPc('GET','/api/recipes'),callPc('GET','/api/mobile/notes'),callPc('GET','/api/events?start='+isoDay(from)+'&end='+isoDay(until))]);
