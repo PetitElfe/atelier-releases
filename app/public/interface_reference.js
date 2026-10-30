@@ -190,6 +190,7 @@
      if(tasks.parentElement!==boards)boards.prepend(tasks);
      const cards=all(),available=Math.max(320,boards.clientWidth||root.clientWidth||900);
      let next=0,maxBottom=0;
+     for(const card of cards){const id=idOf(card),saved=id&&read(id);if(saved)next=Math.max(next,(Number(saved.y)||0)+(Number(saved.height)||card.scrollHeight||180)+16)}
      for(const el of cards){
        const id=idOf(el);if(!id)continue;
        if(!read(id)){
