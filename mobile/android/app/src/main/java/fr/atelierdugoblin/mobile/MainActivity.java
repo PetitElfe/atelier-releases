@@ -19,6 +19,7 @@ import androidx.webkit.WebViewClientCompat;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private TailnetBridge tailnet;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().setStatusBarColor(Color.rgb(36, 55, 45));
@@ -45,6 +46,8 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         webView.addJavascriptInterface(new UpdateBridge(this), "AtelierUpdates");
+        tailnet = new TailnetBridge(this, webView);
+        webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         // Android 15+ draws apps beneath system bars even when targeting SDK 35.
         // Keep the WebView in a safe content area instead of overlapping the clock.
         FrameLayout frame = new FrameLayout(this);
@@ -82,6 +85,7 @@ public class MainActivity extends Activity {
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
     @Override protected void onDestroy() {
+        if (tailnet != null) tailnet.close();
         webView.destroy();
         super.onDestroy();
     }
