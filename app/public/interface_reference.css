@@ -84,3 +84,8 @@
 #trackersView .atelier-tracker-tasks .tracker-board-head{display:flex;align-items:center;gap:9px}
 #trackersView .atelier-tracker-tasks .tracker-board-head h3{flex:1}
 #trackersView .atelier-tracker-task-line{min-height:27px}
+
+/* Volume du son propre à L'Atelier, accessible depuis Paramètres. */
+.atelier-reminder-volume{display:flex;flex-direction:column;gap:6px;margin:12px 0;color:var(--text,#efe6d0)}
+.atelier-reminder-volume>span{display:flex;justify-content:space-between;gap:12px}
+.atelier-reminder-volume input[type=range]{width:100%;accent-color:var(--gold,#c8ae7b)}
