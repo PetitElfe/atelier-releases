@@ -165,7 +165,7 @@
    return {width:Math.max(300,Number(saved.width)||defaultWidth),x:Math.max(0,Number(saved.x)||0),y:Math.max(0,Number(saved.y)||0),height:Math.max(0,Number(saved.height)||0)};
  };
  const write=(id,v)=>{try{localStorage.setItem(prefix+id,JSON.stringify(v))}catch(_){}};
- const editing=()=>pencil.getAttribute('aria-pressed')==='true'&&root.classList.contains('active-view');
+ const editing=()=>root.classList.contains('layout-editing');
  const cardId=el=>el===tasks?'todo':el.dataset.atelierBoardId;
  const all=()=>[tasks,...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')];
  const apply=(el)=>{
@@ -185,7 +185,7 @@
    const corner=document.createElement('span');corner.className='atelier-layout-corner';corner.title='Redimensionner en mode Modifier';el.append(corner);
    const bind=(target,mode)=>{
      target.addEventListener('pointerdown',event=>{
-       if(!editing()||event.button!==0)return;
+       if(!editing()||event.button!==0||event.target.closest('button,input,a,select,textarea'))return;
        event.preventDefault();event.stopPropagation();
        const id=cardId(el),before=read(id,el.offsetWidth),startX=event.clientX,startY=event.clientY,startHeight=el.offsetHeight;
        target.setPointerCapture(event.pointerId);
@@ -199,13 +199,15 @@
        target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',finish);
      });
    };
-   bind(grip,'move');bind(corner,'resize');apply(el);
+   // La barre du module devient la zone de prise, sans bouton supplémentaire.
+   head.classList.add('atelier-module-drag-surface');
+   bind(head,'move');bind(corner,'resize');apply(el);
  }
  const refresh=()=>all().forEach(el=>{attach(el);apply(el)});
  const observer=new MutationObserver(()=>refresh());observer.observe(boards,{childList:true});
- pencil.addEventListener('click',()=>queueMicrotask(refresh));
+ pencil.addEventListener('click',()=>setTimeout(refresh,0));
  const prior=showView;
- showView=function(view){prior(view);queueMicrotask(refresh)};
+ showView=function(view){prior(view);setTimeout(refresh,0)};
  window.addEventListener('resize',refresh);refresh();
 })();
 /* Réorganisation globale demandée sur le Drive :
