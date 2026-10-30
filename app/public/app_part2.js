@@ -151,6 +151,21 @@ function addCalendarHoverActions(wrapper,event){
   wrapper.appendChild(actions);
 }
 
+/* Relative date badge on month cells: exact calendar months plus remaining days,
+   in both directions; calculations use UTC dates to avoid DST discrepancies. */
+function atelierRelativeDateLabel(date){
+  const now=new Date(),a=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const b=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  if(a===b)return 'J0 · aujourd’hui';
+  const ahead=b>a,early=new Date(Math.min(a,b)),late=new Date(Math.max(a,b));
+  const y=early.getUTCFullYear(),m=early.getUTCMonth(),d=early.getUTCDate();
+  let months=(late.getUTCFullYear()-y)*12+late.getUTCMonth()-m;
+  const plus=n=>Date.UTC(y,m+n,Math.min(d,new Date(Date.UTC(y,m+n+1,0)).getUTCDate()));
+  while(months>0&&plus(months)>late.getTime())months--;
+  const days=Math.round((late.getTime()-plus(months))/86400000);
+  const duration=months?('M'+(ahead?'+':'-')+months+(days?', J'+(ahead?'+':'-')+days:'')):'J'+(ahead?'+':'-')+days;
+  return duration+(ahead?' · dans le futur':' · dans le passé');
+}
 function renderMonth(){
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
@@ -159,6 +174,8 @@ function renderMonth(){
     const forecast=recorded?null:cycleForecastForDay(ds);
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
+    cell.dataset.relativeDate=atelierRelativeDateLabel(d);
+    cell.title=cell.dataset.relativeDate;
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<button class="day-number day-list-toggle" type="button"
       title="Voir tous les rendez-vous du ${ds}" aria-label="Voir tous les rendez-vous du ${ds}">${d.getDate()}</button>
