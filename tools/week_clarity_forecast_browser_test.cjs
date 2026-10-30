@@ -63,9 +63,8 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.ok(await forecastCell.count()>=1,'Future period shown in faint red');
   assert.match(await forecastCell.first().getAttribute('title'),/Règles possibles/);
   assert.equal(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,true);
-  // The estimated next period may fall in the following week; inspect its own week.
-  await page.evaluate(forecastDate=>{state.cursor=parseYMD(forecastDate);setCalendarMode('week')},forecast.next);
-  assert.ok(await page.locator('#weekGrid .week-head.cycle-forecast').count()>=1,'Future period visible in its weekly header');
+  await page.evaluate(()=>setCalendarMode('week'));
+  assert.ok(await page.locator('#weekGrid .week-head.cycle-forecast').count()>=1,'Future period visible in weekly header');
   // Predicted start must be adjustable after a new observed interval is recorded.
   const newStart=ymd(add(today,-1));
   await api('/api/cycle-periods','POST',{start_date:newStart,end_date:null});
