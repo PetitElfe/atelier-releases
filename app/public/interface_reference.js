@@ -76,3 +76,43 @@
  
  paint();
 })();
+
+/* Réorganisation demandée dans l'onglet de documentation : tâches comme module
+   des Trackers, accès aux rappels via Paramètres. Les données restent intactes. */
+(function(){
+ const tracker=document.getElementById('trackersView');
+ const settings=document.querySelector('#settingsView .settings-grid');
+ if(!tracker||!settings)return;
+ const tasks=document.createElement('section');
+ tasks.className='tracker-board atelier-tracker-tasks';
+ tasks.innerHTML='<div class="tracker-board-head"><h3>Tâches</h3><button type="button" id="trackerTaskAdd">＋ Nouvelle tâche</button></div><div id="trackerTaskItems" class="atelier-tracker-task-items"></div>';
+ const boardList=document.getElementById('trackerBoardList');
+ if(boardList)boardList.before(tasks);
+ tasks.querySelector('#trackerTaskAdd').onclick=()=>document.getElementById('addTask')?.click();
+ const reminders=document.createElement('section');reminders.className='settings-card';
+ reminders.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">◷</span><div><h3>Liste des rappels</h3><p>Les rappels restent actifs sans rubrique principale.</p></div></div><div id="atelierSettingsReminders"></div><button type="button" id="atelierReminderManage">Gérer les rappels</button>';
+ settings.append(reminders);
+ reminders.querySelector('#atelierReminderManage').onclick=()=>showView('reminders');
+ function paint(){
+   const target=tasks.querySelector('#trackerTaskItems');target.replaceChildren();
+   const items=Array.isArray(state.tasks)?state.tasks:[];
+   if(!items.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucune tâche pour le moment.';target.append(p)}
+   for(const task of items){
+     const row=document.createElement('label');row.className='atelier-tracker-task-line';
+     const check=document.createElement('input');check.type='checkbox';check.checked=!!task.completed;
+     check.setAttribute('aria-label','Terminer '+task.title);
+     check.onchange=async()=>{try{await api('/api/tasks/'+task.id,{method:'PUT',body:JSON.stringify({completed:check.checked})});await refresh();paint()}catch(error){check.checked=!check.checked;showUiError(error,'Tâches')}};
+     const name=document.createElement('span');name.textContent=task.title;name.className=task.completed?'atelier-task-done':'';
+     const edit=document.createElement('button');edit.type='button';edit.textContent='✎';edit.title='Modifier '+task.title;
+     edit.onclick=e=>{e.preventDefault();openTaskModal(task)};
+     row.append(check,name,edit);target.append(row);
+   }
+   const list=reminders.querySelector('#atelierSettingsReminders');list.replaceChildren();
+   const pending=(Array.isArray(state.reminders)?state.reminders:[]).filter(r=>r.status!=='done');
+   if(!pending.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun rappel en attente.';list.append(p)}
+   for(const item of pending.slice(0,30)){const div=document.createElement('p');div.textContent=(item.title||'Rappel')+(item.remind_at?' · '+item.remind_at:'');list.append(div)}
+ }
+ const original=showView;
+ showView=function(view){original(view);if(view==='trackers'||view==='settings')paint()};
+ if(state.view==='trackers'||state.view==='settings')paint();
+})();
