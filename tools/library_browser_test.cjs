@@ -399,7 +399,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>renderWeek());
   const weekDuration=await page.evaluate(()=>{
     const grid=document.querySelector('#weekGrid');
-    const at=(dayIndex,hour)=>grid.children[8+(hour-7)*8+1+dayIndex];
+    const at=(dayIndex,hour)=>grid.children[9+hour*9+1+dayIndex];
     const atTen=at(1,10),atEleven=at(1,11),atTwelve=at(1,12),atThirteen=at(1,13);
     const wedHead=grid.children[3],wedSeven=at(2,7),wedTwentyTwo=at(2,22);
     return {
