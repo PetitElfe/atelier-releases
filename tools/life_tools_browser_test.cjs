@@ -505,6 +505,7 @@ async function api(path,method='GET',body){
   assert.equal(badStatus.status,400,'Archived must be a real boolean');
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('settings'));
+  await page.evaluate(()=>{const card=document.querySelector('#settingsDesktopPostitArchives').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#settingsDesktopPostitArchives summary').click();
   const archivedItem=page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]');
   await archivedItem.waitFor();
