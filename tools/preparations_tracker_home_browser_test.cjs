@@ -88,6 +88,7 @@ async function api(path,method='GET',body){
   assert.equal(await page.locator('#preparationsView').count(),0);
   await page.evaluate(()=>showView('settings'));
   await page.waitForFunction(()=>document.querySelector('#settingsLegacyPreparations')?.textContent.includes('Préparer un voyage'));
+  await page.evaluate(()=>{const card=document.querySelector('.tracker-old-preps').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('.tracker-old-preps > summary').click();
   await page.locator('#settingsLegacyPreparations details > summary').first().click();
   assert.match(await page.locator('#settingsLegacyPreparations').innerText(),/Vérifier les papiers/);

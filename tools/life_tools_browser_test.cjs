@@ -207,6 +207,7 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===1);
   await page.evaluate(()=>showView('settings'));
   await page.waitForFunction(()=>document.getElementById('settingsTrackerHistory')?.textContent);
+  await page.evaluate(()=>{const card=document.querySelector('#trackerBoardArchivesToggle').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#trackerBoardArchivesToggle').click();
   const archivedWellness=(await api('/api/tracker-boards?archived=1'))
     .find(x=>x.id===wellness.id);
@@ -504,6 +505,7 @@ async function api(path,method='GET',body){
   assert.equal(badStatus.status,400,'Archived must be a real boolean');
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('settings'));
+  await page.evaluate(()=>{const card=document.querySelector('#settingsDesktopPostitArchives').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#settingsDesktopPostitArchives summary').click();
   const archivedItem=page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]');
   await archivedItem.waitFor();
@@ -521,9 +523,11 @@ async function api(path,method='GET',body){
   assert.equal(await page.locator('.postit-archive-entry[data-postit-id="'+postit.id+'"]').count(),0);
   await page.evaluate(()=>showView('settings'));
   assert.ok((await page.locator('#settingsRunningEdition').innerText()).includes('Installation locale (port 18812)'));
+  await page.evaluate(()=>{const card=document.querySelector('#settingsReminderSound').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#settingsReminderSound').check();
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierReminderSound')),'1');
   await page.locator('#settingsTestReminderSound').click();
+  await page.evaluate(()=>{const card=document.querySelector('#settingsQuickCaptureShortcut').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#settingsQuickCaptureShortcut').focus();
   await page.keyboard.press('Control+Alt+KeyJ');
   await page.waitForFunction(()=>document.querySelector('#settingsQuickCaptureShortcut').value==='Ctrl+Alt+J');

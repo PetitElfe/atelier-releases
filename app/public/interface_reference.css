@@ -30,3 +30,39 @@
 .atelier-task-done{text-decoration:line-through;opacity:.55}
 #atelierSettingsReminders{max-height:240px;overflow:auto}
 #atelierSettingsReminders p{margin:4px 0;border-bottom:1px solid var(--line,#564c41);padding:5px}
+
+/* Paramètres : navigation de type Discord, intégrée dans la page et sans modal. */
+#settingsView .atelier-settings-split{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start;margin-top:18px;min-width:0}
+#settingsView .atelier-settings-nav{display:flex;flex-direction:column;gap:5px;position:sticky;top:18px;max-height:calc(100vh - 70px);overflow:auto;padding:6px 8px 6px 0;border-right:1px solid var(--line,#645844)}
+#settingsView .atelier-settings-nav button{display:block;border:0;background:transparent;border-radius:8px;text-align:left;padding:11px 12px;width:100%;font-size:14px;color:var(--text,#eee5d0);cursor:pointer}
+#settingsView .atelier-settings-nav button:hover{background:rgba(155,142,115,.12)}
+#settingsView .atelier-settings-nav button.active{background:rgba(169,152,113,.22);font-weight:700;color:var(--gold,#dfc58c)}
+#settingsView .atelier-settings-content{min-width:0;max-width:900px}
+#settingsView .atelier-settings-content .settings-grid{display:block!important;min-width:0}
+#settingsView .atelier-settings-content .settings-grid>.settings-card{width:100%;max-width:none;box-sizing:border-box}
+#settingsView .atelier-settings-content .settings-grid>.settings-card[hidden]{display:none!important}
+#settingsView .atelier-settings-content #atelierSettingsReminders{max-height:none;min-height:0}
+#settingsView #atelierSettingsReminders p{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+/* Module Tâches compact, déplaçable horizontalement et redimensionnable. */
+#trackersView .atelier-tracker-tasks{box-sizing:border-box;max-width:100%;padding:12px 14px!important;border:1px solid var(--line,#665744);border-radius:12px;background:var(--panel,#231e19)}
+#trackersView .atelier-tracker-tasks .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 9px}
+#trackersView .atelier-tracker-tasks .tracker-board-head h3{margin:0;flex:1;font-size:18px}
+#trackersView .atelier-tracker-tasks .tracker-board-head button{font-size:12px;padding:5px 8px}
+#trackersView .atelier-tracker-tasks .atelier-tracker-move{cursor:grab;touch-action:none}
+#trackersView .atelier-tracker-tasks .atelier-tracker-move:active{cursor:grabbing}
+#trackersView .atelier-tracker-tasks .atelier-tracker-resize{cursor:ew-resize;touch-action:none}
+#trackersView .atelier-tracker-task-items{display:flex;flex-direction:column;gap:0}
+#trackersView .atelier-tracker-task-line{min-height:26px!important;padding:3px 1px!important;gap:7px;font-size:12px}
+#trackersView .atelier-tracker-task-line input[type=checkbox]{width:15px;height:15px;flex-shrink:0}
+#trackersView .atelier-tracker-task-line button{padding:1px 4px}
+@media(max-width:860px){#settingsView .atelier-settings-split{grid-template-columns:150px minmax(0,1fr);gap:12px}}
+@media(max-width:560px){#settingsView .atelier-settings-split{grid-template-columns:1fr}#settingsView .atelier-settings-nav{position:static;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line,#645844)}#settingsView .atelier-settings-nav button{white-space:nowrap;width:auto}}
+
+
+#trackersView #atelierTrackerEditLayout{margin:8px 0 12px 10px}
+#trackersView .tracker-board[data-atelier-board-id]{box-sizing:border-box;max-width:100%;transition:margin .08s}
+#trackersView .tracker-board .atelier-tracker-layout-handle{display:none;cursor:grab;touch-action:none;font-size:12px;padding:4px 8px}
+#trackersView .tracker-board.atelier-module-editing{outline:1px dashed var(--gold,#dcc397);outline-offset:2px}
+#trackersView .tracker-board.atelier-module-editing .atelier-tracker-layout-handle{display:inline-block}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head h3{flex:1}

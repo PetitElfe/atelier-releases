@@ -85,7 +85,7 @@
  if(!tracker||!settings)return;
  const tasks=document.createElement('section');
  tasks.className='atelier-tracker-tasks';
- tasks.innerHTML='<div class="tracker-board-head"><h3>Tâches</h3><button type="button" id="trackerTaskAdd">＋ Nouvelle tâche</button></div><div id="trackerTaskItems" class="atelier-tracker-task-items"></div>';
+ tasks.innerHTML='<div class="tracker-board-head"><h3>To-do list</h3><button type="button" id="trackerTaskAdd">＋ Nouvelle tâche</button></div><div id="trackerTaskItems" class="atelier-tracker-task-items"></div>';
  const boardList=document.getElementById('trackerBoardList');
  if(boardList)boardList.before(tasks);
  tasks.querySelector('#trackerTaskAdd').onclick=()=>document.getElementById('addTask')?.click();
@@ -110,9 +110,115 @@
    const list=reminders.querySelector('#atelierSettingsReminders');list.replaceChildren();
    const pending=(Array.isArray(state.reminders)?state.reminders:[]).filter(r=>r.status!=='done');
    if(!pending.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun rappel en attente.';list.append(p)}
-   for(const item of pending.slice(0,30)){const div=document.createElement('p');div.textContent=(item.title||'Rappel')+(item.remind_at?' · '+item.remind_at:'');list.append(div)}
+   for(const item of pending.slice(0,30)){const div=document.createElement('p');div.textContent=(item.title||'Rappel')+(item.remind_at?' · '+new Date(item.remind_at).toLocaleString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'');list.append(div)}
  }
  const original=showView;
  showView=function(view){original(view);if(view==='trackers'||view==='settings')paint()};
  if(state.view==='trackers'||state.view==='settings')paint();
+})();
+
+/* Paramètres en deux panneaux permanents, sans fenêtre modale.
+   Navigation à gauche, contenu à droite. */
+(function(){
+ const shell=document.querySelector('#settingsView .settings-shell');
+ const grid=shell?.querySelector('.settings-grid');
+ if(!shell||!grid)return;
+ const wrap=document.createElement('div');wrap.className='atelier-settings-split';
+ const nav=document.createElement('nav');nav.className='atelier-settings-nav';
+ nav.setAttribute('aria-label','Rubriques des paramètres');
+ const body=document.createElement('div');body.className='atelier-settings-content';
+ grid.parentNode.insertBefore(wrap,grid);wrap.append(nav,body);body.append(grid);
+ const cards=[...grid.querySelectorAll(':scope > .settings-card')];
+ const labels={settingsUpdatesCard:'Mises à jour'};
+ const prefsKey='atelier-settings-section';
+ const choose=card=>{
+   if(!card)return;
+   for(const c of cards)c.hidden=(c!==card);
+   for(const btn of nav.querySelectorAll('button')){const yes=btn.dataset.target===card.id;btn.classList.toggle('active',yes);btn.setAttribute('aria-current',yes?'page':'false')}
+   try{localStorage.setItem(prefsKey,card.id)}catch(_){}
+ };
+ cards.forEach((card,index)=>{
+   if(!card.id)card.id='atelierSettingsSection'+index;
+   const title=labels[card.id]||card.querySelector('h3')?.textContent?.trim()||'Réglages';
+   const btn=document.createElement('button');btn.type='button';btn.textContent=title;btn.dataset.target=card.id;
+   btn.onclick=()=>choose(card);nav.append(btn);
+ });
+ let selected=null;try{selected=localStorage.getItem(prefsKey)}catch(_){}
+ choose(cards.find(c=>c.id===selected)||cards[0]);
+})();
+/* Module Tâches : taille indépendante, déplacement par la poignée, sans
+   toucher au stockage des tâches ou à la position de l'Accueil. */
+(function(){
+ const card=document.querySelector('#trackersView .atelier-tracker-tasks');if(!card)return;
+ const key='atelierTrackerTasksLayout_20261030';
+ const head=card.querySelector('.tracker-board-head');
+ if(!head)return;
+ const handle=document.createElement('button');handle.type='button';handle.className='atelier-tracker-move';handle.textContent='✥ Déplacer';handle.title='Déplacer le module Tâches';
+ head.prepend(handle);
+ const resize=document.createElement('button');resize.type='button';resize.className='atelier-tracker-resize';resize.title='Modifier la largeur du module';resize.textContent='↔ Taille';head.append(resize);
+ let config={x:0,width:560};
+ try{config={...config,...JSON.parse(localStorage.getItem(key)||'{}')}}catch(_){}
+ const save=()=>{try{localStorage.setItem(key,JSON.stringify(config))}catch(_){}};
+ const paint=()=>{const parent=card.parentElement;const max=Math.max(300,parent?.clientWidth||900);card.style.width=Math.min(max,Math.max(320,Number(config.width)||560))+'px';card.style.maxWidth='100%';card.style.marginLeft=Math.max(0,Math.min(Number(config.x)||0,Math.max(0,max-card.offsetWidth)))+'px'};
+ const drag=(button,kind)=>{button.addEventListener('pointerdown',e=>{
+   if(e.button!==0)return;
+   e.preventDefault();button.setPointerCapture(e.pointerId);
+   const start=e.clientX, initial=kind==='move'?Number(config.x)||0:Number(config.width)||560;
+   const move=ev=>{const delta=ev.clientX-start;if(kind==='move')config.x=Math.max(0,initial+delta);else config.width=Math.max(320,initial+delta);paint()};
+   const end=()=>{button.removeEventListener('pointermove',move);button.removeEventListener('pointerup',end);button.removeEventListener('pointercancel',end);save()};
+   button.addEventListener('pointermove',move);button.addEventListener('pointerup',end);button.addEventListener('pointercancel',end);
+ })};
+ drag(handle,'move');drag(resize,'size');paint();window.addEventListener('resize',paint);
+})();
+
+
+/* Edition des tableaux Trackers : disposition fluide, sauvegarde par ID.
+   Un décalage ne fait jamais chevaucher le tableau suivant. */
+(function(){
+ const root=document.getElementById('trackersView');
+ const boards=document.getElementById('trackerBoardList');
+ if(!root||!boards)return;
+ const head=root.querySelector('.panel-head')||root.querySelector('h2')?.parentElement;
+ const edit=document.createElement('button');edit.type='button';edit.id='atelierTrackerEditLayout';edit.textContent='✎ Modifier les modules';edit.setAttribute('aria-pressed','false');
+ if(head)head.append(edit);else root.prepend(edit);
+ let editing=false;
+ const storePrefix='atelierTrackerModulePlace_';
+ const read=id=>{try{return JSON.parse(localStorage.getItem(storePrefix+id)||'{}')}catch(_){return {}}};
+ const save=(id,v)=>{try{localStorage.setItem(storePrefix+id,JSON.stringify(v))}catch(_){}};
+ const apply=(card,id)=>{
+   const data=read(id);const available=Math.max(320,boards.clientWidth||960);
+   const width=Math.min(available,Math.max(320,Number(data.width)||Math.min(650,available)));
+   card.style.width=width+'px';card.style.maxWidth='100%';
+   card.style.marginLeft=Math.min(Math.max(0,Number(data.x)||0),Math.max(0,available-width))+'px';
+ };
+ const attach=card=>{
+   if(card.dataset.atelierDragWired==='1')return;
+   const id=card.dataset.atelierBoardId;if(!id)return;
+   const heading=card.querySelector('.tracker-board-head');if(!heading)return;
+   card.dataset.atelierDragWired='1';card.classList.toggle('atelier-module-editing',editing);
+   const mover=document.createElement('button'),sizer=document.createElement('button');
+   mover.type='button';mover.className='atelier-tracker-layout-handle';mover.textContent='✥ Déplacer';
+   sizer.type='button';sizer.className='atelier-tracker-layout-handle';sizer.textContent='↔ Largeur';
+   heading.append(mover,sizer);
+   for(const [btn,prop] of [[mover,'x'],[sizer,'width']]){
+     btn.addEventListener('pointerdown',ev=>{
+       if(!editing||ev.button!==0)return;
+       ev.preventDefault();ev.stopPropagation();btn.setPointerCapture(ev.pointerId);
+       const start=ev.clientX,initial=read(id);
+       const base=Number(initial[prop])||(prop==='width'?card.getBoundingClientRect().width:0);
+       const onMove=e=>{const next={...initial,[prop]:Math.max(0,Math.round(base+e.clientX-start))};save(id,next);apply(card,id)};
+       const onEnd=()=>{btn.removeEventListener('pointermove',onMove);btn.removeEventListener('pointerup',onEnd);btn.removeEventListener('pointercancel',onEnd)};
+       btn.addEventListener('pointermove',onMove);btn.addEventListener('pointerup',onEnd);btn.addEventListener('pointercancel',onEnd);
+     });
+   }
+   apply(card,id);
+ };
+ const scan=()=>{
+   for(const card of boards.querySelectorAll('.tracker-board[data-atelier-board-id]'))attach(card);
+   for(const card of boards.querySelectorAll('.tracker-board[data-atelier-board-id]'))card.classList.toggle('atelier-module-editing',editing);
+ };
+ edit.onclick=()=>{editing=!editing;edit.setAttribute('aria-pressed',String(editing));edit.textContent=editing?'✓ Terminer':'✎ Modifier les modules';scan()};
+ const observer=new MutationObserver(scan);observer.observe(boards,{childList:true});
+ window.addEventListener('resize',()=>{for(const c of boards.querySelectorAll('.tracker-board[data-atelier-board-id]'))apply(c,c.dataset.atelierBoardId)});
+ scan();
 })();
