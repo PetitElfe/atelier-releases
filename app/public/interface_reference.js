@@ -103,9 +103,23 @@
      check.setAttribute('aria-label','Terminer '+task.title);
      check.onchange=async()=>{try{await api('/api/tasks/'+task.id,{method:'PUT',body:JSON.stringify({completed:check.checked})});await refresh();paint()}catch(error){check.checked=!check.checked;showUiError(error,'Tâches')}};
      const name=document.createElement('span');name.textContent=task.title;name.className=task.completed?'atelier-task-done':'';
-     const edit=document.createElement('button');edit.type='button';edit.textContent='✎';edit.title='Modifier '+task.title;
-     edit.onclick=e=>{e.preventDefault();openTaskModal(task)};
-     row.append(check,name,edit);target.append(row);
+     name.tabIndex=0;name.setAttribute('role','button');name.title='Ouvrir '+task.title;
+     name.onclick=e=>{e.preventDefault();openTaskModal(task)};
+     name.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openTaskModal(task)}};
+     row.oncontextmenu=e=>{
+       e.preventDefault();
+       const items=[
+         ['Modifier',()=>openTaskModal(task)],
+         ['Supprimer',async()=>{
+           const ok=await askUiConfirm('Supprimer la tâche','Supprimer « '+task.title+' » ?','Supprimer',true);
+           if(!ok)return;
+           const result=await runUiAction('Suppression impossible',()=>api('/api/tasks/'+task.id,{method:'DELETE'}));
+           if(result.ok){await refresh();paint()}
+         }]
+       ];
+       atelierOpenRowMenu(e,items);
+     };
+     row.append(check,name);target.append(row);
    }
    const list=reminders.querySelector('#atelierSettingsReminders');list.replaceChildren();
    const pending=(Array.isArray(state.reminders)?state.reminders:[]).filter(r=>r.status!=='done');
@@ -210,6 +224,23 @@
  showView=function(view){prior(view);setTimeout(refresh,0)};
  window.addEventListener('resize',refresh);refresh();
 })();
+/* Menu de ligne partagé : clic droit sur To-do list et sur les trackers.
+   Aucun crayon permanent dans les lignes. */
+function atelierOpenRowMenu(event,items){
+ document.querySelector('.atelier-row-context-menu')?.remove();
+ const menu=document.createElement('div');menu.className='atelier-row-context-menu';menu.setAttribute('role','menu');
+ const close=()=>{menu.remove();document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',escape,true)};
+ const outside=e=>{if(!menu.contains(e.target))close()};
+ const escape=e=>{if(e.key==='Escape')close()};
+ for(const [label,action] of items){
+  const btn=document.createElement('button');btn.type='button';btn.setAttribute('role','menuitem');
+  btn.textContent=label;btn.onclick=()=>{close();action()};menu.append(btn);
+ }
+ menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(event.clientX,window.innerWidth-180))+'px';
+ menu.style.top=Math.max(8,Math.min(event.clientY,window.innerHeight-110))+'px';
+ document.body.append(menu);
+ setTimeout(()=>{document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true)},0);
+}
 /* Réorganisation globale demandée sur le Drive :
    les anciens écrans existent toujours pour conserver les données et liens,
    mais leurs raccourcis sont retirés du tiroir principal. */
