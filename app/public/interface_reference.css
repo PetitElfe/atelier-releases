@@ -170,3 +170,10 @@
   border-radius:7px;padding:6px 10px;box-shadow:0 5px 15px #0009;
   font:600 12px/1.3 sans-serif;white-space:nowrap}
 #atelierRelativeDateFloat[hidden]{display:none!important}
+
+/* Chargée après big_refonte.css : dernière règle nécessaire pour 24 vraies lignes. */
+#weekPanel #weekGrid.week-grid{
+  grid-template-columns:62px repeat(7,minmax(156px,1fr)) 62px!important;
+  grid-template-rows:var(--week-header-height) repeat(24,var(--week-hour-height))!important;
+  grid-auto-rows:0!important
+}
