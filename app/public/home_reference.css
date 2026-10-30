@@ -766,3 +766,12 @@ body.home-active #sideNavToggle{display:none!important}
 }
 #homeView #journalBook .objective-note{padding:1px 2px 3px!important}
 #homeView #journalBook .objective-name{margin:0!important}
+
+/* Journal / Activité : domaines en gras, objectifs secondaires gris,
+   jauges strictement égales et collées au bord droit du contenu. */
+#homeView #journalBook .objective-domain-line{display:grid!important;grid-template-columns:minmax(0,1fr) 108px!important;gap:8px!important;width:100%!important;align-items:center!important}
+#homeView #journalBook .objective-domain-line .objective-domain{font-weight:700!important;color:#4c3c2a!important;font-style:normal!important;min-width:0}
+#homeView #journalBook .objective-domain-line .objective-progress-line{width:108px!important;min-width:108px!important;max-width:108px!important;justify-self:end!important;flex:none!important;gap:5px!important}
+#homeView #journalBook .objective-domain-line .objective-progress-track{width:75px!important;min-width:75px!important;max-width:75px!important;flex:none!important}
+#homeView #journalBook .objective-domain-line .objective-percent{width:28px!important;min-width:28px!important;text-align:right!important;white-space:nowrap!important}
+#homeView #journalBook .objective-name{color:#888078!important;font-weight:400!important;font-style:normal!important}
