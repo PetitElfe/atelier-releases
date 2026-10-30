@@ -9,14 +9,21 @@
  const apply=()=>{
    const size=Number(safeGet('atelier-ui-scale','100'));
    const theme=safeGet('atelier-ui-theme','goblin');
-   root.style.zoom=(scales.includes(size)?size:100)+'%';
+   // Ne jamais agrandir le document entier : l'Accueil conserve des coordonnées
+   // de widgets libres et un zoom de la racine change sa largeur utilisable.
+   // Les vues à mise en page fluide peuvent être agrandies indépendamment.
+   const actual=scales.includes(size)?size:100;
+   root.style.zoom=actual<=100?actual+'%':'100%';
+   document.querySelectorAll('main .view').forEach(view=>{
+     view.style.zoom=actual>100 && view.id!=='homeView'?actual+'%':'';
+   });
    root.dataset.atelierTheme=Object.hasOwn(themes,theme)?theme:'goblin';
  };
  apply();
  const settings=document.querySelector('#settingsView .settings-grid');
  if(settings){
    const section=document.createElement('section');section.className='settings-card atelier-appearance-settings';
-   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Comme sur Discord : réduis toute l’interface ou agrandis-la. Les réglages restent sur cet ordinateur.</p></div></div><label class="settings-field"><span>Taille globale de l’interface</span><select id="atelierUiScale"></select></label><label class="settings-field"><span>Thème de couleurs</span><select id="atelierUiTheme"></select></label><p class="muted">Le mode 100 % conserve les dimensions habituelles. Le zoom n’efface pas les positions enregistrées.</p>';
+   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Comme sur Discord : réduis toute l’interface ou agrandis-la. Les réglages restent sur cet ordinateur.</p></div></div><label class="settings-field"><span>Taille globale de l’interface</span><select id="atelierUiScale"></select></label><label class="settings-field"><span>Thème de couleurs</span><select id="atelierUiTheme"></select></label><p class="muted">Le mode 100 % conserve les dimensions habituelles. Au-dessus de 100 %, l’Accueil garde sa géométrie pour éviter les chevauchements ; les autres rubriques peuvent être agrandies.</p>';
    const size=section.querySelector('#atelierUiScale'),theme=section.querySelector('#atelierUiTheme');
    for(const value of scales){const opt=document.createElement('option');opt.value=value;opt.textContent=value+' %';size.append(opt)}
    for(const [key,label] of Object.entries(themes)){const opt=document.createElement('option');opt.value=key;opt.textContent=label;theme.append(opt)}
