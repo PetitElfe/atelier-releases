@@ -564,7 +564,17 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = u.path
         if p == '/api/mobile/notes':
             origin=self.headers.get('Origin','')
-            if origin and origin not in (f'http://{HOST}:{PORT}',):
+            host=self.headers.get('Host','').lower().strip()
+            try:
+                parsed=urlparse(origin) if origin else None
+                from_local=origin==f'http://{HOST}:{PORT}'
+                from_private_tailnet=bool(parsed and parsed.scheme=='https' and
+                    parsed.netloc.lower()==host and
+                    parsed.hostname and parsed.hostname.endswith('.ts.net'))
+            except ValueError:
+                from_private_tailnet=False
+                from_local=False
+            if origin and not (from_local or from_private_tailnet):
                 return self._json({'error':'Origine refusée'},403)
             try:
                 size=int(self.headers.get('Content-Length','0'))
