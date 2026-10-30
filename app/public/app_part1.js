@@ -182,7 +182,7 @@ function renderHome(){
         ancestor=state.objectiveNodes.find(node=>Number(node.id)===Number(ancestor.parent_id));
       }
       const percent=Math.max(0,Math.min(100,Number(obj.progress)||0));
-      el.innerHTML=`<div class="objective-domain">${esc(domain?.title||'Mes objectifs')}</div><div class="objective-name">${esc(obj.title)}</div><div class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></div>`;
+      el.innerHTML=`<div class="objective-domain-line"><span class="objective-domain">${esc(domain?.title||'Mes objectifs')}</span><span class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></span></div><div class="objective-name">${esc(obj.title)}</div>`;
       el.addEventListener('click',()=>openLibraryForNode(obj.id));
       objectiveRoot.appendChild(el);
     });
