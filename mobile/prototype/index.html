@@ -187,6 +187,14 @@ function toolsView(root){
  const goJournal=el('button',{class:'action'},'Mon journal');goJournal.onclick=()=>{state.page='journal';save();render()};
  const goNote=el('button',{class:'action'},'Une note JDR pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
 }
+window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
+function backupSettings(root){
+ const p=panel(root,'Sauvegarder mes données du téléphone');
+ p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
+ const button=el('button',{class:'action'},'💾 Exporter mes données Android');
+ button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v1',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark'};const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
+ p.append(button);
+}
 function themeSettings(root){
  const p=panel(root,'Apparence de mon Atelier');p.append(el('p',{class:'muted'},'Choisis ton ambiance. Le thème Goblin sombre est proposé par défaut.'));
  const group=el('div',{class:'theme-choice'});
@@ -200,7 +208,7 @@ render=function(){
  if(state.page==='tools'){document.getElementById('title').textContent='Mes outils';document.getElementById('subtitle').textContent='Un espace à mon rythme 🌿';const root=document.getElementById('content');root.replaceChildren();toolsView(root);updateNav();return}
  if(state.page==='connected'){document.getElementById('title').textContent='Mon Atelier synchronisé';document.getElementById('subtitle').textContent='Mes données du PC, mes habitudes à moi.';const root=document.getElementById('content');root.replaceChildren();connectedView(root);updateNav();return}
  previousRender();
- if(state.page==='settings'){connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
+ if(state.page==='settings'){backupSettings(document.getElementById('content'));connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
 };
 render();
 if(pcUrl)syncPull();
