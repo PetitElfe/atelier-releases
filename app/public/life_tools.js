@@ -1044,8 +1044,8 @@ function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierRemind
 /* Notifications personnalisées : cinq vrais fichiers WAV peuvent être stockés
    localement, sans réseau ni upload serveur. */
 const atelierNotificationNames={
- laugh:'Rire du petit Goblin',forest:'Forêt enchantée',
- chimes:'Carillon doux',mumble:'Goblin qui marmonne',potion:'Potion magique'
+ mumble:'03 · Nyuu marmonnement',surprise:'10 · Surprise',
+ chimes:'11 · Carillon doux',potion:'12 · Potion magique',other:'Autre son (personnalisé)'
 };
 function atelierNotificationChosen(){const id=localStorage.getItem('atelierNotificationChosen')||'chimes';return atelierNotificationNames[id]?id:'chimes'}
 function lifeReminderChime(force=false){
@@ -1088,7 +1088,7 @@ if(lifeSoundControl){
 /* Un seul choix de notification et cinq emplacements de fichiers locaux. */
 const atelierSoundSettings=document.createElement('div');
 atelierSoundSettings.className='atelier-notification-picker';
-atelierSoundSettings.innerHTML='<label for="atelierNotificationSelect">Son de notification</label><select id="atelierNotificationSelect"></select><div class="atelier-notification-picker-actions"><button type="button" id="atelierNotificationListen">Écouter</button><label>Choisir un fichier WAV ou MP3 <input id="atelierNotificationImport" type="file" accept="audio/*"></label></div><p id="atelierNotificationStatus" class="muted"></p>';
+atelierSoundSettings.innerHTML='<label for="atelierNotificationSelect">Son de notification</label><select id="atelierNotificationSelect"></select><div class="atelier-notification-picker-actions"><button type="button" id="atelierNotificationListen">Écouter</button><label>Importer les 4 sons retenus en une fois <input id="atelierNotificationBatch" type="file" accept="audio/*,.wav,.mp3" multiple></label><label>Remplacer le son sélectionné <input id="atelierNotificationImport" type="file" accept="audio/*"></label></div><p id="atelierNotificationStatus" class="muted"></p>';
 if(lifeSoundControl){
  lifeReminderVolumeField.before(atelierSoundSettings);
  const sel=atelierSoundSettings.querySelector('#atelierNotificationSelect');
@@ -1100,6 +1100,20 @@ if(lifeSoundControl){
  sel.value=atelierNotificationChosen();update();
  sel.onchange=()=>{localStorage.setItem('atelierNotificationChosen',sel.value);update()};
  atelierSoundSettings.querySelector('#atelierNotificationListen').onclick=()=>lifeReminderChime(true);
+ const mapName=name=>{const n=name.toLowerCase();if(n.startsWith('03_')||n.includes('nyuu'))return 'mumble';if(n.startsWith('10_')||n.includes('surprise'))return 'surprise';if(n.startsWith('11_')||n.includes('carillon'))return 'chimes';if(n.startsWith('12_')||n.includes('potion'))return 'potion';return null};
+ const readAudio=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file)});
+ atelierSoundSettings.querySelector('#atelierNotificationBatch').onchange=async event=>{
+  const files=[...(event.target.files||[])];let success=0;const errors=[];
+  for(const file of files){const id=mapName(file.name);
+   if(!id){errors.push(file.name+' : nom inconnu');continue}
+   if(file.size>1500000){errors.push(file.name+' : trop volumineux');continue}
+   try{localStorage.setItem('atelierNotificationFile_'+id,await readAudio(file));success++}
+   catch(_){errors.push(file.name+' : stockage local insuffisant')}
+  }
+  status.textContent=success+' son(s) importé(s) dans les Paramètres.'+(errors.length?' '+errors.join(' · '):'');
+  if(success){localStorage.setItem('atelierNotificationChosen','chimes');sel.value='chimes'}
+  event.target.value='';
+ };
  atelierSoundSettings.querySelector('#atelierNotificationImport').onchange=event=>{
   const file=event.target.files?.[0];if(!file)return;
   if(file.size>1500000){status.textContent='Fichier trop grand (maximum 1,5 Mo).';return}
