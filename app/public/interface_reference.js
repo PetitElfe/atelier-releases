@@ -53,6 +53,10 @@
      title.addEventListener('click',()=>{state.cursor=new Date(chosenYear,m,1);setCalendarMode('month');refresh()});
      card.append(title);
      const days=document.createElement('div');days.className='atelier-year-days';
+     const dayNames=['L','M','M','J','V','S','D'];
+     for(const [idx,name] of dayNames.entries()){const label=document.createElement('span');label.className='atelier-year-weekday';label.textContent=name;label.title=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][idx];days.append(label)}
+     const offset=(new Date(chosenYear,m,1).getDay()+6)%7;
+     for(let empty=0;empty<offset;empty++){const spacer=document.createElement('span');spacer.className='atelier-year-empty';spacer.setAttribute('aria-hidden','true');days.append(spacer)}
      for(let d=1;d<=new Date(chosenYear,m+1,0).getDate();d++){
        const day=document.createElement('button');day.type='button';day.className='atelier-year-day';
        const ymdValue=chosenYear+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
