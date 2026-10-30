@@ -87,7 +87,7 @@ public final class TailnetBridge {
                 InputStream stream = status >= 400 ? conn.getErrorStream() : conn.getInputStream();
                 response = stream == null ? "{}" : readBounded(stream);
             } catch (Exception e) {
-                response = new JSONObject().put("error", e.getClass().getSimpleName() + " : " + e.getMessage()).toString();
+                response = "{\"error\":" + JSONObject.quote(e.getClass().getSimpleName() + " : " + e.getMessage()) + "}";
             } finally {
                 if (conn != null) conn.disconnect();
             }
