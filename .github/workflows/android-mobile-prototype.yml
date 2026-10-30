@@ -70,7 +70,7 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
-          "$AAPT" dump badging "$APK" | grep -q 'versionCode=\x27102\x27'
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='102'"
           unzip -p "$APK" assets/index.html | grep -q 'data-mobile-section="notes"'
       - name: Boot Android emulator and smoke-test app
         uses: reactivecircus/android-emulator-runner@v2
