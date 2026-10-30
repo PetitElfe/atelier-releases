@@ -63,6 +63,39 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           mv "$APK" LAtelierDuGoblin-Mobile.apk
           sha256sum LAtelierDuGoblin-Mobile.apk > LAtelierDuGoblin-Mobile.apk.sha256
+      - name: Confirm signature matches the already installed Android 0.1.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/previous-android"
+          gh release download android-v0.1.1 --pattern 'LAtelierDuGoblin-Mobile.apk' --dir "$RUNNER_TEMP/previous-android"
+          OLD="$RUNNER_TEMP/previous-android/LAtelierDuGoblin-Mobile.apk"
+          NEW="LAtelierDuGoblin-Mobile.apk"
+          test -s "$OLD" && test -s "$NEW"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$OLD"
+          "$APKSIGNER" verify --verbose "$NEW"
+          get_cert() {
+            "$APKSIGNER" verify --print-certs "$1" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1
+          }
+          OLD_CERT="$(get_cert "$OLD")"
+          NEW_CERT="$(get_cert "$NEW")"
+          test -n "$OLD_CERT" && test -n "$NEW_CERT"
+          if [ "$OLD_CERT" != "$NEW_CERT" ]; then
+            echo "::error::Android signing certificate differs from v0.1.1. Existing app must NOT be replaced."
+            exit 1
+          fi
+          echo "Release signing certificate matches the existing v0.1.1 release."
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          OLD_CODE=$("$AAPT" dump badging "$OLD" | sed -n "s/^package: .*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -n 1)
+          NEW_CODE=$("$AAPT" dump badging "$NEW" | sed -n "s/^package: .*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -n 1)
+          test -n "$OLD_CODE" && test -n "$NEW_CODE"
+          if [ "$NEW_CODE" -le "$OLD_CODE" ]; then
+            echo "::error::Android versionCode must be higher than the installed release."
+            exit 1
+          fi
+          echo "Android versionCode upgrade verified: $OLD_CODE -> $NEW_CODE."
       - uses: actions/upload-artifact@v4
         with:
           name: LAtelierDuGoblin_Android_Signed
