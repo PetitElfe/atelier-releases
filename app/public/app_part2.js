@@ -207,7 +207,7 @@ function renderWeek(){
   $('#weekTitle').textContent=start.getDate()+' '+months[start.getMonth()].slice(0,3)+' — '+end.getDate()+' '+months[end.getMonth()].slice(0,3);
   const grid=$('#weekGrid');grid.innerHTML='';
   const blank=document.createElement('div');blank.className='week-head';grid.appendChild(blank);
-  const firstMinute=7*60,lastMinute=23*60,spanMinutes=lastMinute-firstMinute;
+  const firstMinute=0,lastMinute=24*60,spanMinutes=lastMinute-firstMinute;
   const clockMinutes=time=>{
     if(!time||!/^([01]\d|2[0-3]):[0-5]\d/.test(time))return null;
     const parts=time.split(':').map(Number);
@@ -247,7 +247,7 @@ function renderWeek(){
   }
   // Les 16 heures sont des lignes de hauteur FIXE. Les rendez-vous sont
   // dessinés ensuite au-dessus, sans modifier ni déplacer la grille.
-  for(let hour=7;hour<=22;hour++){
+  for(let hour=0;hour<=23;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');
@@ -284,12 +284,13 @@ function renderWeek(){
       });
       cell.addEventListener('dblclick',()=>openEventModal(null,ds,pad(hour)+':00'));grid.appendChild(cell);
     }
+    const right=document.createElement('div');right.className='time-label week-time-right';right.textContent=pad(hour)+':00';grid.appendChild(right);
   }
   // Chaque colonne a une couche indépendante et les rendez-vous simultanés
   // partagent son espace horizontal (2 événements : 50 % chacun).
   for(let i=0;i<7;i++){
     const ds=dates[i],layer=document.createElement('div');
-    layer.className='week-day-layer';layer.style.gridColumn=String(i+2);layer.style.gridRow='2 / 18';
+    layer.className='week-day-layer';layer.style.gridColumn=String(i+2);layer.style.gridRow='2 / 26';
     layer.dataset.date=ds;
     const appointments=state.events.filter(e=>e.instance_date===ds&&!isAllDay(e)).map(e=>{
       const from=clockMinutes(e.start_time),rawEnd=clockMinutes(e.end_time);
