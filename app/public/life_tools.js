@@ -324,8 +324,19 @@ function renderTrackerBoards(){
       loadLifeTools();
     },'tracker-period-today');
     const change=lifeButton('Changer le rythme',()=>lifeBoardPeriodEditor(section,board),'tracker-period-change');
-    const readablePeriod=board.period_unit==='weeks'?
-      'Semaine'+(Number(board.period_count)>1?'s':'')+' · '+board.period.label:
+    const isoWeek=day=>{
+      const date=new Date(String(day||'').slice(0,10)+'T12:00:00Z');
+      if(!Number.isFinite(date.getTime()))return null;
+      const value=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+      value.setUTCDate(value.getUTCDate()+4-(value.getUTCDay()||7));
+      const yearStart=new Date(Date.UTC(value.getUTCFullYear(),0,1));
+      return 1+Math.floor((value-yearStart)/604800000);
+    };
+    const weekStart=isoWeek(board.period.columns[0]?.day);
+    const weekEnd=isoWeek(board.period.columns[board.period.columns.length-1]?.day);
+    const readablePeriod=board.period_unit==='weeks' && weekStart?
+      (weekEnd&&weekEnd!==weekStart?'Semaines '+weekStart+'–'+weekEnd:'Semaine '+weekStart):
+      board.period_unit==='weeks'?'Semaine · '+board.period.label:
       board.period_unit==='months'&&Number(board.period_count)===1?
         board.period.columns[0]?.title?.replace(/^./,letter=>letter.toUpperCase())||board.period.label:
         board.period.label;
@@ -463,6 +474,27 @@ function renderTrackerBoards(){
         const holder=lifeNode('span','tracker-cell-wrap'+(item.day===today?' tracker-today':''));
         holder.append(lifeTrackerMarkButton(board,line,item.day));row.append(holder);
       }
+      // Clic droit sur une ligne : les actions de cette ligne, et non celles du tableau.
+      row.addEventListener('contextmenu',event=>{
+        if(event.target.closest('input,select,textarea'))return;
+        event.preventDefault();event.stopPropagation();
+        document.querySelector('.atelier-row-context-menu')?.remove();
+        const menu=lifeNode('div','atelier-row-context-menu');
+        menu.setAttribute('role','menu');menu.setAttribute('aria-label','Actions de '+line.title);
+        const add=(title,action)=>{
+          const item=lifeButton(title,()=>{close();action()},'atelier-row-menu-action');
+          item.setAttribute('role','menuitem');menu.append(item);
+        };
+        const close=()=>{menu.remove();document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',escape,true)};
+        const outside=e=>{if(!menu.contains(e.target))close()};
+        const escape=e=>{if(e.key==='Escape')close()};
+        add('Modifier',()=>edit.click());
+        add('Dupliquer',()=>duplicate.click());
+        menu.style.position='fixed';menu.style.left=Math.min(event.clientX,window.innerWidth-180)+'px';
+        menu.style.top=Math.min(event.clientY,window.innerHeight-100)+'px';
+        document.body.append(menu);
+        setTimeout(()=>{document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true)},0);
+      });
       grid.append(row);
     });
     viewport.append(grid);
@@ -1002,6 +1034,7 @@ document.addEventListener('keydown',e=>{
   if(lifeShortcutFromEvent(e)===lifeShortcut()){e.preventDefault();lifeOpenCapture()}
 });
 function lifeSoundEnabled(){return localStorage.getItem('atelierReminderSound')==='1'}
+function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierReminderVolume')||'40');return Math.max(0,Math.min(100,Number.isFinite(n)?n:40))/100}
 function lifeReminderChime(force=false){
   if(!force&&!lifeSoundEnabled())return;
   try{
@@ -1015,12 +1048,24 @@ function lifeReminderChime(force=false){
       const gain=lifeAudioContext.createGain();
       oscillator.type='sine';oscillator.frequency.value=freq;
       gain.gain.setValueAtTime(.0001,now+i*.14);
-      gain.gain.exponentialRampToValueAtTime(.12,now+i*.14+.025);
+      gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.12*lifeReminderVolume()),now+i*.14+.025);
       gain.gain.exponentialRampToValueAtTime(.0001,now+i*.14+.24);
       oscillator.connect(gain);gain.connect(lifeAudioContext.destination);
       oscillator.start(now+i*.14);oscillator.stop(now+i*.14+.25);
     });
   }catch(err){console.warn('[Atelier] Son de rappel indisponible',err)}
+}
+const lifeReminderVolumeField=document.createElement('label');
+lifeReminderVolumeField.className='atelier-reminder-volume';
+lifeReminderVolumeField.innerHTML='<span>Volume de L’Atelier <output id="atelierReminderVolumeValue"></output></span><input id="atelierReminderVolume" type="range" min="0" max="100" step="5" aria-label="Volume des rappels" />';
+const lifeSoundControl=$('#settingsReminderSound');
+if(lifeSoundControl){
+  const card=lifeSoundControl.closest('.settings-card');
+  const reference=$('#settingsTestReminderSound');
+  if(reference)reference.before(lifeReminderVolumeField);else card?.append(lifeReminderVolumeField);
+  const slider=$('#atelierReminderVolume'),output=$('#atelierReminderVolumeValue');
+  slider.value=String(Math.round(lifeReminderVolume()*100));output.textContent=slider.value+' %';
+  slider.addEventListener('input',()=>{localStorage.setItem('atelierReminderVolume',slider.value);output.textContent=slider.value+' %'});
 }
 $('#settingsReminderSound')?.addEventListener('change',e=>{
   localStorage.setItem('atelierReminderSound',e.target.checked?'1':'0');

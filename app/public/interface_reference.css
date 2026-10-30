@@ -66,3 +66,35 @@
 #trackersView .tracker-board.atelier-module-editing .atelier-tracker-layout-handle{display:inline-block}
 #trackersView .tracker-board.atelier-module-editing .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
 #trackersView .tracker-board.atelier-module-editing .tracker-board-head h3{flex:1}
+
+/* Le crayon global est la seule commande du mode Modifier. */
+#trackersView #atelierTrackerEditLayout,
+#trackersView .atelier-tracker-move,
+#trackersView .atelier-tracker-resize,
+#trackersView .atelier-tracker-layout-handle{display:none!important}
+#sideNav button[data-view][hidden]{display:none!important}
+#trackersView .atelier-layout-capable{position:relative;box-sizing:border-box}
+#trackersView .atelier-layout-grip,
+#trackersView .atelier-layout-corner{display:none;user-select:none;touch-action:none}
+#trackersView .atelier-layout-capable.atelier-module-editing{outline:1px dashed #bda678;outline-offset:2px}
+#trackersView .atelier-module-editing .atelier-layout-grip{display:inline-flex;align-items:center;justify-content:center;min-width:23px;cursor:grab;color:#d6c29b;font-weight:700}
+#trackersView .atelier-module-editing .atelier-layout-grip:active{cursor:grabbing}
+#trackersView .atelier-module-editing .atelier-layout-corner{display:block;position:absolute;right:3px;bottom:3px;width:17px;height:17px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 55%,#bda678 56% 62%,transparent 63% 73%,#bda678 74% 81%,transparent 82%)}
+#trackersView .atelier-tracker-tasks{max-width:100%;padding:12px;border:1px solid var(--line,#655842);border-radius:11px;background:var(--panel,#221e18)}
+#trackersView .atelier-tracker-tasks .tracker-board-head{display:flex;align-items:center;gap:9px}
+#trackersView .atelier-tracker-tasks .tracker-board-head h3{flex:1}
+#trackersView .atelier-tracker-task-line{min-height:27px}
+
+/* Volume du son propre à L'Atelier, accessible depuis Paramètres. */
+.atelier-reminder-volume{display:flex;flex-direction:column;gap:6px;margin:12px 0;color:var(--text,#efe6d0)}
+.atelier-reminder-volume>span{display:flex;justify-content:space-between;gap:12px}
+.atelier-reminder-volume input[type=range]{width:100%;accent-color:var(--gold,#c8ae7b)}
+
+/* Grilles compactes et menu au clic droit sur une ligne de suivi. */
+#trackersView .tracker-add-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:5px 8px;border:1px dashed var(--line,#726454);background:rgba(145,134,112,.08);border-radius:7px}
+#trackersView .tracker-add-row input[name=title]{flex:1 1 160px;min-width:140px;max-width:320px;min-height:29px;padding:4px 8px;background:transparent;border:0;border-bottom:1px solid var(--line,#726454)}
+#trackersView .tracker-add-row input[name=title]::placeholder{color:var(--muted,#a39886)}
+#trackersView .tracker-add-row button,#trackersView .tracker-add-row select{min-height:27px;padding:3px 7px;font-size:12px}
+.atelier-row-context-menu{z-index:100000;display:flex;flex-direction:column;gap:2px;min-width:145px;padding:5px;border:1px solid #8b775d;border-radius:7px;background:#27241f;box-shadow:0 8px 30px #0009}
+.atelier-row-context-menu button{border:0;background:transparent;color:#f4e7d1;text-align:left;padding:8px 12px;border-radius:5px;font-size:13px}
+.atelier-row-context-menu button:hover{background:#554533}

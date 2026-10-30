@@ -625,7 +625,7 @@ async function api(path,method='GET',body){
   await page.locator('#globalHomeShortcut').click();
   // Organisation 0.14 : test de bout en bout sur des données temporaires.
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
-  await page.locator('.tabs button[data-view="organisation"]').click();
+  await page.evaluate(()=>showView('organisation'));
   await page.locator('#habitTitle').fill('Marche quotidienne E2E');
   await page.locator('#habitCreateForm button[type="submit"]').click();
   await page.locator('.habit-card').first().waitFor();
