@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "83eab9e5fed1ce85b9ee5982e82e7cc36ddf8ff1ae7d8d9bcdbc5cc99ca76cc3"
+      "sha256": "21a0e0e55d94ac5a21d444c67429ef1fe6c4d1eacacc5e01bc811cc3cf22731a"
     },
     {
       "path": "app_part3.py",
@@ -73,7 +73,7 @@
     },
     {
       "path": "public/postits.js",
-      "sha256": "bf4506e6393bac54945ca8f77653dc5f7fb33910fba3aa3ba8b2937c35ebab4d"
+      "sha256": "5e48a77bbd412e4d5a960df336cff7210fbbc5a2da4d9b223639ab3fe8e30ce4"
     },
     {
       "path": "desktop_shell.py",
