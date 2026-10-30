@@ -1002,6 +1002,7 @@ document.addEventListener('keydown',e=>{
   if(lifeShortcutFromEvent(e)===lifeShortcut()){e.preventDefault();lifeOpenCapture()}
 });
 function lifeSoundEnabled(){return localStorage.getItem('atelierReminderSound')==='1'}
+function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierReminderVolume')||'40');return Math.max(0,Math.min(100,Number.isFinite(n)?n:40))/100}
 function lifeReminderChime(force=false){
   if(!force&&!lifeSoundEnabled())return;
   try{
@@ -1015,12 +1016,24 @@ function lifeReminderChime(force=false){
       const gain=lifeAudioContext.createGain();
       oscillator.type='sine';oscillator.frequency.value=freq;
       gain.gain.setValueAtTime(.0001,now+i*.14);
-      gain.gain.exponentialRampToValueAtTime(.12,now+i*.14+.025);
+      gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.12*lifeReminderVolume()),now+i*.14+.025);
       gain.gain.exponentialRampToValueAtTime(.0001,now+i*.14+.24);
       oscillator.connect(gain);gain.connect(lifeAudioContext.destination);
       oscillator.start(now+i*.14);oscillator.stop(now+i*.14+.25);
     });
   }catch(err){console.warn('[Atelier] Son de rappel indisponible',err)}
+}
+const lifeReminderVolumeField=document.createElement('label');
+lifeReminderVolumeField.className='atelier-reminder-volume';
+lifeReminderVolumeField.innerHTML='<span>Volume de L’Atelier <output id="atelierReminderVolumeValue"></output></span><input id="atelierReminderVolume" type="range" min="0" max="100" step="5" aria-label="Volume des rappels" />';
+const lifeSoundControl=$('#settingsReminderSound');
+if(lifeSoundControl){
+  const card=lifeSoundControl.closest('.settings-card');
+  const reference=$('#settingsTestReminderSound');
+  if(reference)reference.before(lifeReminderVolumeField);else card?.append(lifeReminderVolumeField);
+  const slider=$('#atelierReminderVolume'),output=$('#atelierReminderVolumeValue');
+  slider.value=String(Math.round(lifeReminderVolume()*100));output.textContent=slider.value+' %';
+  slider.addEventListener('input',()=>{localStorage.setItem('atelierReminderVolume',slider.value);output.textContent=slider.value+' %'});
 }
 $('#settingsReminderSound')?.addEventListener('change',e=>{
   localStorage.setItem('atelierReminderSound',e.target.checked?'1':'0');
