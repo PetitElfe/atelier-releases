@@ -3,10 +3,47 @@
 <title>L’Atelier du Goblin — prototype mobile</title>
 <style>
 :root{font-family:system-ui,sans-serif;color:#443e31;background:#24372d}*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer}header{position:sticky;top:0;background:#24372d;color:#f0e2c3;padding:calc(15px + env(safe-area-inset-top, 0px)) 16px 15px;display:flex;align-items:center;justify-content:space-between;z-index:2}header button{background:none;border:0;color:inherit;font-size:26px}header strong{font-family:Georgia,serif;font-size:19px}.paper{background:#f1e5c9;min-height:calc(100dvh - 70px);padding:24px 18px 70px;border-radius:20px 20px 0 0}h1,h2{font-family:Georgia,serif;color:#3d5a45}h1{text-align:center;font-size:28px;margin:4px 0 6px}h2{font-size:19px;margin:0 0 12px}.sub{text-align:center;color:#786e57;font-size:13px;margin-bottom:25px}.panel{background:#fff9eb;border:1px solid #d7c9a7;border-radius:15px;padding:17px;margin:14px 0}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e8dcc5}.item:last-child{border:0}.item input{accent-color:#547b5b;width:21px;height:21px}.item span{flex:1}.item.done span{text-decoration:line-through;color:#8d8a7d}textarea,input[type=text]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31}textarea{min-height:90px}.action{background:#496a50;color:white;border:0;border-radius:10px;padding:11px 15px;margin-top:9px}.nav{position:fixed;z-index:5;inset:0 auto 0 0;width:min(82vw,310px);background:#263b30;color:#f3e6c8;padding:calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;box-shadow:0 0 0 100vmax #0008}.nav button{display:block;width:100%;text-align:left;padding:14px;background:transparent;color:inherit;border:0;border-bottom:1px solid #ffffff25}.nav[hidden],[hidden]{display:none!important}.muted{font-size:13px;color:#81765f}.arrows{display:flex;gap:8px}.arrows button{border:1px solid #cfc09f;border-radius:8px;background:#f1e5c9;padding:5px 9px}.footer{text-align:center;font-size:12px;color:#8b816b;margin-top:30px}select,input[type=date]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31;margin:5px 0}
+
+/* Mobile Goblin redesign: preserves existing localStorage and old pages. */
+:root{--page-bg:#17231e;--header-bg:#192b22;--paper-bg:#202e26;--card-bg:#2a3b2f;--card-border:#5e755f;--ink:#f1ebd8;--muted-ink:#b7c8b3;--accent:#9ebc86;--field-bg:#1d2b23;--field-border:#6b866e;--tab-bg:#1b2c23;--tab-color:#d8e5ce}
+body{background:var(--page-bg);color:var(--ink)}
+header{background:var(--header-bg);color:var(--ink);border-bottom:1px solid var(--card-border)}
+.paper{background:var(--paper-bg);color:var(--ink);padding-bottom:calc(115px + env(safe-area-inset-bottom,0px));min-height:100dvh;border-radius:19px 19px 0 0}
+h1,h2{color:var(--accent)}.sub,.muted,.footer{color:var(--muted-ink)}
+.panel{background:var(--card-bg);border-color:var(--card-border);box-shadow:0 6px 20px #0a160d24}
+.item{border-color:var(--card-border)}
+.item.done span{color:var(--muted-ink)}
+textarea,input[type=text],select,input[type=date],input[type=time]{background:var(--field-bg);border:1px solid var(--field-border);color:var(--ink)}
+.action{background:#577e5e;color:#fff}
+.arrows button{border:1px solid var(--card-border);background:var(--field-bg);color:var(--ink)}
+.nav{background:var(--header-bg);color:var(--ink)}
+.mobile-tabs{position:fixed;bottom:0;left:0;right:0;z-index:4;background:var(--tab-bg);color:var(--tab-color);display:flex;align-items:center;justify-content:space-around;padding:9px 6px calc(9px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--card-border);box-shadow:0 -8px 25px #0004}
+.mobile-tabs button{border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;font-size:10px;gap:3px;padding:4px 2px;min-width:55px}
+.mobile-tabs button.active{color:var(--accent);font-weight:800}
+.mobile-tabs .tab-icon{font-size:23px;line-height:27px}
+.mobile-tabs .star-tab{background:#416748;color:#fff;width:60px;height:60px;border:4px solid var(--tab-bg);border-radius:50%;margin-top:-26px;min-width:60px;box-shadow:0 5px 16px #0007;justify-content:center}
+.mobile-tabs .star-tab .tab-icon{font-size:30px}
+.tool-card{background:var(--field-bg);padding:13px;border-radius:13px;border:1px solid var(--card-border);margin:11px 0}
+.tool-card h3{font-size:16px;margin:0 0 7px;color:var(--accent)}
+.tool-card p{line-height:1.5}
+.tool-card .action{margin:4px 4px 5px 0}
+.theme-choice{display:flex;flex-direction:column;gap:8px}.theme-choice label{display:flex;align-items:center;gap:8px}.theme-choice input{accent-color:#81a986}
+body.theme-classic{--page-bg:#24372d;--header-bg:#24372d;--paper-bg:#f1e5c9;--card-bg:#fff9eb;--card-border:#d7c9a7;--ink:#443e31;--muted-ink:#786e57;--accent:#3d5a45;--field-bg:#fffdf6;--field-border:#c8ba9c;--tab-bg:#f1e5c9;--tab-color:#3d5a45}
+body.theme-classic header{color:#f0e2c3}
+body.theme-classic .nav{color:#f0e2c3}
+body.theme-classic .star-tab{color:#fff}
+@media(min-width:680px){.paper{max-width:640px;margin:auto}.mobile-tabs{justify-content:center;gap:50px}}
 </style></head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰</button><strong>L’Atelier du Goblin</strong><span aria-hidden="true">🌿</span></header>
-<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="settings">⚙ Personnaliser</button></nav>
+<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
+<nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
+<button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon">▦</span>Calendrier</button>
+<button type="button" data-mobile-go="capture"><span class="tab-icon">✎</span>Notes</button>
+<button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement"><span class="tab-icon">☆</span></button>
+<button type="button" data-mobile-go="shopping"><span class="tab-icon">♧</span>Courses</button>
+<button type="button" data-mobile-go="tasks"><span class="tab-icon">☑</span>To-Do</button>
+</nav>
 <script>
 const KEY='goblin-mobile-prototype-v1';
 const defaults={page:'journal',sections:['habits','tasks','notes','shopping'],visible:{habits:true,tasks:true,notes:true,shopping:false},habits:[{text:'Prendre un moment pour moi',done:false},{text:'Boire de l’eau',done:false}],tasks:[],shopping:[],notes:[],events:[]};
@@ -130,11 +167,40 @@ function connectedView(root){
   p.append(date,title,btn);
  }
 }
+
+/* One native APK, two themes, same local storage key and bundled WebView origin. */
+const themeKey='goblin-mobile-theme-v1';
+function applyTheme(value){const theme=value==='classic'?'classic':'dark';document.body.classList.toggle('theme-classic',theme==='classic');localStorage.setItem(themeKey,theme);document.querySelectorAll('[name="goblinTheme"]').forEach(r=>r.checked=r.value===theme)}
+applyTheme(localStorage.getItem(themeKey)||'dark');
+const personalCardKey='goblin-mobile-communication-cards-v1';
+const standardCards=['J’ai besoin d’un moment au calme.','J’ai du mal à trouver mes mots. Je préfère écrire.','Je ne peux pas continuer cette conversation maintenant.','J’ai besoin que tu restes près de moi sans me poser de questions.'];
+function toolsView(root){
+ const intro=panel(root,'☆ Ma boîte à outils');
+ intro.append(el('p',{class:'muted'},'Tu peux choisir ce qui te fait du bien. Rien n’est obligatoire.'));
+ const grounding=el('div',{class:'tool-card'});grounding.append(el('h3',{},'🌿 Revenir au présent'),el('p',{},'Si tu le souhaites, observe cinq choses autour de toi, ressens quatre contacts et écoute trois sons. Tu peux arrêter quand tu veux.'));intro.append(grounding);
+ const pause=el('div',{class:'tool-card'});pause.append(el('h3',{},'🫧 Une pause douce'),el('p',{},'Assieds-toi confortablement, prends appui sur une surface stable et laisse ta respiration suivre son rythme naturel.'));intro.append(pause);
+ const comm=el('div',{class:'tool-card'});comm.append(el('h3',{},'💬 Cartes de communication'));
+ let cards=[];try{cards=JSON.parse(localStorage.getItem(personalCardKey)||'[]');if(!Array.isArray(cards))cards=[]}catch(e){}
+ for(const t of [...standardCards,...cards]){const btn=el('button',{class:'action'},t);btn.onclick=async()=>{try{await navigator.clipboard.writeText(t);alert('Carte copiée !')}catch(e){prompt('Copie cette carte :',t)}};comm.append(btn)}
+ const add=el('button',{class:'action'},'＋ Ma propre carte');add.onclick=()=>{const value=prompt('Quel message voudrais-tu garder à portée de main ?');if(!value?.trim())return;cards.push(value.trim().slice(0,500));localStorage.setItem(personalCardKey,JSON.stringify(cards.slice(-30)));render()};comm.append(add);intro.append(comm);
+ const diary=el('div',{class:'tool-card'});diary.append(el('h3',{},'📓 Journal et idées'));
+ const goJournal=el('button',{class:'action'},'Mon journal');goJournal.onclick=()=>{state.page='journal';save();render()};
+ const goNote=el('button',{class:'action'},'Une note JDR pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
+}
+function themeSettings(root){
+ const p=panel(root,'Apparence de mon Atelier');p.append(el('p',{class:'muted'},'Choisis ton ambiance. Le thème Goblin sombre est proposé par défaut.'));
+ const group=el('div',{class:'theme-choice'});
+ for(const [value,title] of [['dark','🌲 Goblin sombre'],['classic','🌿 Classique vert et crème']]){const label=el('label');const radio=el('input',{type:'radio',name:'goblinTheme',value});radio.checked=(localStorage.getItem(themeKey)||'dark')===value;radio.onchange=()=>applyTheme(value);label.append(radio,el('span',{},title));group.append(label)}p.append(group);
+}
+function updateNav(){document.querySelectorAll('[data-mobile-go]').forEach(b=>{const dest=b.dataset.mobileGo;b.classList.toggle('active',dest===state.page||(dest==='connected'&&state.page==='calendar'))})}
+document.querySelectorAll('[data-mobile-go]').forEach(btn=>btn.onclick=()=>{state.page=btn.dataset.mobileGo;if(state.page==='connected')tab='calendar';if(state.page==='capture')state.captureDestination='JDR';save();document.getElementById('nav').hidden=true;render();window.scrollTo(0,0)});
+
 const previousRender=render;
 render=function(){
- if(state.page==='connected'){document.getElementById('title').textContent='Mon Atelier synchronisé';document.getElementById('subtitle').textContent='Mes données du PC, mes habitudes à moi.';const root=document.getElementById('content');root.replaceChildren();connectedView(root);return}
+ if(state.page==='tools'){document.getElementById('title').textContent='Mes outils';document.getElementById('subtitle').textContent='Un espace à mon rythme 🌿';const root=document.getElementById('content');root.replaceChildren();toolsView(root);updateNav();return}
+ if(state.page==='connected'){document.getElementById('title').textContent='Mon Atelier synchronisé';document.getElementById('subtitle').textContent='Mes données du PC, mes habitudes à moi.';const root=document.getElementById('content');root.replaceChildren();connectedView(root);updateNav();return}
  previousRender();
- if(state.page==='settings')connectedSettings(document.getElementById('content'));
+ if(state.page==='settings'){connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
 };
 render();
 if(pcUrl)syncPull();
