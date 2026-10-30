@@ -46,6 +46,23 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.ok(dimensions.weekWidth>dimensions.viewWidth*.94,'Semainier should use available width '+JSON.stringify(dimensions));
   assert.ok(dimensions.dayWidth>=156,'Readable columns '+JSON.stringify(dimensions));
   assert.ok(dimensions.slotHeight>=62&&dimensions.slotHeight<=70,'Agenda-style one-hour rows '+JSON.stringify(dimensions));
+  // Regression: every cell must align precisely with its hour and weekday.
+  const geometry=await page.evaluate(()=>{
+    const grid=document.querySelector('#weekGrid');
+    const cell=(hour,col)=>[...grid.querySelectorAll('.week-slot')].find(el=>el.style.gridRow===String(hour+2)&&el.style.gridColumn===String(col+2));
+    const left=[...grid.querySelectorAll('.time-label')].find(el=>el.style.gridRow==='6'&&el.style.gridColumn==='1');
+    const right=[...grid.querySelectorAll('.week-time-right')].find(el=>el.style.gridRow==='6');
+    const slot=cell(4,0),other=cell(4,6);
+    const day=document.querySelector('.week-day-layer');
+    const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}};
+    return {left:rect(left),right:rect(right),slot:rect(slot),other:rect(other),day:rect(day),grid:rect(grid)};
+  });
+  assert.ok(Math.abs(geometry.left.y-geometry.right.y)<2&&Math.abs(geometry.left.y-geometry.slot.y)<2,
+    'Left and right labels and hour cells must align: '+JSON.stringify(geometry));
+  assert.ok(geometry.other.x>geometry.slot.x+geometry.slot.width*5,
+    'The seven weekdays must occupy distinct columns: '+JSON.stringify(geometry));
+  assert.ok(geometry.day.width<geometry.grid.width/5&&geometry.day.height>geometry.slot.height*23,
+    'Event layer stays in exactly one day and spans 24 hours: '+JSON.stringify(geometry));
   assert.equal(dimensions.todaySlots,24,'All 24 hourly slots must be visible for today');
   assert.equal(await page.locator('#weekGrid .week-time-right').count(),24,'Right edge repeats every hourly label');
   assert.equal(await page.locator('#weekGrid .week-time-right').first().innerText(),'00:00');
