@@ -113,7 +113,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "1dcfb85afefef345e0604846ae224a15a17903dcedd569420d52f2f4994c2858"
+      "sha256": "e2dbc2fe0ec4001dd16c79f28c32bc4f6d20c26c21588a84bd39fc92482a5340"
     },
     {
       "path": "public/life_tools.css",
@@ -169,7 +169,7 @@
     },
     {
       "path": "public/interface_reference.js",
-      "sha256": "040eccd998b17e6fa7360102b6a1012b36e49ce530ee00e604e8937f083ee939"
+      "sha256": "6ed2471d7a45a821d3deca14dbf8d6ae2090a6d0a814dcdebf44c760b402316e"
     },
     {
       "path": "public/interface_reference.css",
