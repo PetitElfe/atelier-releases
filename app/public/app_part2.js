@@ -175,7 +175,19 @@ function renderMonth(){
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
     cell.dataset.relativeDate=atelierRelativeDateLabel(d);
-    cell.title=cell.dataset.relativeDate;
+    // Une infobulle attachée au document évite l'empilement sous la ligne du dessus.
+    cell.addEventListener('mouseenter',()=>{
+      let tip=document.getElementById('atelierRelativeDateFloat');
+      if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';document.body.append(tip)}
+      tip.textContent=cell.dataset.relativeDate;
+      const bounds=cell.getBoundingClientRect();
+      tip.style.left=Math.max(8,Math.min(window.innerWidth-180,bounds.left+bounds.width/2-80))+'px';
+      tip.style.top=Math.min(window.innerHeight-40,bounds.bottom+5)+'px';
+      tip.hidden=false;
+    });
+    cell.addEventListener('mouseleave',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
+    cell.addEventListener('focusout',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
+
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<button class="day-number day-list-toggle" type="button"
       title="Voir tous les rendez-vous du ${ds}" aria-label="Voir tous les rendez-vous du ${ds}">${d.getDate()}</button>
@@ -245,7 +257,8 @@ function renderWeek(){
     }
     grid.appendChild(head);
   }
-  // Les 16 heures sont des lignes de hauteur FIXE. Les rendez-vous sont
+  const rightHead=document.createElement('div');rightHead.className='week-head week-head-right';grid.appendChild(rightHead);
+  // Les 24 heures sont des lignes de hauteur FIXE. Les rendez-vous sont
   // dessinés ensuite au-dessus, sans modifier ni déplacer la grille.
   for(let hour=0;hour<=23;hour++){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
