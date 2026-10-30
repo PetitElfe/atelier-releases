@@ -463,6 +463,27 @@ function renderTrackerBoards(){
         const holder=lifeNode('span','tracker-cell-wrap'+(item.day===today?' tracker-today':''));
         holder.append(lifeTrackerMarkButton(board,line,item.day));row.append(holder);
       }
+      // Clic droit sur une ligne : les actions de cette ligne, et non celles du tableau.
+      row.addEventListener('contextmenu',event=>{
+        if(event.target.closest('input,select,textarea'))return;
+        event.preventDefault();event.stopPropagation();
+        document.querySelector('.atelier-row-context-menu')?.remove();
+        const menu=lifeNode('div','atelier-row-context-menu');
+        menu.setAttribute('role','menu');menu.setAttribute('aria-label','Actions de '+line.title);
+        const add=(title,action)=>{
+          const item=lifeButton(title,()=>{close();action()},'atelier-row-menu-action');
+          item.setAttribute('role','menuitem');menu.append(item);
+        };
+        const close=()=>{menu.remove();document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',escape,true)};
+        const outside=e=>{if(!menu.contains(e.target))close()};
+        const escape=e=>{if(e.key==='Escape')close()};
+        add('Modifier',()=>edit.click());
+        add('Dupliquer',()=>duplicate.click());
+        menu.style.position='fixed';menu.style.left=Math.min(event.clientX,window.innerWidth-180)+'px';
+        menu.style.top=Math.min(event.clientY,window.innerHeight-100)+'px';
+        document.body.append(menu);
+        setTimeout(()=>{document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true)},0);
+      });
       grid.append(row);
     });
     viewport.append(grid);
