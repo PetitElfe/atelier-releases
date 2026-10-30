@@ -404,7 +404,7 @@ function renderTrackerBoards(){
       const edit=lifeButton('✎',()=>trackerConfigureRow(line),'tracker-row-setup');
       edit.title='Objectif, étapes, jour fixe et lien de cette ligne';
       edit.setAttribute('aria-label','Configurer '+line.title);
-      name.append(open,edit);
+      name.append(open);
       const reorder=lifeNode('span','tracker-row-order');
       for(const [direction,glyph,allowed] of [
         ['up','↑',lineIndex>0],['down','↓',lineIndex<board.rows.length-1]
@@ -490,6 +490,12 @@ function renderTrackerBoards(){
         const escape=e=>{if(e.key==='Escape')close()};
         add('Modifier',()=>edit.click());
         add('Dupliquer',()=>duplicate.click());
+        add('Supprimer',async()=>{
+          const ok=await askUiConfirm('Supprimer la ligne','Supprimer « '+line.title+' » ?','Supprimer',true);
+          if(!ok)return;
+          const result=await runUiAction('Suppression impossible',()=>lifeApi('/api/tracker-board-rows/'+line.id,{method:'DELETE'}));
+          if(result.ok)await loadLifeTools();
+        });
         menu.style.position='fixed';menu.style.left=Math.min(event.clientX,window.innerWidth-180)+'px';
         menu.style.top=Math.min(event.clientY,window.innerHeight-100)+'px';
         document.body.append(menu);
