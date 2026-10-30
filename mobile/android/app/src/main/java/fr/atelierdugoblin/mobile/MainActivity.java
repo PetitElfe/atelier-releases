@@ -10,6 +10,9 @@ import android.widget.FrameLayout;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.content.Intent;
+import android.webkit.JavascriptInterface;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import android.net.Uri;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -20,6 +23,8 @@ import androidx.webkit.WebViewClientCompat;
 public class MainActivity extends Activity {
     private WebView webView;
     private TailnetBridge tailnet;
+    private String pendingBackup;
+    private static final int BACKUP_REQUEST=7281;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().setStatusBarColor(Color.rgb(36, 55, 45));
@@ -48,6 +53,19 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new UpdateBridge(this), "AtelierUpdates");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface public void exportBackup(String json) {
+                if(json==null || json.length()>1000000)return;
+                runOnUiThread(()->{
+                    pendingBackup=json;
+                    Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("application/json");
+                    intent.putExtra(Intent.EXTRA_TITLE,"atelier-goblin-sauvegarde.json");
+                    startActivityForResult(intent,BACKUP_REQUEST);
+                });
+            }
+        }, "AtelierBackup");
         // Android 15+ draws apps beneath system bars even when targeting SDK 35.
         // Keep the WebView in a safe content area instead of overlapping the clock.
         FrameLayout frame = new FrameLayout(this);
@@ -83,6 +101,19 @@ public class MainActivity extends Activity {
         setContentView(frame);
         frame.requestApplyInsets();
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+    }
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==BACKUP_REQUEST){
+            boolean success=false;
+            if(resultCode==RESULT_OK&&data!=null&&data.getData()!=null&&pendingBackup!=null){
+                try(OutputStream out=getContentResolver().openOutputStream(data.getData())){
+                    if(out!=null){out.write(pendingBackup.getBytes(StandardCharsets.UTF_8));success=true;}
+                }catch(Exception ignored){}
+            }
+            pendingBackup=null;
+            if(webView!=null)webView.evaluateJavascript("window.__atelierBackupComplete&&window.__atelierBackupComplete("+success+")",null);
+        }
     }
     @Override protected void onDestroy() {
         if (tailnet != null) tailnet.close();
