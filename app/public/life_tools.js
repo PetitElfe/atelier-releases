@@ -1041,25 +1041,37 @@ document.addEventListener('keydown',e=>{
 });
 function lifeSoundEnabled(){return localStorage.getItem('atelierReminderSound')==='1'}
 function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierReminderVolume')||'40');return Math.max(0,Math.min(100,Number.isFinite(n)?n:40))/100}
+/* Notifications personnalisées : cinq vrais fichiers WAV peuvent être stockés
+   localement, sans réseau ni upload serveur. */
+const atelierNotificationNames={
+ laugh:'Rire du petit Goblin',forest:'Forêt enchantée',
+ chimes:'Carillon doux',mumble:'Goblin qui marmonne',potion:'Potion magique'
+};
+function atelierNotificationChosen(){const id=localStorage.getItem('atelierNotificationChosen')||'chimes';return atelierNotificationNames[id]?id:'chimes'}
 function lifeReminderChime(force=false){
-  if(!force&&!lifeSoundEnabled())return;
-  try{
-    const AudioContext=window.AudioContext||window.webkitAudioContext;
-    if(!AudioContext)return;
-    if(!lifeAudioContext)lifeAudioContext=new AudioContext();
-    if(lifeAudioContext.state==='suspended')lifeAudioContext.resume().catch(()=>{});
-    const now=lifeAudioContext.currentTime;
-    [660,880].forEach((freq,i)=>{
-      const oscillator=lifeAudioContext.createOscillator();
-      const gain=lifeAudioContext.createGain();
-      oscillator.type='sine';oscillator.frequency.value=freq;
-      gain.gain.setValueAtTime(.0001,now+i*.14);
-      gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.42*lifeReminderVolume()),now+i*.14+.025);
-      gain.gain.exponentialRampToValueAtTime(.0001,now+i*.14+.24);
-      oscillator.connect(gain);gain.connect(lifeAudioContext.destination);
-      oscillator.start(now+i*.14);oscillator.stop(now+i*.14+.25);
-    });
-  }catch(err){console.warn('[Atelier] Son de rappel indisponible',err)}
+ if(!force&&!lifeSoundEnabled())return;
+ const id=atelierNotificationChosen(),saved=localStorage.getItem('atelierNotificationFile_'+id);
+ if(saved){
+   const audio=new Audio(saved);audio.volume=lifeReminderVolume();
+   audio.play().catch(error=>console.warn('[Atelier] Notification audio impossible',error));return;
+ }
+ // Sons importés prioritaires ; tant que le pack n'est pas importé, garder
+ // l'ancien carillon plutôt que simuler une voix de gobelin.
+ try{
+   const AudioContext=window.AudioContext||window.webkitAudioContext;if(!AudioContext)return;
+   if(!lifeAudioContext)lifeAudioContext=new AudioContext();
+   if(lifeAudioContext.state==='suspended')lifeAudioContext.resume().catch(()=>{});
+   const now=lifeAudioContext.currentTime;
+   [660,880].forEach((freq,i)=>{
+     const osc=lifeAudioContext.createOscillator(),gain=lifeAudioContext.createGain();
+     osc.type='sine';osc.frequency.value=freq;
+     gain.gain.setValueAtTime(.0001,now+i*.14);
+     gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.42*lifeReminderVolume()),now+i*.14+.025);
+     gain.gain.exponentialRampToValueAtTime(.0001,now+i*.14+.24);
+     osc.connect(gain);gain.connect(lifeAudioContext.destination);
+     osc.start(now+i*.14);osc.stop(now+i*.14+.25);
+   });
+ }catch(error){console.warn('[Atelier] Notification impossible',error)}
 }
 const lifeReminderVolumeField=document.createElement('label');
 lifeReminderVolumeField.className='atelier-reminder-volume';
@@ -1072,6 +1084,30 @@ if(lifeSoundControl){
   const slider=$('#atelierReminderVolume'),output=$('#atelierReminderVolumeValue');
   slider.value=String(Math.round(lifeReminderVolume()*100));output.textContent=slider.value+' %';
   slider.addEventListener('input',()=>{localStorage.setItem('atelierReminderVolume',slider.value);output.textContent=slider.value+' %'});
+}
+/* Un seul choix de notification et cinq emplacements de fichiers locaux. */
+const atelierSoundSettings=document.createElement('div');
+atelierSoundSettings.className='atelier-notification-picker';
+atelierSoundSettings.innerHTML='<label for="atelierNotificationSelect">Son de notification</label><select id="atelierNotificationSelect"></select><div class="atelier-notification-picker-actions"><button type="button" id="atelierNotificationListen">Écouter</button><label>Choisir un fichier WAV ou MP3 <input id="atelierNotificationImport" type="file" accept="audio/*"></label></div><p id="atelierNotificationStatus" class="muted"></p>';
+if(lifeSoundControl){
+ lifeReminderVolumeField.before(atelierSoundSettings);
+ const sel=atelierSoundSettings.querySelector('#atelierNotificationSelect');
+ for(const [id,label] of Object.entries(atelierNotificationNames)){
+  const opt=document.createElement('option');opt.value=id;opt.textContent=label;sel.append(opt)
+ }
+ const status=atelierSoundSettings.querySelector('#atelierNotificationStatus');
+ const update=()=>{const file=localStorage.getItem('atelierNotificationFile_'+sel.value);status.textContent=file?'Son personnalisé enregistré sur cet ordinateur.':'Aucun fichier importé pour ce choix : importe le WAV correspondant du pack.'};
+ sel.value=atelierNotificationChosen();update();
+ sel.onchange=()=>{localStorage.setItem('atelierNotificationChosen',sel.value);update()};
+ atelierSoundSettings.querySelector('#atelierNotificationListen').onclick=()=>lifeReminderChime(true);
+ atelierSoundSettings.querySelector('#atelierNotificationImport').onchange=event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  if(file.size>1500000){status.textContent='Fichier trop grand (maximum 1,5 Mo).';return}
+  if(!file.type.startsWith('audio/')&&!/\\.(wav|mp3|ogg)$/i.test(file.name)){status.textContent='Choisis un fichier audio.';return}
+  const reader=new FileReader();const slot=sel.value;
+  reader.onload=()=>{try{localStorage.setItem('atelierNotificationFile_'+slot,reader.result);update();lifeReminderChime(true)}catch(_){status.textContent='Stockage local plein : essaie un fichier plus court.'}};
+  reader.readAsDataURL(file);
+ };
 }
 $('#settingsReminderSound')?.addEventListener('change',e=>{
   localStorage.setItem('atelierReminderSound',e.target.checked?'1':'0');
