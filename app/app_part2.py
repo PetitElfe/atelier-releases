@@ -183,6 +183,8 @@ def budget_snapshot(c,month,ts):
      'pending_income':[x for x in pending if x['kind']=='income'],
      'upcoming_charges':[x for x in entries if x['kind']=='expense' and x['source']=='scheduled' and x['scheduled_date']>=date.today().isoformat() and x['status']!='skipped']}
 
+_jdr_lock = threading.RLock()
+
 class Handler(BaseHTTPRequestHandler):
     server_version = 'AtelierLocal/' + atelier_version()
 
@@ -224,6 +226,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if p == '/api/jdr/state':
+            path = DATA / 'jdr-session.json'
+            with _jdr_lock:
+                try:
+                    obj = json.loads(path.read_text(encoding='utf-8'))
+                except (OSError, ValueError):
+                    obj = {'rev':0,'state':None}
+            return self._json(obj)
         if not p.startswith('/api/'):
             return self._serve_static(p)
         if p == '/api/version':
@@ -543,6 +553,55 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p in ('/api/jdr/state','/api/jdr/open-mj'):
+            origin = self.headers.get('Origin', '')
+            if origin and origin not in (f'http://{HOST}:{PORT}',):
+                return self._json({'error':'Origine refusée'},403)
+            if p == '/api/jdr/open-mj':
+                if os.name != 'nt':
+                    return self._json({'error':'La fenêtre autonome nécessite Windows.'},409)
+                import subprocess
+                candidates = [
+                    os.path.join(os.environ.get('PROGRAMFILES(X86)',''), 'Microsoft','Edge','Application','msedge.exe'),
+                    os.path.join(os.environ.get('PROGRAMFILES',''), 'Microsoft','Edge','Application','msedge.exe'),
+                    os.path.join(os.environ.get('LOCALAPPDATA',''), 'Microsoft','Edge','Application','msedge.exe')
+                ]
+                edge = next((x for x in candidates if os.path.isfile(x)),None)
+                if not edge:
+                    return self._json({'error':'Microsoft Edge introuvable : impossible d’ouvrir la fenêtre indépendante.'},409)
+                try:
+                    subprocess.Popen([edge,'--app='+f'http://{HOST}:{PORT}/jdr-mj.html',
+                        '--window-size=1200,850'], stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        creationflags=getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0))
+                except OSError as exc:
+                    return self._json({'error':str(exc)},409)
+                return self._json({'ok':True})
+            try:
+                n = int(self.headers.get('Content-Length','0'))
+            except ValueError:
+                return self._json({'error':'Taille invalide'},400)
+            if n < 2 or n > 1500000:
+                return self._json({'error':'La sauvegarde JDR doit faire moins de 1,5 Mo'},413)
+            body = self._body()
+            state = body.get('state') if isinstance(body,dict) else None
+            if not isinstance(state,dict) or not isinstance(state.get('maps'),list) or not isinstance(state.get('chars'),list):
+                return self._json({'error':'Partie JDR invalide'},400)
+            path = DATA / 'jdr-session.json'
+            with _jdr_lock:
+                try:
+                    previous=json.loads(path.read_text(encoding='utf-8'))
+                    rev=int(previous.get('rev',0))
+                except (OSError,ValueError,TypeError):
+                    rev=0
+                proposed=int(body.get('rev',0))
+                if proposed != rev:
+                    return self._json({'error':'Conflit : données modifiées dans une autre fenêtre','rev':rev},409)
+                result={'rev':rev+1,'state':state}
+                tmp=path.with_suffix('.tmp')
+                tmp.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
+                os.replace(tmp,path)
+            return self._json({'ok':True,'rev':rev+1})
         parts=p.strip('/').split('/')
         if len(parts)==4 and parts[:2] in (['api','admin'],['api','events']) and parts[3]=='attachments':
             try:incoming_size=int(self.headers.get('Content-Length','0') or '0')
