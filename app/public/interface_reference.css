@@ -111,3 +111,17 @@
 #trackersView .tracker-row-title:hover,#trackersView .atelier-tracker-task-line span[role=button]:hover{text-decoration:underline}
 #homeView.layout-editing .home-layout-handle{opacity:0;transition:opacity .12s}
 #homeView.layout-editing .home-module:hover .home-layout-handle{opacity:.8}
+
+/* Accueil : déplacement depuis la surface du module avec le crayon global.
+   Les poignées restent accessibles au survol sans encombrer la présentation. */
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-move-handle{display:none!important}
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-rename-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-settings-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-resize-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-width-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-height-handle{opacity:0;transition:opacity .12s}
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-rename-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-settings-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-resize-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-width-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-height-handle{opacity:.85}
