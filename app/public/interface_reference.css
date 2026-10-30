@@ -244,3 +244,19 @@
   text-decoration-line:none!important;
   opacity:1!important;
 }
+
+/* Vue annuelle compacte : 12 mois visibles en grille, dates alignees et lisibles. */
+#yearPanel .atelier-year-header{margin:5px 0 10px;gap:7px}
+#yearPanel .atelier-year-header h2{font-size:19px;min-width:85px;margin:0 5px}
+#yearPanel .atelier-year-grid{gap:8px;padding-bottom:12px}
+#yearPanel .atelier-year-month{padding:7px 8px;border-radius:8px}
+#yearPanel .atelier-year-month-title{font-size:13px;padding:2px 0 5px}
+#yearPanel .atelier-year-days{gap:1px}
+#yearPanel .atelier-year-days .atelier-year-weekday{min-height:16px;font-size:10px}
+#yearPanel .atelier-year-days .atelier-year-empty{min-height:22px}
+#yearPanel .atelier-year-days .atelier-year-day{min-height:22px;padding:2px 0;font-size:11px;line-height:1.15}
+#yearPanel .atelier-year-events{max-height:52px;margin-top:5px;font-size:10px}
+#yearPanel .atelier-year-events>div{padding:2px 0}
+@media(min-width:1450px){#yearPanel .atelier-year-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){#yearPanel .atelier-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:450px){#yearPanel .atelier-year-grid{grid-template-columns:1fr}}
