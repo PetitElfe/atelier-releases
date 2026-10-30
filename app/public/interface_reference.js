@@ -38,7 +38,7 @@
  const paint=()=>{
    panel.querySelector('#atelierYearLabel').textContent=chosenYear;
    const wrap=panel.querySelector('#atelierYearGrid');wrap.replaceChildren();
-   const events=Array.isArray(state?.events)?globalThis.state.events:[];
+   const events=Array.isArray(state.events)?state.events:[];
    for(let m=0;m<12;m++){
      const card=document.createElement('section');card.className='atelier-year-month';
      const title=document.createElement('button');title.className='atelier-year-month-title';title.type='button';
