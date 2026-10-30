@@ -38,7 +38,7 @@
  const paint=()=>{
    panel.querySelector('#atelierYearLabel').textContent=chosenYear;
    const wrap=panel.querySelector('#atelierYearGrid');wrap.replaceChildren();
-   const events=Array.isArray(globalThis.state?.events)?globalThis.state.events:[];
+   const events=Array.isArray(state?.events)?globalThis.state.events:[];
    for(let m=0;m<12;m++){
      const card=document.createElement('section');card.className='atelier-year-month';
      const title=document.createElement('button');title.className='atelier-year-month-title';title.type='button';
@@ -66,7 +66,6 @@
  panel.querySelector('#atelierYearPrev').onclick=()=>setYear(chosenYear-1);
  panel.querySelector('#atelierYearNext').onclick=()=>setYear(chosenYear+1);
  panel.querySelector('#atelierYearToday').onclick=()=>setYear(new Date().getFullYear());
- const oldSet=globalThis.setCalendarMode;
- if(typeof oldSet==='function'){globalThis.setCalendarMode=(mode)=>{oldSet(mode);if(mode==='year')paint()}}
+ 
  paint();
 })();
