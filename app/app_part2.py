@@ -1767,6 +1767,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'ok':True})
             except (KeyError,IndexError,ValueError,TypeError) as ex:
                 return self._json({'error':str(ex)},400)
+        if len(parts)==3 and parts[:2]==['api','postits']:
+            try: note_id=int(parts[2])
+            except (TypeError,ValueError):return self._json({'error':'Post-it invalide.'},400)
+            with conn() as c:
+                row=c.execute('SELECT archived FROM home_postits WHERE id=?',(note_id,)).fetchone()
+                if not row:return self._json({'error':'Post-it introuvable.'},404)
+                if not row['archived']:return self._json({'error':'Archive ce Post-it avant sa suppression.'},409)
+                c.execute('DELETE FROM desktop_postit_layout WHERE note_id=?',(note_id,))
+                c.execute('DELETE FROM home_postits WHERE id=? AND archived=1',(note_id,))
+                c.commit()
+            return self._json({'ok':True})
         with conn() as c:
             if len(parts)==5 and parts[:2]==['api','events'] and parts[3]=='attachments':
                 try:event_id=int(parts[2]);file_id=int(parts[4])
