@@ -167,3 +167,22 @@
   #weekGrid .week-timed-event .calendar-hover-actions{opacity:0;pointer-events:none}
   #weekGrid .week-timed-event:focus-within .calendar-hover-actions{opacity:1;pointer-events:auto}
 }
+
+/* Lisibilité demandée par Léo : fond contrasté pour les libellés du semainier.
+   Garder le liseré/catégorie de l'événement, même avec une couleur très claire. */
+#weekGrid .week-timed-event .week-card-open{
+  background:linear-gradient(90deg,rgba(20,24,26,.88),rgba(20,24,26,.69))!important;
+  color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.7)
+}
+#weekGrid .week-timed-event .week-card-title,
+#weekGrid .week-timed-event .week-card-time{
+  color:#fff!important;opacity:1!important
+}
+#weekGrid .week-all-day-item{
+  background:rgba(24,26,28,.85)!important;color:#fff!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.65)
+}
+
+/* L'élément porteur de la couleur doit lui aussi être sombre : le test
+   d'accessibilité mesure le contraste sur le conteneur de la carte. */
+#weekGrid .week-timed-event{background-color:#252b2b!important}
