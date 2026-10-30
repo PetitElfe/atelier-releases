@@ -592,8 +592,8 @@ $('#libraryNotebookDelete').onclick=()=>{const n=(libraryNotebookState.sections|
 const addCurrentLibraryPage=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)createLibraryPage(n)};
 $('#addLibraryPage').onclick=addCurrentLibraryPage;
 $('#addLibraryPageSmall').onclick=addCurrentLibraryPage;
-$('#calendarToday').onclick=()=>{state.cursor=new Date();refresh()};
-$('#weekToday').onclick=()=>{state.cursor=new Date();refresh()};
+
+
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 const DATE_FORMAT_OPTIONS={

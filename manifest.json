@@ -33,15 +33,15 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "695d776b0d9b198a056bb75d2d202cdf98b4392554d0bb9cf7cbbebaee4fe910"
+      "sha256": "9a2a9c645417646f5925267ec189e7992c456bc0278c7ef5e6f31362535d24a9"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "1e5eda1f221353f267a6ae8d0629a9a26eef58d1e9795bda13a0c66246fea001"
+      "sha256": "26753598d010642d68cd68670e070aab2d45b16c148e6ccfcc60bf34368cc033"
     },
     {
       "path": "public/index.html",
-      "sha256": "ce71fe0580318ccd5eea978f9020057561ee67d8c76b9aa69840da5c94adc2b3"
+      "sha256": "c1eead606f49b5d37b5aaebea558c5852a7280551475329d632786be8faf9238"
     },
     {
       "path": "public/styles.css",
@@ -169,11 +169,11 @@
     },
     {
       "path": "public/interface_reference.js",
-      "sha256": "680ad77c06bf579629d2728df95318bdedfcc3dfdd75be1e7b04d0b4168b494c"
+      "sha256": "33ee2706268a7f6223c21e487ab2482e5516e082a0c81596a7168e5ae6b3f15c"
     },
     {
       "path": "public/interface_reference.css",
-      "sha256": "ff21cc5bd001a441ab2fd3a1feb8fd600d0d6e8be32727c9ef0e7d572714649f"
+      "sha256": "1ddc75fb190f577b9555ae5e6e3b793591f25ff39667dc4e2a2535e7aaa94368"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
