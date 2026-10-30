@@ -177,3 +177,8 @@
   grid-template-rows:var(--week-header-height) repeat(24,var(--week-hour-height))!important;
   grid-auto-rows:0!important
 }
+
+/* Calendrier annuel : en-têtes des jours et vraies colonnes du mois. */
+.atelier-year-days .atelier-year-weekday{display:grid;place-items:center;min-height:20px;font:700 11px/1.2 system-ui,sans-serif;color:var(--muted,#c3b9a4);opacity:.9}
+.atelier-year-days .atelier-year-empty{display:block;min-height:24px;pointer-events:none}
+.atelier-year-days .atelier-year-day{min-width:0;justify-self:stretch}
