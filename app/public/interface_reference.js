@@ -160,99 +160,95 @@
  let selected=null;try{selected=localStorage.getItem(prefsKey)}catch(_){}
  choose(cards.find(c=>c.id===selected)||cards[0]);
 })();
-/* UN SEUL MODE MODIFIER : le crayon global de l'en-tête pilote l'Accueil
-   et les modules Trackers. Aucune barre d'outils concurrente. */
+/* Canvas indépendant pour la To-do et tous les tableaux Trackers :
+   positions X/Y libres, pas de réordonnancement forcé, aucune perte des données. */
 (function(){
- const root=document.getElementById('trackersView');
- const boards=document.getElementById('trackerBoardList');
- const tasks=root?.querySelector('.atelier-tracker-tasks');
- const pencil=document.getElementById('globalLayoutEdit');
- if(!root||!boards||!pencil||!tasks)return;
- const prefix='atelierTrackerLayoutUnified_';
- const oldPrefix='atelierTrackerModulePlace_';
- const read=(id,defaultWidth)=>{
-   let saved={};
-   try{saved=JSON.parse(localStorage.getItem(prefix+id)||'{}')||{}}catch(_){}
-   if(!Object.keys(saved).length){
-     try{const prior=JSON.parse(localStorage.getItem(id==='todo'?'atelierTrackerTasksLayout_20261030':oldPrefix+id)||'{}');saved={width:prior.width,x:prior.x}}catch(_){}
-   }
-   return {width:Math.max(300,Number(saved.width)||defaultWidth),x:Math.max(0,Number(saved.x)||0),y:Math.max(0,Number(saved.y)||0),height:Math.max(0,Number(saved.height)||0)};
- };
- const write=(id,v)=>{try{localStorage.setItem(prefix+id,JSON.stringify(v))}catch(_){}};
- // En colonne, un simple marginTop ne peut jamais faire remonter une carte.
- // Nous déplaçons donc réellement les cartes dans le flux quand on les glisse
- // verticalement. L'ordre des tableaux est conservé localement.
- const orderKey='atelierTrackerBoardVisualOrder';
- const orderRead=()=>{try{return JSON.parse(localStorage.getItem(orderKey)||'[]')}catch(_){return []}};
- const orderSave=()=>{try{localStorage.setItem(orderKey,JSON.stringify([...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')].map(c=>c.dataset.atelierBoardId)))}catch(_){}};
- const applyOrder=()=>{
-   const saved=orderRead();if(!saved.length)return;
-   const cards=[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')];
-   const sorted=cards.slice().sort((a,b)=>{
-     const x=saved.indexOf(a.dataset.atelierBoardId),y=saved.indexOf(b.dataset.atelierBoardId);
-     return (x<0?9999:x)-(y<0?9999:y);
-   });
-   if(sorted.some((el,i)=>el!==cards[i]))sorted.forEach(el=>boards.append(el));
- };
- const editing=()=>root.classList.contains('layout-editing');
- const cardId=el=>el===tasks?'todo':el.dataset.atelierBoardId;
+ const root=document.getElementById('trackersView'),boards=document.getElementById('trackerBoardList');
+ const tasks=root?.querySelector('.atelier-tracker-tasks'),pencil=document.getElementById('globalLayoutEdit');
+ if(!root||!boards||!tasks||!pencil)return;
+ const storage='atelierTrackerCanvas_2_';
+ const idOf=el=>el===tasks?'todo':el.dataset.atelierBoardId;
+ const read=id=>{try{return JSON.parse(localStorage.getItem(storage+id)||'null')}catch(_){return null}};
+ const save=(id,d)=>{try{localStorage.setItem(storage+id,JSON.stringify(d))}catch(_){}};
  const all=()=>[tasks,...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')];
- const apply=(el)=>{
-   const id=cardId(el);if(!id)return;
-   const parentWidth=Math.max(300,el.parentElement?.clientWidth||960);
-   const d=read(id,id==='todo'?560:650);
-   const width=Math.min(parentWidth,d.width),x=Math.min(Math.max(0,parentWidth-width),d.x);
-   el.style.width=width+'px';el.style.maxWidth='100%';el.style.marginLeft=x+'px';el.style.marginTop=d.y+'px';
-   if(d.height)el.style.minHeight=d.height+'px';
-   el.classList.toggle('atelier-module-editing',editing());
- };
- function attach(el){
-   if(el.dataset.atelierUnifiedWired)return;
-   const head=el.querySelector('.tracker-board-head');if(!head)return;
-   el.dataset.atelierUnifiedWired='1';el.classList.add('atelier-layout-capable');
-   const grip=document.createElement('span');grip.className='atelier-layout-grip';grip.textContent='⋮⋮';grip.title='Déplacer le module en mode Modifier';head.prepend(grip);
-   const corner=document.createElement('span');corner.className='atelier-layout-corner';corner.title='Redimensionner en mode Modifier';el.append(corner);
-   const bind=(target,mode)=>{
-     target.addEventListener('pointerdown',event=>{
-       if(!editing()||event.button!==0||event.target.closest('button,input,a,select,textarea'))return;
-       event.preventDefault();event.stopPropagation();
-       const id=cardId(el),before=read(id,el.offsetWidth),startX=event.clientX,startY=event.clientY,startHeight=el.offsetHeight;
-       target.setPointerCapture(event.pointerId);
+ const editable=()=>root.classList.contains('layout-editing');
+ boards.classList.add('atelier-tracker-canvas');
+ let measuring=false;
+ function initialize(el,y){
+   const id=idOf(el);if(!id)return;
+   let d=read(id);
+   if(!d){
+     let old={};try{old=JSON.parse(localStorage.getItem('atelierTrackerLayoutUnified_'+id)||'{}')}catch(_){}
+     d={x:Math.max(0,Number(old.x)||0),y, width:Math.max(320,Number(old.width)||(id==='todo'?560:650)),height:Math.max(0,Number(old.height)||0)};
+     save(id,d);
+   }
+ }
+ function render(){
+   if(measuring)return;
+   measuring=true;
+   try{
+     if(tasks.parentElement!==boards)boards.prepend(tasks);
+     const cards=all(),available=Math.max(320,boards.clientWidth||root.clientWidth||900);
+     let next=0,maxBottom=0;
+     for(const el of cards){
+       const id=idOf(el);if(!id)continue;
+       if(!read(id)){
+         // Mesurer dans le flux avant de choisir une position initiale.
+         el.style.position='relative';el.style.width=Math.min(available,id==='todo'?560:650)+'px';
+         const natural=Math.max(130,el.scrollHeight||el.offsetHeight||170);
+         initialize(el,next);next+=natural+16;
+       }
+       const d=read(id);
+       const width=Math.min(available,Math.max(320,Number(d.width)||560));
+       const x=Math.max(0,Math.min(available-width,Number(d.x)||0));
+       const y=Math.max(0,Number(d.y)||0);
+       el.style.position='absolute';el.style.left=x+'px';el.style.top=y+'px';
+       el.style.margin='0';el.style.width=width+'px';el.style.maxWidth='100%';
+       el.style.height=d.height?Math.max(120,d.height)+'px':'auto';
+       el.style.boxSizing='border-box';
+       el.classList.toggle('atelier-module-editing',editable());
+       maxBottom=Math.max(maxBottom,y+Math.max(el.offsetHeight,el.scrollHeight)+20);
+       if(!el.dataset.atelierCanvasBound)bind(el);
+     }
+     boards.style.minHeight=Math.max(380,maxBottom)+'px';
+   }finally{measuring=false}
+ }
+ function bind(el){
+   const id=idOf(el),head=el.querySelector('.tracker-board-head');
+   if(!id||!head)return;
+   el.dataset.atelierCanvasBound='1';
+   head.classList.add('atelier-module-drag-surface');
+   el.classList.add('atelier-layout-capable');
+   el.querySelector('.atelier-layout-grip')?.remove();
+   let corner=el.querySelector('.atelier-layout-corner');
+   if(!corner){corner=document.createElement('span');corner.className='atelier-layout-corner';corner.title='Redimensionner';el.append(corner)}
+   const wire=(handle,mode)=>{
+     handle.addEventListener('pointerdown',ev=>{
+       if(!editable()||ev.button!==0||(mode==='move'&&ev.target.closest('button,input,select,a,textarea')))return;
+       ev.preventDefault();ev.stopPropagation();
+       const startX=ev.clientX,startY=ev.clientY,initial={...read(id)};
+       handle.setPointerCapture(ev.pointerId);
        const move=e=>{
-         const d={...before};
-         if(mode==='move'){d.x=Math.max(0,before.x+e.clientX-startX);d.y=Math.max(0,before.y+e.clientY-startY)}
-         else{d.width=Math.max(300,before.width+e.clientX-startX);d.height=Math.max(120,(before.height||startHeight)+e.clientY-startY)}
-         write(id,d);apply(el);
+         const scale=Math.max(.5,Number.parseFloat(getComputedStyle(document.documentElement).zoom)||1);
+         const dx=(e.clientX-startX)/scale,dy=(e.clientY-startY)/scale,d={...initial};
+         if(mode==='move'){d.x=Math.max(0,initial.x+dx);d.y=Math.max(0,initial.y+dy)}
+         else{d.width=Math.max(320,initial.width+dx);d.height=Math.max(120,(initial.height||el.offsetHeight)+dy)}
+         save(id,d);render();
        };
-       const finish=e=>{
-         target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',finish);
-         if(mode!=='move')return;
-         const dy=e.clientY-startY;
-         if(Math.abs(dy)<24)return;
-         const siblings=el===tasks?[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')]:[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')].filter(c=>c!==el);
-         // Laisser les cartes dans le flux, sans les empiler ni les chevaucher.
-         if(el!==tasks){
-           const index=[...boards.children].indexOf(el);
-           const targetIndex=Math.max(0,Math.min(boards.children.length-1,index+Math.sign(dy)*Math.max(1,Math.round(Math.abs(dy)/Math.max(110,el.offsetHeight)))));
-           if(targetIndex!==index){const other=boards.children[targetIndex];if(other){if(targetIndex>index)other.after(el);else other.before(el)}orderSave()}
-         }else{
-           // La To-do list reste en tête de rubrique ; décalage vertical positif possible.
-         }
-         const done=read(id,el.offsetWidth);done.y=el===tasks?Math.max(0,before.y+dy):0;write(id,done);apply(el);
-       };
-       target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',finish);
+       const end=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',end)};
+       handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
      });
    };
-   // La barre du module devient la zone de prise, sans bouton supplémentaire.
-   head.classList.add('atelier-module-drag-surface');
-   bind(head,'move');bind(corner,'resize');apply(el);
+   wire(head,'move');wire(corner,'resize');
  }
- const refresh=()=>{applyOrder();all().forEach(el=>{attach(el);apply(el)})};
- const observer=new MutationObserver(()=>refresh());observer.observe(boards,{childList:true});
- pencil.addEventListener('click',()=>setTimeout(refresh,0));
- const prior=showView;
- showView=function(view){prior(view);setTimeout(refresh,0)};
- window.addEventListener('resize',refresh);refresh();
+ let scheduled=false;
+ const schedule=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;render()})};
+ // Le moteur de Trackers régénère les cartes ; restaurer leurs positions après chaque rendu.
+ const observer=new MutationObserver(schedule);observer.observe(boards,{childList:true});
+ pencil.addEventListener('click',()=>setTimeout(render,0));
+ const prior=showView;showView=function(view){prior(view);setTimeout(render,0)};
+ window.addEventListener('resize',schedule);
+ schedule();
 })();
 /* Menu de ligne partagé : clic droit sur To-do list et sur les trackers.
    Aucun crayon permanent dans les lignes. */
