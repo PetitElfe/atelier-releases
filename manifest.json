@@ -177,11 +177,11 @@
     },
     {
       "path": "public/jdr.html",
-      "sha256": "32221f3c44ad42b7d0324addb6b4b18dd2f50fc50bcf0a61f6da1d893181807a"
+      "sha256": "9a36bd75ed7e3e0e13f45017b97392126ba5f75f7fc9add5bf1a3ddce5a25082"
     },
     {
       "path": "public/jdr-mj.html",
-      "sha256": "1bf4c4b4004f25aa76c8e7ffaa8f3fbfd9aba3b1a0e3b096c54159095fe30c72"
+      "sha256": "05dbe0614476eec7a21e3a9927b640904f227b44cd5eba53d8ddf82b0c52e61e"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
