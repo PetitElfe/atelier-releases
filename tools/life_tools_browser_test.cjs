@@ -207,6 +207,7 @@ async function api(path,method='GET',body){
   await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===1);
   await page.evaluate(()=>showView('settings'));
   await page.waitForFunction(()=>document.getElementById('settingsTrackerHistory')?.textContent);
+  await page.evaluate(()=>{const card=document.querySelector('#trackerBoardArchivesToggle').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#trackerBoardArchivesToggle').click();
   const archivedWellness=(await api('/api/tracker-boards?archived=1'))
     .find(x=>x.id===wellness.id);
