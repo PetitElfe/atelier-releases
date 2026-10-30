@@ -226,6 +226,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if p == '/api/mobile/notes':
+            path = DATA / 'mobile-notes.json'
+            with _jdr_lock:
+                try:
+                    notes = json.loads(path.read_text(encoding='utf-8'))
+                    if not isinstance(notes,list): notes=[]
+                except (OSError,ValueError):
+                    notes=[]
+            return self._json(notes)
         if p == '/api/jdr/state':
             path = DATA / 'jdr-session.json'
             with _jdr_lock:
@@ -553,6 +562,35 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p == '/api/mobile/notes':
+            origin=self.headers.get('Origin','')
+            if origin and origin not in (f'http://{HOST}:{PORT}',):
+                return self._json({'error':'Origine refusée'},403)
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+            except ValueError:
+                return self._json({'error':'Taille invalide'},400)
+            if size<2 or size>250000:
+                return self._json({'error':'Fichier trop volumineux'},413)
+            body=self._body()
+            notes=body.get('notes') if isinstance(body,dict) else None
+            if not isinstance(notes,list) or len(notes)>200:
+                return self._json({'error':'Notes invalides'},400)
+            cleaned=[]
+            for item in notes:
+                if not isinstance(item,dict):
+                    return self._json({'error':'Note incorrecte'},400)
+                cleaned.append({'id':str(item.get('id',''))[:80],
+                    'title':str(item.get('title',''))[:160],
+                    'category':str(item.get('category','Général'))[:80],
+                    'content':str(item.get('content',''))[:16000],
+                    'updated':str(item.get('updated',''))[:48]})
+            path=DATA / 'mobile-notes.json'
+            with _jdr_lock:
+                tmp=path.with_suffix('.tmp')
+                tmp.write_text(json.dumps(cleaned,ensure_ascii=False),encoding='utf-8')
+                os.replace(tmp,path)
+            return self._json({'ok':True,'count':len(cleaned)})
         if p in ('/api/jdr/state','/api/jdr/open-mj'):
             origin = self.headers.get('Origin', '')
             if origin and origin not in (f'http://{HOST}:{PORT}',):
