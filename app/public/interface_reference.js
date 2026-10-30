@@ -179,6 +179,21 @@
    return {width:Math.max(300,Number(saved.width)||defaultWidth),x:Math.max(0,Number(saved.x)||0),y:Math.max(0,Number(saved.y)||0),height:Math.max(0,Number(saved.height)||0)};
  };
  const write=(id,v)=>{try{localStorage.setItem(prefix+id,JSON.stringify(v))}catch(_){}};
+ // En colonne, un simple marginTop ne peut jamais faire remonter une carte.
+ // Nous déplaçons donc réellement les cartes dans le flux quand on les glisse
+ // verticalement. L'ordre des tableaux est conservé localement.
+ const orderKey='atelierTrackerBoardVisualOrder';
+ const orderRead=()=>{try{return JSON.parse(localStorage.getItem(orderKey)||'[]')}catch(_){return []}};
+ const orderSave=()=>{try{localStorage.setItem(orderKey,JSON.stringify([...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')].map(c=>c.dataset.atelierBoardId)))}catch(_){}};
+ const applyOrder=()=>{
+   const saved=orderRead();if(!saved.length)return;
+   const cards=[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')];
+   const sorted=cards.slice().sort((a,b)=>{
+     const x=saved.indexOf(a.dataset.atelierBoardId),y=saved.indexOf(b.dataset.atelierBoardId);
+     return (x<0?9999:x)-(y<0?9999:y);
+   });
+   if(sorted.some((el,i)=>el!==cards[i]))sorted.forEach(el=>boards.append(el));
+ };
  const editing=()=>root.classList.contains('layout-editing');
  const cardId=el=>el===tasks?'todo':el.dataset.atelierBoardId;
  const all=()=>[tasks,...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')];
@@ -209,7 +224,22 @@
          else{d.width=Math.max(300,before.width+e.clientX-startX);d.height=Math.max(120,(before.height||startHeight)+e.clientY-startY)}
          write(id,d);apply(el);
        };
-       const finish=()=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',finish)};
+       const finish=e=>{
+         target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',finish);
+         if(mode!=='move')return;
+         const dy=e.clientY-startY;
+         if(Math.abs(dy)<24)return;
+         const siblings=el===tasks?[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')]:[...boards.querySelectorAll('.tracker-board[data-atelier-board-id]')].filter(c=>c!==el);
+         // Laisser les cartes dans le flux, sans les empiler ni les chevaucher.
+         if(el!==tasks){
+           const index=[...boards.children].indexOf(el);
+           const targetIndex=Math.max(0,Math.min(boards.children.length-1,index+Math.sign(dy)*Math.max(1,Math.round(Math.abs(dy)/Math.max(110,el.offsetHeight)))));
+           if(targetIndex!==index){const other=boards.children[targetIndex];if(other){if(targetIndex>index)other.after(el);else other.before(el)}orderSave()}
+         }else{
+           // La To-do list reste en tête de rubrique ; décalage vertical positif possible.
+         }
+         const done=read(id,el.offsetWidth);done.y=el===tasks?Math.max(0,before.y+dy):0;write(id,done);apply(el);
+       };
        target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',finish);
      });
    };
@@ -217,7 +247,7 @@
    head.classList.add('atelier-module-drag-surface');
    bind(head,'move');bind(corner,'resize');apply(el);
  }
- const refresh=()=>all().forEach(el=>{attach(el);apply(el)});
+ const refresh=()=>{applyOrder();all().forEach(el=>{attach(el);apply(el)})};
  const observer=new MutationObserver(()=>refresh());observer.observe(boards,{childList:true});
  pencil.addEventListener('click',()=>setTimeout(refresh,0));
  const prior=showView;
