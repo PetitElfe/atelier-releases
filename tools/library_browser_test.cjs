@@ -1110,11 +1110,13 @@ async function api(path,method='GET',body){
 
   // ALPHA 0.17.0 — tests transversaux en instance temporaire.
   await page.evaluate(()=>showView('calendar'));
-  await page.locator('#calendarToday').click();
-  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode mois');
+  assert.equal(await page.locator('#calendarToday').count(),0,'Le bouton Aujourd’hui redondant a été retiré du mois');
+  await page.evaluate(()=>{state.cursor=new Date();refresh()});
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : jour courant en mode mois');
   await page.evaluate(()=>setCalendarMode('week'));
-  await page.locator('#weekToday').click();
-  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode semaine');
+  assert.equal(await page.locator('#weekToday').count(),0,'Le bouton Aujourd’hui redondant a été retiré du semainier');
+  await page.evaluate(()=>{state.cursor=new Date();refresh()});
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : jour courant en mode semaine');
   await page.evaluate(()=>showView('tasks'));
   assert.ok(await page.locator('#taskSummary').isVisible(),'Tâches : le récapitulatif est visible');
   await page.locator('#taskFilter').selectOption('active');
