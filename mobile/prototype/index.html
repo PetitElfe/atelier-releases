@@ -74,7 +74,7 @@ document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.
 
 const computerKey='atelier-private-pc-url-v1';
 let pcUrl=localStorage.getItem(computerKey)||'';
-let pc={tasks:[],shopping:[],recipes:[],events:[],notes:[]},online=false,error='',tab='calendar',calendarView='month',selected=new Date(),requests=new Map(),seq=0;
+let pc={tasks:[],shopping:[],recipes:[],events:[],notes:[]},online=false,error='',tab='calendar',calendarView='month',selected=new Date(),requests=new Map(),seq=0,loadId=0;
 window.__atelierSyncResponse=(id,code,raw)=>{
  const x=requests.get(id);if(!x)return;requests.delete(id);clearTimeout(x.timeout);
  let body;try{body=JSON.parse(raw)}catch(e){body={error:'Réponse illisible'}};
