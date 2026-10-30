@@ -324,8 +324,19 @@ function renderTrackerBoards(){
       loadLifeTools();
     },'tracker-period-today');
     const change=lifeButton('Changer le rythme',()=>lifeBoardPeriodEditor(section,board),'tracker-period-change');
-    const readablePeriod=board.period_unit==='weeks'?
-      'Semaine'+(Number(board.period_count)>1?'s':'')+' · '+board.period.label:
+    const isoWeek=day=>{
+      const date=new Date(String(day||'').slice(0,10)+'T12:00:00Z');
+      if(!Number.isFinite(date.getTime()))return null;
+      const value=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
+      value.setUTCDate(value.getUTCDate()+4-(value.getUTCDay()||7));
+      const yearStart=new Date(Date.UTC(value.getUTCFullYear(),0,1));
+      return 1+Math.floor((value-yearStart)/604800000);
+    };
+    const weekStart=isoWeek(board.period.columns[0]?.day);
+    const weekEnd=isoWeek(board.period.columns[board.period.columns.length-1]?.day);
+    const readablePeriod=board.period_unit==='weeks' && weekStart?
+      (weekEnd&&weekEnd!==weekStart?'Semaines '+weekStart+'–'+weekEnd:'Semaine '+weekStart):
+      board.period_unit==='weeks'?'Semaine · '+board.period.label:
       board.period_unit==='months'&&Number(board.period_count)===1?
         board.period.columns[0]?.title?.replace(/^./,letter=>letter.toUpperCase())||board.period.label:
         board.period.label;
