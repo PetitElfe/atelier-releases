@@ -113,7 +113,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "485817d95ce9d9a430962169ada0a745bfe87a0414d068e0c14d879e21bef00d"
+      "sha256": "97afc2e614c059b0d16e8da9796fb10a27326936ce1a811b38073efc5d0acf74"
     },
     {
       "path": "public/life_tools.css",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/interface_reference.css",
-      "sha256": "3422ad026aa813f08224e0f44f87972cc951a5a45494d6bc9c3fe225fb1aa11c"
+      "sha256": "f8b483263ef3ede9da89b1af4776e99bf82461ae13957f2a03b5b440ad9cadaf"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
