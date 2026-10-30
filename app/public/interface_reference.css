@@ -133,3 +133,10 @@
 #trackersView #trackerBoardList.atelier-tracker-canvas>.atelier-tracker-tasks{position:absolute!important;margin:0!important;transform:none!important;flex:none!important}
 #trackersView .atelier-module-editing .atelier-module-drag-surface{touch-action:none;cursor:grab}
 #trackersView .atelier-module-editing .atelier-module-drag-surface:active{cursor:grabbing}
+
+.atelier-notification-picker{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.atelier-notification-picker>label{font-weight:600}
+.atelier-notification-picker select{width:100%;padding:8px}
+.atelier-notification-picker-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.atelier-notification-picker-actions label{font-size:12px}
+.atelier-notification-picker-actions input[type=file]{display:block;font-size:12px;max-width:230px;margin-top:5px}
