@@ -15,7 +15,7 @@
    const actual=scales.includes(size)?size:100;
    root.style.zoom=actual<=100?actual+'%':'100%';
    document.querySelectorAll('main .view').forEach(view=>{
-     view.style.zoom=actual>100 && view.id!=='homeView'?actual+'%':'100%';
+     view.style.zoom=actual>100 && view.id!=='homeView'?actual+'%':'';
    });
    root.dataset.atelierTheme=Object.hasOwn(themes,theme)?theme:'goblin';
  };
