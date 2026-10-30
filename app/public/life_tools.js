@@ -299,6 +299,7 @@ function renderTrackerBoards(){
   const today=ymd(new Date());
   lifeBoards.forEach(board=>{
     const section=lifeNode('section','tracker-board tracker-board-'+board.color);
+    section.dataset.atelierBoardId=String(board.id);
     const head=lifeNode('div','tracker-board-head');
     const h=lifeNode('h3','',board.title);
     const action=lifeButton('Archiver le tableau',async()=>{
