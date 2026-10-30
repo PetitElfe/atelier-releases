@@ -200,7 +200,7 @@ function themeSettings(root){
  const group=el('div',{class:'theme-choice'});
  for(const [value,title] of [['dark','🌲 Goblin sombre'],['classic','🌿 Classique vert et crème']]){const label=el('label');const radio=el('input',{type:'radio',name:'goblinTheme',value});radio.checked=(localStorage.getItem(themeKey)||'dark')===value;radio.onchange=()=>applyTheme(value);label.append(radio,el('span',{},title));group.append(label)}p.append(group);
 }
-function updateNav(){document.querySelectorAll('[data-mobile-go]').forEach(b=>{const dest=b.dataset.mobileGo,section=b.dataset.mobileSection;b.classList.toggle('active',dest===state.page&&(dest!=='connected'||(section==='notes'?tab==='notes':tab==='calendar')))})}
+function updateNav(){document.querySelectorAll('[data-mobile-go]').forEach(b=>{const dest=b.dataset.mobileGo,section=b.dataset.mobileSection;b.classList.toggle('active',dest===state.page&&(dest!=='connected'||(section===tab||(!section&&tab==='calendar'))))})}
 document.querySelectorAll('[data-mobile-go]').forEach(btn=>btn.onclick=()=>{state.page=btn.dataset.mobileGo;if(state.page==='connected')tab=btn.dataset.mobileSection||'calendar';save();document.getElementById('nav').hidden=true;render();window.scrollTo(0,0)});
 
 const previousRender=render;
