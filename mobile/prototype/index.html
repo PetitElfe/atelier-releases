@@ -5,8 +5,8 @@
 :root{font-family:system-ui,sans-serif;color:#443e31;background:#24372d}*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer}header{position:sticky;top:0;background:#24372d;color:#f0e2c3;padding:calc(15px + env(safe-area-inset-top, 0px)) 16px 15px;display:flex;align-items:center;justify-content:space-between;z-index:2}header button{background:none;border:0;color:inherit;font-size:26px}header strong{font-family:Georgia,serif;font-size:19px}.paper{background:#f1e5c9;min-height:calc(100dvh - 70px);padding:24px 18px 70px;border-radius:20px 20px 0 0}h1,h2{font-family:Georgia,serif;color:#3d5a45}h1{text-align:center;font-size:28px;margin:4px 0 6px}h2{font-size:19px;margin:0 0 12px}.sub{text-align:center;color:#786e57;font-size:13px;margin-bottom:25px}.panel{background:#fff9eb;border:1px solid #d7c9a7;border-radius:15px;padding:17px;margin:14px 0}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e8dcc5}.item:last-child{border:0}.item input{accent-color:#547b5b;width:21px;height:21px}.item span{flex:1}.item.done span{text-decoration:line-through;color:#8d8a7d}textarea,input[type=text]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31}textarea{min-height:90px}.action{background:#496a50;color:white;border:0;border-radius:10px;padding:11px 15px;margin-top:9px}.nav{position:fixed;z-index:5;inset:0 auto 0 0;width:min(82vw,310px);background:#263b30;color:#f3e6c8;padding:calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;box-shadow:0 0 0 100vmax #0008}.nav button{display:block;width:100%;text-align:left;padding:14px;background:transparent;color:inherit;border:0;border-bottom:1px solid #ffffff25}.nav[hidden],[hidden]{display:none!important}.muted{font-size:13px;color:#81765f}.arrows{display:flex;gap:8px}.arrows button{border:1px solid #cfc09f;border-radius:8px;background:#f1e5c9;padding:5px 9px}.footer{text-align:center;font-size:12px;color:#8b816b;margin-top:30px}select,input[type=date]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31;margin:5px 0}
 </style></head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰</button><strong>L’Atelier du Goblin</strong><span aria-hidden="true">🌿</span></header>
-<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="settings">⚙ Personnaliser</button></nav>
-<main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales uniquement</p></main>
+<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="settings">⚙ Personnaliser</button></nav>
+<main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <script>
 const KEY='goblin-mobile-prototype-v1';
 const defaults={page:'journal',sections:['habits','tasks','notes','shopping'],visible:{habits:true,tasks:true,notes:true,shopping:false},habits:[{text:'Prendre un moment pour moi',done:false},{text:'Boire de l’eau',done:false}],tasks:[],shopping:[],notes:[],events:[]};
@@ -34,5 +34,109 @@ main.addEventListener('touchend',e=>{if(!startX||!e.changedTouches.length)return
 document.getElementById('menu').onclick=()=>document.getElementById('nav').hidden=false;
 document.getElementById('close').onclick=()=>document.getElementById('nav').hidden=true;
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.dataset.page;save();document.getElementById('nav').hidden=true;render()});
+
+const computerKey='atelier-private-pc-url-v1';
+let pcUrl=localStorage.getItem(computerKey)||'';
+let pc={tasks:[],shopping:[],recipes:[],events:[],notes:[]},online=false,error='',tab='calendar',calendarView='month',selected=new Date(),requests=new Map(),seq=0;
+window.__atelierSyncResponse=(id,code,raw)=>{
+ const x=requests.get(id);if(!x)return;requests.delete(id);clearTimeout(x.timeout);
+ let body;try{body=JSON.parse(raw)}catch(e){body={error:'Réponse illisible'}};
+ if(code>=200&&code<300)x.resolve(body);else x.reject(Error(body.error||'Connexion indisponible'));
+};
+function callPc(method,path,data,base=pcUrl){
+ return new Promise((resolve,reject)=>{
+  if(!window.AtelierTailnet){reject(Error('Version de l’APK incompatible avec la synchronisation.'));return}
+  const id=String(++seq);
+  const timeout=setTimeout(()=>{requests.delete(id);reject(Error('Connexion trop longue. Vérifie Tailscale et L’Atelier.'))},16000);
+  requests.set(id,{resolve,reject,timeout});
+  window.AtelierTailnet.request(id,base,method,path,JSON.stringify(data||{}));
+ });
+}
+function isoDay(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+async function syncPull(){
+ if(!pcUrl)return;
+ try{
+  const now=new Date(),from=new Date(now.getFullYear(),now.getMonth()-1,1),until=new Date(now.getFullYear(),now.getMonth()+2,0);
+  const result=await Promise.all([callPc('GET','/api/tasks'),callPc('GET','/api/shopping'),callPc('GET','/api/recipes'),callPc('GET','/api/mobile/notes'),callPc('GET','/api/events?start='+isoDay(from)+'&end='+isoDay(until))]);
+  pc={tasks:result[0],shopping:result[1],recipes:result[2],notes:result[3],events:result[4]};online=true;error='';render();
+ }catch(e){online=false;error=e.message;render()}
+}
+async function syncWrite(method,path,payload){try{await callPc(method,path,payload);await syncPull()}catch(e){alert('Modification non confirmée : '+e.message)}}
+function connectedSettings(root){
+ const p=panel(root,'Synchronisation privée avec le PC');
+ p.append(el('p',{class:'muted'},'Adresse HTTPS Tailscale du PC (sans /mobile.html). Les anciennes données de l’APK sont conservées séparément et ne sont pas effacées.'));
+ const input=el('input',{type:'text',placeholder:'https://ordinateur.reseau.ts.net'});input.value=pcUrl;p.append(input);
+ const connect=el('button',{class:'action'},'Tester et connecter');
+ connect.onclick=async()=>{
+  const value=input.value.trim();let u;
+  try{u=new URL(value);if(u.protocol!=='https:'||!u.hostname.endsWith('.ts.net')||u.port||u.username||u.password||(u.pathname!=='/'&&u.pathname!=='')||u.search||u.hash)throw Error('Adresse non autorisée');
+   const clean=u.origin;await callPc('GET','/api/tasks',null,clean);pcUrl=clean;localStorage.setItem(computerKey,clean);state.page='connected';save();await syncPull();
+  }catch(e){alert('Connexion impossible : '+e.message)}
+ };
+ const offline=el('button',{class:'action'},'Déconnecter et garder mes données locales');
+ offline.onclick=()=>{pcUrl='';localStorage.removeItem(computerKey);online=false;state.page='journal';save();render()};
+ const refresh=el('button',{class:'action'},'Actualiser');
+ refresh.onclick=syncPull;
+ p.append(connect,refresh,offline);
+}
+function connectedView(root){
+ const p=panel(root,'Les données de mon ordinateur');
+ p.append(el('p',{class:'muted'},online?'✓ Connecté en privé via Tailscale':error?'⚠ '+error:'Connexion au PC en cours…'));
+ const refresh=el('button',{class:'action'},'↻ Actualiser');refresh.onclick=syncPull;p.append(refresh);
+ if(!online)return;
+ const tabs=el('div',{class:'arrows'});
+ [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes JDR']].forEach(([key,title])=>{
+  const btn=el('button',{},(tab===key?'● ':'')+title);btn.onclick=()=>{tab=key;render()};tabs.append(btn)
+ });p.append(tabs);
+ if(tab==='tasks'||tab==='shopping'){
+  const rows=pc[tab]||[];
+  rows.forEach(item=>{
+   const line=el('label',{class:'item'+(item.completed||item.checked?' done':'')});
+   const box=el('input',{type:'checkbox'});box.checked=!!(tab==='tasks'?item.completed:item.checked);
+   box.onchange=()=>syncWrite('PUT','/api/'+tab+'/'+item.id,tab==='tasks'?{completed:box.checked}:{checked:box.checked});
+   line.append(box,el('span',{},tab==='tasks'?item.title:item.name));p.append(line);
+  });
+  const input=el('input',{type:'text',placeholder:'Ajouter sur mon PC…'}),btn=el('button',{class:'action'},'Ajouter au PC');
+  btn.onclick=()=>{if(input.value.trim())syncWrite('POST','/api/'+tab,tab==='tasks'?{title:input.value.trim()}:{name:input.value.trim()})};
+  p.append(input,btn);
+  const local=state[tab]||[];
+  if(local.length){const old=el('details');old.append(el('summary',{},'Anciens éléments sur le téléphone ('+local.length+') — non importés'));local.forEach(x=>old.append(el('p',{class:'muted'},x.text)));p.append(old)}
+ }else if(tab==='recipes'){
+  const search=el('input',{type:'text',placeholder:'Chercher une recette…'}),results=el('div');p.append(search,results);
+  const draw=()=>{results.replaceChildren();pc.recipes.filter(x=>(x.title||'').toLowerCase().includes(search.value.toLowerCase())).slice(0,100).forEach(x=>{const d=el('details',{class:'panel'});d.append(el('summary',{},x.title),el('p',{},x.recipe||x.notes||'Recette enregistrée dans L’Atelier'));results.append(d)})};search.oninput=draw;draw();
+ }else if(tab==='notes'){
+  const title=el('input',{type:'text',placeholder:'Titre de ma note'}),cat=el('select');
+  ['JDR','Journal','Général','Communication'].forEach(x=>cat.append(el('option',{value:x},x)));
+  const body=el('textarea',{placeholder:'Une idée que je pourrai copier et envoyer…'}),btn=el('button',{class:'action'},'Enregistrer sur mon PC');
+  btn.onclick=async()=>{if(!body.value.trim())return;try{const latest=await callPc('GET','/api/mobile/notes');const note={id:'apk-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Sans titre',category:cat.value,content:body.value,updated:new Date().toISOString()};await callPc('POST','/api/mobile/notes',{notes:[...latest,note]});await syncPull()}catch(e){alert('Enregistrement non confirmé : '+e.message)}};
+  p.append(title,cat,body,btn);
+  pc.notes.slice().reverse().forEach(n=>{const d=el('details',{class:'panel'}),text=el('p',{},n.content);d.append(el('summary',{},'['+n.category+'] '+n.title),text);p.append(d)});
+ }else if(tab==='calendar'){
+  const modes=el('div',{class:'arrows'});
+  [['month','Mois'],['week','Semaine'],['day','Jour']].forEach(([k,t])=>{const b=el('button',{},(calendarView===k?'● ':'')+t);b.onclick=()=>{calendarView=k;render()};modes.append(b)});p.append(modes);
+  const change=el('div',{class:'arrows'}),prev=el('button',{},'←'),next=el('button',{},'→'),label=el('span',{},selected.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}));
+  const move=n=>{const d=new Date(selected);if(calendarView==='month')d.setMonth(d.getMonth()+n);else d.setDate(d.getDate()+n*(calendarView==='week'?7:1));selected=d;render()};
+  prev.onclick=()=>move(-1);next.onclick=()=>move(1);change.append(prev,label,next);p.append(change);
+  const events=pc.events.filter(e=>{
+   const d=String(e.instance_date||e.event_date||'').slice(0,10),a=isoDay(selected);
+   if(calendarView==='day')return d===a;
+   if(calendarView==='month')return d.startsWith(a.slice(0,7));
+   const date=new Date(d+'T12:00:00'),begin=new Date(selected);begin.setDate(begin.getDate()-(begin.getDay()+6)%7);begin.setHours(0,0,0,0);const end=new Date(begin);end.setDate(end.getDate()+7);return date>=begin&&date<end;
+  });
+  events.sort((a,b)=>String(a.instance_date||a.event_date).localeCompare(String(b.instance_date||b.event_date))).forEach(e=>p.append(el('div',{class:'item'},(e.instance_date||e.event_date)+' — '+(e.start_time||'')+' '+e.title)));
+  if(!events.length)p.append(el('p',{class:'muted'},'Aucun rendez-vous pour cette période.'));
+  const date=el('input',{type:'date'});date.value=isoDay(selected);const title=el('input',{type:'text',placeholder:'Nouveau rendez-vous'}),btn=el('button',{class:'action'},'Ajouter au calendrier du PC');
+  btn.onclick=()=>{if(title.value.trim()&&date.value)syncWrite('POST','/api/events',{title:title.value.trim(),event_date:date.value})};
+  p.append(date,title,btn);
+ }
+}
+const previousRender=render;
+render=function(){
+ if(state.page==='connected'){document.getElementById('title').textContent='Mon Atelier synchronisé';document.getElementById('subtitle').textContent='Mes données du PC, mes habitudes à moi.';const root=document.getElementById('content');root.replaceChildren();connectedView(root);return}
+ previousRender();
+ if(state.page==='settings')connectedSettings(document.getElementById('content'));
+};
 render();
+if(pcUrl)syncPull();
+
 </script></body></html>
