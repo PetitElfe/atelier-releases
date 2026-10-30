@@ -85,7 +85,7 @@
  if(!tracker||!settings)return;
  const tasks=document.createElement('section');
  tasks.className='atelier-tracker-tasks';
- tasks.innerHTML='<div class="tracker-board-head"><h3>Tâches</h3><button type="button" id="trackerTaskAdd">＋ Nouvelle tâche</button></div><div id="trackerTaskItems" class="atelier-tracker-task-items"></div>';
+ tasks.innerHTML='<div class="tracker-board-head"><h3>To-do list</h3><button type="button" id="trackerTaskAdd">＋ Nouvelle tâche</button></div><div id="trackerTaskItems" class="atelier-tracker-task-items"></div>';
  const boardList=document.getElementById('trackerBoardList');
  if(boardList)boardList.before(tasks);
  tasks.querySelector('#trackerTaskAdd').onclick=()=>document.getElementById('addTask')?.click();
