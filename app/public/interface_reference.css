@@ -57,3 +57,12 @@
 #trackersView .atelier-tracker-task-line button{padding:1px 4px}
 @media(max-width:860px){#settingsView .atelier-settings-split{grid-template-columns:150px minmax(0,1fr);gap:12px}}
 @media(max-width:560px){#settingsView .atelier-settings-split{grid-template-columns:1fr}#settingsView .atelier-settings-nav{position:static;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line,#645844)}#settingsView .atelier-settings-nav button{white-space:nowrap;width:auto}}
+
+
+#trackersView #atelierTrackerEditLayout{margin:8px 0 12px 10px}
+#trackersView .tracker-board[data-atelier-board-id]{box-sizing:border-box;max-width:100%;transition:margin .08s}
+#trackersView .tracker-board .atelier-tracker-layout-handle{display:none;cursor:grab;touch-action:none;font-size:12px;padding:4px 8px}
+#trackersView .tracker-board.atelier-module-editing{outline:1px dashed var(--gold,#dcc397);outline-offset:2px}
+#trackersView .tracker-board.atelier-module-editing .atelier-tracker-layout-handle{display:inline-block}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head h3{flex:1}
