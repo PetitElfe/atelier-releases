@@ -186,25 +186,25 @@
 /* Semainier : retrouver les couleurs des catégories avec une translucence légère,
    sans assombrissement opaque sur le contenu des rendez-vous. */
 #weekGrid .week-timed-event{
-  background-color:rgba(87,116,101,.78)!important;
+  background-color:rgba(56,103,79,.88)!important;
   background-image:none!important;
   border-color:rgba(213,231,217,.3)!important;
   border-left-width:4px!important;
   box-shadow:0 2px 7px rgba(0,0,0,.23)!important;
 }
 #weekGrid .week-timed-event.event-color-sage,
-#weekGrid .week-timed-event.event-general{background-color:rgba(89,128,103,.8)!important;border-left-color:#a2d3aa!important}
+#weekGrid .week-timed-event.event-general{background-color:rgba(56,106,73,.88)!important;border-left-color:#a2d3aa!important}
 #weekGrid .week-timed-event.event-color-mauve,
-#weekGrid .week-timed-event.event-medical{background-color:rgba(126,96,147,.82)!important;border-left-color:#cdb1ee!important}
-#weekGrid .week-timed-event.event-color-gold{background-color:rgba(157,123,63,.82)!important;border-left-color:#efd39a!important}
-#weekGrid .week-timed-event.event-color-red{background-color:rgba(155,80,84,.83)!important;border-left-color:#ffc0bd!important}
-#weekGrid .week-timed-event.event-color-pink{background-color:rgba(169,100,131,.82)!important;border-left-color:#f8bed9!important}
-#weekGrid .week-timed-event.event-color-blue{background-color:rgba(76,116,160,.83)!important;border-left-color:#abd5f7!important}
+#weekGrid .week-timed-event.event-medical{background-color:rgba(102,71,132,.88)!important;border-left-color:#cdb1ee!important}
+#weekGrid .week-timed-event.event-color-gold{background-color:rgba(123,90,41,.88)!important;border-left-color:#efd39a!important}
+#weekGrid .week-timed-event.event-color-red{background-color:rgba(136,65,70,.88)!important;border-left-color:#ffc0bd!important}
+#weekGrid .week-timed-event.event-color-pink{background-color:rgba(143,73,108,.88)!important;border-left-color:#f8bed9!important}
+#weekGrid .week-timed-event.event-color-blue{background-color:rgba(54,94,145,.88)!important;border-left-color:#abd5f7!important}
 #weekGrid .week-timed-event.event-color-peach,
-#weekGrid .week-timed-event.event-important{background-color:rgba(168,110,83,.83)!important;border-left-color:#ffd0af!important}
-#weekGrid .week-timed-event.event-color-cream{background-color:rgba(144,123,94,.83)!important;border-left-color:#e9d7a9!important}
-#weekGrid .week-timed-event.event-color-deep-blue{background-color:rgba(61,87,147,.86)!important;border-left-color:#b2c9ff!important}
-#weekGrid .week-timed-event.event-color-deep-green{background-color:rgba(49,108,83,.86)!important;border-left-color:#99dfbe!important}
+#weekGrid .week-timed-event.event-important{background-color:rgba(139,82,59,.88)!important;border-left-color:#ffd0af!important}
+#weekGrid .week-timed-event.event-color-cream{background-color:rgba(109,87,59,.88)!important;border-left-color:#e9d7a9!important}
+#weekGrid .week-timed-event.event-color-deep-blue{background-color:rgba(51,72,132,.89)!important;border-left-color:#b2c9ff!important}
+#weekGrid .week-timed-event.event-color-deep-green{background-color:rgba(39,91,70,.89)!important;border-left-color:#99dfbe!important}
 #weekGrid .week-timed-event .week-card-open,
 #weekGrid .week-timed-event:hover .week-card-open,
 #weekGrid .week-timed-event:focus-within .week-card-open{
