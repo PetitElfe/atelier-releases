@@ -121,6 +121,32 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
     method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({day,value:true})
   });
   assert.equal(denied.status,409,'A ritual cannot bypass its pending steps');
+  // La To-do et chaque tableau ont des positions X/Y indépendantes.
+  await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('#trackerBoardList .tracker-board').length===2 &&
+    document.querySelector('#trackerBoardList .atelier-tracker-tasks'));
+  await page.locator('#globalLayoutEdit').click();
+  await page.waitForFunction(()=>document.querySelector('#trackersView').classList.contains('layout-editing'));
+  const boardA=page.locator('#trackerBoardList .tracker-board').first();
+  const boardB=page.locator('#trackerBoardList .tracker-board').nth(1);
+  const beforeA=await boardA.evaluate(el=>Number.parseFloat(el.style.top));
+  const beforeB=await boardB.evaluate(el=>Number.parseFloat(el.style.top));
+  const title=boardA.locator('.tracker-board-head');
+  const position=await title.boundingBox();
+  assert.ok(position,'Tracker header visible');
+  await page.mouse.move(position.x+45,position.y+10);
+  await page.mouse.down();
+  await page.mouse.move(position.x+65,position.y+120,{steps:8});
+  await page.mouse.up();
+  const afterA=await boardA.evaluate(el=>Number.parseFloat(el.style.top));
+  const afterB=await boardB.evaluate(el=>Number.parseFloat(el.style.top));
+  assert.ok(afterA>beforeA+50,'The selected Tracker can move freely downward');
+  assert.equal(afterB,beforeB,'Moving one Tracker does not move the other');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('#trackerBoardList .tracker-board').length===2);
+  const restored=await page.locator('#trackerBoardList .tracker-board').first().evaluate(el=>Number.parseFloat(el.style.top));
+  assert.ok(Math.abs(restored-afterA)<5,'Tracker free vertical coordinate survives reload');
   console.log('PASS: two-step ritual, 1..10 click counter, weekly Tuesday, linked task, F5, no forgotten Journal/Preparatifs UI');
  }finally{await browser?.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(error=>{console.error(error);process.exitCode=1});
