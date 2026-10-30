@@ -191,10 +191,10 @@ async function api(path,method='GET',body){
     const boards=await (await fetch('/api/tracker-boards')).json();
     return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5';
   },{id:wellness.id,day:date});
-  await page.locator('#trackerMonthPrev').click();
-  await page.waitForFunction(()=>document.querySelector('#trackerMonthLabel')?.textContent!==
-    new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date()));
-  await page.locator('#trackerMonthToday').click();
+  const originalPeriod=await wellnessCard.locator('.tracker-board-range').textContent().catch(()=>null);
+  await wellnessCard.locator('.tracker-period-back').click();
+  await page.waitForFunction((original)=>document.querySelector('.tracker-board-rose .tracker-board-range')?.textContent!==original,originalPeriod);
+  await wellnessCard.locator('.tracker-period-today').click();
   await page.waitForFunction(async({id,day})=> (await (await fetch('/api/tracker-boards')).json())
     .find(b=>b.id===id)?.rows.find(r=>r.title==='Sommeil')?.marks?.[day]==='7.5',{id:wellness.id,day:date});
   await page.reload({waitUntil:'domcontentloaded'});
