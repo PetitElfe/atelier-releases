@@ -21,7 +21,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "21a0e0e55d94ac5a21d444c67429ef1fe6c4d1eacacc5e01bc811cc3cf22731a"
+      "sha256": "10421d5d024adf88363b7d5812e83c74508b6145c7f374453c41b52c27fd3896"
     },
     {
       "path": "app_part3.py",
@@ -177,11 +177,11 @@
     },
     {
       "path": "public/jdr.html",
-      "sha256": "9a36bd75ed7e3e0e13f45017b97392126ba5f75f7fc9add5bf1a3ddce5a25082"
+      "sha256": "38188c522c51812cb173a95a3c7492b010922f12ef7ca98bae73bd3b980a8bff"
     },
     {
       "path": "public/jdr-mj.html",
-      "sha256": "1898ded24c24c785b612b16e2eb1b5ea33e8ecfe7358a0337865a00cf8f408cc"
+      "sha256": "8a80656a558b9efb25c4b74d4f6cbd2f71f900a394966994b6927a1356cca5a7"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
