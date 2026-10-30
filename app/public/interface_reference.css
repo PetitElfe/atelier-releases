@@ -20,3 +20,13 @@
 @media(max-width:1080px){.atelier-year-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.atelier-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:450px){.atelier-year-grid{grid-template-columns:1fr}}
+
+
+.atelier-tracker-tasks{margin:10px 0;padding:12px;max-width:900px}
+.atelier-tracker-task-items{display:flex;flex-direction:column;gap:4px}
+.atelier-tracker-task-line{display:flex;align-items:center;gap:9px;min-height:30px;border-bottom:1px solid var(--line,#564c41);font-size:13px;padding:3px}
+.atelier-tracker-task-line span{flex:1;min-width:0;overflow-wrap:anywhere}
+.atelier-tracker-task-line button{border:0;background:transparent;padding:3px 7px}
+.atelier-task-done{text-decoration:line-through;opacity:.55}
+#atelierSettingsReminders{max-height:240px;overflow:auto}
+#atelierSettingsReminders p{margin:4px 0;border-bottom:1px solid var(--line,#564c41);padding:5px}

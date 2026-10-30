@@ -747,3 +747,22 @@ body.home-active #sideNavToggle{display:none!important}
 #homeView #journalBook .objective-name{margin:0 0 1px!important;line-height:1.13!important}
 #homeView #journalBook .objective-progress-line{margin:0!important;min-height:0!important}
 #homeView #journalBook .objective-progress-track{height:4px!important}
+
+/* Documentation onglet 2 — le domaine et sa progression partagent une ligne.
+   Gain de place dans le Carnet sans masquer les objectifs ni les pourcentages. */
+#homeView #journalBook .objective-domain-line{
+ display:flex;align-items:center;gap:7px;min-width:0;margin:0 0 1px;
+}
+#homeView #journalBook .objective-domain-line .objective-domain{
+ flex:0 1 auto;min-width:0;margin:0!important;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;
+}
+#homeView #journalBook .objective-domain-line .objective-progress-line{
+ flex:1 1 auto;min-width:35px;display:flex;align-items:center;gap:5px;
+ margin:0!important;
+}
+#homeView #journalBook .objective-domain-line .objective-progress-track{
+ flex:1 1 auto;min-width:20px;
+}
+#homeView #journalBook .objective-note{padding:1px 2px 3px!important}
+#homeView #journalBook .objective-name{margin:0!important}
