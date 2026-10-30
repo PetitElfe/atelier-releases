@@ -72,6 +72,14 @@ jobs:
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
           "$AAPT" dump badging "$APK" | grep -q "versionCode='102'"
           unzip -p "$APK" assets/index.html | grep -q 'data-mobile-section="notes"'
+      - name: Build baseline Android debug APK for non-destructive upgrade test
+        run: |
+          git fetch --depth=1 origin main
+          git worktree add --detach "$RUNNER_TEMP/atelier-previous" FETCH_HEAD
+          mkdir -p "$RUNNER_TEMP/atelier-previous/mobile/android/app/src/main/assets"
+          cp "$RUNNER_TEMP/atelier-previous/mobile/prototype/index.html" "$RUNNER_TEMP/atelier-previous/mobile/android/app/src/main/assets/index.html"
+          gradle --no-daemon -p "$RUNNER_TEMP/atelier-previous/mobile/android" assembleDebug
+          test -s "$RUNNER_TEMP/atelier-previous/mobile/android/app/build/outputs/apk/debug/app-debug.apk"
       - name: Boot Android emulator and smoke-test app
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -84,7 +92,14 @@ jobs:
             # (it can time out without Google services; does not affect APK security).
             adb shell settings put global package_verifier_enable 0
             adb shell settings put global verifier_verify_adb_installs 0
+            PREVIOUS="$RUNNER_TEMP/atelier-previous/mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+            adb install -r -t "$PREVIOUS"
+            adb shell run-as fr.atelierdugoblin.mobile mkdir -p files
+            adb shell run-as fr.atelierdugoblin.mobile touch files/upgrade-sentinel.txt
+            # Both debug APKs use the same CI-generated debug signer. This proves
+            # only the local upgrade path; NOT compatibility with the user's signed APK.
             adb install -r -t mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell run-as fr.atelierdugoblin.mobile ls files/upgrade-sentinel.txt
             adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
             sleep 12
             adb shell pidof fr.atelierdugoblin.mobile
