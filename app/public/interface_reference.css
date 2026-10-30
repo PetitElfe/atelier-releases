@@ -125,3 +125,11 @@
 #homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-resize-handle,
 #homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-width-handle,
 #homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-height-handle{opacity:.85}
+
+/* Tracker : vrai canevas commun pour chaque tableau et la To-do list.
+   Le déplacement ne modifie plus l'ordre ni les marges du flux. */
+#trackersView #trackerBoardList.atelier-tracker-canvas{position:relative!important;display:block!important;overflow:visible!important;min-height:400px}
+#trackersView #trackerBoardList.atelier-tracker-canvas>.tracker-board,
+#trackersView #trackerBoardList.atelier-tracker-canvas>.atelier-tracker-tasks{position:absolute!important;margin:0!important;transform:none!important;flex:none!important}
+#trackersView .atelier-module-editing .atelier-module-drag-surface{touch-action:none;cursor:grab}
+#trackersView .atelier-module-editing .atelier-module-drag-surface:active{cursor:grabbing}
