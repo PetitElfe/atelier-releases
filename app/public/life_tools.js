@@ -1045,12 +1045,17 @@ function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierRemind
    localement, sans réseau ni upload serveur. */
 const atelierNotificationNames={
  mumble:'03 · Nyuu marmonnement',surprise:'10 · Surprise',
- chimes:'11 · Carillon doux',potion:'12 · Potion magique',other:'Autre son (personnalisé)'
+ chimes:'11 · Carillon doux',potion:'12 · Potion magique',original:'05 · Son original de L’Atelier'
 };
 function atelierNotificationChosen(){const id=localStorage.getItem('atelierNotificationChosen')||'chimes';return atelierNotificationNames[id]?id:'chimes'}
 function lifeReminderChime(force=false){
  if(!force&&!lifeSoundEnabled())return;
- const id=atelierNotificationChosen(),saved=localStorage.getItem('atelierNotificationFile_'+id);
+ const id=atelierNotificationChosen(),saved=id==='original'?null:localStorage.getItem('atelierNotificationFile_'+id);
+ if(id!=='original'&&!saved){
+  const status=document.getElementById('atelierNotificationStatus');
+  if(status)status.textContent='Ce son n’est pas encore importé. Sélectionne les WAV du pack pour l’écouter.';
+  return;
+ }
  if(saved){
    const audio=new Audio(saved);audio.volume=lifeReminderVolume();
    audio.play().catch(error=>console.warn('[Atelier] Notification audio impossible',error));return;
@@ -1096,7 +1101,7 @@ if(lifeSoundControl){
   const opt=document.createElement('option');opt.value=id;opt.textContent=label;sel.append(opt)
  }
  const status=atelierSoundSettings.querySelector('#atelierNotificationStatus');
- const update=()=>{const file=localStorage.getItem('atelierNotificationFile_'+sel.value);status.textContent=file?'Son personnalisé enregistré sur cet ordinateur.':'Aucun fichier importé pour ce choix : importe le WAV correspondant du pack.'};
+ const update=()=>{const file=localStorage.getItem('atelierNotificationFile_'+sel.value);status.textContent=sel.value==='original'?'Son original prêt à écouter (sans fichier à importer).':file?'Son enregistré : clique sur Écouter.':'Son non importé : choisis le fichier WAV correspondant dans le pack.'};
  sel.value=atelierNotificationChosen();update();
  sel.onchange=()=>{localStorage.setItem('atelierNotificationChosen',sel.value);update()};
  atelierSoundSettings.querySelector('#atelierNotificationListen').onclick=()=>lifeReminderChime(true);
