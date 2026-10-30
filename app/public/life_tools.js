@@ -1054,7 +1054,7 @@ function lifeReminderChime(force=false){
       const gain=lifeAudioContext.createGain();
       oscillator.type='sine';oscillator.frequency.value=freq;
       gain.gain.setValueAtTime(.0001,now+i*.14);
-      gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.12*lifeReminderVolume()),now+i*.14+.025);
+      gain.gain.exponentialRampToValueAtTime(Math.max(.0001,.42*lifeReminderVolume()),now+i*.14+.025);
       gain.gain.exponentialRampToValueAtTime(.0001,now+i*.14+.24);
       oscillator.connect(gain);gain.connect(lifeAudioContext.destination);
       oscillator.start(now+i*.14);oscillator.stop(now+i*.14+.25);
