@@ -1140,6 +1140,7 @@ async function api(path,method='GET',body){
   await page.locator('#budgetCurrentMonth').click();
   assert.equal(await page.locator('#budgetMonth').inputValue(),await page.evaluate(()=>ymd(new Date()).slice(0,7)),'Budget : mois courant');
   await page.evaluate(()=>showView('settings'));
+  await page.evaluate(()=>{const card=document.querySelector('.atelier-settings-shortcuts').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   assert.ok(await page.locator('.atelier-settings-shortcuts').isVisible(),'Paramètres : aide aux raccourcis');
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');
