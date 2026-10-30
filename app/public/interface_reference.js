@@ -37,7 +37,7 @@
  if(!calendar||!monthPanel)return;
  const button=document.createElement('button');button.type='button';button.dataset.calendarMode='year';button.textContent='Année';button.title='Vue annuelle avec rendez-vous';calendar.append(button);
  const panel=document.createElement('div');panel.id='yearPanel';panel.className='calendar-panel atelier-year-panel';
- panel.innerHTML='<div class="atelier-year-header"><button id="atelierYearPrev" type="button" aria-label="Année précédente">‹</button><h2 id="atelierYearLabel"></h2><button id="atelierYearNext" type="button" aria-label="Année suivante">›</button><button id="atelierYearToday" type="button">Cette année</button></div><div id="atelierYearGrid" class="atelier-year-grid"></div>';
+ panel.innerHTML='<div class="atelier-year-header"><button id="atelierYearPrev" type="button" aria-label="Année précédente">‹</button><h2 id="atelierYearLabel"></h2><button id="atelierYearNext" type="button" aria-label="Année suivante">›</button></div><div id="atelierYearGrid" class="atelier-year-grid"></div>';
  monthPanel.parentNode.insertBefore(panel,monthPanel.nextSibling);
  let chosenYear=new Date().getFullYear();
  const fmt=new Intl.DateTimeFormat('fr-FR',{month:'long'});
@@ -72,7 +72,7 @@
  button.addEventListener('click',()=>{setCalendarMode('year');paint()});
  panel.querySelector('#atelierYearPrev').onclick=()=>setYear(chosenYear-1);
  panel.querySelector('#atelierYearNext').onclick=()=>setYear(chosenYear+1);
- panel.querySelector('#atelierYearToday').onclick=()=>setYear(new Date().getFullYear());
+
  
  paint();
 })();
