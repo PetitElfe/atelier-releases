@@ -162,7 +162,7 @@
    if(!Object.keys(saved).length){
      try{const prior=JSON.parse(localStorage.getItem(id==='todo'?'atelierTrackerTasksLayout_20261030':oldPrefix+id)||'{}');saved={width:prior.width,x:prior.x}}catch(_){}
    }
-   return {width:Math.max(300,Number(saved.width)||defaultWidth),x:Math.max(0,Number(saved.x)||0),height:Math.max(0,Number(saved.height)||0)};
+   return {width:Math.max(300,Number(saved.width)||defaultWidth),x:Math.max(0,Number(saved.x)||0),y:Math.max(0,Number(saved.y)||0),height:Math.max(0,Number(saved.height)||0)};
  };
  const write=(id,v)=>{try{localStorage.setItem(prefix+id,JSON.stringify(v))}catch(_){}};
  const editing=()=>pencil.getAttribute('aria-pressed')==='true'&&root.classList.contains('active-view');
@@ -173,7 +173,7 @@
    const parentWidth=Math.max(300,el.parentElement?.clientWidth||960);
    const d=read(id,id==='todo'?560:650);
    const width=Math.min(parentWidth,d.width),x=Math.min(Math.max(0,parentWidth-width),d.x);
-   el.style.width=width+'px';el.style.maxWidth='100%';el.style.marginLeft=x+'px';
+   el.style.width=width+'px';el.style.maxWidth='100%';el.style.marginLeft=x+'px';el.style.marginTop=d.y+'px';
    if(d.height)el.style.minHeight=d.height+'px';
    el.classList.toggle('atelier-module-editing',editing());
  };
@@ -191,7 +191,7 @@
        target.setPointerCapture(event.pointerId);
        const move=e=>{
          const d={...before};
-         if(mode==='move')d.x=Math.max(0,before.x+e.clientX-startX);
+         if(mode==='move'){d.x=Math.max(0,before.x+e.clientX-startX);d.y=Math.max(0,before.y+e.clientY-startY)}
          else{d.width=Math.max(300,before.width+e.clientX-startX);d.height=Math.max(120,(before.height||startHeight)+e.clientY-startY)}
          write(id,d);apply(el);
        };
