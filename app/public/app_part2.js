@@ -218,7 +218,7 @@ function renderWeek(){
   const start=monday(state.cursor),end=sunday(state.cursor);
   $('#weekTitle').textContent=start.getDate()+' '+months[start.getMonth()].slice(0,3)+' — '+end.getDate()+' '+months[end.getMonth()].slice(0,3);
   const grid=$('#weekGrid');grid.innerHTML='';
-  const blank=document.createElement('div');blank.className='week-head';grid.appendChild(blank);
+  const blank=document.createElement('div');blank.className='week-head';blank.style.gridColumn='1';blank.style.gridRow='1';grid.appendChild(blank);
   const firstMinute=0,lastMinute=24*60,spanMinutes=lastMinute-firstMinute;
   const clockMinutes=time=>{
     if(!time||!/^([01]\d|2[0-3]):[0-5]\d/.test(time))return null;
@@ -232,7 +232,7 @@ function renderWeek(){
     const ds=ymd(d);dates.push(ds);
     const today=ds===ymd(new Date());
     const predicted=cycleForecastForDay(ds);
-    const head=document.createElement('div');head.className='week-head'+(today?' week-current-day':'')+(predicted?' cycle-forecast':'');
+    const head=document.createElement('div');head.className='week-head'+(today?' week-current-day':'')+(predicted?' cycle-forecast':'');head.style.gridColumn=String(i+2);head.style.gridRow='1';
     head.innerHTML='<strong class="week-day-name">'+days[i]+'</strong><span class="week-day-number">'+d.getDate()+'</span><small class="week-day-month">'+months[d.getMonth()].slice(0,3)+'</small>';
     if(cycleShowMarksPreference()&&isRecordedCycleDay(ds))head.classList.add('cycle-recorded');
     if(predicted)head.title='Règles possibles autour du '+fmtFrenchDate(parseYMD(predicted.start))+' (± '+predicted.spread+' jours).';
@@ -257,14 +257,14 @@ function renderWeek(){
     }
     grid.appendChild(head);
   }
-  const rightHead=document.createElement('div');rightHead.className='week-head week-head-right';grid.appendChild(rightHead);
+  const rightHead=document.createElement('div');rightHead.className='week-head week-head-right';rightHead.style.gridColumn='9';rightHead.style.gridRow='1';grid.appendChild(rightHead);
   // Les 24 heures sont des lignes de hauteur FIXE. Les rendez-vous sont
   // dessinés ensuite au-dessus, sans modifier ni déplacer la grille.
   for(let hour=0;hour<=23;hour++){
-    const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';grid.appendChild(tl);
+    const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';tl.style.gridColumn='1';tl.style.gridRow=String(hour+2);grid.appendChild(tl);
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');
-      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'');
+      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'');cell.style.gridColumn=String(i+2);cell.style.gridRow=String(hour+2);
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
       bindCalendarDateContextMenu(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);
@@ -297,7 +297,7 @@ function renderWeek(){
       });
       cell.addEventListener('dblclick',()=>openEventModal(null,ds,pad(hour)+':00'));grid.appendChild(cell);
     }
-    const right=document.createElement('div');right.className='time-label week-time-right';right.textContent=pad(hour)+':00';grid.appendChild(right);
+    const right=document.createElement('div');right.className='time-label week-time-right';right.textContent=pad(hour)+':00';right.style.gridColumn='9';right.style.gridRow=String(hour+2);grid.appendChild(right);
   }
   // Chaque colonne a une couche indépendante et les rendez-vous simultanés
   // partagent son espace horizontal (2 événements : 50 % chacun).
