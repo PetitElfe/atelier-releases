@@ -26,8 +26,8 @@
 #weekPanel .week-grid{
   --week-hour-height:clamp(25px,calc((100dvh - 270px)/16),38px);
   --week-header-height:86px;
-  display:grid;grid-template-columns:62px repeat(7,minmax(156px,1fr))!important;
-  grid-template-rows:var(--week-header-height) repeat(16,var(--week-hour-height))!important;
+  display:grid;grid-template-columns:62px repeat(7,minmax(156px,1fr)) 62px!important;
+  grid-template-rows:var(--week-header-height) repeat(24,var(--week-hour-height))!important;
   grid-auto-rows:0!important;
   min-width:1160px!important;width:100%!important;
   align-items:stretch;
@@ -186,3 +186,11 @@
 /* L'élément porteur de la couleur doit lui aussi être sombre : le test
    d'accessibilité mesure le contraste sur le conteneur de la carte. */
 #weekGrid .week-timed-event{background-color:#252b2b!important}
+
+/* Horaires 24h : marqueurs et séparations visibles des deux côtés. */
+#weekGrid .week-slot{border-top:1px solid rgba(224,216,191,.38)!important}
+#weekGrid .time-label{border-top:1px solid rgba(224,216,191,.52)!important;color:#e9dfc9!important}
+#weekGrid .week-time-right{position:sticky;left:auto;right:0;text-align:left;padding-left:9px!important;z-index:5;border-left:1px solid rgba(224,216,191,.45);background:#201b17}
+#weekGrid .week-head-right{position:sticky;right:0;left:auto;z-index:8;background:#231d19}
+#weekPanel .week-grid{min-width:1222px!important}
+@media(max-width:900px){#weekPanel .week-grid{min-width:1222px!important}}

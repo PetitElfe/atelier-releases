@@ -46,7 +46,10 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.ok(dimensions.weekWidth>dimensions.viewWidth*.94,'Semainier should use available width '+JSON.stringify(dimensions));
   assert.ok(dimensions.dayWidth>=156,'Readable columns '+JSON.stringify(dimensions));
   assert.ok(dimensions.slotHeight>=62&&dimensions.slotHeight<=70,'Agenda-style one-hour rows '+JSON.stringify(dimensions));
-  assert.equal(dimensions.todaySlots,16);
+  assert.equal(dimensions.todaySlots,24,'All 24 hourly slots must be visible for today');
+  assert.equal(await page.locator('#weekGrid .week-time-right').count(),24,'Right edge repeats every hourly label');
+  assert.equal(await page.locator('#weekGrid .week-time-right').first().innerText(),'00:00');
+  assert.equal(await page.locator('#weekGrid .week-time-right').last().innerText(),'23:00');
   assert.equal(dimensions.horizontalScroll,false,'2K width should fit without horizontal scroll');
   assert.equal(dimensions.verticalScroll,true,'Large hourly rows must remain vertically scrollable at 900px');
   // Reuse a temporary SQLite instance; test only real date entries.
