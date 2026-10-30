@@ -109,7 +109,18 @@ async function refreshDesktopPostitArchives(){
         restore.disabled=false;
       }
     });
-    row.append(title,restore);list.append(row);
+    const remove=document.createElement('button');remove.type='button';
+    remove.textContent='Supprimer définitivement';
+    remove.setAttribute('aria-label','Supprimer définitivement le Post-it '+title.textContent);
+    remove.addEventListener('click',async()=>{
+      if(!window.confirm('Supprimer définitivement « '+title.textContent+' » ?\\n\\nCette opération est irréversible.'))return;
+      remove.disabled=true;restore.disabled=true;
+      try{
+        await api('/api/postits/'+note.id,{method:'DELETE'});
+        await refreshDesktopPostitArchives();
+      }catch(error){showUiError(error,'Supprimer le Post-it');remove.disabled=false;restore.disabled=false}
+    });
+    row.append(title,restore,remove);list.append(row);
   }
 }
 function initDesktopPostitsControls(){
