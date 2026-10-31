@@ -54,11 +54,31 @@ def customize_postits(source):
         'BASE / "desktop" / "LAtelierDuGoblin_Nathan.exe"')
     return src
 
+def remove_jdr_navigation(source):
+    """Remove the tabletop RPG workspace, not the general library or notes."""
+    link = '<button type="button" id="openJdrWorkspace" onclick="window.location.href=\'/jdr.html\'">🎲 Table JDR</button>'
+    src = replace_one(source, link, '')
+    return src.replace('Anglais, Art, JDR, LoL…', 'Anglais, Art, Lecture, LoL…')
+
+
+def disable_jdr_server(source):
+    """Prevent both static JDR pages and game-session API access in Nathan."""
+    get = "def do_GET(self):\\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)"
+    post = "def do_POST(self):\\n        u = urlparse(self.path); p = u.path"
+    block = ("\\n        if p in ('/jdr.html','/jdr-mj.html') or p.startswith('/api/jdr/'):\\n"
+             "            return self._json({'error':'Module JDR non inclus dans l’édition Nathan'},404)")
+    src = replace_one(source, get, get + block)
+    src = replace_one(src, post, post + block)
+    return src
+
+
 def patch_stage(stage):
     stage=Path(stage)
     manifest_path=stage/'manifest.json'
     manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
-    transformations={'updater.py':customize_updater,'desktop_postits.py':customize_postits}
+    transformations={'updater.py':customize_updater,'desktop_postits.py':customize_postits,
+                     'public/index.html':remove_jdr_navigation,
+                     'app_part2.py':disable_jdr_server}
     for name, transform in transformations.items():
         path=stage/'app'/name
         source=path.read_text(encoding='utf-8')
@@ -68,6 +88,11 @@ def patch_stage(stage):
         if entry is None:
             raise RuntimeError('Manifeste incomplet : '+name)
         entry['sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+    # JDR game pages must not be shipped, even if the upstream manifest lists them.
+    for relative in ('public/jdr.html','public/jdr-mj.html'):
+        (stage/'app'/relative).unlink(missing_ok=True)
+        manifest['files']=[x for x in manifest['files'] if x['path']!=relative]
+    assert not any(x['path'] in ('public/jdr.html','public/jdr-mj.html') for x in manifest['files'])
     manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     return stage
 
