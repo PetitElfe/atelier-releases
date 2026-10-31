@@ -182,6 +182,49 @@ public final class UpdateBridge {
         });
     }
 
+    /** Immediate, opt-in native notification diagnostic, with no alarm scheduling. */
+    @JavascriptInterface public void testNotification() {
+        activity.runOnUiThread(() -> {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                activity.checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                activity.requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 7282);
+                event("notice", "Autorise les notifications, puis retouche Tester la notification.", null);
+                return;
+            }
+            try {
+                NotificationManager manager = (NotificationManager) activity.getSystemService(Activity.NOTIFICATION_SERVICE);
+                if (manager == null || !manager.areNotificationsEnabled()) {
+                    event("notice", "Les notifications de Goblin sont désactivées dans Android.", null);
+                    return;
+                }
+                String channelId = "goblin_notification_test";
+                if (Build.VERSION.SDK_INT >= 26) {
+                    NotificationChannel channel = new NotificationChannel(channelId,
+                        "Tests Goblin", NotificationManager.IMPORTANCE_DEFAULT);
+                    channel.setDescription("Vérification manuelle des notifications système de Goblin");
+                    manager.createNotificationChannel(channel);
+                    if (manager.getNotificationChannel(channelId).getImportance() == NotificationManager.IMPORTANCE_NONE) {
+                        event("notice", "Active le canal Tests Goblin dans les réglages des notifications Android.", null);
+                        return;
+                    }
+                }
+                Intent launch = new Intent(activity, MainActivity.class);
+                launch.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                PendingIntent pending = PendingIntent.getActivity(activity, 91, launch,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ?
+                    new Notification.Builder(activity, channelId) : new Notification.Builder(activity);
+                manager.notify(191, builder.setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("Test Goblin")
+                    .setContentText("Si tu vois ce message, les notifications Android fonctionnent.")
+                    .setContentIntent(pending).setAutoCancel(true).build());
+                event("notice", "Notification de test envoyée. Vérifie le panneau de notifications Android.", null);
+            } catch (Exception e) {
+                event("error", "Test de notification impossible : " + e.getMessage(), null);
+            }
+        });
+    }
+
     @JavascriptInterface public void checkUpdates() {
         io.execute(() -> {
             try {
