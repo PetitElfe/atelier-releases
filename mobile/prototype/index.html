@@ -148,7 +148,7 @@ function connectedView(root){
  if(!online){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
  const tabs=el('div',{class:'arrows'});
  [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes JDR']].forEach(([key,title])=>{
-  const btn=el('button',{},(tab===key?'● ':'')+title);btn.onclick=()=>{tab=key;render()};tabs.append(btn)
+  const btn=el('button',{},(tab===key?'● ':'')+title);btn.onclick=()=>{if(key==='recipes'){state.page='grimoire';save();render()}else{tab=key;render()}};tabs.append(btn)
  });p.append(tabs);
  if(tab==='tasks'||tab==='shopping'){
   const rows=pc[tab]||[];
