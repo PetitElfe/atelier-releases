@@ -102,11 +102,19 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
       return Number(x?.marks?.[day])===value;
     },{id:number.id,day,value});
   }
-  await page.waitForFunction(async({id,day})=>
-    (await (await fetch('/api/tracker-boards/daily?day='+day)).json()).items
-      .find(x=>x.row_id===id)?.done===true,{id:number.id,day},{timeout:12000});
-  assert.equal((await api('/api/tracker-boards/daily?day='+day)).items
-    .find(x=>x.row_id===number.id).done,true);
+  // A click writes asynchronously. Confirm both the persisted count and
+  // derived daily completion on two consecutive, independent API reads.
+  let confirmed=0;
+  for(let attempt=0;attempt<50&&confirmed<2;attempt++){
+    const [daily,boards]=await Promise.all([
+      api('/api/tracker-boards/daily?day='+day),api('/api/tracker-boards')
+    ]);
+    const done=daily.items.find(x=>x.row_id===number.id)?.done===true;
+    const count=boards.flatMap(x=>x.rows).find(x=>x.id===number.id)?.marks?.[day];
+    confirmed=done&&Number(count)===10?confirmed+1:0;
+    if(confirmed<2)await pause(150);
+  }
+  assert.equal(confirmed,2,'Ten cups must stay complete in both daily view and persisted marks');
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>document.querySelectorAll('#homeDailyTrackersList label').length>=2);
   assert.ok((await page.locator('#homeDailyTrackersList').innerText()).includes('10/10'));
