@@ -20,6 +20,8 @@ import android.net.Uri;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
@@ -27,6 +29,9 @@ public class MainActivity extends Activity {
     private WebView webView;
     private TailnetBridge tailnet;
     private UpdateBridge updateBridge;
+    private TextToSpeech goblinSpeech;
+    private volatile boolean goblinSpeechReady = false;
+    private boolean pendingMiam = false;
     private String pendingBackup;
     private static final int BACKUP_REQUEST=7281;
     private boolean nativeBackRegistered = false;
@@ -59,6 +64,23 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(updateBridge, "AtelierUpdates");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
+        // WebView speechSynthesis is not reliable on every Android device.
+        // Use the installed Android TextToSpeech engine for the kitchen timer voice.
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface public void speakMiam() {
+                runOnUiThread(() -> speakMiamNative());
+            }
+        }, "AtelierMiam");
+        goblinSpeech = new TextToSpeech(this, status -> runOnUiThread(() -> {
+            if (status != TextToSpeech.SUCCESS || goblinSpeech == null) return;
+            int language = goblinSpeech.setLanguage(Locale.FRENCH);
+            goblinSpeechReady = language != TextToSpeech.LANG_MISSING_DATA &&
+                language != TextToSpeech.LANG_NOT_SUPPORTED;
+            if (pendingMiam && goblinSpeechReady) {
+                pendingMiam = false;
+                speakMiamNative();
+            }
+        }));
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
                 if(json==null || json.length()>1000000)return;
@@ -121,6 +143,14 @@ public class MainActivity extends Activity {
             nativeBackRegistered = true;
         }
     }
+    private void speakMiamNative() {
+        if (goblinSpeech == null || !goblinSpeechReady) {
+            pendingMiam = true;
+            return;
+        }
+        goblinSpeech.speak("Miam miam !", TextToSpeech.QUEUE_FLUSH, null,
+            "goblin-kitchen-miam");
+    }
     private void dispatchBackToWeb() {
         if (webView == null) { moveTaskToBack(true); return; }
         webView.evaluateJavascript(
@@ -155,7 +185,8 @@ public class MainActivity extends Activity {
     @Override protected void onDestroy() {
         if (tailnet != null) tailnet.close();
         if (updateBridge != null) updateBridge.close();
-        webView.destroy();
+        if (goblinSpeech != null) { goblinSpeech.stop(); goblinSpeech.shutdown(); goblinSpeech = null; }
+        if (webView != null) webView.destroy();
         super.onDestroy();
     }
 }
