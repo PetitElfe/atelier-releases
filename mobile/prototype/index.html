@@ -381,6 +381,8 @@ function grimoireView(root){
   // Keep the recipe visible immediately, rather than below a long recipe catalogue.
   intro.hidden=true;
   const card=panel(root,'📖 '+(active.title||'Ma recette'));
+  card.id='kitchenRecipe';
+  const jump=el('button',{class:'action'},'⏱ Ajouter un minuteur');jump.onclick=()=>document.getElementById('kitchenTimerPanel')?.scrollIntoView({behavior:'smooth',block:'start'});card.append(jump);
   const choose=el('button',{class:'action'},'← Autres recettes');choose.onclick=()=>{openedRecipeId=null;render()};card.append(choose);
   if(active.book_name)card.append(el('p',{class:'jdr-hint'},'Livre : '+active.book_name));
   if(active.base_servings)card.append(el('p',{class:'jdr-hint'},'Portions de base : '+active.base_servings));
@@ -395,12 +397,13 @@ function grimoireView(root){
   if(active.recipe){card.append(el('h2',{},'Préparation'));const txt=el('p',{},String(active.recipe));txt.style.whiteSpace='pre-wrap';card.append(txt)}
   if(active.notes){card.append(el('h2',{},'Notes'));const txt=el('p',{},String(active.notes));txt.style.whiteSpace='pre-wrap';card.append(txt)}
  }
- const timers=panel(root,'⏲ Mes minuteurs de cuisine');
+ const timers=panel(root,'⏲ Mes minuteurs de cuisine');timers.id='kitchenTimerPanel';
  timers.append(el('p',{class:'jdr-hint'},'Tu peux lancer « Œufs — 8 minutes » et « Four — 25 minutes » en même temps, tout en lisant la recette.'));
  const label=el('input',{type:'text',placeholder:'Libellé : œufs, four, pâtes…','aria-label':'Nom du minuteur'});
  const mins=el('input',{type:'number',min:'0',max:'1440',placeholder:'Minutes','aria-label':'Minutes'}),secs=el('input',{type:'number',min:'0',max:'59',placeholder:'Secondes','aria-label':'Secondes'});
  mins.value='8';secs.value='0';mins.style.width='48%';secs.style.width='48%';
  const row=el('div',{class:'arrows'});row.append(mins,secs);
+ const presets=el('div',{class:'jdr-tags'});for(const n of [3,5,8,10,15,20]){const btn=el('button',{class:'jdr-tag'},n+' min');btn.onclick=()=>{mins.value=String(n);secs.value='0'};presets.append(btn)}
  const add=el('button',{class:'action'},'＋ Démarrer ce minuteur');
  add.onclick=()=>{
   const duration=(Number(mins.value)||0)*60000+(Number(secs.value)||0)*1000;
@@ -411,8 +414,9 @@ function grimoireView(root){
   const now=Date.now();
   kitchenTimers.push({id:'cook-'+now+'-'+Math.random().toString(36).slice(2),label:label.value.trim().slice(0,80)||'Cuisson',end:now+duration,remaining:duration,running:true,ringing:false});
   timerSave();render();
+  if(openedRecipeId)document.getElementById('kitchenRecipe')?.scrollIntoView({block:'start'});
  };
- timers.append(label,row,add);
+ timers.append(label,presets,row,add);
  const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Son activé':'🔇 Son désactivé');
  mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
  const voice=el('button',{class:'action'},kitchenVoiceEnabled?'🗣 Mia miam activé':'🗣 Mia miam désactivé');voice.onclick=()=>{kitchenVoiceEnabled=!kitchenVoiceEnabled;render()};timers.append(voice);
