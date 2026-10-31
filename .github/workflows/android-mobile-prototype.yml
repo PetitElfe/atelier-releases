@@ -49,6 +49,12 @@ jobs:
           assert(html.includes('body.theme-classic'),'Classic theme absent');
           assert(html.includes("applyTheme(localStorage.getItem(themeKey)||'dark')"),'Goblin default changed');
           assert(html.includes('data-mobile-go="jdr"'),'JDR notes tab absent');
+          const drawer=html.match(/<nav class="nav drawer"[\\s\\S]*?<\\/nav>/);
+          assert(drawer,'Goblin drawer missing');
+          assert(!/[📖☑🧺🍲🔄🌿]/u.test(drawer[0]),'Emoji icon still in navigation drawer');
+          assert((drawer[0].match(/data-drawer-icon=/g)||[]).length===10,'Drawer icon coverage incomplete');
+          assert(html.includes('Diagnostiquer la synchronisation PC'),'Read-only sync diagnostic absent');
+          assert(html.includes('goblinUpdateBanner'),'In-app update banner missing');
           assert(html.includes('id="mobileTabs"'),'Mobile navigation absent');
           assert(html.includes('window.AtelierBackup.exportBackup'),'Backup UI absent');
           assert(html.includes('goblinInstallUpdate'),'Native update button missing');
