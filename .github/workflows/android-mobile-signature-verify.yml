@@ -76,3 +76,36 @@ jobs:
           test "$new_package" = "$old_package"
           echo "PASS: same Android package, same SHA-256 signing certificate, higher versionCode."
           echo "This verifies published v0.1.1; installed phone APK must still be checked before upgrade."
+      - name: Enable hardware acceleration for signed APK upgrade test
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod a+rw /dev/kvm
+            test -r /dev/kvm && test -w /dev/kvm
+          else
+            echo "::warning::No KVM device; emulator may be slow"
+          fi
+      - name: Upgrade official signed 0.1.1 to newly signed 0.1.2 on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_4
+          disable-animations: false
+          emulator-boot-timeout: 720
+          script: |
+            adb install -r "$RUNNER_TEMP/old/LAtelierDuGoblin-Mobile.apk"
+            adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
+            adb shell am force-stop fr.atelierdugoblin.mobile
+            adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk
+            adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
+            sleep 15
+            adb shell pidof fr.atelierdugoblin.mobile
+            adb logcat -d -s AndroidRuntime:E | tee /tmp/signed-upgrade-crashes.log
+            ! grep -q 'FATAL EXCEPTION' /tmp/signed-upgrade-crashes.log
+      - name: Archive verified signed APK for review (not a published release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAtelierDuGoblin_Android_012_Signed_TEST
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
+          if-no-files-found: error
