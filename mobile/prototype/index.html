@@ -198,6 +198,22 @@ function connectedSettings(root){
  const refresh=el('button',{class:'action'},'Actualiser');
  refresh.onclick=syncPull;
  p.append(connect,refresh,offline);
+
+ const diagnostic=el('button',{class:'action'},'Diagnostiquer la synchronisation PC');
+ const result=el('div',{class:'muted',role:'status'});
+ diagnostic.onclick=async()=>{
+  let u;
+  try{u=new URL(input.value.trim());if(u.protocol!=='https:'||!u.hostname.endsWith('.ts.net')||u.port||u.username||u.password||(u.pathname!=='/'&&u.pathname!=='')||u.search||u.hash)throw Error('Adresse Tailscale HTTPS non valide')}
+  catch(e){result.textContent='Adresse incorrecte : entre l’URL HTTPS de ton PC, sans /mobile.html.';return}
+  diagnostic.disabled=true;result.textContent='Test des rubriques en cours… aucune donnée modifiée.';
+  const now=new Date(),from=new Date(now.getFullYear(),now.getMonth()-1,1),until=new Date(now.getFullYear(),now.getMonth()+2,0);
+  const checks=[['Tâches','/api/tasks'],['Courses','/api/shopping'],['Recettes','/api/recipes'],['Notes JDR','/api/mobile/notes'],['Calendrier','/api/events?start='+isoDay(from)+'&end='+isoDay(until)]];
+  const tests=await Promise.allSettled(checks.map(([,path])=>callPc('GET',path,null,u.origin)));
+  const lines=checks.map(([name],i)=>name+' : '+(tests[i].status==='fulfilled'&&Array.isArray(tests[i].value)?'accessible':'indisponible'));
+  result.textContent=lines.join(' | ')+'. Ce diagnostic est en lecture seule et ne fusionne aucune donnée.';
+  diagnostic.disabled=false;
+ };
+ p.append(diagnostic,result);
 }
 function connectedView(root){
  const p=panel(root,'Les données de mon ordinateur');
