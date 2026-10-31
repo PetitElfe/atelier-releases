@@ -309,7 +309,7 @@ function jdrView(root){
 /* Offline local timers, Windows-synced recipes. Each countdown has an absolute end time. */
 const kitchenTimerKey='goblin-mobile-kitchen-timers-v1';
 let kitchenTimers=[];try{const v=JSON.parse(localStorage.getItem(kitchenTimerKey)||'[]');if(Array.isArray(v))kitchenTimers=v.filter(t=>t&&Number.isFinite(t.end)&&typeof t.label==='string').slice(0,16)}catch(e){}
-let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenAudio=null;
+let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenVoiceEnabled=true,kitchenAudio=null;
 function timerSave(){localStorage.setItem(kitchenTimerKey,JSON.stringify(kitchenTimers))}
 function clockTime(ms){const n=Math.max(0,Math.ceil(ms/1000));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(v=>String(v).padStart(2,'0')).join(':')}
 function kitchenChime(){
@@ -335,7 +335,7 @@ function kitchenChime(){
 function kitchenTick(){
  let finished=false;
  for(const t of kitchenTimers){if(t.running&&Date.now()>=t.end){t.running=false;t.ringing=true;t.remaining=0;finished=true}}
- if(finished){timerSave();kitchenChime();if(navigator.vibrate)navigator.vibrate([160,100,160])}
+ if(finished){timerSave();kitchenChime();if(kitchenVoiceEnabled&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const voice=new SpeechSynthesisUtterance('Beast mia miam !');voice.lang='fr-FR';voice.rate=1.05;window.speechSynthesis.speak(voice)}catch(e){}}if(navigator.vibrate)navigator.vibrate([160,100,160])}
  document.querySelectorAll('[data-kitchen-countdown]').forEach(node=>{
   const t=kitchenTimers.find(x=>x.id===node.dataset.kitchenCountdown);
   if(t)node.textContent=t.ringing?'🔔 Terminé !':clockTime(t.running?t.end-Date.now():t.remaining)
@@ -415,6 +415,7 @@ function grimoireView(root){
  timers.append(label,row,add);
  const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Son activé':'🔇 Son désactivé');
  mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
+ const voice=el('button',{class:'action'},kitchenVoiceEnabled?'🗣 Mia miam activé':'🗣 Mia miam désactivé');voice.onclick=()=>{kitchenVoiceEnabled=!kitchenVoiceEnabled;render()};timers.append(voice);
  const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
  kitchenTimers.forEach(t=>{
   const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
