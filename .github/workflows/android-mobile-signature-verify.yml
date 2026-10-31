@@ -39,7 +39,7 @@ jobs:
       - name: Build signed upgrade without publishing
         working-directory: mobile/android
         env:
-          RELEASE_VERSION: '0.1.3'
+          RELEASE_VERSION: '0.1.4'
           ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
           ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
           ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
@@ -76,12 +76,12 @@ jobs:
           test "$new_package" = "$old_package"
           echo "PASS: same Android package, same SHA-256 signing certificate, higher versionCode."
           echo "This verifies published v0.1.1; installed phone APK must still be checked before upgrade."
-      - name: Fetch previous signed Android 0.1.2 test installed by user
+      - name: Fetch previous signed Android 0.1.3 test installed by user
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$RUNNER_TEMP/old-012"
-          gh run download 41156021253 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_012_Signed_TEST --dir "$RUNNER_TEMP/old-012"
+          gh run download 41158284929 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_013_Signed_TEST --dir "$RUNNER_TEMP/old-012"
           test -s "$RUNNER_TEMP/old-012/app-release.apk"
       - name: Enable hardware acceleration for signed APK upgrade test
         run: |
@@ -91,7 +91,7 @@ jobs:
           else
             echo "::warning::No KVM device; emulator may be slow"
           fi
-      - name: Upgrade existing signed 0.1.2 to newly signed 0.1.3 on emulator
+      - name: Upgrade existing signed 0.1.3 to newly signed 0.1.4 on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -112,7 +112,7 @@ jobs:
       - name: Archive verified signed APK for review (not a published release)
         uses: actions/upload-artifact@v4
         with:
-          name: LAtelierDuGoblin_Android_013_Signed_TEST
+          name: LAtelierDuGoblin_Android_014_Signed_TEST
           path: mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
           if-no-files-found: error
