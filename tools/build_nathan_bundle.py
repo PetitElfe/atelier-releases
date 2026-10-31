@@ -28,6 +28,17 @@ def main():
     sys.path.insert(0,str(OUTPUT/"app"))
     from nathan_patch import patch_stage
     patch_stage(OUTPUT)
+    # Every Nathan build must exclude tabletop campaign UI and server routes.
+    private_manifest=json.loads((OUTPUT/"manifest.json").read_text(encoding="utf-8"))
+    paths={x["path"] for x in private_manifest["files"]}
+    if any(p in paths for p in ("public/jdr.html","public/jdr-mj.html")):
+        raise RuntimeError("Dedicated JDR pages included in Nathan manifest")
+    if any((OUTPUT/"app"/p).exists() for p in ("public/jdr.html","public/jdr-mj.html")):
+        raise RuntimeError("Dedicated JDR pages included in Nathan bundle")
+    html=(OUTPUT/"app"/"public"/"index.html").read_text(encoding="utf-8")
+    server=(OUTPUT/"app"/"app_part2.py").read_text(encoding="utf-8")
+    if "openJdrWorkspace" in html or "Module JDR non inclus" not in server:
+        raise RuntimeError("Nathan JDR exclusion was not applied")
     # Use the upstream GitHub branch HEAD, not any merge-commit checkout SHA.
     try:
         revision=subprocess.check_output(
