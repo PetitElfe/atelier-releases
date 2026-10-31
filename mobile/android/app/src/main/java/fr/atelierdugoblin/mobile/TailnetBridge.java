@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 public final class TailnetBridge {
     private final Activity activity;
     private final WebView view;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     TailnetBridge(Activity activity, WebView view) {
         this.activity = activity; this.view = view;
