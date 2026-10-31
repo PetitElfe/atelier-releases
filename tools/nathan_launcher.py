@@ -298,8 +298,19 @@ def main():
         return
     # A single frozen Python distribution services WebView, Post-it and updater.
     if "--nathan-upgrade" in sys.argv:
-        saved=_upgrade_existing()
-        print("PASS: mise à jour Nathan en sécurité. Sauvegarde :", saved, flush=True)
+        try:
+            saved=_upgrade_existing()
+            print("PASS: mise à jour Nathan en sécurité. Sauvegarde :", saved, flush=True)
+        except BaseException as exc:
+            try:
+                folder=location()/"data"
+                folder.mkdir(parents=True,exist_ok=True)
+                with (folder/"nathan-upgrade-error.log").open("a",encoding="utf-8") as out:
+                    out.write(time.strftime("%Y-%m-%d %H:%M:%S")+" "+repr(exc)+"\\n")
+                    out.write(traceback.format_exc()+"\\n")
+            except OSError:
+                pass
+            raise SystemExit(1)
         return
     if "--nathan-install-only" in sys.argv:
         _install(launch=False)
