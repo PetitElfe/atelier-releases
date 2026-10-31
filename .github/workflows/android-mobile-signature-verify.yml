@@ -76,6 +76,13 @@ jobs:
           test "$new_package" = "$old_package"
           echo "PASS: same Android package, same SHA-256 signing certificate, higher versionCode."
           echo "This verifies published v0.1.1; installed phone APK must still be checked before upgrade."
+      - name: Fetch previous signed Android 0.1.2 test installed by user
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/old-012"
+          gh run download 41156021253 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_012_Signed_TEST --dir "$RUNNER_TEMP/old-012"
+          test -s "$RUNNER_TEMP/old-012/app-release.apk"
       - name: Enable hardware acceleration for signed APK upgrade test
         run: |
           if [ -e /dev/kvm ]; then
@@ -84,7 +91,7 @@ jobs:
           else
             echo "::warning::No KVM device; emulator may be slow"
           fi
-      - name: Upgrade official signed 0.1.1 to newly signed 0.1.3 on emulator
+      - name: Upgrade existing signed 0.1.2 to newly signed 0.1.3 on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -93,7 +100,7 @@ jobs:
           disable-animations: false
           emulator-boot-timeout: 720
           script: |
-            adb install -r "$RUNNER_TEMP/old/LAtelierDuGoblin-Mobile.apk"
+            adb install -r "$RUNNER_TEMP/old-012/app-release.apk"
             adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
             adb shell am force-stop fr.atelierdugoblin.mobile
             adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk
