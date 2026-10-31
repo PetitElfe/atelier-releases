@@ -145,6 +145,13 @@ public class MainActivity extends Activity {
             if(webView!=null)webView.evaluateJavascript("window.__atelierBackupComplete&&window.__atelierBackupComplete("+success+")",null);
         }
     }
+    @Override protected void onResume() {
+        super.onResume();
+        // On returning from the background, refresh remote PC lists only.
+        // Existing local WebView data and the offline journal remain untouched.
+        if (webView != null) webView.evaluateJavascript(
+            "window.__atelierOnResume&&window.__atelierOnResume()", null);
+    }
     @Override protected void onDestroy() {
         if (tailnet != null) tailnet.close();
         if (updateBridge != null) updateBridge.close();
