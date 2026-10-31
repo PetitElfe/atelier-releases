@@ -378,6 +378,8 @@ function grimoireView(root){
  search.oninput=()=>{recipeFilter=search.value;draw()};draw();
  const active=recipes.find(x=>String(x.id)===openedRecipeId);
  if(active){
+  // Keep the recipe visible immediately, rather than below a long recipe catalogue.
+  intro.hidden=true;
   const card=panel(root,'📖 '+(active.title||'Ma recette'));
   const choose=el('button',{class:'action'},'← Autres recettes');choose.onclick=()=>{openedRecipeId=null;render()};card.append(choose);
   if(active.book_name)card.append(el('p',{class:'jdr-hint'},'Livre : '+active.book_name));
