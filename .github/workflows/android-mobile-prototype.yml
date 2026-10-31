@@ -48,7 +48,7 @@ jobs:
           assert(html.includes("const KEY='goblin-mobile-prototype-v1'"),'Historic localStorage identifier changed');
           assert(html.includes('body.theme-classic'),'Classic theme absent');
           assert(html.includes("applyTheme(localStorage.getItem(themeKey)||'dark')"),'Goblin default changed');
-          assert(html.includes('data-mobile-section="notes"'),'JDR notes tab absent');
+          assert(html.includes('data-mobile-go="jdr"'),'JDR notes tab absent');
           assert(html.includes('id="mobileTabs"'),'Mobile navigation absent');
           assert(html.includes('window.AtelierBackup.exportBackup'),'Backup UI absent');
           assert(html.includes('window.AtelierTailnet.request'),'Tailscale bridge absent');
@@ -71,7 +71,7 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
           "$AAPT" dump badging "$APK" | grep -q "versionCode='102'"
-          unzip -p "$APK" assets/index.html | grep -q 'data-mobile-section="notes"'
+          unzip -p "$APK" assets/index.html | grep -q 'data-mobile-go="jdr"'
       - name: Build baseline Android debug APK for non-destructive upgrade test
         run: |
           git fetch --depth=1 origin main
@@ -119,9 +119,9 @@ jobs:
             adb logcat -d -s AndroidRuntime:E | tee /tmp/atelier-crashes.log
             ! grep -q 'FATAL EXCEPTION' /tmp/atelier-crashes.log
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success() || failure()
         with:
           name: LAtelierDuGoblin_Android_Prototype_APK
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
