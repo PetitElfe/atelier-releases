@@ -44,7 +44,7 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 @media(min-width:680px){.paper{max-width:640px;margin:auto}.mobile-tabs{justify-content:center;gap:50px}}
 </style></head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰</button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><span aria-hidden="true">🌿</span></header>
-<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="jdr"># Mes notes classées</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
+<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="jdr"># Mes notes classées</button><button data-page="grimoire">🍲 Grimoire de recettes</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
 <button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon">▦</span>Calendrier</button>
@@ -210,6 +210,7 @@ function toolsView(root){
  const add=el('button',{class:'action'},'＋ Ma propre carte');add.onclick=()=>{const value=prompt('Quel message voudrais-tu garder à portée de main ?');if(!value?.trim())return;cards.push(value.trim().slice(0,500));localStorage.setItem(personalCardKey,JSON.stringify(cards.slice(-30)));render()};comm.append(add);intro.append(comm);
  const diary=el('div',{class:'tool-card'});diary.append(el('h3',{},'📓 Journal et idées'));
  const goJournal=el('button',{class:'action'},'Mon journal');goJournal.onclick=()=>{state.page='journal';save();render()};
+ const goGrimoire=el('button',{class:'action'},'🍲 Mon grimoire');goGrimoire.onclick=()=>{state.page='grimoire';save();render()};diary.append(goGrimoire);
  const goNote=el('button',{class:'action'},'Une note JDR pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
 }
 window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
@@ -304,8 +305,133 @@ function jdrView(root){
   const refresh=el('button',{class:'action'},'↻ Actualiser le PC');refresh.onclick=syncPull;remote.append(refresh);
  }
 }
+
+/* Offline local timers, Windows-synced recipes. Each countdown has an absolute end time. */
+const kitchenTimerKey='goblin-mobile-kitchen-timers-v1';
+let kitchenTimers=[];try{const v=JSON.parse(localStorage.getItem(kitchenTimerKey)||'[]');if(Array.isArray(v))kitchenTimers=v.filter(t=>t&&Number.isFinite(t.end)&&typeof t.label==='string').slice(0,16)}catch(e){}
+let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenAudio=null;
+function timerSave(){localStorage.setItem(kitchenTimerKey,JSON.stringify(kitchenTimers))}
+function clockTime(ms){const n=Math.max(0,Math.ceil(ms/1000));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(v=>String(v).padStart(2,'0')).join(':')}
+function kitchenChime(){
+ if(!kitchenSoundEnabled)return;
+ try{
+  // Original electronic bell; not a recording of any copyrighted song.
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  kitchenAudio=kitchenAudio||new AC();
+  if(kitchenAudio.state==='suspended')kitchenAudio.resume();
+  const at=kitchenAudio.currentTime;
+  for(const [i,hz] of [660,880,1046,1320].entries()){
+   const osc=kitchenAudio.createOscillator(),gain=kitchenAudio.createGain(),t=at+i*.17;
+   osc.type='sine';osc.frequency.setValueAtTime(hz,t);
+   gain.gain.setValueAtTime(.001,t);
+   gain.gain.exponentialRampToValueAtTime(.13,t+.025);
+   gain.gain.exponentialRampToValueAtTime(.001,t+.46);
+   osc.connect(gain);gain.connect(kitchenAudio.destination);
+   osc.start(t);osc.stop(t+.47);
+  }
+ }catch(e){}
+}
+function kitchenTick(){
+ let finished=false;
+ for(const t of kitchenTimers){if(t.running&&Date.now()>=t.end){t.running=false;t.ringing=true;t.remaining=0;finished=true}}
+ if(finished){timerSave();kitchenChime();if(navigator.vibrate)navigator.vibrate([160,100,160])}
+ document.querySelectorAll('[data-kitchen-countdown]').forEach(node=>{
+  const t=kitchenTimers.find(x=>x.id===node.dataset.kitchenCountdown);
+  if(t)node.textContent=t.ringing?'🔔 Terminé !':clockTime(t.running?t.end-Date.now():t.remaining)
+ });
+ if(finished&&state.page==='grimoire'){const el=document.getElementById('kitchenAlerts');if(el)el.textContent='🔔 '+kitchenTimers.filter(t=>t.ringing).length+' cuisson(s) terminée(s)'}
+}
+setInterval(kitchenTick,800);
+function parseIngredients(raw){
+ if(Array.isArray(raw))return raw;
+ if(typeof raw==='string'){try{const a=JSON.parse(raw);return Array.isArray(a)?a:[]}catch(e){}}
+ return [];
+}
+function grimoireView(root){
+ const intro=panel(root,'🍲 Mon grimoire de recettes');
+ intro.append(el('p',{class:'jdr-hint'},'Recettes synchronisées avec L’Atelier Windows. Tu peux garder ta recette ouverte pendant plusieurs minuteurs nommés, même si la connexion se coupe.'));
+ const refresh=el('button',{class:'action'},'↻ Actualiser depuis Windows');refresh.onclick=syncPull;intro.append(refresh);
+ if(error)intro.append(el('p',{class:'jdr-hint'},'Connexion : '+error));
+ if(!pcUrl){const conf=el('button',{class:'action'},'Configurer mon PC');conf.onclick=()=>{state.page='settings';save();render()};intro.append(conf)}
+ const recipes=Array.isArray(pc.recipes)?pc.recipes:[];
+ const search=el('input',{type:'text',placeholder:'Rechercher une recette ou un ingrédient…'});search.value=recipeFilter;
+ const books=[...new Set(recipes.map(x=>x.book_name).filter(Boolean))].sort();
+ const book=el('select',{'aria-label':'Livre de recettes'});
+ book.append(el('option',{value:''},'Tous mes grimoires'));
+ for(const name of books)book.append(el('option',{value:name},name));
+ book.value=recipeBook;book.onchange=()=>{recipeBook=book.value;render()};intro.append(book,search);
+ const results=el('div');intro.append(results);
+ function draw(){
+  results.replaceChildren();
+  const q=recipeFilter.toLocaleLowerCase('fr-FR');
+  const matches=recipes.filter(x=>(!recipeBook||x.book_name===recipeBook)&&[x.title,x.recipe,x.notes,x.ingredients_json].some(t=>String(t||'').toLocaleLowerCase('fr-FR').includes(q))).slice(0,100);
+  if(!matches.length)results.append(el('p',{class:'jdr-hint'},'Aucune recette chargée pour cette recherche. Vérifie la synchronisation du PC.'));
+  matches.forEach(x=>{
+   const row=el('div',{class:'tool-card'}),open=el('button',{class:'action'},'📖 '+(x.title||'Recette'));
+   open.onclick=()=>{openedRecipeId=String(x.id);render();window.scrollTo(0,0)};
+   row.append(open);
+   if(x.book_name)row.append(el('p',{class:'jdr-hint'},x.book_name));
+   results.append(row);
+  })
+ }
+ search.oninput=()=>{recipeFilter=search.value;draw()};draw();
+ const active=recipes.find(x=>String(x.id)===openedRecipeId);
+ if(active){
+  const card=panel(root,'📖 '+(active.title||'Ma recette'));
+  const choose=el('button',{class:'action'},'← Autres recettes');choose.onclick=()=>{openedRecipeId=null;render()};card.append(choose);
+  if(active.book_name)card.append(el('p',{class:'jdr-hint'},'Livre : '+active.book_name));
+  if(active.base_servings)card.append(el('p',{class:'jdr-hint'},'Portions de base : '+active.base_servings));
+  const ingredients=parseIngredients(active.ingredients_json);
+  if(ingredients.length){
+   card.append(el('h2',{},'Ingrédients'));
+   ingredients.forEach(item=>{
+    const label=typeof item==='string'?item:[item.quantity,item.unit,item.name||item.ingredient||item.label].filter(x=>x!==undefined&&x!==null&&String(x).trim()).join(' ');
+    card.append(el('p',{},'• '+label));
+   })
+  }
+  if(active.recipe){card.append(el('h2',{},'Préparation'));const txt=el('p',{},String(active.recipe));txt.style.whiteSpace='pre-wrap';card.append(txt)}
+  if(active.notes){card.append(el('h2',{},'Notes'));const txt=el('p',{},String(active.notes));txt.style.whiteSpace='pre-wrap';card.append(txt)}
+ }
+ const timers=panel(root,'⏲ Mes minuteurs de cuisine');
+ timers.append(el('p',{class:'jdr-hint'},'Tu peux lancer « Œufs — 8 minutes » et « Four — 25 minutes » en même temps, tout en lisant la recette.'));
+ const label=el('input',{type:'text',placeholder:'Libellé : œufs, four, pâtes…','aria-label':'Nom du minuteur'});
+ const mins=el('input',{type:'number',min:'0',max:'1440',placeholder:'Minutes','aria-label':'Minutes'}),secs=el('input',{type:'number',min:'0',max:'59',placeholder:'Secondes','aria-label':'Secondes'});
+ mins.value='8';secs.value='0';mins.style.width='48%';secs.style.width='48%';
+ const row=el('div',{class:'arrows'});row.append(mins,secs);
+ const add=el('button',{class:'action'},'＋ Démarrer ce minuteur');
+ add.onclick=()=>{
+  const duration=(Number(mins.value)||0)*60000+(Number(secs.value)||0)*1000;
+  if(!Number.isFinite(duration)||duration<1000||duration>86400000){alert('Choisis une durée entre 1 seconde et 24 heures.');return}
+  if(kitchenTimers.length>=16){alert('Maximum 16 minuteurs. Supprime un minuteur terminé.');return}
+  kitchenChime(); // A user gesture unlocks Web Audio on Android.
+  const now=Date.now();
+  kitchenTimers.push({id:'cook-'+now+'-'+Math.random().toString(36).slice(2),label:label.value.trim().slice(0,80)||'Cuisson',end:now+duration,remaining:duration,running:true,ringing:false});
+  timerSave();render();
+ };
+ timers.append(label,row,add);
+ const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Son activé':'🔇 Son désactivé');
+ mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
+ const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
+ kitchenTimers.forEach(t=>{
+  const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
+  const countdown=el('p',{'data-kitchen-countdown':t.id},t.ringing?'🔔 Terminé !':clockTime(t.running?t.end-Date.now():t.remaining));countdown.style.fontSize='24px';row.append(countdown);
+  const toggle=el('button',{class:'action'},t.ringing?'Arrêter l’alerte':t.running?'Pause':'Reprendre');
+  toggle.onclick=()=>{if(t.ringing){t.ringing=false;t.remaining=0}else if(t.running){t.remaining=Math.max(0,t.end-Date.now());t.running=false}else{t.end=Date.now()+Math.max(1000,t.remaining);t.running=true}timerSave();render()};
+  const del=el('button',{class:'action'},'Supprimer');del.onclick=()=>{kitchenTimers=kitchenTimers.filter(x=>x.id!==t.id);timerSave();render()};
+  row.append(toggle,del);timers.append(row);
+ });
+ timers.append(el('p',{class:'jdr-hint'},'Important : laisse Goblin ouvert au premier plan pour entendre l’alerte. En arrière-plan ou écran verrouillé, Android peut suspendre le son et les scripts. Le temps restant est recalculé lorsque tu reviens.'));
+ kitchenTick();
+}
+
 const existingRenderGoblin=render;
 render=function(){
+ if(state.page==='grimoire'){
+  document.getElementById('title').textContent='Grimoire de recettes';
+  document.getElementById('subtitle').textContent='Mes recettes et minuteurs de cuisine.';
+  const root=document.getElementById('content');root.replaceChildren();grimoireView(root);updateNav();return;
+ }
  if(state.page==='jdr'){
   document.getElementById('title').textContent='Notes JDR #';
   document.getElementById('subtitle').textContent='Classer et retrouver mes idées, même sans PC.';
