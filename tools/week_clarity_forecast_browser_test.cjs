@@ -83,8 +83,14 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.ok(await forecastCell.count()>=1,'Future period shown in faint red');
   assert.match(await forecastCell.first().getAttribute('title'),/Règles possibles/);
   assert.equal(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,true);
-  await page.evaluate(()=>setCalendarMode('week'));
-  assert.ok(await page.locator('#weekGrid .week-head.cycle-forecast').count()>=1,'Future period visible in weekly header');
+  // A forecast three days ahead can be in the NEXT calendar week (e.g. Sat -> Tue).
+  // Display the week containing the predicted date; don't require it in today's week.
+  await page.evaluate(async iso=>{
+    state.cursor=parseYMD(iso);
+    await refresh();
+    setCalendarMode('week');
+  },forecast.next);
+  assert.ok(await page.locator('#weekGrid .week-head.cycle-forecast').count()>=1,'Future period visible in its actual weekly header');
   // Predicted start must be adjustable after a new observed interval is recorded.
   const newStart=ymd(add(today,-1));
   await api('/api/cycle-periods','POST',{start_date:newStart,end_date:null});
@@ -106,6 +112,11 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   await page.locator('#settingsBtn').click();
   await page.locator('#settingsCycleShowMarks').check();
   await page.evaluate(()=>showView('calendar'));
+  // Restore the current week after intentionally navigating to the predicted week.
+  await page.evaluate(async iso=>{
+    state.cursor=parseYMD(iso);
+    await refresh();
+  },todayStr);
   // A long appointment with overlap must remain legible and open on hover.
   await api('/api/events','POST',{title:'Consultation médicale importante avec préparation et documents',
     event_date:todayStr,start_time:'10:00',end_time:'12:30',color:'mauve',category:'medical',show_in_month:true});
