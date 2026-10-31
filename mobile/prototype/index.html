@@ -464,6 +464,26 @@ function grimoireView(root){
  kitchenTick();
 }
 
+
+function renderOrganizedSettings(){
+ const root=document.getElementById('content');
+ const list=Array.from(root.querySelectorAll(':scope > .panel'));
+ if(list.length<5)return;
+ const lookup=new Map(list.map(p=>[p.querySelector('h2')?.textContent,p]));
+ root.replaceChildren();
+ for(const [section,heading,title] of [
+  ['Connexion au PC','Synchronisation privée avec le PC','Relier mon ordinateur'],
+  ['Sauvegardes et données','Sauvegarder mes données du téléphone','Exporter mes données'],
+  ['Apparence','Apparence de mon Atelier','Thème'],
+  ['Accueil et navigation','Choisir mes sections','Organiser mon accueil'],
+  ['Mises à jour','Mises à jour de Goblin','Version et mises à jour']
+ ]){
+  const p=lookup.get(heading);if(!p)continue;
+  const group=el('section',{class:'settings-group'});
+  group.append(el('h2',{},section));p.querySelector('h2').textContent=title;
+  group.append(p);root.append(group);
+ }
+}
 const existingRenderGoblin=render;
 render=function(){
  if(state.page==='grimoire'){
@@ -477,6 +497,7 @@ render=function(){
   const root=document.getElementById('content');root.replaceChildren();jdrView(root);updateNav();return;
  }
  existingRenderGoblin();
+ if(state.page==='settings')renderOrganizedSettings();
 };
 function goHome(){
  document.getElementById('nav').hidden=true;
