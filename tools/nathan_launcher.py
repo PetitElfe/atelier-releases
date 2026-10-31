@@ -124,6 +124,82 @@ def _install(launch=True):
     _shortcut(exe)
     return False
 
+
+def _upgrade_existing():
+    """Opt-in migration for Nathan's existing installation; no user data is replaced."""
+    import sqlite3
+    from datetime import datetime
+    safe()
+    base,code,data,exe,profile=paths()
+    if not code.is_dir() or not exe.is_file() or not data.is_dir():
+        raise RuntimeError("Ancienne installation Nathan introuvable. N'utilise pas cette mise à jour.")
+    if _busy():
+        raise RuntimeError("Ferme d'abord L'Atelier de Nathan et ses Post-it avant la mise à jour.")
+    source=_bundled()
+    manifest=json.loads((source/"manifest.json").read_text(encoding="utf-8"))
+    files=manifest.get("files",[])
+    if not files or any(row.get("path") in ("public/jdr.html","public/jdr-mj.html") for row in files):
+        raise RuntimeError("Cette édition Nathan ne garantit pas l'exclusion du JDR.")
+    for row in files:
+        candidate=source/"app"/row["path"]
+        if not candidate.is_file() or hashlib.sha256(candidate.read_bytes()).hexdigest()!=row["sha256"]:
+            raise RuntimeError("Fichier du paquet non vérifié : "+str(row["path"]))
+    stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup=base/"backups"/("NATHAN_AVANT_MAJ_"+stamp)
+    if backup.exists():raise RuntimeError("Sauvegarde déjà présente.")
+    staged=base/"code.nathan-new"
+    previous=base/"code.nathan-previous"
+    new_exe=exe.with_suffix(".new")
+    old_exe=exe.with_suffix(".previous")
+    if any(p.exists() for p in (staged,previous,new_exe,old_exe)):
+        raise RuntimeError("Une ancienne tentative de mise à jour doit être examinée avant de continuer.")
+    with one_window(data):
+        backup.mkdir(parents=True)
+        shutil.copytree(code,backup/"code")
+        shutil.copy2(exe,backup/exe.name)
+        db=data/"atelier.db"
+        if db.is_file():
+            with sqlite3.connect(str(db)) as src,sqlite3.connect(str(backup/"atelier.db")) as dst:
+                src.backup(dst)
+        for item in data.iterdir():
+            if item.is_file() and not item.name.endswith((".db",".db-wal",".db-shm",".lock")):
+                shutil.copy2(item,backup/item.name)
+        shutil.copytree(source,staged)
+        # Refuse to touch the old installation if staging is incomplete.
+        if not (staged/"app"/"app.py").is_file() or not (staged/"manifest.json").is_file():
+            raise RuntimeError("Préparation Nathan incomplète, ancienne installation intacte.")
+        current=Path(sys.executable).resolve()
+        shutil.copy2(current,new_exe)
+        if not _same(current,new_exe):
+            new_exe.unlink(missing_ok=True)
+            raise RuntimeError("Copie du nouvel exécutable invalide.")
+        code_swapped=False
+        exe_swapped=False
+        try:
+            code.rename(previous)
+            code_swapped=True
+            staged.rename(code)
+            exe.rename(old_exe)
+            exe_swapped=True
+            new_exe.rename(exe)
+            revision=(code/"nathan-build-revision.txt").read_text(encoding="ascii").strip()
+            (data/"installed-revision.txt").write_text(revision,encoding="ascii")
+            _shortcut(exe)
+        except BaseException:
+            # Leave a complete backup and restore previous installation.
+            if exe_swapped:
+                if exe.exists():exe.unlink()
+                old_exe.rename(exe)
+            if code_swapped:
+                if code.exists():shutil.rmtree(code)
+                previous.rename(code)
+            if new_exe.exists():new_exe.unlink()
+            raise
+        shutil.rmtree(previous)
+        old_exe.unlink(missing_ok=True)
+    return backup
+
+
 def _run_python(path,argv):
     safe()
     base,code,data,exe,profile=paths()
@@ -214,6 +290,10 @@ def main():
         print("PASS: Nathan port, private profile, isolated data")
         return
     # A single frozen Python distribution services WebView, Post-it and updater.
+    if "--nathan-upgrade" in sys.argv:
+        saved=_upgrade_existing()
+        print("PASS: mise à jour Nathan en sécurité. Sauvegarde :", saved, flush=True)
+        return
     if "--nathan-install-only" in sys.argv:
         _install(launch=False)
         print("PASS: Nathan private app and shortcut installed without launching GUI")
