@@ -1,6 +1,10 @@
 package fr.atelierdugoblin.mobile;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -131,6 +135,53 @@ public final class UpdateBridge {
         } finally { c.disconnect(); }
     }
 
+
+    /** Opt-in Android notification permission; never disables Play Protect or bypasses installation consent. */
+    @JavascriptInterface public void enableUpdateNotifications() {
+        activity.runOnUiThread(() -> {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                activity.checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                activity.requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 7282);
+            } else {
+                event("notice","Les notifications de mise à jour sont autorisées.",null);
+            }
+        });
+    }
+
+    private void notifyAvailable(String version) {
+        if (version == null || version.isEmpty()) return;
+        if (Build.VERSION.SDK_INT >= 33 &&
+            activity.checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) return;
+        String previous = activity.getPreferences(Activity.MODE_PRIVATE).getString("last_notified_update", "");
+        if (version.equals(previous)) return;
+        activity.runOnUiThread(() -> {
+            try {
+                NotificationManager manager = (NotificationManager) activity.getSystemService(Activity.NOTIFICATION_SERVICE);
+                if (manager == null) return;
+                String channelId = "goblin_updates";
+                if (Build.VERSION.SDK_INT >= 26) {
+                    NotificationChannel channel = new NotificationChannel(channelId,
+                        "Mises à jour de Goblin", NotificationManager.IMPORTANCE_DEFAULT);
+                    channel.setDescription("Une notification quand une nouvelle version officielle est détectée");
+                    manager.createNotificationChannel(channel);
+                }
+                Intent launch = new Intent(activity, MainActivity.class);
+                launch.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                PendingIntent pending = PendingIntent.getActivity(activity, 0, launch,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ?
+                    new Notification.Builder(activity, channelId) : new Notification.Builder(activity);
+                Notification notice = builder.setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("Mise à jour Goblin disponible")
+                    .setContentText("Version " + version + " : ouvre Paramètres pour l'installer.")
+                    .setContentIntent(pending).setAutoCancel(true).build();
+                manager.notify(144, notice);
+                activity.getPreferences(Activity.MODE_PRIVATE).edit()
+                    .putString("last_notified_update", version).apply();
+            } catch (Exception ignored) { }
+        });
+    }
+
     @JavascriptInterface public void checkUpdates() {
         io.execute(() -> {
             try {
@@ -164,6 +215,7 @@ public final class UpdateBridge {
                 } else {
                     apkUrl=foundApk;shaUrl=foundSha;availableCode=best;availableVersion=foundVersion;
                     event("available","Nouvelle version Android " + foundVersion + " disponible.",foundVersion);
+                    notifyAvailable(foundVersion);
                 }
             } catch (Exception e) {
                 event("error","Vérification impossible : " + e.getMessage() + ". Ouvre les versions GitHub si nécessaire.",null);
