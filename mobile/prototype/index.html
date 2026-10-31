@@ -113,6 +113,7 @@ function updateUi(){
  const leaf=document.getElementById('goblinUpdateDot');
  if(leaf)leaf.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
  const badge=document.getElementById('headerUpdateBadge');if(badge)badge.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
+ const drawerBadge=document.getElementById('drawerUpdateBadge');if(drawerBadge)drawerBadge.hidden=badge?badge.hidden:true;
 }
 window.__atelierUpdateResponse=function(raw){
  try{
