@@ -104,12 +104,15 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.ok(!periods.some(p=>p.start_date===next));
   // Visibility preference independent of stored period data.
   await page.locator('#settingsBtn').click();
+  // The phone-style settings UI displays one card at a time.
+  await page.locator('.atelier-settings-nav button[data-target="settingsCycleCard"]').click();
   await page.locator('#settingsCycleShowMarks').uncheck();
   await page.evaluate(()=>showView('calendar'));
   assert.equal(await page.locator('#weekGrid .week-head.cycle-forecast').count(),0);
   assert.equal(await page.locator('#weekGrid .week-head.cycle-recorded').count(),0);
   assert.equal((await api('/api/cycle-periods')).length,4);
   await page.locator('#settingsBtn').click();
+  await page.locator('.atelier-settings-nav button[data-target="settingsCycleCard"]').click();
   await page.locator('#settingsCycleShowMarks').check();
   await page.evaluate(()=>showView('calendar'));
   // Restore the current week after intentionally navigating to the predicted week.
