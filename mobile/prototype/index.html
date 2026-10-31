@@ -435,48 +435,77 @@ function jdrView(root){
 /* Offline local timers, Windows-synced recipes. Each countdown has an absolute end time. */
 const kitchenTimerKey='goblin-mobile-kitchen-timers-v1';
 let kitchenTimers=[];try{const v=JSON.parse(localStorage.getItem(kitchenTimerKey)||'[]');if(Array.isArray(v))kitchenTimers=v.filter(t=>t&&Number.isFinite(t.end)&&typeof t.label==='string').slice(0,16)}catch(e){}
-let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenVoiceEnabled=true,kitchenAudio=null;
+let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenClipAudio=null;
 function timerSave(){localStorage.setItem(kitchenTimerKey,JSON.stringify(kitchenTimers))}
 function clockTime(ms){const n=Math.max(0,Math.ceil(ms/1000));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(v=>String(v).padStart(2,'0')).join(':')}
-function kitchenChime(){
- if(!kitchenSoundEnabled)return;
- try{
-  // Original electronic bell; not a recording of any copyrighted song.
-  const AC=window.AudioContext||window.webkitAudioContext;
-  if(!AC)return;
-  kitchenAudio=kitchenAudio||new AC();
-  if(kitchenAudio.state==='suspended')kitchenAudio.resume();
-  const at=kitchenAudio.currentTime;
-  for(const [i,hz] of [660,880,1046,1320].entries()){
-   const osc=kitchenAudio.createOscillator(),gain=kitchenAudio.createGain(),t=at+i*.17;
-   osc.type='sine';osc.frequency.setValueAtTime(hz,t);
-   gain.gain.setValueAtTime(.001,t);
-   gain.gain.exponentialRampToValueAtTime(.13,t+.025);
-   gain.gain.exponentialRampToValueAtTime(.001,t+.46);
-   osc.connect(gain);gain.connect(kitchenAudio.destination);
-   osc.start(t);osc.stop(t+.47);
-  }
- }catch(e){}
+
+/* The user selected the ACTUAL Freesound "Beast miam miam comedy sound",
+   not a synthesized bell and not a text-to-speech impersonation.
+   It must be imported once and stored as a Blob, never as 5MB+ localStorage.
+   The clip is CC0: freesound.org/people/Piement_infernal/sounds/772687/ */
+const MIAM_DB='goblin-kitchen-miam-audio-v1', MIAM_KEY='beast-miam-miam';
+function kitchenAudioDatabase(){
+ return new Promise((resolve,reject)=>{
+  if(!window.indexedDB){reject(new Error('Le stockage audio de ce téléphone est indisponible.'));return}
+  const request=indexedDB.open(MIAM_DB,1);
+  request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('sounds'))request.result.createObjectStore('sounds')};
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||new Error('Stockage audio inaccessible'));
+ });
 }
-function kitchenSpeakMiam(force=false){
- if(!force&&!kitchenVoiceEnabled)return false;
- if(window.AtelierMiam&&typeof window.AtelierMiam.speakMiam==='function'){
-  try{window.AtelierMiam.speakMiam();return true}catch(e){console.warn('[Goblin] Voix Android indisponible',e)}
- }
- if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
-  try{
-   const voice=new SpeechSynthesisUtterance('Miam miam !');
-   voice.lang='fr-FR';voice.rate=1.05;voice.volume=1;
-   window.speechSynthesis.speak(voice);return true;
-  }catch(e){console.warn('[Goblin] Synthèse vocale navigateur indisponible',e)}
- }
- return false;
+async function kitchenStoredMiam(){
+ const db=await kitchenAudioDatabase();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('sounds','readonly'),request=tx.objectStore('sounds').get(MIAM_KEY);
+  request.onsuccess=()=>resolve(request.result||null);
+  request.onerror=()=>reject(request.error||new Error('Lecture audio impossible'));
+  tx.oncomplete=()=>db.close();
+  tx.onabort=()=>{db.close();reject(tx.error||new Error('Lecture interrompue'))};
+ });
+}
+async function kitchenImportMiam(file){
+ if(!file)throw new Error('Choisis le fichier Beast Miam Miam.');
+ if(file.size>12*1024*1024)throw new Error('Fichier trop lourd (12 Mo maximum).');
+ if(!(/\.(wav|mp3|ogg|m4a)$/i.test(file.name)||String(file.type).startsWith('audio/')))throw new Error('Choisis un fichier audio WAV, MP3, OGG ou M4A.');
+ const db=await kitchenAudioDatabase();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('sounds','readwrite');
+  tx.objectStore('sounds').put({name:file.name,blob:file},MIAM_KEY);
+  tx.oncomplete=()=>{db.close();resolve(file.name)};
+  tx.onerror=()=>{db.close();reject(tx.error||new Error('Import audio impossible'))};
+  tx.onabort=()=>{db.close();reject(tx.error||new Error('Import audio interrompu'))};
+ });
+}
+function kitchenStopMiam(){
+ if(!kitchenClipAudio)return;
+ try{kitchenClipAudio.pause();kitchenClipAudio.currentTime=0;kitchenClipAudio.dispatchEvent(new Event('ended'))}catch(e){}
+ kitchenClipAudio=null;
+}
+async function kitchenPlayMiam(force=false){
+ if(!force&&!kitchenSoundEnabled)return false;
+ let clip;
+ try{clip=await kitchenStoredMiam()}catch(error){console.warn('[Goblin] Fichier Miam Miam non accessible',error);return false}
+ if(!clip||!clip.blob)return false;
+ kitchenStopMiam();
+ const url=URL.createObjectURL(clip.blob),audio=new Audio(url);
+ kitchenClipAudio=audio;audio.volume=1;audio.preload='auto';
+ let cleaned=false;
+ const cleanup=()=>{
+  if(cleaned)return;
+  cleaned=true;
+  URL.revokeObjectURL(url);
+  if(kitchenClipAudio===audio)kitchenClipAudio=null;
+ };
+ audio.addEventListener('ended',cleanup,{once:true});
+ audio.addEventListener('error',cleanup,{once:true});
+ try{await audio.play();return true}
+ catch(error){console.warn('[Goblin] Lecture Beast Miam Miam refusée',error);cleanup();return false}
 }
 function kitchenTick(){
  let finished=false;
  for(const t of kitchenTimers){if(t.running&&Date.now()>=t.end){t.running=false;t.ringing=true;t.remaining=0;finished=true}}
  if(finished){
-  timerSave();kitchenChime();kitchenSpeakMiam();
+  timerSave();kitchenPlayMiam();
   if(navigator.vibrate)navigator.vibrate([160,100,160]);
  }
  document.querySelectorAll('[data-kitchen-countdown]').forEach(node=>{
@@ -552,28 +581,44 @@ function grimoireView(root){
   const duration=(Number(mins.value)||0)*60000+(Number(secs.value)||0)*1000;
   if(!Number.isFinite(duration)||duration<1000||duration>86400000){alert('Choisis une durée entre 1 seconde et 24 heures.');return}
   if(kitchenTimers.length>=16){alert('Maximum 16 minuteurs. Supprime un minuteur terminé.');return}
-  // Unlock sound without playing the end-of-timer chime at startup.
-  try{const AC=window.AudioContext||window.webkitAudioContext;if(AC){kitchenAudio=kitchenAudio||new AC();if(kitchenAudio.state==='suspended')kitchenAudio.resume()}}catch(e){}
   const now=Date.now();
   kitchenTimers.push({id:'cook-'+now+'-'+Math.random().toString(36).slice(2),label:label.value.trim().slice(0,80)||'Cuisson',end:now+duration,remaining:duration,running:true,ringing:false});
   timerSave();render();
   if(openedRecipeId)document.getElementById('kitchenRecipe')?.scrollIntoView({block:'start'});
  };
  timers.append(label,presets,row,add);
- const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Son activé':'🔇 Son désactivé');
- mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
- const voice=el('button',{class:'action'},kitchenVoiceEnabled?'🗣 Mia miam activé':'🗣 Mia miam désactivé');voice.onclick=()=>{kitchenVoiceEnabled=!kitchenVoiceEnabled;render()};timers.append(voice);
- const testMiam=el('button',{class:'action',type:'button'},'▶ Tester « Miam miam »');
- const testMiamStatus=el('p',{class:'jdr-hint',role:'status','aria-live':'polite'},'');
- testMiam.onclick=()=>{
-  kitchenChime();
-  const requested=kitchenSpeakMiam(true);
-  testMiamStatus.textContent=requested?
-   'Test lancé : écoute le volume multimédia. Si la voix reste muette, vérifie le moteur vocal Android dans les Paramètres du téléphone.':
-   'Aucune voix disponible ; le carillon reste utilisable.';
+
+ const audioInfo=el('p',{class:'jdr-hint',role:'status','aria-live':'polite'},'Vérification du son Beast Miam Miam…');
+ timers.append(audioInfo);
+ kitchenStoredMiam().then(clip=>{
+  if(!audioInfo.isConnected)return;
+  audioInfo.textContent=clip?.blob?'Son enregistré sur ce téléphone : '+(clip.name||'Beast Miam Miam')+'.':
+   'Le vrai son Beast Miam Miam n’est pas encore importé : le minuteur ne jouera pas un autre son à sa place.';
+ }).catch(()=>{if(audioInfo.isConnected)audioInfo.textContent='Stockage audio indisponible : vérifie les autorisations de Goblin.'});
+ const source=el('a',{href:'https://freesound.org/people/Piement_infernal/sounds/772687/',target:'_blank',rel:'noopener noreferrer'},'Écouter / récupérer le vrai son Beast Miam Miam (CC0)');
+ timers.append(source);
+ const importer=el('input',{type:'file',accept:'audio/*,.wav,.mp3,.ogg,.m4a','aria-label':'Importer le son Beast Miam Miam'});
+ importer.onchange=async()=>{
+  const file=importer.files?.[0];if(!file)return;
+  try{
+   await kitchenImportMiam(file);
+   audioInfo.textContent='Vrai son enregistré : '+file.name+'. Il sera conservé après les mises à jour.';
+  }catch(e){audioInfo.textContent='Import impossible : '+e.message}
+  importer.value='';
  };
- timers.append(testMiam,testMiamStatus);
- timers.append(el('p',{class:'jdr-hint'},'Le son de fin de cuisson fonctionne lorsque Goblin reste ouverte. Les alertes natives écran verrouillé sont encore en développement.'));
+ timers.append(importer);
+ const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Beast Miam Miam activé':'🔇 Son désactivé');
+ mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;if(!kitchenSoundEnabled)kitchenStopMiam();render()};
+ timers.append(mute);
+ const testMiam=el('button',{class:'action',type:'button'},'▶ Écouter le vrai Miam Miam');
+ testMiam.onclick=async()=>{
+  audioInfo.textContent='Lecture du son enregistré…';
+  const played=await kitchenPlayMiam(true);
+  if(audioInfo.isConnected)audioInfo.textContent=played?'Lecture lancée : Beast Miam Miam.':
+   'Impossible de lire le vrai son : importe d’abord le fichier WAV/MP3, puis vérifie le volume multimédia.';
+ };
+ timers.append(testMiam);
+ timers.append(el('p',{class:'jdr-hint'},'Le fichier audio reste privé sur ce téléphone. Le son est joué dans Goblin quand le minuteur termine ; les alertes natives écran verrouillé sont encore à développer.'));
  const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
  kitchenTimers.forEach(t=>{
   const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
