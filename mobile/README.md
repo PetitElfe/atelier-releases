@@ -29,3 +29,19 @@ Le workflow **Android mobile signed release** (manuel, depuis `main`) compile av
 5. Seulement après validation, publier une version signée et l’installer **en mise à jour**, jamais en supprimant l’application actuelle.
 
 Les changements sur cette branche ne déploient rien dans les installations Windows stable ou Nathan. Ne pas utiliser `tailscale funnel` ni rendre le serveur personnel accessible publiquement.
+
+
+## Développement 0.1.3 — mobile Goblin, grimoire et #notes
+
+La version 0.1.2 TEST signée a été installée par l’utilisatrice avec ses anciennes données présentes. Toute nouvelle APK doit avoir un versionCode strictement supérieur (0.1.3 = 103), conserver l’applicationId et être signée avec le certificat permanent. **Ne jamais désinstaller la version Android en place.**
+
+- Nom de lanceur Android : **Goblin** ; le titre interne « L’Atelier du Goblin » est cliquable pour rentrer au journal.
+- Bouton retour natif : ferme d’abord le menu, annule une édition JDR, ou retourne au journal ; sur l’accueil il minimise l’appli. L’origine WebView et la clé historique sont préservées.
+- Navigation système Android : trois boutons masqués par défaut ; un geste peut les révéler temporairement. La barre de statut supérieure reste visible.
+- Notes JDR : saisie **locale hors connexion**, recherche, tags libres sous forme #mot, édition, suppression confirmée, copie texte. Si PC connecté, lecture des notes mobiles du PC, possibilité d’envoyer volontairement une copie locale. **Ne prétend pas reproduire la bibliothèque PC complète** : les tags mobiles restent une couche locale simple, les notes envoyées passent via l’API mobile PC dédiée. Éviter les conflits d’écriture.
+- Grimoire de recettes : lecture de la route Windows /api/recipes ; filtre par livre (book_name), recherche titre/ingrédients, ingrédients_json, recettes et notes, accès depuis menu, outils étoile et onglet Recettes du PC.
+- Minuteurs cuisine : jusqu’à 16 timers locaux, nom libre, heures de fin sauvegardées et recalculées, pause/reprise/arrêt, préréglages 3/5/8/10/15/20 min, saut vers le minuteur depuis une recette, puis retour à la recette après démarrage. Carillon original et annonce vocale facultative « Beast mia miam ! ». **L’alerte sonore est prévue au premier plan ; Android peut suspendre WebView en arrière-plan ou écran verrouillé, ce n’est pas une alarme système garantie.** Pas de son copyrighté intégré.
+- Synchronisation Windows : pont HTTPS Tailscale avec requêtes parallèles ; une route indisponible ne doit plus bloquer le chargement des autres rubriques. Les anciennes données du journal ne sont ni effacées ni importées de force.
+- Export JSON mobile : inclut maintenant les notes JDR et minuteurs, en plus du journal historique et des préférences.
+
+Tests obligatoires pour livrer 0.1.3 : workflow Android debug vert ; workflow signed 0.1.3 vert avec contrôle du certificat publié 0.1.1 et test d’installation réelle **0.1.2 signée → 0.1.3 signée** sur émulateur. Le parcours réel, les notes et recettes via Tailscale, le bouton retour et le mode immersif doivent ensuite être vérifiés sur l’appareil physique. Ne pas publier avant ces vérifications.
