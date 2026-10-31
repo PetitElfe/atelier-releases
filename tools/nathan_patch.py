@@ -63,9 +63,9 @@ def remove_jdr_navigation(source):
 
 def disable_jdr_server(source):
     """Prevent both static JDR pages and game-session API access in Nathan."""
-    get = "def do_GET(self):\\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)"
-    post = "def do_POST(self):\\n        u = urlparse(self.path); p = u.path"
-    block = ("\\n        if p in ('/jdr.html','/jdr-mj.html') or p.startswith('/api/jdr/'):\\n"
+    get = "def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)"
+    post = "def do_POST(self):\n        u = urlparse(self.path); p = u.path"
+    block = ("\n        if p in ('/jdr.html','/jdr-mj.html') or p.startswith('/api/jdr/'):\n"
              "            return self._json({'error':'Module JDR non inclus dans l’édition Nathan'},404)")
     src = replace_one(source, get, get + block)
     src = replace_one(src, post, post + block)
