@@ -57,7 +57,7 @@ jobs:
           assert(html.includes('window.AtelierTailnet.request'),'Tailscale bridge absent');
           const gradle=fs.readFileSync('mobile/android/app/build.gradle','utf8');
           assert(gradle.includes("applicationId 'fr.atelierdugoblin.mobile'"),'Package identifier changed');
-          assert(gradle.includes(' : [0,1,4]'),'Test version code unexpectedly changed');
+          assert(gradle.includes(' : [0,1,5]'),'Test version code unexpectedly changed');
           const main=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/MainActivity.java','utf8');
           assert(main.includes('Intent.ACTION_CREATE_DOCUMENT'),'Android backup export missing');
           const updater=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/UpdateBridge.java','utf8');
