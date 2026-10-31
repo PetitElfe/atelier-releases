@@ -43,7 +43,7 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 .jdr-hint{font-size:13px;line-height:1.5;color:var(--muted-ink)}
 @media(min-width:680px){.paper{max-width:640px;margin:auto}.mobile-tabs{justify-content:center;gap:50px}}
 </style></head><body>
-<header><button id="menu" aria-label="Ouvrir le menu">☰</button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><span aria-hidden="true">🌿</span></header>
+<header><button id="menu" aria-label="Ouvrir le menu">☰<span id="goblinUpdateDot" hidden aria-label="Mise à jour disponible" style="color:#e5d48f;font-size:14px"> ●</span></button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><span aria-hidden="true">🌿</span></header>
 <nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="jdr"># Mes notes classées</button><button data-page="grimoire">🍲 Grimoire de recettes</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
@@ -68,7 +68,7 @@ if(page==='journal'){state.sections.filter(k=>state.visible[k]).forEach(k=>secti
 else if(page==='tasks'||page==='shopping')section(root,page);
 else if(page==='calendar'){const p=panel(root,'Mes rendez-vous');const date=el('input',{type:'date','aria-label':'Date du rendez-vous'});const title=el('input',{type:'text',placeholder:'Nom du rendez-vous'});const btn=el('button',{class:'action'},'Ajouter au calendrier');btn.onclick=()=>{if(date.value&&title.value.trim()){state.events.push({date:date.value,text:title.value.trim(),id:crypto.randomUUID()});save();render()}};p.append(date,title,btn);[...state.events].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{const row=el('div',{class:'item'});row.append(el('span',{},e.date+' — '+e.text));const del=el('button',{'aria-label':'Supprimer le rendez-vous'},'✕');del.onclick=()=>{state.events=state.events.filter(x=>x.id!==e.id);save();render()};row.append(del);p.append(row)})}
 else if(page==='capture'){const p=panel(root,'Classer une nouvelle note');const kind=el('select',{'aria-label':'Destination'});for(const [value,name] of [['notes','Mes pensées'],['tasks','Mes tâches'],['shopping','Mes courses'],['habits','Mes habitudes']]){const o=el('option',{value},name);kind.append(o)}const ta=el('textarea',{placeholder:'Écris ici ce que tu veux garder…'});const btn=el('button',{class:'action'},'Enregistrer au bon endroit');btn.onclick=()=>{const text=ta.value.trim();if(!text)return;if(kind.value==='notes')state.notes.unshift(text);else state[kind.value].push({text,done:false});state.page=kind.value==='habits'||kind.value==='notes'?'journal':kind.value;save();render()};p.append(kind,ta,btn)}
-else if(page==='settings'){const update=panel(root,'Mises à jour');update.append(el('p',{class:'muted'},'Les mises à jour sont disponibles dans ton dépôt GitHub privé. Ouvre la page avec ton compte GitHub, télécharge le nouvel APK et confirme son installation Android. Tes données locales restent en place lors d’une mise à jour signée avec la même clé.'));const check=el('button',{class:'action'},'Ouvrir les mises à jour');check.onclick=()=>{if(window.AtelierUpdates)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(check);const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
+else if(page==='settings'){const update=panel(root,'Mises à jour de Goblin');update.append(el('p',{class:'muted'},'Vérifie les versions Android officielles. Goblin télécharge uniquement une APK publiée et signée avec le même certificat que ton application. Android te demande toujours ton accord pour installer.'));const ver=el('p',{class:'muted',id:'goblinInstalledVersion'},'Version installée : vérification…');update.append(ver);const status=el('p',{class:'muted',id:'goblinUpdateStatus'},'Appuie sur Vérifier les mises à jour.');update.append(status);const check=el('button',{class:'action'},'↻ Vérifier les mises à jour');check.onclick=()=>{if(window.AtelierUpdates?.checkUpdates){status.textContent='Vérification de GitHub…';window.AtelierUpdates.checkUpdates()}else status.textContent='Cette version ne dispose pas encore du système natif de mise à jour.'};update.append(check);const install=el('button',{class:'action',id:'goblinInstallUpdate'},'⬇ Télécharger et installer');install.hidden=true;install.onclick=()=>{if(!confirm('Télécharger la version officielle de Goblin puis confirmer sa mise à jour dans Android ? Ne désinstalle jamais Goblin.'))return;if(window.AtelierUpdates?.installAvailable)window.AtelierUpdates.installAvailable()};update.append(install);const releases=el('button',{class:'action'},'Voir les versions publiées');releases.onclick=()=>{if(window.AtelierUpdates?.openReleases)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(releases);updateUi();const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
 function section(root,k){const p=panel(root,names[k]);if(k==='notes'){const ta=el('textarea',{placeholder:'Une pensée à garder…'});const btn=el('button',{class:'action'},'Conserver ma note');btn.onclick=()=>{if(ta.value.trim()){state.notes.unshift(ta.value.trim());save();render()}};p.append(ta,btn);state.notes.slice(0,5).forEach(n=>p.append(el('p',{},n)))}
 else list(p,k)}
 // Swipe between pages without interfering with vertical scrolling.
@@ -80,6 +80,34 @@ main.addEventListener('touchend',e=>{if(!startX||!e.changedTouches.length)return
 document.getElementById('menu').onclick=()=>document.getElementById('nav').hidden=false;
 document.getElementById('close').onclick=()=>document.getElementById('nav').hidden=true;
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.dataset.page;save();document.getElementById('nav').hidden=true;render()});
+
+
+/* Public GitHub Releases updater: trusted native download, signature check, Android consent. */
+let goblinUpdate={type:'idle',message:'',version:''};
+function updateUi(){
+ let version='Version installée : inconnue';
+ try{const native=JSON.parse(window.AtelierUpdates?.currentVersion?.()||'{}');if(native.version)version='Version installée : '+native.version}catch(e){}
+ const v=document.getElementById('goblinInstalledVersion');if(v)v.textContent=version;
+ const status=document.getElementById('goblinUpdateStatus');
+ if(status)status.textContent=goblinUpdate.message||'Appuie sur Vérifier les mises à jour.';
+ const install=document.getElementById('goblinInstallUpdate');
+ if(install)install.hidden=goblinUpdate.type!=='available'&&goblinUpdate.type!=='permission';
+ const leaf=document.getElementById('goblinUpdateDot');
+ if(leaf)leaf.hidden=goblinUpdate.type!=='available';
+}
+window.__atelierUpdateResponse=function(raw){
+ try{
+  const data=JSON.parse(raw);goblinUpdate={type:data.type||'error',message:data.message||'',version:data.version||''};
+  updateUi();
+ }catch(e){}
+};
+function autoCheckGoblin(){
+ if(!window.AtelierUpdates?.checkUpdates)return;
+ const stamp=Number(localStorage.getItem('goblin-update-last-check-v1')||0);
+ if(Date.now()-stamp<24*60*60*1000)return;
+ localStorage.setItem('goblin-update-last-check-v1',String(Date.now()));
+ window.AtelierUpdates.checkUpdates();
+}
 
 const computerKey='atelier-private-pc-url-v1';
 let pcUrl=localStorage.getItem(computerKey)||'';
@@ -462,5 +490,6 @@ window.__atelierHandleAndroidBack=function(){
 
 render();
 if(pcUrl)syncPull();
+setTimeout(autoCheckGoblin,1800);
 
 </script></body></html>
