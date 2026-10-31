@@ -77,7 +77,7 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
-          "$AAPT" dump badging "$APK" | grep -q "versionCode='104'"
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='105'"
           unzip -p "$APK" assets/index.html | grep -q 'data-mobile-go="jdr"'
       - name: Build baseline Android debug APK for non-destructive upgrade test
         run: |
