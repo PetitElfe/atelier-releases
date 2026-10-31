@@ -147,8 +147,10 @@ jobs:
             }
             if(-not $ready){throw 'Updated Nathan server did not start'}
             foreach($route in @('jdr.html','jdr-mj.html','api/jdr/state')){
-              try {$r=Invoke-WebRequest -Uri ("http://127.0.0.1:8877/"+$route) -UseBasicParsing -TimeoutSec 4; throw "JDR route exposed: $route"}
-              catch [System.Net.WebException] { if([int]$_.Exception.Response.StatusCode -ne 404){throw "Unexpected JDR route result: $route"} }
+              $status=0
+              try {$r=Invoke-WebRequest -Uri ("http://127.0.0.1:8877/"+$route) -UseBasicParsing -TimeoutSec 4; $status=[int]$r.StatusCode}
+              catch {if($_.Exception.Response){$status=[int]$_.Exception.Response.StatusCode}else{throw}}
+              if($status -ne 404){throw "JDR route exposed or unavailable: $route ($status)"}
             }
             Write-Host 'PASS: Nathan upgrade, data isolation, JDR 404 on live Windows server'
           } finally {if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}}
