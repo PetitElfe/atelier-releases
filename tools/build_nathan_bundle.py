@@ -37,6 +37,9 @@ def main():
         raise RuntimeError("Dedicated JDR pages included in Nathan bundle")
     html=(OUTPUT/"app"/"public"/"index.html").read_text(encoding="utf-8")
     server=(OUTPUT/"app"/"app_part2.py").read_text(encoding="utf-8")
+    companion=(OUTPUT/"app"/"public"/"mobile.html").read_text(encoding="utf-8")
+    if "JDR" in companion.upper():
+        raise RuntimeError("Nathan mobile companion still contains a JDR preset")
     if "openJdrWorkspace" in html or "Module JDR non inclus" not in server:
         raise RuntimeError("Nathan JDR exclusion was not applied")
     # Use the upstream GitHub branch HEAD, not any merge-commit checkout SHA.
