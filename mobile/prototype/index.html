@@ -98,13 +98,16 @@ function updateUi(){
 window.__atelierUpdateResponse=function(raw){
  try{
   const data=JSON.parse(raw);goblinUpdate={type:data.type||'error',message:data.message||'',version:data.version||''};
+  if(goblinUpdate.type==='available')localStorage.setItem('goblin-update-available-v1',goblinUpdate.version);
+  if(goblinUpdate.type==='current')localStorage.removeItem('goblin-update-available-v1');
   updateUi();
  }catch(e){}
 };
 function autoCheckGoblin(){
  if(!window.AtelierUpdates?.checkUpdates)return;
  const stamp=Number(localStorage.getItem('goblin-update-last-check-v1')||0);
- if(Date.now()-stamp<24*60*60*1000)return;
+ // If a newer version was previously found, refresh its signed asset references at each launch.
+ if(!localStorage.getItem('goblin-update-available-v1')&&Date.now()-stamp<24*60*60*1000)return;
  localStorage.setItem('goblin-update-last-check-v1',String(Date.now()));
  window.AtelierUpdates.checkUpdates();
 }
