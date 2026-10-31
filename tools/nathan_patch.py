@@ -61,6 +61,17 @@ def remove_jdr_navigation(source):
     return src.replace('Anglais, Art, JDR, LoL…', 'Anglais, Art, Lecture, LoL…')
 
 
+def remove_jdr_mobile(source):
+    """Keep the mobile notes companion but not RPG-specific presets."""
+    src = source.replace('Pour le JDR, les idées quotidiennes ou ton journal.',
+                         'Pour les idées quotidiennes, le journal et les projets.')
+    src = src.replace('<option>JDR</option>', '')
+    src = src.replace("||'JDR'", "||'Général'")
+    if 'JDR' in src or 'jdr' in src.lower():
+        raise RuntimeError('Une référence JDR mobile reste dans Nathan.')
+    return src
+
+
 def disable_jdr_server(source):
     """Prevent both static JDR pages and game-session API access in Nathan."""
     get = "def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)"
@@ -78,6 +89,7 @@ def patch_stage(stage):
     manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
     transformations={'updater.py':customize_updater,'desktop_postits.py':customize_postits,
                      'public/index.html':remove_jdr_navigation,
+                     'public/mobile.html':remove_jdr_mobile,
                      'app_part2.py':disable_jdr_server}
     for name, transform in transformations.items():
         path=stage/'app'/name
