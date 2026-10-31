@@ -216,9 +216,9 @@ function toolsView(root){
 window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
 function backupSettings(root){
  const p=panel(root,'Sauvegarder mes données du téléphone');
- p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
+ p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées, tes notes JDR et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
  const button=el('button',{class:'action'},'💾 Exporter mes données Android');
- button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v1',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark'};const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
+ button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||''};const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
  p.append(button);
 }
 function themeSettings(root){
@@ -404,7 +404,8 @@ function grimoireView(root){
   const duration=(Number(mins.value)||0)*60000+(Number(secs.value)||0)*1000;
   if(!Number.isFinite(duration)||duration<1000||duration>86400000){alert('Choisis une durée entre 1 seconde et 24 heures.');return}
   if(kitchenTimers.length>=16){alert('Maximum 16 minuteurs. Supprime un minuteur terminé.');return}
-  kitchenChime(); // A user gesture unlocks Web Audio on Android.
+  // Unlock sound without playing the end-of-timer chime at startup.
+  try{const AC=window.AudioContext||window.webkitAudioContext;if(AC){kitchenAudio=kitchenAudio||new AC();if(kitchenAudio.state==='suspended')kitchenAudio.resume()}}catch(e){}
   const now=Date.now();
   kitchenTimers.push({id:'cook-'+now+'-'+Math.random().toString(36).slice(2),label:label.value.trim().slice(0,80)||'Cuisson',end:now+duration,remaining:duration,running:true,ringing:false});
   timerSave();render();
