@@ -458,10 +458,27 @@ function kitchenChime(){
   }
  }catch(e){}
 }
+function kitchenSpeakMiam(force=false){
+ if(!force&&!kitchenVoiceEnabled)return false;
+ if(window.AtelierMiam&&typeof window.AtelierMiam.speakMiam==='function'){
+  try{window.AtelierMiam.speakMiam();return true}catch(e){console.warn('[Goblin] Voix Android indisponible',e)}
+ }
+ if(window.speechSynthesis&&window.SpeechSynthesisUtterance){
+  try{
+   const voice=new SpeechSynthesisUtterance('Miam miam !');
+   voice.lang='fr-FR';voice.rate=1.05;voice.volume=1;
+   window.speechSynthesis.speak(voice);return true;
+  }catch(e){console.warn('[Goblin] Synthèse vocale navigateur indisponible',e)}
+ }
+ return false;
+}
 function kitchenTick(){
  let finished=false;
  for(const t of kitchenTimers){if(t.running&&Date.now()>=t.end){t.running=false;t.ringing=true;t.remaining=0;finished=true}}
- if(finished){timerSave();kitchenChime();if(kitchenVoiceEnabled&&window.speechSynthesis&&window.SpeechSynthesisUtterance){try{const voice=new SpeechSynthesisUtterance('Beast mia miam !');voice.lang='fr-FR';voice.rate=1.05;window.speechSynthesis.speak(voice)}catch(e){}}if(navigator.vibrate)navigator.vibrate([160,100,160])}
+ if(finished){
+  timerSave();kitchenChime();kitchenSpeakMiam();
+  if(navigator.vibrate)navigator.vibrate([160,100,160]);
+ }
  document.querySelectorAll('[data-kitchen-countdown]').forEach(node=>{
   const t=kitchenTimers.find(x=>x.id===node.dataset.kitchenCountdown);
   if(t)node.textContent=t.ringing?'🔔 Terminé !':clockTime(t.running?t.end-Date.now():t.remaining)
@@ -546,6 +563,14 @@ function grimoireView(root){
  const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Son activé':'🔇 Son désactivé');
  mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
  const voice=el('button',{class:'action'},kitchenVoiceEnabled?'🗣 Mia miam activé':'🗣 Mia miam désactivé');voice.onclick=()=>{kitchenVoiceEnabled=!kitchenVoiceEnabled;render()};timers.append(voice);
+ const testMiam=el('button',{class:'action',type:'button'},'▶ Tester « Miam miam »');
+ testMiam.onclick=()=>{
+  kitchenChime();
+  const requested=kitchenSpeakMiam(true);
+  alert(requested?'Test vocal envoyé. Si tu n’entends rien, vérifie le volume multimédia et la voix de synthèse vocale Android.':'Aucune voix de synthèse disponible sur cet appareil. Le carillon peut encore fonctionner.');
+ };
+ timers.append(testMiam);
+ timers.append(el('p',{class:'jdr-hint'},'Le son de fin de cuisson fonctionne lorsque Goblin reste ouverte. Les alertes natives écran verrouillé sont encore en développement.'));
  const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
  kitchenTimers.forEach(t=>{
   const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
