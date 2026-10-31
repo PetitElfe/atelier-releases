@@ -30,7 +30,77 @@ async function api(path,method='GET',body){
   const pageErrors=[];
   page.on('pageerror',e=>{pageErrors.push(e.message);console.error('PAGE ERROR:',e.message)});
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+
+  // ALPHA 0.18 — Paramètres : proposition TEST sur révision immuable.
+  // Aucun téléchargement réel dans le test navigateur; le scénario Windows
+  // vérifie séparément l'installation, la sauvegarde et le redémarrage.
+  await page.route('**/api/update/check',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({version:'0.18.0',installed_version:'0.18.0',
+      available:true,channel:'TEST',revision:'a'.repeat(40),installed_build:'b23f591a'})
+  }));
+  await page.evaluate(()=>showView('settings'));
+  await page.locator('#settingsCheckUpdates').click();
+  await page.waitForFunction(()=>document.querySelector('#settingsUpdateMessage')?.textContent.includes('Nouvelle révision 0.18.0 disponible'));
+  assert.equal(await page.locator('#settingsInstalledVersion').innerText(),'0.18.0 · TEST · build b23f591a');
+  assert.ok(await page.locator('#settingsInstallUpdate').isVisible(),'Le bouton Installer doit apparaître quand une révision TEST est disponible');
+  assert.ok(await page.locator('#settingsInstallUpdate').isEnabled(),'Le bouton Installer doit être utilisable');
+  assert.ok(await page.locator('#settingsUpdateDot').isVisible(),
+    'La roue Paramètres doit afficher un témoin visuel si une mise à jour est disponible');
+  assert.ok(await page.locator('#settingsUpdateAvailable').isVisible(),
+    'Les Paramètres doivent indiquer clairement la mise à jour disponible');
+  assert.match(await page.locator('#settingsBtn').getAttribute('aria-label'),/mise à jour disponible/,
+    'Le témoin doit également être compréhensible au lecteur d’écran');
+  // Vérification automatique sans installer : une autre session pourrait découvrir
+  // une révision, et le statut doit être synchronisé avec la vérification manuelle.
+  await page.evaluate(async()=>{atelierUpdateLastCheck=0;await atelierCheckForUpdates({automatic:true})});
+  assert.ok(await page.locator('#settingsUpdateDot').isVisible());
+  await page.unroute('**/api/update/check');
+  await page.route('**/api/update/check',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({version:'0.18.0',installed_version:'0.18.0',
+      available:false,channel:'TEST',revision:'b'.repeat(40),installed_build:'b23f591a'})
+  }));
+  await page.locator('#settingsCheckUpdates').click();
+  await page.waitForFunction(()=>document.querySelector('#settingsUpdateDot')?.classList.contains('hidden')&&
+    document.querySelector('#settingsUpdateMessage')?.textContent?.includes('à jour'),null,{timeout:8000});
+  assert.equal(await page.locator('#settingsUpdateDot').isVisible(),false,
+    'Le témoin disparaît quand aucune révision nouvelle n’existe');
+  assert.equal(await page.locator('#settingsUpdateAvailable').isVisible(),false);
+  assert.equal(await page.locator('#settingsInstallUpdate').isVisible(),false,
+    'Aucun bouton Installer sur une révision identique');
+
+  await page.evaluate(()=>localStorage.setItem('atelierUpdateSmoke','test'));
+  const browserBackup=page.waitForEvent('download');
+  await page.locator('#settingsExportBrowserData').click();
+  assert.match((await browserBackup).suggestedFilename(),/^atelier-reglages-navigateur-.*\.json$/);
+  await page.unroute('**/api/update/check');
+  await page.evaluate(()=>showView('home'));
+
+  // Les Post-it sont UNIQUEMENT des fenêtres natives Windows, jamais des cartes dans L'Atelier.
+  assert.equal(await page.locator('#homePostitBoard').count(),0,
+    'Aucun encadré Post-it ne doit être présent dans l’Accueil');
+  assert.equal(await page.locator('#homeNewPostit').count(),0,
+    'Ne plus proposer de Post-it intégré à l’Accueil');
+  assert.equal(await page.locator('.home-postit').count(),0);
+  await page.evaluate(()=>showView('settings'));
+  assert.equal(await page.locator('#settingsNewDesktopPostit').count(),1,
+    'La création des notes est accessible dans les paramètres Windows');
+  const postitStatus=await api('/api/desktop-postits/status');
+  assert.equal(postitStatus.available,false,'Compagnon Windows indisponible sur le runner Linux');
+  await page.evaluate(()=>showView('home'));
+  // Les données SQLite existantes ne sont PAS effacées lors du retrait de la carte web.
+  const created=await api('/api/postits','POST',{title:'Note conservée',
+    body:'Contenu personnel inchangé',color:'sage',shape:'rounded'});
+  const saved=(await api('/api/postits')).find(note=>note.id===created.id);
+  assert.ok(saved&&saved.body==='Contenu personnel inchangé',
+    'Conserver le stockage des Post-it sans les afficher dans la fenêtre principale');
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('#homePostitBoard').count(),0);
+  assert.equal((await api('/api/postits')).find(note=>note.id===created.id)?.title,
+    'Note conservée','Les notes persistantes restent disponibles dans SQLite');
+
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -55,7 +125,7 @@ async function api(path,method='GET',body){
   await page.locator('#libraryReaderBack').click();
   await page.locator('#libraryPageBody').waitFor();
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   const restored=await page.locator('#libraryPageBody').innerText();
@@ -65,13 +135,13 @@ async function api(path,method='GET',body){
   // Tester aussi la navigation avant la fin des 650 ms d'autosauvegarde.
   await page.locator('#libraryPageBody').fill('Brouillon 0124 navigation rapide');
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('#libraryPageBody').waitFor();
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   await page.waitForTimeout(1500);
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
    await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -90,7 +160,7 @@ async function api(path,method='GET',body){
   // recharger pour rafraîchir les domaines, sans perdre le brouillon local.
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Santé mentale E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Traitement et ressentis E2E'}).click();
@@ -103,7 +173,7 @@ async function api(path,method='GET',body){
   // Le sélecteur de domaines est masqué lorsqu'un carnet est ouvert.
   // Recharger la page pour retrouver la vue des domaines avant de rouvrir Test E2E.
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Test E2E'}).click();
   await page.locator('#libraryDomainQuickContext .library-head-book').filter({hasText:'Carnet E2E'}).click();
@@ -112,9 +182,10 @@ async function api(path,method='GET',body){
   const beforeA4=await api('/api/objective-library?node_id='+domain.id);
   const previousId=beforeA4.sections[0].entries[0].id;
   await page.locator('#libraryAddA4Sheet').click();
-  await page.locator('.library-page-list-item').nth(1).waitFor();
-  await page.locator('.library-page-list-item').nth(1).waitFor({state:'visible'});
-  await page.waitForFunction(()=>document.querySelectorAll('.library-page-list-item').length===2&&document.querySelectorAll('.library-page-list-item')[1].classList.contains('active'));
+  await page.locator('#libraryCompactPageSelect').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelector('#libraryCompactPageSelect')?.options.length===2&&
+    document.querySelector('#libraryCompactPageSelect')?.selectedIndex===1);
+  assert.equal(await page.locator('.library-page-sidebar').isVisible(),false,'Sidebar should give all width to the sheet');
   await page.locator('#libraryPageBody').waitFor();
   await page.locator('#libraryPageBody').fill('Texte deuxième feuille A4');
   await page.locator('#librarySaveNow').click();
@@ -123,7 +194,7 @@ async function api(path,method='GET',body){
   assert.equal(afterA4.sections[0].entries.length,2,'Manual A4 creates precisely one new page');
   assert.ok(afterA4.sections[0].entries.find(e=>e.id===previousId)?.notes.includes('Brouillon 0124'),'Previous page survived: '+JSON.stringify(afterA4.sections[0].entries.map(e=>({id:e.id,title:e.title,notes:e.notes.slice(0,160)}))));
   assert.ok(afterA4.sections[0].entries.some(e=>e.notes.includes('Texte deuxième feuille A4')),'Second sheet saved');
-  await page.locator('.library-page-list-item').first().click();
+  await page.locator('#libraryCompactPageSelect').selectOption(String(previousId));
   assert.match(await page.locator('#libraryPageBody').innerText(),/Brouillon 0124 navigation rapide/);
   // Annuler / rétablir après la saisie, sans attendre le délai de l'historique.
   await page.locator('#libraryPageBody').fill('Etat A de l editeur');
@@ -250,12 +321,21 @@ async function api(path,method='GET',body){
 
   // Régression calendrier : créer un rendez-vous depuis l'interface, attendre l'API,
   // puis vérifier sa persistance dans une base temporaire après rechargement.
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.locator('#monthGrid .day-add').first().click();
   await page.locator('#eventForm input[name="title"]').fill('Rendez-vous persistant E2E');
   await page.locator('#eventForm input[name="event_date"]').fill('2026-10-20');
   await page.locator('#eventForm input[name="start_time"]').fill('14:30');
+  const calendarUrl=page.locator('#eventForm input[name="url"]');
+  const eventLink=page.locator('#eventOpenUrl');
+  await calendarUrl.fill('javascript:alert(1)');
+  assert.equal(await eventLink.isVisible(),false,'Dangerous protocols must not be clickable');
+  await calendarUrl.fill('https://example.com/rdv?source=atelier');
+  assert.equal(await eventLink.isVisible(),true,'Event URL must be visibly clickable');
+  assert.equal(await eventLink.getAttribute('href'),'https://example.com/rdv?source=atelier');
+  assert.equal(await eventLink.getAttribute('target'),'_blank');
+  assert.match(await eventLink.getAttribute('rel'),/noopener/);
   await page.locator('#addReminder').click();
   await page.locator('#reminderEditor .reminder-name').fill('Rappel du rendez-vous E2E');
   await page.locator('#reminderEditor .reminder-date').fill('2026-10-19');
@@ -263,10 +343,137 @@ async function api(path,method='GET',body){
   await page.locator('#saveEvent').click();
   await page.locator('#eventForm').waitFor({state:'detached',timeout:12000});
   const savedAppointments=await api('/api/events?start=2026-10-20&end=2026-10-20');
-  assert.ok(savedAppointments.some(e=>e.title==='Rendez-vous persistant E2E'),'Appointment must exist in SQLite after saving');
+  const savedEvent=savedAppointments.find(e=>e.title==='Rendez-vous persistant E2E');
+  assert.ok(savedEvent,'Appointment must exist in SQLite after saving');
+  assert.equal(savedEvent.url,'https://example.com/rdv?source=atelier');
   assert.equal(await page.locator('#calendarView').evaluate(el=>el.classList.contains('active-view')),true,'Saving appointment must keep calendar visible');
+  // The saved event exposes its link in both the form and the right-click menu.
+  await page.evaluate(e=>openEventModal(e),savedEvent);
+  assert.equal(await eventLink.isVisible(),true);
+  assert.equal(await eventLink.getAttribute('href'),'https://example.com/rdv?source=atelier');
+  await page.locator('#cancelEvent').click();
+  await page.evaluate(e=>showCalendarEventMenu(e,{clientX:160,clientY:160}),savedEvent);
+  assert.ok(await page.locator('#atelierContextMenu button').filter({hasText:'Ouvrir le lien'}).isVisible(),
+    'The event context menu must expose the link');
+  await page.keyboard.press('Escape');
+  await page.evaluate(e=>openEventModal(e),{...savedEvent,url:'javascript:alert(1)'});
+  assert.equal(await eventLink.isVisible(),false,'An unsafe stored URL must stay unclickable');
+  await page.locator('#cancelEvent').click();
+
+  // ALPHA 0.18.0 : le mensuel conserve 42 cases égales même si le titre est long.
+  // Le choix de couleur est indépendant de la catégorie du rendez-vous.
+  const longEvent=await api('/api/events','POST',{
+    title:'Un rendez-vous médical dont le titre dépasse très largement la largeur de la case',
+    event_date:'2026-10-20',start_time:'10:15',end_time:'13:15',
+    category:'medical',color:'mauve',show_in_month:true
+  });
+  const allDayEvent=await api('/api/events','POST',{
+    title:'Événement toute la journée E2E',event_date:'2026-10-21',all_day:true,
+    color:'pink',show_in_month:true
+  });
+  const overlapEvent=await api('/api/events','POST',{
+    title:'Deuxième rendez-vous simultané E2E',event_date:'2026-10-20',
+    start_time:'11:00',end_time:'12:45',category:'general',
+    color:'deep-blue',show_in_month:true
+  });
+  const savedColors=await api('/api/events?start=2026-10-20&end=2026-10-21');
+  assert.equal(savedColors.find(e=>e.id===longEvent.id)?.color,'mauve',
+    'La couleur mauve doit rester enregistrée indépendamment de la catégorie médicale');
+  assert.equal(savedColors.find(e=>e.id===allDayEvent.id)?.color,'pink');
+  assert.equal(savedColors.find(e=>e.id===overlapEvent.id)?.color,'deep-blue');
+  await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
+  const monthGeometry=await page.evaluate(()=>{
+    const cells=[...document.querySelectorAll('#monthGrid .day-cell')];
+    const heights=cells.map(c=>Math.round(c.getBoundingClientRect().height));
+    const widths=cells.map(c=>Math.round(c.getBoundingClientRect().width));
+    const pill=[...document.querySelectorAll('#monthGrid .event-pill')].find(b=>b.textContent.includes('rendez-vous médical dont'));
+    return {count:cells.length,heights:[...new Set(heights)],widths:[...new Set(widths)],
+      clipped:!!pill&&pill.scrollWidth>pill.clientWidth,fullTitle:pill?.title,
+      pastel:!!pill&&pill.classList.contains('event-color-mauve')};
+  });
+  assert.equal(monthGeometry.count,42,'Le mensuel doit garder ses 42 cases');
+  assert.equal(monthGeometry.heights.length,1,'Toutes les cases doivent garder la même hauteur : '+JSON.stringify(monthGeometry));
+  assert.equal(monthGeometry.widths.length,1,'Toutes les cases doivent garder la même largeur : '+JSON.stringify(monthGeometry));
+  assert.ok(monthGeometry.clipped&&monthGeometry.pastel&&monthGeometry.fullTitle.includes('médical'),
+    'Le titre long doit être tronqué sans perdre son contenu ni sa couleur : '+JSON.stringify(monthGeometry));
+  await page.evaluate(()=>renderWeek());
+  const weekDuration=await page.evaluate(()=>{
+    const grid=document.querySelector('#weekGrid');
+    const at=(dayIndex,hour)=>grid.children[9+hour*9+1+dayIndex];
+    const atTen=at(1,10),atEleven=at(1,11),atTwelve=at(1,12),atThirteen=at(1,13);
+    const wedHead=grid.children[3],wedSeven=at(2,7),wedTwentyTwo=at(2,22);
+    return {
+      hasDuration:[atTen,atEleven,atTwelve,atThirteen].map(c=>c.classList.contains('week-duration')),
+      started:atTen.classList.contains('week-duration-begin'),
+      mauve:!!grid.querySelector('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve'),
+      allDayHeader:wedHead.classList.contains('week-all-day-header')&&!!wedHead.querySelector('.event-color-pink'),
+      sticky:getComputedStyle(wedHead).position==='sticky',
+      notAtSeven:!wedSeven.textContent.includes('Événement toute la journée'),
+      allDayLine:wedSeven.classList.contains('week-duration-all-day')&&wedTwentyTwo.classList.contains('week-duration-all-day')
+    };
+  });
+  assert.ok(weekDuration.hasDuration.every(Boolean)&&weekDuration.started&&weekDuration.mauve,
+    'Le rendez-vous 10h15–13h15 doit traverser toutes les cases correspondantes : '+JSON.stringify(weekDuration));
+  assert.ok(weekDuration.allDayHeader&&weekDuration.sticky&&weekDuration.notAtSeven&&weekDuration.allDayLine,
+    'Un événement toute la journée doit rester en en-tête collant, pas dans la case 7h : '+JSON.stringify(weekDuration));
+
+
+  // Répartition horizontale des rendez-vous chevauchants et durée proportionnelle.
+  await page.evaluate(()=>{showView('calendar');setCalendarMode('week');renderWeek()});
+  await page.waitForFunction(()=>document.querySelector('.week-day-layer[data-date="2026-10-20"]')?.getBoundingClientRect().width>10);
+  const compactWeek=await page.evaluate(()=>{
+    const day=document.querySelector('.week-day-layer[data-date="2026-10-20"]');
+    const cards=[...day.querySelectorAll('.week-timed-event')];
+    const mauve=cards.find(c=>c.classList.contains('event-color-mauve'));
+    const blue=cards.find(c=>c.classList.contains('event-color-deep-blue'));
+    const r1=mauve?.getBoundingClientRect(),r2=blue?.getBoundingClientRect();
+    const scroll=document.querySelector('#weekPanel .week-scroll');
+    const hour=document.querySelector('#weekGrid .week-slot').getBoundingClientRect().height;
+    return {
+      overlapping:!!r1&&!!r2&&r1.bottom>r2.top&&r2.bottom>r1.top,
+      adjacent:!!r1&&!!r2&&Math.abs(r1.right-r2.left)<8,
+      blue:!!blue,dayWidth:day.getBoundingClientRect().width,
+      cardHeight:Math.round(r1?.height||0),hourHeight:hour,
+      viewport:window.innerHeight,
+      weekHeight:scroll.getBoundingClientRect().height,
+      scrollBottom:Math.round(scroll.getBoundingClientRect().bottom),
+      scrollHeight:scroll.scrollHeight,clientHeight:scroll.clientHeight,
+      overflowY:getComputedStyle(scroll).overflowY,
+      noVerticalOverflow:(['visible','clip','hidden'].includes(getComputedStyle(scroll).overflowY)&&
+        scroll.getBoundingClientRect().bottom<=window.innerHeight+10)||
+        scroll.scrollHeight<=scroll.clientHeight+3
+    };
+  });
+  assert.ok(compactWeek.overlapping&&compactWeek.adjacent&&compactWeek.blue,
+    'Deux rendez-vous simultanés doivent tenir côte à côte : '+JSON.stringify(compactWeek));
+  assert.ok(compactWeek.cardHeight>compactWeek.hourHeight*2.7,
+    'La hauteur du rendez-vous doit représenter sa durée : '+JSON.stringify(compactWeek));
+  assert.ok(compactWeek.scrollHeight>compactWeek.clientHeight && compactWeek.overflowY==='auto',
+    'La grille hebdomadaire agrandie doit permettre le défilement vertical : '+JSON.stringify(compactWeek));
+  const timedCard=page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve');
+  await timedCard.hover();
+  assert.ok(await timedCard.locator('.calendar-hover-action.done').isVisible(),
+    'Les actions rapides doivent apparaître au survol du rendez-vous');
+  assert.ok((await timedCard.locator('.week-card-open').getAttribute('title')).includes('rendez-vous médical'),
+    'Un titre complet doit rester consultable comme une infobulle');
+  await timedCard.locator('.calendar-hover-action.done').click();
+  await page.waitForFunction(async({id})=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-20');
+    const events=await response.json();
+    return events.some(e=>e.id===id&&e.instance_done);
+  },{id:longEvent.id});
+  await page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve .calendar-hover-action.done').waitFor({state:'detached',timeout:10000});
+  assert.ok(await page.locator('.week-day-layer[data-date="2026-10-20"] .week-timed-event.event-color-mauve.event-instance-closed').count(),
+    'La coche doit marquer uniquement cette occurrence et fermer ses actions');
+  // Ces événements de démonstration sont gardés dans la base de test mais
+  // masqués du mensuel : sinon le scénario de glisser-déposer plus loin se
+  // retrouve dans le « + autres » au-delà des trois premières étiquettes.
+  await api('/api/events/'+longEvent.id,'PUT',{show_in_month:false});
+  await api('/api/events/'+overlapEvent.id,'PUT',{show_in_month:false});
+  await page.evaluate(()=>setCalendarMode('month'));
+
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="calendar"]').click();
   await page.evaluate(()=>{state.cursor=parseYMD('2026-10-20');renderMonth()});
   await page.locator('#monthGrid .event-pill').filter({hasText:'Rendez-vous persistant E2E'}).waitFor({timeout:12000});
@@ -328,9 +535,24 @@ async function api(path,method='GET',body){
     const rows=await response.json();
     return rows.some(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
   },null,{timeout:12000});
-  const octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
+  // Rendering a detached recurrence instance is asynchronous: await the
+  // distinct exception ID, not merely the title displayed for that date.
+  await page.waitForFunction(async masterId=>{
+    const response=await fetch('/api/events?start=2026-10-20&end=2026-10-27');
+    const rows=await response.json();
+    return rows.some(e=>e.id!==masterId&&e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E');
+  },recurring.id,{timeout:12000});
+  // Comparer une seconde connexion HTTP seulement lorsque l'exception
+  // devient visible ; le rendu navigateur peut précéder sa lecture Node.
+  let octoberEvents=[],exception;
+  for(let attempt=0;attempt<40;attempt++){
+    octoberEvents=await api('/api/events?start=2026-10-20&end=2026-10-27');
+    exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&
+      e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
+    if(exception)break;
+    await new Promise(resolve=>setTimeout(resolve,120));
+  }
   assert.ok(octoberEvents.some(e=>e.id===recurring.id&&e.instance_date==='2026-10-20'&&e.title==='Série récurrente E2E'),'Recurring master must not be changed');
-  const exception=octoberEvents.find(e=>e.instance_date==='2026-10-27'&&e.title==='Occurrence isolée E2E'&&e.id!==recurring.id);
   assert.ok(exception,'Editing one instance must create a separate event for that occurrence');
   const exceptionReminders=await api('/api/reminders');
   assert.ok(exceptionReminders.some(r=>r.entity_id===exception.id&&r.entity_type==='event'),'Edited instance must retain a linked reminder');
@@ -348,7 +570,12 @@ async function api(path,method='GET',body){
     const items=await r.json();
     return items.some(e=>e.id===id&&e.instance_date==='2026-10-21')&&!items.some(e=>e.id===id&&e.instance_date==='2026-10-20');
   },movable.id,{timeout:12000});
-  const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E');
+  await page.waitForFunction(async id=>{
+    const response=await fetch('/api/reminders');
+    const reminders=await response.json();
+    return reminders.some(r=>r.entity_type==='event'&&r.entity_id===id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
+  },movable.id,{timeout:12000});
+  const movedReminder=(await api('/api/reminders')).find(r=>r.entity_type==='event'&&r.entity_id===movable.id&&r.title==='Rappel à déplacer E2E'&&r.remind_at.startsWith('2026-10-20T08:00'));
   assert.ok(movedReminder&&movedReminder.remind_at.startsWith('2026-10-20T08:00'),'Linked reminder must move by the same time delta');
   // ALPHA 0.14.5 : créer un rappel sans taper d'heure ne doit pas l'effacer.
   await page.evaluate(async()=>{state.cursor=parseYMD('2026-10-20');await refresh()});
@@ -386,7 +613,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('reminders'));
   const firstReminder=await api('/api/reminders','POST',{title:'Rappel modèle E2E',remind_at:'2026-10-21T09:00'});
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.evaluate(()=>showView('reminders'));
   await page.locator('.reminder-row').filter({hasText:'Rappel modèle E2E'}).locator('.duplicate').click();
   assert.equal(await page.locator('#standaloneReminderForm input[name="title"]').inputValue(),'Rappel modèle E2E');
@@ -397,8 +624,8 @@ async function api(path,method='GET',body){
   assert.ok(remindersAfter.some(r=>r.title==='Rappel modèle E2E')&&remindersAfter.some(r=>r.title==='Rappel copie E2E'),'Both original reminder and copy must be kept');
   await page.locator('#globalHomeShortcut').click();
   // Organisation 0.14 : test de bout en bout sur des données temporaires.
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="organisation"]').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
+  await page.evaluate(()=>showView('organisation'));
   await page.locator('#habitTitle').fill('Marche quotidienne E2E');
   await page.locator('#habitCreateForm button[type="submit"]').click();
   await page.locator('.habit-card').first().waitFor();
@@ -408,36 +635,28 @@ async function api(path,method='GET',body){
   console.log('HABIT LABEL AFTER CHECK:',JSON.stringify(await page.locator('.habit-card-head small').first().innerText()));
   console.log('HABIT API:',JSON.stringify(await api('/api/habits')));
   assert.match(await page.locator('.habit-card-head small').first().innerText(),/1 \/ 7/);
-  await page.locator('#cycleStart').fill('2026-08-01');
-  await page.locator('#cycleForm button[type="submit"]').click();
-  try{await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===1,null,{timeout:10000});}
-  catch(err){
-    console.log('CYCLE DIAGNOSTIC:',JSON.stringify({form:await page.locator('#cycleForm').evaluate(el=>({html:el.outerHTML,visible:!!el.offsetParent})),api:await api('/api/cycle-periods'),errors:pageErrors}));
-    throw err;
-  }
-  // Une seule période connue doit suffire à surligner le calendrier.
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="calendar"]').click();
-  await page.evaluate(()=>{state.cursor=parseYMD("2026-08-01");renderMonth();renderWeek()});
+  // Le cycle n'a plus de module autonome : saisie rapide depuis le calendrier.
+  await page.evaluate(()=>showView('calendar'));
+  await page.evaluate(()=>{state.cursor=parseYMD('2026-08-01');renderMonth();renderWeek()});
+  const augustFirst=page.locator('#monthGrid .day-cell:not(.outside)').filter({has:page.locator('.day-number',{hasText:/^1$/})});
+  await augustFirst.click({button:'right'});
+  await page.locator('#atelierContextMenu').getByText('Règles',{exact:true}).click();
+  await page.locator('#cycleQuickForm [name=start_date]').fill('2026-08-01');
+  await page.locator('#cycleQuickForm button[type=submit]').click();
+  await page.waitForFunction(async()=>{
+    const r=await fetch('/api/cycle-periods');return (await r.json()).length===1;
+  });
   await page.waitForFunction(()=>document.querySelectorAll('.day-cell.cycle-recorded').length>0,null,{timeout:10000});
-  const markedDay=page.locator('#monthGrid .day-cell.cycle-recorded').filter({has:page.locator('.day-number', {hasText:'1'})});
-  assert.ok(await markedDay.count()>0,'Recorded 1 August must have cycle highlight');
+  assert.ok(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,'Recorded 1 August must have cycle highlight');
   await page.locator('.calendar-modes button[data-calendar-mode="week"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#miniMonth .mday.cycle-recorded').length>0,null,{timeout:10000});
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="organisation"]').click();
-  await page.locator('.cycle-entry').first().waitFor();
-  await page.locator('#cycleStart').fill('2026-08-29');
-  await page.locator('#cycleForm button[type="submit"]').click();
-  await page.waitForFunction(()=>document.querySelectorAll('.cycle-entry').length===2);
-  assert.match(await page.locator('#cycleForecast').innerText(),/cycle moyen de 28 jours/);
-  await page.locator('#globalHomeShortcut').click();
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavToggle').click();
-  await page.locator('.tabs button[data-view="calendar"]').click();
-  await page.locator('#calendarCycleHint').waitFor({state:'visible'});
-  assert.match(await page.locator('#calendarCycleHint').innerText(),/Suivi du cycle/);
+  await page.waitForFunction(()=>document.querySelectorAll('#weekGrid .week-head.cycle-recorded').length>0,null,{timeout:10000});
+  assert.equal(await page.locator('#miniMonth').count(),0,'Le mini-calendrier redondant a été supprimé');
+  await api('/api/cycle-periods','POST',{start_date:'2026-08-29',end_date:null});
+  await page.evaluate(()=>refreshOrganisation());
+  await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('Règles estimées'));
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon/);
+  assert.equal(await page.locator('#calendarCycleHint').count(),0);
+  assert.equal(await page.locator('.cycle-module').count(),0);
   // ALPHA 0.15.0 — Budget : récurrences, confirmations, solde, dettes et historique.
   await page.evaluate(()=>showView('budget'));
   await page.locator('#budgetView').waitFor({state:'visible'});
@@ -525,6 +744,9 @@ async function api(path,method='GET',body){
     const k=new Date().toISOString().slice(0,7);
     return (await (await fetch('/api/budget?month='+k)).json()).entries.some(e=>e.title==='Dépense rapide E2E'&&e.amount_cents===1340&&e.status==='confirmed');
   },null,{timeout:10000});
+  // L'opération peut être visible en base avant que le modal soit fermé.
+  // Attendre la fermeture réelle du premier formulaire avant le second clic.
+  await page.locator('#budgetUnifiedForm').waitFor({state:'detached',timeout:12000});
   await page.locator('#budgetAddOperation').click();
   await page.locator('#budgetUnifiedForm .budget-kind[data-kind="income"]').click();
   await page.locator('#budgetUnifiedForm input[name="amount"]').fill('550');
@@ -568,7 +790,7 @@ async function api(path,method='GET',body){
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
   // Toutes les rubriques principales reçoivent aussi des poignées de modules.
   await page.evaluate(()=>showView('organisation'));
-  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),2,'Habit and cycle modules can be moved');
+  assert.equal(await page.locator('#organisationView .organisation-module.layout-object').count(),1,'Habit module remains movable after cycle editor removal');
   await page.evaluate(()=>showView('kitchen'));
   assert.equal(await page.locator('#kitchenView .kitchen-panel.layout-object').count(),3,'All kitchen modules can be moved');
   await page.locator('#globalLayoutEdit').click();
@@ -651,11 +873,58 @@ async function api(path,method='GET',body){
   await page.locator('#openCalendarCard').click();
   assert.equal(await page.evaluate(()=>state.view),'calendar','Normal calendar navigation works outside edit mode');
 
+
+  // ALPHA 0.18 : emplacement du tiroir à gauche après un vrai glisser et F5.
+  await page.evaluate(()=>{showView('home');setSideNavCollapsed(false)});
+  const sideGrip=page.locator('#sideNavDragHandle');
+  // Attendre la fin de l'animation d'ouverture avant de commencer à saisir
+  // le menu : une coordonnée prise pendant la transition manque la poignée.
+  await sideGrip.hover({timeout:10000});
+  const gripRect=await sideGrip.boundingBox();
+  assert.ok(gripRect,'La poignée du tiroir est accessible');
+  await page.mouse.down();
+  await page.mouse.move(35,gripRect.y+gripRect.height/2,{steps:24});
+  await page.mouse.up();
+  const storedLeft=await page.evaluate(()=>JSON.parse(localStorage.getItem('atelierSideNavPosition'))?.left);
+  assert.ok(Number.isFinite(storedLeft)&&storedLeft<100,'Le tiroir doit pouvoir aller à gauche: '+storedLeft);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>setSideNavCollapsed(false));
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.getBoundingClientRect().left<100),
+    'Le tiroir doit rester à gauche après F5');
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.classList.contains('side-nav-on-left')),
+    'Le bouton du tiroir doit basculer du bon côté');
+  // Une ancienne préférence partielle ne doit pas être interprétée comme x=0.
+  await page.evaluate(()=>{localStorage.setItem('atelierSideNavPosition',JSON.stringify({left:null,top:96}));applySideNavPosition()});
+  assert.ok(await page.locator('#sideNav').evaluate(el=>el.getBoundingClientRect().left>window.innerWidth/2),
+    'Une position latérale null doit reprendre le défaut à droite');
+  await page.evaluate(()=>{localStorage.removeItem('atelierSideNavPosition');applySideNavPosition();setSideNavCollapsed(true)});
+  // Agrandir le mini-calendrier doit rendre ses cases et son texte plus grands.
+  await page.evaluate(()=>showView('home'));
+  await page.waitForFunction(()=>homeCanvasReady);
+  const calendarAdaptive=await page.evaluate(()=>{
+    const item=globalLayoutItems.find(x=>x.id==='calendar'&&isHomeCanvasItem(x));
+    const original=readGlobalLayout(item);
+    const getMetrics=()=>{
+      const cell=document.querySelector('#homeMiniCalendar .hday');
+      return {font:parseFloat(getComputedStyle(cell).fontSize),height:cell.getBoundingClientRect().height};
+    };
+    const before=getMetrics();
+    const updated={...original,width:400};
+    applyGlobalLayout(item,updated);
+    const after=getMetrics();
+    applyGlobalLayout(item,original);
+    return {before,after};
+  });
+  assert.ok(calendarAdaptive.after.font>calendarAdaptive.before.font,
+    'Le texte du mini-calendrier doit s’adapter à la largeur: '+JSON.stringify(calendarAdaptive));
+  assert.ok(calendarAdaptive.after.height>calendarAdaptive.before.height+8,
+    'Les cases du calendrier doivent grandir avec la carte: '+JSON.stringify(calendarAdaptive));
+
   // ALPHA 0.16.1 — Canvas libre : les positions absolues survivent à un rechargement.
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>homeCanvasReady);
   await page.locator('#homeCanvas').waitFor({state:'visible'});
-  assert.ok((await page.title()).includes('Alpha 0.17.0'),'Le titre d’onglet doit être cohérent');
+  assert.ok((await page.title()).includes('Alpha 0.18.0'),'Le titre d’onglet doit être cohérent');
   const canvasCalendar=page.locator('#openCalendarCard');
   const beforeCanvasMove=await canvasCalendar.boundingBox();
   const beforeOtherCanvas=await page.locator('#journalBook').boundingBox();
@@ -666,7 +935,22 @@ async function api(path,method='GET',body){
   await page.mouse.down();
   await page.mouse.move(dragX-45,dragY+35,{steps:5});
   await page.mouse.up();
-  const afterCanvasMove=await canvasCalendar.boundingBox();
+  let afterCanvasMove=await canvasCalendar.boundingBox();
+  if(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)<=20){
+    // Un alignement magnétique ou un clic dans une case peut absorber le premier
+    // mouvement : recommencer en visant la poignée explicite et sans aimant.
+    const handle=canvasCalendar.locator('.layout-move-handle');
+    const grip=await handle.boundingBox();
+    if(grip){
+      await page.keyboard.down('Alt');
+      await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);
+      await page.mouse.down();
+      await page.mouse.move(grip.x+grip.width/2-70,grip.y+grip.height/2+65,{steps:8});
+      await page.mouse.up();
+      await page.keyboard.up('Alt');
+      afterCanvasMove=await canvasCalendar.boundingBox();
+    }
+  }
   const afterOtherCanvas=await page.locator('#journalBook').boundingBox();
   assert.ok(Math.abs(afterCanvasMove.y-beforeCanvasMove.y)>20,'Calendrier déplacé en position libre');
   assert.ok(Math.abs(afterOtherCanvas.y-beforeOtherCanvas.y)<3,'Déplacer Calendrier ne déplace pas le Journal');
@@ -698,10 +982,10 @@ async function api(path,method='GET',body){
     return title&&controls&&getComputedStyle(controls).display==='none';
   }),'À venir n’est plus recouvert par des commandes lorsqu’il n’est pas sélectionné');
   await page.locator('#globalLayoutEdit').click();
-  await page.locator('#openHomeModuleLibrary').click();
+  await page.locator('#quickAddHomeModule').click();
   const picker=page.locator('#homeModulePicker');
   await picker.waitFor({state:'visible'});
-  assert.equal(await picker.locator('input[data-module]').count(),11,'The home module library lists the four existing widgets and seven shortcuts');
+  assert.equal(await picker.locator('input[data-module]').count(),12,'Home modules exclude desktop-only Post-it and retired Preparatifs; five widgets and seven shortcuts');
   await picker.locator('input[data-module="tasks"]').check();
   await picker.locator('input[data-module="upcoming"]').uncheck();
   await picker.locator('button[type="submit"]').click();
@@ -767,7 +1051,7 @@ async function api(path,method='GET',body){
   assert.equal(await page.evaluate(()=>state.view),'tasks','Shortcut navigation resumes after editing');
   // Les modules masqués restent accessibles depuis le catalogue.
   await page.evaluate(()=>showView('home'));
-  await page.locator('#openHomeModuleLibrary').click();
+  await page.locator('#quickAddHomeModule').click();
   await page.locator('#homeModulePicker input[data-module="upcoming"]').check();
   await page.locator('#homeModulePicker button[type="submit"]').click();
   assert.ok(await page.locator('#homeUpcomingWidget').isVisible(),'Hidden original widget can be restored');
@@ -826,11 +1110,13 @@ async function api(path,method='GET',body){
 
   // ALPHA 0.17.0 — tests transversaux en instance temporaire.
   await page.evaluate(()=>showView('calendar'));
-  await page.locator('#calendarToday').click();
-  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode mois');
+  assert.equal(await page.locator('#calendarToday').count(),0,'Le bouton Aujourd’hui redondant a été retiré du mois');
+  await page.evaluate(()=>{state.cursor=new Date();refresh()});
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : jour courant en mode mois');
   await page.evaluate(()=>setCalendarMode('week'));
-  await page.locator('#weekToday').click();
-  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : retour au jour courant en mode semaine');
+  assert.equal(await page.locator('#weekToday').count(),0,'Le bouton Aujourd’hui redondant a été retiré du semainier');
+  await page.evaluate(()=>{state.cursor=new Date();refresh()});
+  assert.equal(await page.evaluate(()=>ymd(state.cursor)),await page.evaluate(()=>ymd(new Date())),'Calendrier : jour courant en mode semaine');
   await page.evaluate(()=>showView('tasks'));
   assert.ok(await page.locator('#taskSummary').isVisible(),'Tâches : le récapitulatif est visible');
   await page.locator('#taskFilter').selectOption('active');
@@ -856,6 +1142,7 @@ async function api(path,method='GET',body){
   await page.locator('#budgetCurrentMonth').click();
   assert.equal(await page.locator('#budgetMonth').inputValue(),await page.evaluate(()=>ymd(new Date()).slice(0,7)),'Budget : mois courant');
   await page.evaluate(()=>showView('settings'));
+  await page.evaluate(()=>{const card=document.querySelector('.atelier-settings-shortcuts').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   assert.ok(await page.locator('.atelier-settings-shortcuts').isVisible(),'Paramètres : aide aux raccourcis');
 
     assert.deepEqual(pageErrors,[],'Unexpected JavaScript exception during editor navigation');

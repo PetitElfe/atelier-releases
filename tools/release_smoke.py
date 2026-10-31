@@ -115,6 +115,25 @@ def check_manifest() -> str:
     return version
 
 
+def check_git_test_launcher() -> None:
+    # The Git-only launcher must never blur a missing local clone with a
+    # different branch, nor pass a trailing slash before a native Windows
+    # closing quote (git.exe then loses the path argument on Windows).
+    script = (ROOT / "Mise_a_jour_TEST.cmd").read_text(encoding="utf-8")
+    required = (
+        'set "ROOT=E:\\LATELIER_TEST_0180\\code_0180"',
+        'set "BRANCH=feature/0180-progression-foundations"',
+        'rev-parse --is-inside-work-tree',
+        'if not defined CURRENT (',
+        'if not "%CURRENT%"=="%BRANCH%" (',
+        'Ouvre l\'Atelier TEST, puis Parametres ^> Mises a jour.',
+        'python -u "%ROOT%\\app\\app.py"',
+    )
+    for excerpt in required:
+        if excerpt not in script:
+            fail("Le lanceur Git TEST a perdu un garde-fou : " + excerpt)
+
+
 def check_python_syntax() -> None:
     for path in sorted(APP.glob("*.py")):
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
@@ -404,13 +423,62 @@ def check_server(version: str) -> None:
             status, events_after = request("GET", "/api/events?start=2027-03-20&end=2027-03-20")
             if not any(e.get("id") == linked_event["id"] for e in events_after):
                 fail("Supprimer un rappel lié ne doit pas supprimer son rendez-vous.")
+            # Post-it : notes en base, pas uniquement dans le navigateur.
+            status, notes = request("GET", "/api/postits")
+            if status != 200 or not any(n['title'] == "Aujourd'hui" for n in notes):
+                fail("Le Post-it par défaut n'a pas été créé.")
+            status, created = request("POST", "/api/postits", {
+                "title": "Courses à prévoir", "body": "Pense au lait", "color": "sage", "shape": "square"
+            })
+            if status != 201 or not created.get("id"):
+                fail("Impossible de créer un Post-it.")
+            note_id=created["id"]
+            status, _ = request("PUT", f"/api/postits/{note_id}", {
+                "title": "Courses et idées", "body": "Lien https://example.com",
+                "color": "deep-blue", "shape": "pill"
+            })
+            if status != 200:
+                fail("Impossible de modifier un Post-it.")
+            status, notes = request("GET", "/api/postits")
+            saved=next((n for n in notes if n['id'] == note_id), None)
+            if not saved or saved['color'] != "deep-blue" or saved['shape'] != "pill" or "example.com" not in saved['body']:
+                fail("Texte ou apparence du Post-it non persistés.")
+            status, _ = request("PUT", f"/api/postits/{note_id}", {"archived": True})
+            if status != 200 or any(n['id'] == note_id for n in request("GET", "/api/postits")[1]):
+                fail("La note archivée doit disparaître de l'Accueil.")
+            archived=request("GET", "/api/postits?archived=1")[1]
+            if not any(n['id']==note_id for n in archived):
+                fail("Le Post-it archivé doit rester récupérable.")
+            status, _=request("PUT", f"/api/postits/{note_id}", {"archived": False})
+            if status != 200:
+                fail("Restauration du Post-it impossible.")
+
         finally:
             stop_server(proc)
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 3:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 16:
                 fail("PRAGMA user_version n'a pas été appliqué.")
+            admin_cols={row[1] for row in c.execute("PRAGMA table_info(admin_documents)")}
+            if "archived" not in admin_cols:
+                fail("La colonne des archives administratives manque à la migration.")
+            if "event_id" not in admin_cols:
+                fail("Le lien Administratif vers Calendrier manque à la migration.")
+            if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='admin_attachments'").fetchone():
+                fail("Les pièces jointes locales manquent à la migration.")
+            if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='event_attachments'").fetchone():
+                fail("Les pièces jointes des rendez-vous manquent à la migration.")
+            cols={row[1] for row in c.execute("PRAGMA table_info(desktop_postit_layout)")}
+            if "locked" not in cols:
+                fail("Le verrouillage des positions Post-it manque à la migration.")
+            rhythm_cols={row[1] for row in c.execute("PRAGMA table_info(tracker_boards)")}
+            if not {"period_unit","period_count","anchor_date"} <= rhythm_cols:
+                fail("Les périodes indépendantes des trackers manquent à la migration.")
+            for table in ("standalone_preparation_lists","standalone_preparation_items",
+                          "tracker_row_steps","tracker_row_step_checks"):
+                if not c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?",(table,)).fetchone():
+                    fail("Table de préparatifs autonomes manquante : "+table)
             c.execute("PRAGMA user_version = 0")
             c.commit()
 
@@ -422,6 +490,7 @@ def check_server(version: str) -> None:
 
 
 if __name__ == "__main__":
+    check_git_test_launcher()
     check_python_syntax()
     check_frontend_contract()
     version = check_manifest()

@@ -3,24 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L’Atelier — Alpha 0.17.0</title>
+  <title>L’Atelier du Goblin — Alpha 0.18.0</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/objective_map.css" />
+  <link rel="stylesheet" href="/event_preparations.css" />
+  <link rel="stylesheet" href="/calendar_cycle_compact.css" />
+  <link rel="stylesheet" href="/week_clarity.css" />
+  <link rel="stylesheet" href="/life_tools.css" />
+  <link rel="stylesheet" href="/standalone_preparations.css" />
+  <link rel="stylesheet" href="/visual_polish_oct28.css" />
+  <link rel="stylesheet" href="/big_refonte.css" />
+  <link rel="stylesheet" href="/home_reference.css" />
+  <link rel="stylesheet" href="/interface_reference.css" />
+  <style id="alpha-home-clarity">
+    .top-brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .top-brand-labels{min-width:0}
+    #topXpLevel{flex:0 0 auto;white-space:nowrap;line-height:1.25}
+    /* Défilement hebdomadaire géré par visual_polish_oct28.css : hauteur adaptée à l'écran. */
+    #homeUpcoming .home-upcoming-toggle{display:block;width:100%;text-align:center;font-size:12px;padding:5px;margin-top:5px}
+    #journalBook .journal-page{display:flex;flex-direction:column;min-width:0;min-height:0}
+    #journalBook .journal-primary-content,#journalBook .journal-secondary-content{min-height:0;max-height:none!important;flex:1 1 auto;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:14px}
+    @media(max-width:1250px){.top-brand{gap:6px;flex-wrap:wrap}#topXpLevel{font-size:12px}}
+  </style>
 </head>
 <body class="home-active">
   <header class="topbar">
     <div class="top-brand"><button id="globalHomeShortcut" type="button" title="Retour à l’accueil" aria-label="Retour à l’accueil"><svg class="home-shortcut-symbol" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="home-shortcut-text">Accueil</span></button>
-      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER · ALPHA 0.17.0</div><h1 id="pageTitle">Accueil</h1></div>
+      <button id="sideNavHeaderToggle" class="icon-button secondary" type="button" title="Ouvrir le tiroir des rubriques" aria-label="Ouvrir le tiroir des rubriques" aria-expanded="false" aria-controls="sideNav"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="top-brand-labels"><div class="eyebrow">L’ATELIER DU GOBLIN · ALPHA 0.18.0</div><h1 id="pageTitle">Accueil</h1></div><div class="top-xp-level" id="topXpLevel" aria-label="Niveau de progression" title="XP gagnée grâce à tes accomplissements">Niv. 1 · 0 XP</div>
     </div>
     <div class="top-date-wrap">
       <button id="jumpDateLabel" class="top-date-label" type="button" title="Choisir une date" aria-label="Choisir une date"></button>
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
-      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres">⚙</button>
-      <button id="globalLayoutEdit" class="secondary" type="button" aria-pressed="false">Modifier</button>
+      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Ouvrir mes Post-it du bureau" aria-label="Ouvrir mes Post-it du bureau"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v12H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5M8 12h8M8 16h6"/></svg></button>
+      <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 2h3.2l.55 2.1 1.45.6 1.9-1.1 2.3 2.3-1.1 1.9.6 1.45L21.4 9.8v3.4l-2.1.55-.6 1.45 1.1 1.9-2.3 2.3-1.9-1.1-1.45.6-.55 2.1h-3.2l-.55-2.1-1.45-.6-1.9 1.1-2.3-2.3 1.1-1.9-.6-1.45L2.6 13.2V9.8l2.1-.55.6-1.45-1.1-1.9 2.3-2.3 1.9 1.1 1.45-.6L10.4 2Z"/><circle cx="12" cy="11.5" r="3"/></svg><span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
+      <button id="globalLayoutEdit" class="secondary" type="button" aria-label="Modifier la disposition des modules" title="Modifier la disposition des modules" aria-pressed="false"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20zM14.5 6.5l3 3"/></svg><span class="top-action-label">Modifier</span></button>
       <button id="globalLayoutReset" class="secondary hidden" type="button">Réinitialiser</button>
       <button id="globalLayoutUndo" class="secondary hidden" type="button">↶ Annuler la remise à zéro</button>
-      <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications">🔔</button>
+      <button id="notifyBtn" class="icon-button secondary" title="Activer les notifications" aria-label="Activer les notifications"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/></svg></button>
     </div>
   </header>
 
@@ -35,43 +58,48 @@
       <button data-view="tasks">Tâches</button>
       <button data-view="library">Bibliothèque</button>
       <button data-view="reminders">Rappels</button>
-      <button data-view="organisation">Habitudes & cycle</button>
+      <button data-view="organisation">Habitudes & routines</button>
+      <button data-view="trackers">Trackers</button>
+      <button data-view="admin">Administratif</button>
+      <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
+      <button type="button" id="openJdrWorkspace" onclick="window.location.href='/jdr.html'">🎲 Table JDR</button>
       <button id="renameNavButton" type="button" class="secondary atelier-nav-customize">✎ Renommer le tiroir</button>
     </div>
   </nav>
 
   <main>
     <section id="homeView" class="view active-view">
-      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary">＋ Bibliothèque de modules</button><span class="muted">Choisis les éléments visibles, puis place-les avec « Modifier ».</span></div>
+      <div class="home-module-toolbar"><button id="openHomeModuleLibrary" type="button" class="secondary" tabindex="-1">＋ Bibliothèque de modules</button><span class="muted">Ajoute des modules avec le bouton ＋ dans l’en-tête, puis place-les avec Modifier.</span></div>
       <section id="homeBudgetWidget" data-home-module="budget" class="budget-home-widget" aria-label="Budget : revenus et prélèvements">
-        <div class="budget-home-title"><strong>Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
+        <div class="budget-home-title"><strong id="homeBudgetTitle" role="button" tabindex="0" title="Ouvrir Budget">Budget</strong><button id="homeBudgetOpen" type="button">Ouvrir →</button></div>
         <div id="homeBudgetContent" class="muted">Chargement des échéances…</div>
       </section>
       <div class="desk-top-row">
         <button id="openCalendarCard" data-home-module="calendar" class="desk-object pinned-calendar" type="button">
-          <div class="pinned-calendar-head"><span>Calendrier</span><span>ouvrir →</span></div>
+          <div class="pinned-calendar-head"><span>Calendrier</span></div>
           <div id="homeMiniCalendar" class="home-mini-calendar"></div>
         </button>
 
         <section id="homeUpcomingWidget" data-home-module="upcoming" class="desk-object desk-note" aria-labelledby="upcomingTitle">
           <div class="desk-note-head">
-            <span id="upcomingTitle">À venir</span>
+            <button id="upcomingTitle" class="home-widget-heading-button" type="button" title="Ouvrir le calendrier">Rendez-vous</button>
             <button id="openCalendarFromUpcoming" class="journal-link" type="button">calendrier →</button>
           </div>
-          <div id="homeUpcoming" class="desk-mini-list"></div>
+          <div id="homeUpcoming" class="desk-mini-list" aria-live="polite"></div>
         </section>
 
       </div>
 
       <div id="journalBook" data-home-module="journal" class="journal-book" aria-label="Journal de l’Atelier">
         <section class="journal-page journal-left">
+          <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
 
           <div class="journal-section">
-            <div class="journal-heading">Ne pas oublier</div>
+            <button id="homeDeadlineTitle" class="journal-heading journal-heading-button home-heading-button" type="button" title="Ouvrir les rappels">Ne pas oublier</button>
             <div id="homeDeadlineLines" class="deadline-lines"></div>
           </div>
 
@@ -79,41 +107,55 @@
 
           <div class="journal-section journal-tasks-section">
             <div class="journal-title-row">
-              <div class="journal-heading">Tâches du jour</div>
-              <button id="openTasksFromHome" class="journal-link" type="button">tout voir →</button>
+              <button id="openTasksFromHome" class="journal-heading journal-heading-button home-heading-button" type="button" title="Ouvrir Tâches">À faire aujourd’hui</button>
             </div>
             <div id="homeTodayTasks" class="journal-task-list"></div>
           </div>
+          </div>
+          <div class="journal-secondary-content"><div class="journal-heading">Mes démarches</div><div id="journalAdminSummary"></div></div>
         </section>
 
         <section class="journal-page journal-right">
+          <div class="journal-primary-content">
           <div class="journal-section">
-            <div class="journal-heading">Que faire maintenant ?</div>
+            <div class="journal-title-row"><button type="button" id="homeAllObjectives" class="journal-heading journal-heading-button home-heading-button" title="Ouvrir les objectifs dans la Bibliothèque">Activité</button></div>
             <div id="homeObjectiveSuggestions" class="objective-suggestions"></div>
-          </div>
-
-          <div class="journal-divider"></div>
-
-          <div class="journal-section">
-            <button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button>
-            <div id="homeMealIdeas" class="meal-ideas"></div>
           </div>
 
           <div id="homeExpiryBlock" class="journal-section expiry-block hidden">
             <div class="journal-heading">À consommer bientôt</div>
             <div id="homeExpiryList"></div>
           </div>
+          </div>
+          <div class="journal-secondary-content"><div class="journal-heading">Courrier arrivé</div><div id="journalCaptureSummary"></div><div class="journal-divider"></div>
+          <div class="journal-section"><button id="homeMealIdeaPicker" class="journal-heading journal-heading-button" type="button">Idées de repas <span>＋</span></button><div id="homeMealIdeas" class="meal-ideas"></div></div>
+          <div class="journal-divider"></div><button id="journalQuickCapture" type="button" class="journal-heading journal-heading-button">✎ Noter une idée</button><div class="journal-divider"></div><button id="journalBackToToday" type="button" class="journal-heading journal-heading-button">← Revenir à aujourd’hui</button></div>
         </section>
+        <div class="journal-page-turn" aria-label="Pagination du carnet"><button id="journalPrevPage" type="button" aria-label="Pages précédentes">‹</button><span id="journalPageNumber" aria-live="polite">1–2</span><button id="journalNextPage" type="button" aria-label="Pages suivantes">›</button></div>
+        <button id="journalCornerPrev" class="journal-corner-turn journal-corner-prev" type="button" title="Revenir aux pages précédentes" aria-label="Tourner le coin gauche vers les pages précédentes"><span aria-hidden="true">‹</span></button>
+        <button id="journalCornerNext" class="journal-corner-turn journal-corner-next" type="button" title="Passer aux pages suivantes" aria-label="Tourner le coin droit vers les pages suivantes"><span aria-hidden="true">›</span></button>
       </div>
 
+      <section id="homeDailyTrackersWidget" data-home-module="dailyTrackers" class="home-daily-trackers-widget" aria-label="Mes trackers à cocher aujourd’hui">
+        <div class="home-todo-columns">
+          <div class="home-tasks-pane">
+            <div class="home-daily-trackers-head"><button type="button" id="homeTodoOpenTasks" class="home-heading-button" title="Ouvrir mes tâches">To-do list</button></div>
+            <div id="homeTodoPreview" class="home-todo-preview" aria-label="Tâches à faire aujourd’hui"></div>
+          </div>
+          <div class="home-habits-pane">
+            <div class="home-trackers-subheading"><button id="openDailyTrackers" class="home-heading-button" type="button" title="Ouvrir Trackers">Habitudes du jour</button></div>
+            <p id="homeDailyTrackersDate" class="muted"></p>
+            <div id="homeDailyTrackersList" class="home-daily-trackers-list" aria-label="Cases des habitudes du jour"></div>
+          </div>
+        </div>
+      </section>
       <div id="homeShortcutShelf" class="home-shortcut-shelf" aria-label="Modules supplémentaires de l’Accueil"></div>
     </section>
 
     <section id="calendarView" class="view">
       <div class="calendar-toolbar">
         <div>
-          <div class="section-kicker">ESPACE CALENDRIER</div>
-          <h2>Calendrier & semainier</h2>
+          <div class="calendar-title-inline"><h2 class="calendar-screenreader-title">Calendrier</h2><div id="calendarCycleSummary" class="calendar-cycle-summary" aria-live="polite" hidden></div></div>
         </div>
         <div class="calendar-modes" role="tablist" aria-label="Vue du calendrier">
           <button data-calendar-mode="month" class="active">Mois</button>
@@ -121,26 +163,30 @@
         </div>
       </div>
 
-      <div id="calendarCycleHint" class="calendar-cycle-hint hidden"></div>
       <div id="monthPanel" class="calendar-panel active-calendar-panel">
-        <div class="view-head">
-          <button id="prevMonth" aria-label="Mois précédent">‹</button>
-          <h2 id="monthTitle"></h2>
-          <button id="nextMonth" aria-label="Mois suivant">›</button><button id="calendarToday" type="button" class="atelier-today-button">Aujourd’hui</button>
+        <div class="view-head calendar-month-head">
+          <div class="calendar-month-pager" role="group" aria-label="Navigation entre les mois">
+            <button id="prevMonth" aria-label="Mois précédent">‹</button>
+            <h2 id="monthTitle"></h2>
+            <button id="nextMonth" aria-label="Mois suivant">›</button>
+          </div>
+          
         </div>
         <div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
         <div id="monthGrid" class="month-grid"></div>
       </div>
 
       <div id="weekPanel" class="calendar-panel">
-        <div class="week-layout">
-          <aside class="mini-panel">
-            <div class="view-head compact">
-              <button id="prevWeek">‹</button><h2 id="weekTitle"></h2><button id="nextWeek">›</button><button id="weekToday" type="button" class="atelier-today-button">Aujourd’hui</button>
+        <div class="week-layout week-layout-clean">
+          <div class="week-topbar">
+            <div class="week-navigation">
+              <button id="prevWeek" type="button" aria-label="Semaine précédente">‹</button>
+              <h3 id="weekTitle"></h3>
+              <button id="nextWeek" type="button" aria-label="Semaine suivante">›</button>
+              
             </div>
-            <div id="miniMonth" class="mini-month"></div>
-            <button id="addEventWeek" class="primary wide">+ Rendez-vous</button>
-          </aside>
+            <button id="addEventWeek" type="button" class="primary">+ Rendez-vous</button>
+          </div>
           <div class="week-scroll">
             <div id="weekGrid" class="week-grid"></div>
           </div>
@@ -209,6 +255,7 @@
                   <button id="addLibraryTask" type="button">+ Tâche</button>
                 </div>
               </div>
+              <div id="objectiveMapRoot" class="objective-map-root" aria-label="Carte interactive des objectifs"></div>
               <div id="librarySubgoalTree" class="library-subgoal-tree"></div>
               <section class="library-tasks-module">
                 <div class="library-module-head"><div><span class="library-module-kicker">À FAIRE</span><strong>Tâches du domaine</strong></div></div>
@@ -296,18 +343,7 @@
           </form>
           <p id="habitsSummary" class="atelier-list-summary" aria-live="polite"></p><div id="habitList" class="organisation-list"></div>
         </section>
-        <section class="organisation-module cycle-module">
-          <h3>Suivi du cycle menstruel</h3>
-          <p class="muted">Données sensibles stockées dans la base locale. Tant que les comptes indépendants n'existent pas, elles sont accessibles à toute personne utilisant cette installation.</p>
-          <form id="cycleForm" class="organisation-form">
-            <label>Début des règles <input id="cycleStart" type="date" required></label>
-            <label>Fin des règles (facultatif) <input id="cycleEnd" type="date"></label>
-            <button type="submit">Enregistrer la période</button>
-          </form>
-          <div id="cycleForecast" class="cycle-forecast" aria-live="polite"></div>
-          <div id="cycleEntries" class="organisation-list"></div>
-          <small class="muted">Les estimations ne sont pas des dates certaines et ne doivent pas servir de méthode contraceptive.</small>
-        </section>
+
       </div>
     </section>
 
@@ -358,11 +394,64 @@
     </section>
 
 
+    <section id="trackersView" class="view life-view">
+      <div class="panel-head tracker-heading"><div><h2>Mes tableaux</h2><p class="muted">Un tableau, un rythme, tes propres cases.</p></div><button id="trackerBoardCreateToggle" type="button" class="primary" aria-controls="trackerBoardCreateForm" aria-expanded="false">＋ Nouveau tableau</button></div>
+      <form id="trackerBoardCreateForm" class="life-form tracker-board-create hidden" aria-label="Créer un tableau">
+        <label>Nom du tableau<input name="title" maxlength="100" required placeholder="Ex. : Bien-être, lectures, projets…"></label>
+        <label>Couleur des cases<select name="color"><option value="sage">Sauge</option><option value="rose">Rose poudré</option><option value="mauve">Mauve</option><option value="gold">Miel</option><option value="blue">Bleu brume</option><option value="peach">Pêche</option></select></label>
+        <label>Rythme du tableau<select id="trackerBoardPeriodPreset" name="period_preset">
+          <option value="months:1">1 mois (comme Habitudes)</option>
+          <option value="weeks:1">1 semaine</option>
+          <option value="weeks:2">2 semaines</option>
+          <option value="months:2">2 mois</option>
+          <option value="months:3">3 mois</option>
+          <option value="months:6">6 mois</option>
+          <option value="years:1">1 an</option>
+          <option value="years:2">2 ans</option>
+          <option value="custom">Durée personnalisée…</option>
+        </select></label>
+        <div id="trackerBoardCustomPeriod" class="tracker-custom-period hidden">
+          <label>Durée<input name="custom_count" type="number" min="1" max="90" value="2"></label>
+          <label>Unité<select name="custom_unit"><option value="days">Jours</option><option value="weeks">Semaines</option><option value="months">Mois</option><option value="years">Années</option></select></label>
+        </div>
+        <button type="submit" class="primary">+ Créer un tableau</button>
+      </form>
+      <div class="tracker-board-toolbar">
+        <div class="tracker-month-controls" aria-label="Navigation des tableaux mensuels"><button id="trackerMonthPrev" type="button" aria-label="Mois précédent">‹</button><strong id="trackerMonthLabel"></strong><button id="trackerMonthNext" type="button" aria-label="Mois suivant">›</button><button id="trackerMonthToday" type="button">Ce mois-ci</button></div>
+      </div>
+      <div id="trackerBoardList" class="tracker-board-list" aria-live="polite"></div>
+      <details class="tracker-legacy-section">
+        <summary>Mes anciennes mesures chiffrées (conservées séparément)</summary>
+        <p class="life-muted">Tes anciennes valeurs, notes et historiques sont toujours ici. Elles ne sont jamais effacées ni converties automatiquement.</p>
+        <form id="trackerCreateForm" class="life-form"><label>Nom de la mesure<input name="title" maxlength="120" required placeholder="Ex. : Lecture, marche, humeur…"></label><label>Unité<input name="unit" maxlength="32" placeholder="pages, minutes, /10…"></label><label>Objectif facultatif<input name="target" type="number" step="any" placeholder="—"></label><button type="submit" class="primary">+ Créer une mesure</button></form>
+        <div id="trackerList" class="life-card-list"></div>
+      </details>
+    </section>
+    <section id="adminView" class="view life-view">
+      <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
+      <form id="adminCreateForm" class="life-form"><label>Démarche<input name="title" maxlength="180" required placeholder="Ex. : Envoyer un dossier"></label><label>Catégorie<select name="category"><option>Santé</option><option>Logement</option><option>CAF</option><option>Emploi</option><option>Identité</option><option>Autre</option></select></label><label>Échéance<input name="due_date" type="date"></label><label class="life-form-wide">Notes<textarea name="notes" rows="2" placeholder="Pièces à réunir, contact, référence…"></textarea></label><button type="submit" class="primary">+ Ajouter</button></form>
+      <div class="admin-workspace-toolbar" role="search" aria-label="Trouver une démarche">
+        <label>Rechercher une démarche<input id="adminSearch" type="search" placeholder="Nom, catégorie ou notes…" autocomplete="off"></label>
+        <label>Afficher<select id="adminStatusFilter"><option value="all">Toutes les démarches</option><option value="todo">À faire</option><option value="waiting">En attente</option><option value="done">Terminées</option></select></label>
+        <span class="admin-workspace-count" id="adminVisibleCount" aria-live="polite"></span>
+      </div>
+      <div id="adminList" class="life-card-list"></div>
+      <section class="life-admin-archives-section" aria-label="Démarches archivées">
+        <button id="adminArchivesToggle" type="button" aria-expanded="false"
+          aria-controls="adminArchivedList">▸ Mes démarches archivées (0)</button>
+        <p class="life-muted">Archiver ne supprime ni les notes, ni les fichiers, ni le rendez-vous associé.</p>
+        <div id="adminArchivedList" class="life-card-list hidden"></div>
+      </section>
+    </section>
+    <section id="capturesView" class="view life-view">
+      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
+      <div id="captureInbox" class="life-card-list"></div>
+    </section>
     <section id="settingsView" class="view settings-view">
       <div class="settings-shell">
         <div class="settings-heading">
           <div>
-            <div class="section-kicker">L’ATELIER</div>
+            <div class="section-kicker">L’ATELIER DU GOBLIN</div>
             <h2>Paramètres</h2>
             <p class="muted">Les réglages sont enregistrés sur cet ordinateur.</p>
           </div>
@@ -370,6 +459,57 @@
         </div>
 
         <div class="settings-grid">
+
+          <section class="settings-card" id="settingsUpdatesCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">↻</span>
+              <div><h3>Mises à jour</h3><span id="settingsUpdateAvailable" class="atelier-update-indicator hidden" role="status">● Mise à jour disponible</span><p>Vérifier, sauvegarder et redémarrer cette installation de L’Atelier.</p></div>
+            </div>
+            <div class="settings-status-row"><span>Version installée</span><strong id="settingsInstalledVersion">—</strong></div>
+            <button id="settingsCheckUpdates" type="button">↻ Vérifier les mises à jour</button>
+            <button id="settingsReloadUi" type="button">⟳ Recharger complètement l’interface</button>
+            <p id="settingsRunningEdition" class="muted">Identification de l’installation en cours…</p>
+            <button id="settingsInstallUpdate" type="button" class="primary" hidden disabled>↓ Installer la mise à jour</button>
+            <p id="settingsUpdateMessage" class="muted" role="status" aria-live="polite">Recherche automatique des mises à jour au démarrage.</p><p class="muted">Vérification discrète au lancement, puis périodiquement lorsque l’application est ouverte. Aucune mise à jour ne s’installe sans ton accord.</p>
+            <button id="settingsExportBrowserData" type="button">↓ Sauvegarder les réglages du navigateur</button>
+            <p class="muted">Ce téléchargement reste privé sur ton ordinateur et peut contenir des brouillons. Il ne remplace pas une sauvegarde des carnets et de la base de données.</p>
+            <p class="muted">Sur les éditions Windows TEST et Nathan : sauvegarde de secours, installation et redémarrage du serveur. L’interface se reconnecte automatiquement. La version stable reste protégée.</p>
+          </section>
+          <section class="settings-card" id="settingsTrackerArchivesCard">
+            <div class="settings-card-title"><span class="settings-card-icon">▤</span>
+              <div><h3>Archives</h3><p>Historique des mois de Trackers, tableaux et anciennes listes conservées.</p></div>
+            </div>
+            <div class="settings-archive-actions"><button id="settingsRefreshTrackerArchives" type="button">↻ Actualiser les archives</button>
+              <button id="trackerBoardArchivesToggle" type="button" aria-expanded="false">Tableaux archivés</button></div>
+            <div id="settingsTrackerHistory" class="tracker-history-list" aria-live="polite"></div>
+            <div id="trackerBoardArchiveList" class="tracker-board-archive-list hidden"></div>
+            <details class="tracker-old-preps"><summary>Anciennes listes Préparatifs conservées</summary>
+              <p class="muted">Cette ancienne rubrique a été retirée du tiroir. Aucune de ses données n’a été effacée.</p>
+              <div id="settingsLegacyPreparations"></div></details>
+          </section>
+          <section class="settings-card" id="settingsDesktopPostitsCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">▧</span>
+              <div><h3>Post-it sur le Bureau Windows</h3><p>De vraies notes indépendantes, même lorsque L’Atelier du Goblin est fermé.</p></div>
+            </div>
+            <button id="settingsOpenDesktopPostits" class="primary" type="button">▧ Afficher mes Post-it sur le Bureau</button>
+            <button id="settingsNewDesktopPostit" type="button">＋ Nouveau Post-it sur le Bureau</button>
+            <label class="settings-field" for="settingsDesktopPostitStartup">
+              <span>Retrouver mes notes au démarrage de Windows</span>
+              <input id="settingsDesktopPostitStartup" type="checkbox">
+            </label>
+            <p id="settingsDesktopPostitsStatus" class="muted" role="status" aria-live="polite">Vérification du compagnon Windows…</p>
+            <p class="muted">Pour une touche macro de clavier ou un bouton programmable de souris, associe un lancement de programme au fichier :
+              <code>E:\LATELIER_TEST_0180\code_0180\app\Lancer_Capture_Rapide.cmd</code>
+              (édition TEST uniquement ; le compagnon de Post-it doit être actif près de l’horloge).
+              Le raccourci clavier Ctrl+Shift+Espace reste disponible.</p>
+            <details id="settingsDesktopPostitArchives" class="postit-settings-archives">
+              <summary>▸ Mes Post-it archivés <span id="settingsDesktopPostitArchiveCount">(0)</span></summary>
+              <p class="muted">Les Post-it restent sur le Bureau Windows. Leur texte, couleur, sauts de ligne et emplacement sont conservés lors de l’archivage.</p>
+              <div id="settingsDesktopPostitArchiveList" class="postit-archive-list" aria-live="polite"></div>
+            </details>
+            <p class="muted">Post-it uniquement sur le Bureau Windows. « OK » enregistre et ferme une note, « Supprimer » demande confirmation. Le cadenas 🔓 bloque sa position et sa taille. Les notes n’encombrent pas la barre des tâches : retrouve-les via la petite icône près de l’horloge (parfois cachée derrière ^).</p>
+          </section>
           <section class="settings-card">
             <div class="settings-card-title">
               <span class="settings-card-icon">◷</span>
@@ -389,6 +529,21 @@
             </div>
           </section>
 
+          <section class="settings-card" id="settingsCycleCard">
+            <div class="settings-card-title">
+              <span class="settings-card-icon">◷</span>
+              <div><h3>Cycle & calendrier</h3><p>Des préférences propres à cette installation. Les dates restent dans sa base locale.</p></div>
+            </div>
+            <label class="settings-toggle">
+              <input id="settingsCycleShowInfo" type="checkbox">
+              <span><strong>Afficher le compte à rebours du cycle</strong><small>À côté de « Calendrier & semainier », avec le mode Goblin grognon estimé 14 jours avant.</small></span>
+            </label>
+            <label class="settings-toggle">
+              <input id="settingsCycleShowMarks" type="checkbox">
+              <span><strong>Afficher les règles enregistrées et prévues sur le calendrier</strong><small>Rouge soutenu pour les dates notées, rouge discret et pointillé pour les dates estimées. Désactiver ne supprime aucune donnée.</small></span>
+            </label>
+            <p class="muted">Clic droit sur une date du calendrier → « Règles » pour ajouter, modifier ou supprimer une période. Prévisions indicatives, jamais certaines.</p>
+          </section>
           <section class="settings-card">
             <div class="settings-card-title">
               <span class="settings-card-icon">🔔</span>
@@ -403,10 +558,8 @@
               <input id="settingsNotificationPersistent" type="checkbox">
               <span><strong>Notification persistante</strong><small>Demande à Brave/Windows de la garder affichée jusqu’à interaction. Le système peut malgré tout décider de la masquer.</small></span>
             </label>
-            <div class="settings-future">
-              <span>♪ Son de rappel</span>
-              <small>Prévu pour un prochain bloc.</small>
-            </div>
+            <label class="settings-toggle"><input id="settingsReminderSound" type="checkbox"><span><strong>♪ Son de rappel</strong><small>Petit son original lorsque l’application est ouverte. Sur téléphone, les restrictions du système peuvent empêcher le son en arrière-plan.</small></span></label>
+            <button id="settingsTestReminderSound" type="button">▶ Tester le son</button>
             <div class="settings-future">
               <span>● Badge sur l’icône</span>
               <small>Prévu plus tard, surtout pour la future application bureau.</small>
@@ -421,6 +574,7 @@
             <button id="settingsNavReset" type="button">Remettre le tiroir à droite</button>
           </section>
 
+          <section class="settings-card" id="settingsQuickCaptureCard"><div class="settings-card-title"><span class="settings-card-icon">✎</span><div><h3>Capture rapide</h3><p>Note une idée et range-la avec #Carnet, #Tâches, #Administratif…</p></div></div><label class="settings-field">Raccourci dans L’Atelier<input id="settingsQuickCaptureShortcut" readonly placeholder="Clique puis appuie sur la combinaison"></label><button id="settingsQuickCaptureOpen" type="button">✎ Ouvrir la capture rapide</button><p class="muted">Le raccourci fonctionne dans l’application et, sur Windows, même lorsqu’elle est fermée si le compagnon Post-it reste actif près de l’horloge. <span id="settingsGlobalShortcutStatus"></span></p></section>
           <section class="settings-card"><div class="settings-card-title"><span class="settings-card-icon">⌨</span><div><h3>Raccourcis pratiques</h3><p>Quelques commandes utiles de L’Atelier.</p></div></div><div class="atelier-settings-shortcuts"><span>Feuilleter un carnet en lecture</span><strong>← / →</strong><span>Rechercher dans un carnet</span><strong>Ctrl + F</strong><span>Placement précis sur l’Accueil</span><strong>Flèches · Maj + flèche · Échap</strong></div></section><section class="settings-card settings-card-muted">
             <div class="settings-card-title">
               <span class="settings-card-icon">✦</span>
@@ -477,8 +631,26 @@
   </div>
 
   <div id="toastArea" class="toast-area" aria-live="polite"></div>
+  <div id="quickCaptureOverlay" class="quick-capture-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="quickCaptureTitle">
+    <div class="quick-capture-dialog"><div class="quick-capture-head"><h2 id="quickCaptureTitle">✎ Capture rapide</h2><button id="quickCaptureClose" type="button" aria-label="Fermer">×</button></div>
+    <p>Commence par <strong>#</strong> pour choisir une destination.</p>
+    <textarea id="quickCaptureText" rows="5" placeholder="#Carnet Une idée à garder…"></textarea>
+    <div id="quickCaptureSuggestions" class="quick-capture-suggestions" role="listbox"></div>
+    <div class="quick-capture-foot"><span id="quickCaptureDestination">Destination : Carnet</span><button id="quickCaptureSend" type="button" class="primary">Envoyer</button></div>
+    </div>
+  </div>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
+  <script src="/postits.js"></script>
+  <script src="/event_preparations.js"></script>
   <script src="/app_part3.js"></script>
+  <script src="/calendar_cycle_compact.js"></script>
+  <script src="/objective_map.js"></script>
+  <script src="/progression_view.js"></script>
+  <script src="/life_tools.js"></script>
+  <script src="/standalone_preparations.js"></script>
+  <script src="/tracker_ritual_ui.js"></script>
+  <script src="/editor_flow.js"></script>
+  <script src="/interface_reference.js"></script>
 </body>
 </html>

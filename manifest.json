@@ -1,5 +1,5 @@
 {
-  "version": "0.17.0",
+  "version": "0.18.0",
   "format": 2,
   "base_url": "https://raw.githubusercontent.com/PetitElfe/atelier-releases/main/app",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "02d38e98e88f4a8dc2ea40dbb769338601066fc94920b52882a14f21ad97f7ee"
+      "sha256": "f5e9382967c9833066a55808829f3750fc8e1181b170cafd222c37048bb49a77"
     },
     {
       "path": "app.py",
@@ -17,11 +17,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "8cf2d124a14ef4015428c42d1e54928394be3a2ce3be36ca046cb4cfc3154d30"
+      "sha256": "90c058493add817cbf03a428785ea67dd00560c6ae52f6163b6759e3cca27d61"
     },
     {
       "path": "app_part2.py",
-      "sha256": "17b5b6eb61df64571d26d35571becdc82dfc323c66f562d3a7d27dfb39bea3d8"
+      "sha256": "3cdb5cc9f1d0b564e2848e51e3d235ebf091f0fab0252297795398f74e75309f"
     },
     {
       "path": "app_part3.py",
@@ -29,24 +29,164 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "ed2a5dfad8b62846bbfadfa5e52e97aa4aeb775ef3c1ff8b4596ecdf91dac491"
+      "sha256": "b1cbc91303fdb2aebbf0ef8dbfe6e0c56046cb7c1b730d5fed776a03926a9944"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "e7aca421d5f313b703c9d5f9a7ad10f0c4998fca35da9e0cf007c4c08a7beb95"
+      "sha256": "cffc30fdcaeb6fd821b4b90ec506652331ba60ad3675b226ba51f23a51789dd1"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "d7751dc6b7c1223c54d9c4c26352f1a885952a5602dde2932a71e23dfabd3b49"
+      "sha256": "31c3eab5e16a341588e825293be1f89ef92e88cc494b29d0b1b656439c3c4870"
     },
     {
       "path": "public/index.html",
-      "sha256": "1c03ca1abed007577b568c984313b721cca2de9aba67b0b199ced0bf54e576a2"
+      "sha256": "8c4bfa7c379ffa06d29e4dab924779c4e6d080acaaaec6309c574d9dc49267cc"
     },
     {
       "path": "public/styles.css",
-      "sha256": "ac9f16bbb8bf8f1548e6f5cb5f51bd6ed35979759d317d8d0446315a3ef135c4"
+      "sha256": "f189ae37f4855f796ca284864496313f1ad3a936a708f7961df463382277cf1f"
+    },
+    {
+      "path": "progression.py",
+      "sha256": "1b8ab620b090825c8592b387e76fc6f013675e42731b9554e10cbce5c8e6af87"
+    },
+    {
+      "path": "objective_maps.py",
+      "sha256": "2bb255e4401dae116753eca710a12fb661e30061511fbdb02a217b9d168c3aba"
+    },
+    {
+      "path": "public/objective_map.js",
+      "sha256": "db01eb7f649101a98f253d3a5424eb289145e95aa5a1f5b332adc617ff9a5b1c"
+    },
+    {
+      "path": "public/objective_map.css",
+      "sha256": "79a2435fba1eafd2bc5fd5666933efe38d58ae1ac4e1bedd943b15abacfaf36f"
+    },
+    {
+      "path": "public/progression_view.js",
+      "sha256": "a82b12dc62692ca0baca109be489fe07e7bb38df81aab3bc9a0d254caf720c62"
+    },
+    {
+      "path": "updater.py",
+      "sha256": "cbbe1a4e4e09ab5df6f4a5cb3938917f95fe569be9268a12d838dda64dd1e028"
+    },
+    {
+      "path": "public/postits.js",
+      "sha256": "5e48a77bbd412e4d5a960df336cff7210fbbc5a2da4d9b223639ab3fe8e30ce4"
+    },
+    {
+      "path": "desktop_shell.py",
+      "sha256": "8ae05d247e8f5192ace037170e6ec26a127636fc2ade102d6d4f4d7c31cb38eb"
+    },
+    {
+      "path": "desktop_postits.py",
+      "sha256": "8e43a2efde6de2008765eef4d969d2a0033863518f99b37263ee87f168ee5b6b"
+    },
+    {
+      "path": "windows_tray.py",
+      "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
+    },
+    {
+      "path": "event_preparations.py",
+      "sha256": "2b812c7a1f3e2bfd4f0626327c0f3b4bfbe2e0543364aa1bfdb2d53dee036624"
+    },
+    {
+      "path": "public/event_preparations.js",
+      "sha256": "11e83eb006ecba1072c0701ee31e3d5c24944fb40c7b4f82ba000010afc15e04"
+    },
+    {
+      "path": "public/event_preparations.css",
+      "sha256": "17d64e2034a689bfe155e6f06ec2d2cc0f37fd365817db4250080a2b883de458"
+    },
+    {
+      "path": "public/calendar_cycle_compact.js",
+      "sha256": "6e0f029678de9fdf928c22ea9c4eb019085029eeea3b730cfd9355b25b04ecc3"
+    },
+    {
+      "path": "public/calendar_cycle_compact.css",
+      "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
+    },
+    {
+      "path": "public/week_clarity.css",
+      "sha256": "fef6f7008c40e344dab8c8e7aa5b920a49752605850638c22890e10fd7ae24d2"
+    },
+    {
+      "path": "public/life_tools.js",
+      "sha256": "a144416b9e58651923493cba8a66408b51103d789a2f8b40f2bdf283cbf2a36c"
+    },
+    {
+      "path": "public/life_tools.css",
+      "sha256": "3eaf9b0ab89a3d38e56825c35417aa3e7d1c92e77fda90cc68a0276210bcf092"
+    },
+    {
+      "path": "quick_capture_native.py",
+      "sha256": "e447a436ece08f1e9538286ecf1e645294eae4aca6a7030769fd47ea5e6a5ef3"
+    },
+    {
+      "path": "public/standalone_preparations.js",
+      "sha256": "5e07dcff329b3567df83db73764d75b7d131f78e2f41efbfed9db4f789a040de"
+    },
+    {
+      "path": "public/standalone_preparations.css",
+      "sha256": "be38687ac1738d0c358eb4784db2bf7f5e30ebe78517eefc0c92b9aafe87a507"
+    },
+    {
+      "path": "tracker_rituals.py",
+      "sha256": "6aefc931c9bed98b673884ca9506741f13b1de68badde030af42277627da742e"
+    },
+    {
+      "path": "public/tracker_ritual_ui.js",
+      "sha256": "ba6cd89c62b54c6c7428cd27e176ef4af11ac74129f7ddf3fdfbdfd7678a293b"
+    },
+    {
+      "path": "public/visual_polish_oct28.css",
+      "sha256": "4609536fe893a025ae84d93442efb9afd3dc53068e143dd3f66e8b0b7ae7458e"
+    },
+    {
+      "path": "admin_docs.py",
+      "sha256": "3af1656d20a19d48dd7c671037d0f79cc6b57896585fcc6bf5b638885b4cd0a1"
+    },
+    {
+      "path": "quick_capture_macro.py",
+      "sha256": "9838680eb052f01816d0a93314fbb66d3b951a6cdbe292795e5c193e59d38433"
+    },
+    {
+      "path": "Lancer_Capture_Rapide.cmd",
+      "sha256": "1d39ec3470c10af938ea9b97fb338fc5b6f9db62a6ee4b9cc19d798aaa485b81"
+    },
+    {
+      "path": "public/editor_flow.js",
+      "sha256": "ab53c2389b6c0bf716f5cf9d5fda76648442d373e34554a7c90ac916f70e84ac"
+    },
+    {
+      "path": "public/big_refonte.css",
+      "sha256": "2c1c5cdc15ee02fa6869d69ffa280dca40f28f0f21c4bd9d429284d6336e7b2e"
+    },
+    {
+      "path": "public/home_reference.css",
+      "sha256": "7033858b5374f51a2ee36ab1ec2c7336ba7de19925bdacd8b45fd6a0e3e5f220"
+    },
+    {
+      "path": "public/interface_reference.js",
+      "sha256": "802d9537144f33c3e67df222f4a24baf197d6bc9af0598ff720ee718a48d984a"
+    },
+    {
+      "path": "public/interface_reference.css",
+      "sha256": "527583dfb0a4e253cda3f7671c069677a61e1ed5154452ec107efcca8be5ab81"
+    },
+    {
+      "path": "public/jdr.html",
+      "sha256": "38188c522c51812cb173a95a3c7492b010922f12ef7ca98bae73bd3b980a8bff"
+    },
+    {
+      "path": "public/jdr-mj.html",
+      "sha256": "e2edcdf79eb6cd8e18a0964dcab9e75bc585bf4362a6473e012da345503674bc"
+    },
+    {
+      "path": "public/mobile.html",
+      "sha256": "43c81e88053d21e4178f21c4b02b695ade8ccbb839c075efee5ab109d219cc92"
     }
   ],
-  "notes": "ALPHA 0.17.0 — BIG BLOC transversal : Calendrier aujourd’hui, filtres tâches, rappels, budget, cuisine, habitudes, Bibliothèque clavier et Paramètres."
+  "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises."
 }

@@ -10,6 +10,77 @@ async function applyEventTemplate(f,touched={}){
   }catch(e){}
 }
 
+// Only expose actual web links as clickable actions. Do not execute URLs
+// received from old data or pasted into the editable event URL field.
+function safeCalendarEventUrl(raw){
+  const value=String(raw||'').trim();
+  if(!value)return '';
+  try{
+    const link=new URL(value);
+    return (link.protocol==='https:'||link.protocol==='http:')&&link.hostname?link.href:'';
+  }catch(_){return ''}
+}
+
+/* Les pièces jointes sont liées au rendez-vous de base, pas à une date de
+   répétition. Aucun fichier n'est transmis à un serveur distant. */
+function wireEventDocumentEditor(event){
+  const root=$('#eventAttachmentList'),input=$('#eventAttachmentInput');
+  if(!root||!input||!event?.id)return;
+  const eventId=Number(event.id);
+  if(!Number.isSafeInteger(eventId)||eventId<1)return;
+  const endpoint='/api/events/'+eventId+'/attachments';
+  const render=items=>{
+    root.replaceChildren();
+    const current=Array.isArray(items)?items:[];
+    if(!current.length){const empty=document.createElement('p');
+      empty.className='muted';empty.textContent='Aucun document joint.';root.append(empty);}
+    for(const file of current){
+      const id=Number(file.id);if(!Number.isSafeInteger(id)||id<1)continue;
+      const line=document.createElement('div');line.className='event-document-row';
+      const link=document.createElement('a');link.href=endpoint+'/'+id;
+      link.download=file.filename;link.textContent=file.filename+' · '+Math.max(1,Math.round(file.byte_size/1024))+' Ko';
+      link.title='Télécharger '+file.filename;
+      const remove=document.createElement('button');remove.type='button';remove.className='event-document-delete';
+      remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer '+file.filename);
+      remove.addEventListener('click',async()=>{
+        const confirmed=await askUiConfirm('Retirer le document',
+          'Supprimer définitivement « '+file.filename+' » de ce rendez-vous ?','Retirer',true);
+        if(!confirmed)return;
+        remove.disabled=true;
+        try{await api(endpoint+'/'+id,{method:'DELETE'});await reload();}
+        catch(error){showUiError(error,'Document du rendez-vous');remove.disabled=false;}
+      });
+      line.append(link,remove);root.append(line);
+    }
+    // Les événements récurrents partagent les documents du rendez-vous de base.
+    event.attachments=current;
+    (state.events||[]).filter(e=>Number(e.id)===eventId).forEach(e=>e.attachments=current);
+  };
+  const reload=async()=>{const files=await api(endpoint);render(files);};
+  render(event.attachments||[]);
+  reload().catch(error=>showUiError(error,'Documents du rendez-vous'));
+  input.addEventListener('change',async()=>{
+    const file=input.files?.[0];if(!file)return;
+    if(!file.size||file.size>4*1024*1024){
+      showUiError(new Error('Fichier vide ou de plus de 4 Mo.'),'Document du rendez-vous');
+      input.value='';return;
+    }
+    input.disabled=true;
+    try{
+      const encoded=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+        reader.onerror=()=>reject(new Error('Impossible de lire le fichier local.'));
+        reader.readAsDataURL(file);
+      });
+      await api(endpoint,{method:'POST',body:JSON.stringify({
+        filename:file.name,mime_type:file.type||'text/plain',base64:encoded
+      })});
+      await reload();
+    }catch(error){showUiError(error,'Document du rendez-vous')}
+    finally{input.disabled=false;input.value=''}
+  });
+}
 function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const editing=!!e&&!duplicate;
   const reminders=Array.isArray(e?.reminders)
@@ -31,28 +102,53 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   openModal(`<h2>${duplicate?'Dupliquer le rendez-vous':editing?'Modifier le rendez-vous':'Nouveau rendez-vous'}</h2><form id="eventForm" class="form-grid event-form-compact">
     <div class="field full"><label>Titre</label><input name="title" required value="${esc(e?.title||'')}"></div>
     <div class="field"><label>Date</label><input name="event_date" type="date" required value="${esc(e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}"></div>
-    <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général · blanc</option><option value="medical">Médical · vert</option><option value="important">Important · rouge</option></select></div>
+    <div class="field"><label>Catégorie</label><select name="category"><option value="general">Général</option><option value="medical">Médical</option><option value="important">Important / deadline</option></select></div>
+    <div class="field"><label>Couleur</label><select name="color"><option value="auto">Automatique (catégorie)</option><option value="sage">Vert sauge</option><option value="mauve">Mauve pastel</option><option value="gold">Doré doux</option><option value="red">Rouge pastel</option><option value="pink">Rose poudré</option><option value="blue">Bleu grisé</option><option value="peach">Pêche</option><option value="cream">Jaune crème</option><option value="deep-blue">Bleu ardoise pastel</option><option value="deep-green">Vert forêt doux</option></select></div>
     <div class="field"><label>Début</label><input name="start_time" type="time" value="${esc(e?.start_time||presetTime||'')}"></div>
     <div class="field"><label>Fin</label><input name="end_time" type="time" value="${esc(e?.end_time||'')}"></div>
     <div class="field"><label>Lieu</label><input name="location" value="${esc(e?.location||'')}"></div>
     <div class="field"><label>Contact</label><input name="contact" value="${esc(e?.contact||'')}"></div>
     <div class="field"><label>Temps de trajet</label><input name="travel_time" placeholder="ex. 25 min ou 1h10" value="${esc(e?.travel_time||'')}"></div>
     <div id="eventTemplateHint" class="field-help full"></div>
-    <div class="field full"><label>URL</label><input name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"></div>
+    <div class="field full"><label for="eventUrlField">URL du rendez-vous</label><input id="eventUrlField" name="url" type="url" placeholder="https://…" value="${esc(e?.url||'')}"><a id="eventOpenUrl" class="event-open-url hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir le lien du rendez-vous">↗ Ouvrir le lien dans le navigateur</a></div>
+    ${editing&&Array.isArray(e?.admin_links)&&e.admin_links.length?`<div class="field full"><div class="event-admin-links"><strong>Démarches liées</strong><span>${e.admin_links.map(x=>esc(x.title)).join(" · ")}</span><button type="button" id="eventOpenAdmin" class="secondary">↗ Ouvrir dans Administratif</button></div></div>`:""}
     <div class="field"><label>Récurrence</label><select name="recurrence"><option value="none">Aucune</option><option value="daily">Tous les jours</option><option value="weekly">Toutes les semaines</option><option value="monthly">Tous les mois</option></select></div>
     <div class="field"><label>Statut</label><select name="status"><option value="planned">Prévu</option><option value="done">Effectué</option><option value="cancelled">Annulé</option></select></div>
     <div class="field full checkline"><input id="showInMonth" name="show_in_month" type="checkbox" ${e?.show_in_month===0?'':'checked'}><label for="showInMonth">Afficher aussi dans le mensuel</label></div>
-    <div class="field full"><label>Notes / préparation</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    <div class="field full"><label>Notes du rendez-vous</label><textarea name="notes">${esc(e?.notes||'')}</textarea></div>
+    ${editing?'<fieldset class="field full event-document-editor"><legend>Documents du rendez-vous</legend><p class="field-help">PDF, images ou TXT, 4 Mo par fichier. Ces documents restent locaux et sont communs aux occurrences d’un rendez-vous récurrent.</p><div id="eventAttachmentList" class="event-document-list"></div><label class="event-document-upload">＋ Joindre un document<input id="eventAttachmentInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt" aria-label="Joindre un fichier à ce rendez-vous"></label></fieldset>':'<p class="field full field-help">Enregistre d’abord le rendez-vous pour pouvoir lui joindre des documents locaux.</p>'}
     ${reminderEditor(reminders,'du rendez-vous',e?.instance_date||e?.event_date||presetDate||ymd(state.cursor))}
     <div id="eventSaveError" class="form-error field full hidden"></div>
     <div class="form-actions field full event-form-actions">${editing?'<button type="button" id="eventMore" class="event-more" aria-label="Actions du rendez-vous" title="Actions du rendez-vous">⋯</button>':''}<button type="button" id="cancelEvent">Annuler</button><button id="saveEvent" class="primary" type="submit">${duplicate?'Créer la copie':'Enregistrer'}</button></div>
   </form>`);
-  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
-  $('#eventMore')?.addEventListener('click',ev=>showAtelierContextMenu(ev.currentTarget,[
-    {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
-    ...(e?.url?[{label:'Ouvrir le lien',run:()=>window.open(e.url,'_blank','noopener,noreferrer')}]:[]),
-    {label:'Supprimer le rendez-vous',danger:true,run:()=>$('#deleteEventAction')?.click()}
-  ]));
+  $('#eventOpenAdmin')?.addEventListener('click',async()=>{
+    closeModal();showView('admin');
+    if(typeof loadLifeTools==='function')await loadLifeTools();
+    const adminId=e.admin_links[0]?.id;
+    const card=$('#adminList .life-card[data-admin-id="'+adminId+'"]');
+    if(card){card.scrollIntoView({block:'center',behavior:'smooth'});card.classList.add('life-admin-highlight')}
+  });
+  if(editing)wireEventDocumentEditor(e);
+  const f=$('#eventForm'); f.category.value=e?.category||'general'; f.color.value=e?.color||'auto'; f.recurrence.value=e?.recurrence||'none'; f.status.value=e?.status||'planned'; wireReminderEditor(); $('#cancelEvent').onclick=closeModal;
+  // Link remains visible in the form while editing; changing the URL updates
+  // its target immediately, without requiring a save or hidden menu.
+  const urlInput=f.elements.url,link=$('#eventOpenUrl');
+  const refreshEventLink=()=>{
+    const valid=safeCalendarEventUrl(urlInput.value);
+    link.classList.toggle('hidden',!valid);
+    if(valid){link.href=valid;link.title=valid}
+    else{link.removeAttribute('href');link.removeAttribute('title')}
+  };
+  urlInput.addEventListener('input',refreshEventLink);
+  refreshEventLink();
+  $('#eventMore')?.addEventListener('click',ev=>{
+    const valid=safeCalendarEventUrl(urlInput.value);
+    showAtelierContextMenu(ev.currentTarget,[
+      {label:'Dupliquer le rendez-vous',run:()=>$('#duplicateEventAction')?.click()},
+      ...(valid?[{label:'↗ Ouvrir le lien',run:()=>window.open(valid,'_blank','noopener,noreferrer')}]:[]),
+      {label:'Supprimer le rendez-vous',danger:true,run:()=>$('#deleteEventAction')?.click()}
+    ]);
+  });
   if(editing){
     const hidden=document.createElement('div');hidden.hidden=true;
     hidden.innerHTML='<button type="button" id="duplicateEventAction"></button><button type="button" id="deleteEventAction"></button>';f.appendChild(hidden);
@@ -253,6 +349,7 @@ async function checkDue(){
 const shown=new Set();
 function notifyReminder(r){
   if(shown.has(r.id))return;
+  if(typeof lifeReminderChime==='function')lifeReminderChime();
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
   const when=formatReminderMoment(r.snoozed_until||r.remind_at);
@@ -312,18 +409,29 @@ document.querySelectorAll('#sideNav [data-view]').forEach(button=>button.addEven
   setSideNavCollapsed(true);
 }));
 function showView(view){
+  // Users who last visited a retired page must not get a blank view on F5.
+  if(!document.getElementById(view+'View'))view='home';
   const enteringLibrary=view==='library'&&state.view!=='library';
+  const changingView=view!==state.view;
   if(state.view==='library'&&view!=='library'&&typeof persistLibraryBeforeNavigation==='function')persistLibraryBeforeNavigation();
   if(state.view==='library'&&view!=='library'&&typeof libraryLeaveExpanded==='function')libraryLeaveExpanded();
   state.view=view;
+  // Le menu flottant ne doit pas recouvrir les actions de la nouvelle rubrique,
+  // notamment « + Rendez-vous » du semainier ouvert depuis l'Accueil.
+  // Sa position mémorisée reste inchangée : seul le tiroir est replié.
+  if(changingView && !$('#sideNav').classList.contains('is-collapsed')) setSideNavCollapsed(true);
   if(view!=='recipe' && view!=='settings') localStorage.setItem('atelierLastView',view);
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & cycle',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
-  if(view==='settings')renderSettings();
+  if(view==='settings'){
+    renderSettings();
+    if(typeof loadTrackerArchiveHistory==='function')loadTrackerArchiveHistory();
+  }
   if(view==='budget')loadBudget();
+  if(['trackers','admin','captures'].includes(view)&&typeof loadLifeTools==='function')loadLifeTools();
   document.body.classList.toggle('home-active',view==='home');
   if(view==='calendar') applyCalendarMode();
   if(view==='organisation'||view==='calendar') refreshOrganisation();
@@ -368,6 +476,12 @@ function setSideNavCollapsed(collapsed){
   syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
+  const headerButton=$('#sideNavHeaderToggle');
+  if(headerButton){
+    headerButton.setAttribute('aria-expanded',String(!collapsed));
+    headerButton.setAttribute('aria-label',collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques');
+    headerButton.title=collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques';
+  }
   const toggle=$('#sideNavToggle');
   if(toggle){
     toggle.setAttribute('aria-label',collapsed?'Afficher le menu':'Masquer le menu');
@@ -394,17 +508,17 @@ function applySideNavPosition(pos=null){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
   const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
-  // Les anciennes positions enregistrées au milieu de l'écran sont réinitialisées.
-  // Seuls les emplacements à proximité d'un bord restent personnalisés.
-  const width=nav.offsetWidth||220;
-  const candidate=Number(saved?.left);
-  const edgeThreshold=Math.max(90,width*0.55);
-  const validEdge=Number.isFinite(candidate)&&(candidate<=edgeThreshold||candidate>=window.innerWidth-width-edgeThreshold);
-  if(saved&&!validEdge){
-    saved=null;
-    localStorage.removeItem('atelierSideNavPosition');
-  }
-  const next=clampSideNavPosition(saved&&Number.isFinite(Number(saved.left))?Number(saved.left):fallback.left,saved&&Number.isFinite(Number(saved.top))?Number(saved.top):fallback.top);
+  // Une position intermédiaire est valide pendant le glisser : ne jamais
+  // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
+  // Le clamp suivant suffit à garder le tiroir visible à l'écran.
+  // null/chaîne vide ne doivent jamais être interprétés comme une coordonnée zéro.
+  // Sinon un réglage partiel replaçait silencieusement le tiroir à gauche.
+  const coordinate=(value,defaultValue)=>{
+    if(value===null||value===undefined||value==='')return defaultValue;
+    const numeric=Number(value);
+    return Number.isFinite(numeric)?numeric:defaultValue;
+  };
+  const next=clampSideNavPosition(coordinate(saved?.left,fallback.left),coordinate(saved?.top,fallback.top));
   nav.style.left=next.left+'px';
   nav.style.right='auto';
   nav.style.top=next.top+'px';
@@ -448,9 +562,22 @@ window.addEventListener('resize',()=>{
   if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
 });
 $('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
+$('#sideNavHeaderToggle')?.addEventListener('click',()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed')));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
 $('#openCalendarCard').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
+$('#upcomingTitle')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('calendar')});
+$('#homeBudgetTitle')?.addEventListener('keydown',event=>{
+  if(!globalLayoutEditing&&(event.key==='Enter'||event.key===' ')){
+    event.preventDefault();showView('budget');
+  }
+});
+$('#homeBudgetWidget')?.addEventListener('click',event=>{
+  if(globalLayoutEditing||event.target.closest('button,a,input,[data-layout-control]'))return;
+  showView('budget');
+});
+$('#homeTodoOpenTasks')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('tasks')});
+$('#homeDeadlineTitle')?.addEventListener('click',()=>{if(!globalLayoutEditing)showView('reminders')});
 $('#openCalendarFromUpcoming').onclick=()=>{if(!globalLayoutEditing)showView('calendar')};
 $('#openTasksFromHome').onclick=()=>showView('tasks');
 $('#addLibraryDomain').onclick=()=>openLibraryDomainCreateModal();
@@ -465,8 +592,8 @@ $('#libraryNotebookDelete').onclick=()=>{const n=(libraryNotebookState.sections|
 const addCurrentLibraryPage=()=>{const n=(libraryNotebookState.sections||[]).find(x=>Number(x.id)===Number(librarySelectedNotebookId));if(n)createLibraryPage(n)};
 $('#addLibraryPage').onclick=addCurrentLibraryPage;
 $('#addLibraryPageSmall').onclick=addCurrentLibraryPage;
-$('#calendarToday').onclick=()=>{state.cursor=new Date();refresh()};
-$('#weekToday').onclick=()=>{state.cursor=new Date();refresh()};
+
+
 $('#prevMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1);refresh()}; $('#nextMonth').onclick=()=>{state.cursor=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+1,1);refresh()};
 $('#prevWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()-7);state.cursor=new Date(state.cursor);refresh()}; $('#nextWeek').onclick=()=>{state.cursor.setDate(state.cursor.getDate()+7);state.cursor=new Date(state.cursor);refresh()};
 const DATE_FORMAT_OPTIONS={
@@ -535,12 +662,177 @@ function renderSettings(){
   }
   if(persistent)persistent.checked=notificationPersistentPreference();
   if(status)status.textContent=notificationPermissionLabel();
+  if(typeof renderCycleSettings==='function')renderCycleSettings();
+  if(typeof lifeRenderSettings==='function')lifeRenderSettings();
   if(permission){
     const granted=('Notification' in window)&&Notification.permission==='granted';
     permission.textContent=granted?'Notifications autorisées':'Autoriser les notifications';
     permission.disabled=granted||!('Notification' in window);
   }
 }
+
+/* ALPHA 0.18.0 — mises à jour TEST et Nathan : même interface, données séparées. */
+function atelierEditionChannel(){return location.port==='8877'?'Nathan':'TEST';}
+let atelierUpdateCandidate=null,atelierUpdatePolling=false;
+let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false;
+const ATELIER_UPDATE_NOTICE_INTERVAL=30*60*1000;
+function atelierSetUpdateNotice(available){
+  const dot=$('#settingsUpdateDot'),label=$('#settingsUpdateAvailable');
+  const gear=$('#settingsBtn');
+  if(dot)dot.classList.toggle('hidden',!available);
+  if(label)label.classList.toggle('hidden',!available);
+  if(gear){
+    gear.title=available?'Paramètres — mise à jour disponible':'Paramètres';
+    gear.setAttribute('aria-label',gear.title);
+  }
+}
+async function atelierCheckForUpdates({automatic=false}={}){
+  if(atelierUpdatePolling||atelierUpdateCheckActive)return;
+  if(automatic&&(document.visibilityState==='hidden'||
+      Date.now()-atelierUpdateLastCheck<ATELIER_UPDATE_NOTICE_INTERVAL))return;
+  atelierUpdateCheckActive=true;
+  atelierUpdateLastCheck=Date.now();
+  const check=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
+  const install=$('#settingsInstallUpdate');
+  if(check)check.disabled=true;
+  if(!automatic&&message)message.textContent='Recherche de la dernière révision '+atelierEditionChannel()+' sur GitHub…';
+  try{
+    const result=await atelierUpdateRequest('/api/update/check');
+    if(!result||typeof result.available!=='boolean'||
+       !/^[0-9a-f]{40}$/.test(result.revision||'')){
+      throw new Error('Réponse de mise à jour inattendue');
+    }
+    atelierUpdateCandidate=result.available?result.revision:null;
+    const build=result.installed_build?' · build '+result.installed_build:'';
+    const version=$('#settingsInstalledVersion');
+    if(version)version.textContent=result.installed_version+' · '+atelierEditionChannel()+build;
+    atelierSetUpdateNotice(result.available);
+    if(install){
+      install.hidden=!result.available;
+      install.disabled=!result.available;
+    }
+    if(message){
+      message.textContent=result.available
+        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
+        : 'L’Atelier '+atelierEditionChannel()+' est à jour ('+result.revision.slice(0,8)+').';
+    }
+  }catch(error){
+    // No false "update available" claim when GitHub cannot be contacted.
+    if(!automatic){
+      atelierUpdateCandidate=null;
+      atelierSetUpdateNotice(false);
+      if(install){install.hidden=true;install.disabled=true}
+    }
+    if(message&&(!automatic||!atelierUpdateCandidate)){
+      message.textContent='Vérification '+(automatic?'automatique ':'')+
+        'impossible : '+(error?.message||'réseau indisponible')+
+        '. Aucune modification effectuée.';
+    }
+  }finally{
+    atelierUpdateCheckActive=false;
+    if(check&&!atelierUpdatePolling)check.disabled=false;
+  }
+}
+
+async function atelierUpdateRequest(url,opts={}){
+  const response=await fetch(url,{cache:'no-store',...opts});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'Serveur indisponible');
+  return result;
+}
+async function atelierPollUpdate(){
+  if(atelierUpdatePolling)return;
+  atelierUpdatePolling=true;
+  const message=$('#settingsUpdateMessage'),install=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
+  const started=Date.now();
+  let lastPhase='';
+  while(Date.now()-started<15*60*1000){
+    try{
+      const state=await atelierUpdateRequest('/api/update/status');
+      if(state.phase==='success'){
+        message.textContent='Mise à jour installée ! Rechargement de L’Atelier…';
+        // Après l’arrêt/redémarrage du serveur, forcer un nouvel HTML/JS.
+        window.location.replace('/?atelier_reloaded='+Date.now());
+        return;
+      }
+      if(state.phase==='error'){
+        message.textContent='Mise à jour interrompue : '+state.detail;
+        check.disabled=false;install.disabled=false;
+        atelierUpdatePolling=false;return;
+      }
+      if(state.detail)message.textContent=state.detail;
+      lastPhase=state.phase;
+    }catch(error){
+      // Le serveur s'arrête temporairement; c'est normal.
+      if(lastPhase==='stopping'||lastPhase==='backup'||lastPhase==='installing'){
+        message.textContent='Redémarrage de L’Atelier '+atelierEditionChannel()+'… La page se reconnecte automatiquement.';
+      }else{
+        message.textContent='Connexion au serveur '+atelierEditionChannel()+' interrompue. Nouvelle tentative…';
+      }
+    }
+    await new Promise(resolve=>setTimeout(resolve,1600));
+  }
+  message.textContent='Le redémarrage prend plus de temps que prévu. Vérifie la fenêtre '+atelierEditionChannel()+' et la sauvegarde avant de recommencer.';
+  atelierUpdatePolling=false;check.disabled=false;
+}
+$('#settingsCheckUpdates').onclick=()=>atelierCheckForUpdates({automatic:false});
+$('#settingsReloadUi')?.addEventListener('click',()=>{
+  window.location.replace('/?atelier_reloaded='+Date.now());
+});
+function atelierShowEdition(){
+  const port=location.port;
+  const edition=port==='8876'?'ALPHA TEST (8876)':port==='8877'?'Nathan (8877)':port==='8765'?'Stable (8765)':'Installation locale (port '+port+')';
+  const label=$('#settingsRunningEdition');
+  if(label)label.textContent='Fenêtre actuellement ouverte : '+edition+'. Si rien ne change, vérifie que tu as bien mis à jour cette installation.';
+  const install=$('#settingsInstallUpdate');
+  if(install)install.textContent='↓ Installer la mise à jour '+atelierEditionChannel();
+}
+atelierShowEdition();
+// Alertes discrètes : jamais de mise à jour sans confirmation explicite.
+setTimeout(()=>atelierCheckForUpdates({automatic:true}),5000);
+setInterval(()=>atelierCheckForUpdates({automatic:true}),ATELIER_UPDATE_NOTICE_INTERVAL);
+window.addEventListener('focus',()=>atelierCheckForUpdates({automatic:true}));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')atelierCheckForUpdates({automatic:true});
+});
+$('#settingsInstallUpdate').onclick=async()=>{
+  if(!atelierUpdateCandidate||atelierUpdatePolling)return;
+  const message=$('#settingsUpdateMessage'),button=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
+  const accepted=await askUiConfirm('Installer la mise à jour '+atelierEditionChannel(),
+    'L’Atelier enregistrera une sauvegarde, s’arrêtera brièvement, puis redémarrera seul. La version habituelle ne sera pas touchée.',
+    'Installer et redémarrer');
+  if(!accepted)return;
+  button.disabled=true;check.disabled=true;
+  message.textContent='Démarrage de l’assistant de mise à jour…';
+  try{
+    await atelierUpdateRequest('/api/update/start',{
+      method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Update':'1'},
+      body:JSON.stringify({revision:atelierUpdateCandidate})
+    });
+    atelierPollUpdate();
+  }catch(error){
+    message.textContent='Impossible de commencer : '+(error?.message||'erreur inconnue');
+    button.disabled=false;check.disabled=false;
+  }
+};
+$('#settingsExportBrowserData').onclick=()=>{
+  const message=$('#settingsUpdateMessage');
+  try{
+    const settings={};
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(/^atelier/i.test(key))settings[key]=localStorage.getItem(key);
+    }
+    const backup={format:'atelier-browser-backup-v1',origin:location.origin,exported_at:new Date().toISOString(),settings};
+    const data=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const fileUrl=URL.createObjectURL(data),link=document.createElement('a');
+    link.href=fileUrl;link.download='atelier-reglages-navigateur-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(fileUrl),2000);
+    message.textContent='Les réglages du navigateur ont été téléchargés. Conserve ce fichier dans un endroit privé.';
+  }catch(error){message.textContent='Sauvegarde des réglages impossible : '+(error?.message||'erreur inconnue');}
+};
+
 function openSettings(){
   if(state.view!=='settings'&&state.view!=='recipe')settingsReturnView=state.view;
   showView('settings');
@@ -592,7 +884,7 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     if(value)value.textContent=Math.round((d.scale||1)*100)+'%';
   }
   function setScale(item,next){
-    const d=read(item.id); d.scale=clamp(next,.45,1.6); save(item.id,d); apply(item,d);
+    const d=read(item.id); d.scale=clamp(next,.45,3.5); save(item.id,d); apply(item,d);
   }
   function beginMove(e,item){
     if(!view.classList.contains('layout-editing')||e.button!==0)return;
@@ -609,10 +901,28 @@ function createLayoutEditor({view, toggle, reset, hint, specs, prefix}){
     e.preventDefault();e.stopPropagation();
     const d=read(item.id), startScale=d.scale||1, sx=e.clientX, sy=e.clientY;
     item.el.classList.add('layout-selected');
-    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,1.6);apply(item,d)};
+    const move=ev=>{const delta=((ev.clientX-sx)+(ev.clientY-sy))/650;d.scale=clamp(startScale+delta,.45,3.5);apply(item,d)};
     const up=()=>{save(item.id,d);item.el.classList.remove('layout-selected');document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up)};
     document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
   }
+
+  // Reposition the modules proportionally after moving between screens.
+  let previousViewport={width:window.innerWidth,height:window.innerHeight};
+  window.addEventListener('resize',()=>{
+    const current={width:window.innerWidth,height:window.innerHeight};
+    if(current.width===previousViewport.width&&current.height===previousViewport.height)return;
+    const rx=current.width/Math.max(1,previousViewport.width);
+    const ry=current.height/Math.max(1,previousViewport.height);
+    specs.forEach(item=>{
+      const d=read(item.id);
+      if(!d.x&&!d.y)return;
+      d.x=Math.round(d.x*rx);
+      d.y=Math.round(d.y*ry);
+      save(item.id,d);
+      apply(item,d);
+    });
+    previousViewport=current;
+  });
 
   specs.forEach(item=>{
     item.el.classList.add('layout-object');
@@ -661,12 +971,13 @@ const homeShortcutDefs=[
 ];
 const homeModuleOrder=[
   ['budget','Budget'],['calendar','Calendrier'],['upcoming','À venir'],['journal','Journal'],
+  ['dailyTrackers','Trackers du jour'],
   ...homeShortcutDefs.map(item=>[item.id,item.title])
 ];
 const homeModuleVisibilityKey=id=>'atelierHomeModuleVisible_'+id;
 function homeModuleIsVisible(id){
   const stored=localStorage.getItem(homeModuleVisibilityKey(id));
-  return stored===null?['budget','calendar','upcoming','journal'].includes(id):stored==='1';
+  return stored===null?['budget','calendar','upcoming','journal','dailyTrackers'].includes(id):stored==='1';
 }
 function syncHomeModuleVisibility(){
   const sections=[...document.querySelectorAll('#homeView [data-home-module]')];
@@ -695,6 +1006,7 @@ function initHomeModuleLibrary(){
   empty.textContent='Aucun module affiché. Utilise « Bibliothèque de modules » pour en ajouter.';
   shelf.after(empty);
   syncHomeModuleVisibility();
+  $('#quickAddHomeModule').onclick=()=>$('#openHomeModuleLibrary').click();
   $('#openHomeModuleLibrary').onclick=()=>{
     const controls=homeModuleOrder.map(([id,label])=>{
       const el=$('#homeView [data-home-module="'+id+'"]');
@@ -703,9 +1015,41 @@ function initHomeModuleLibrary(){
       const name=title?.textContent.trim()||label;
       return '<label class="home-library-item"><input type="checkbox" data-module="'+esc(id)+'" '+(homeModuleIsVisible(id)?'checked':'')+'><span><strong>'+esc(name)+'</strong><small>'+(id==='journal'||id==='budget'||id==='calendar'||id==='upcoming'?'Module de l’Accueil':'Accès à une rubrique existante')+'</small></span></label>';
     }).join('');
-    openModal('<h2>Bibliothèque de modules</h2><p class="muted">Choisis ce que tu souhaites voir sur l’Accueil. Les modules retirés restent disponibles ici, sans suppression de données.</p><form id="homeModulePicker"><div class="home-library-list">'+controls+'</div><div class="form-actions"><button type="button" id="homeModuleAll">Tout afficher</button><button type="submit" class="primary">Appliquer</button></div></form>');
+    openModal('<h2>Bibliothèque de modules</h2><p class="muted">Choisis ce que tu souhaites voir sur l’Accueil. Les modules retirés restent disponibles ici, sans suppression de données.</p><form id="homeModulePicker"><div class="home-library-list">'+controls+'</div><div class="form-actions"><button type="button" id="homeModuleAll">Tout afficher</button><button type="submit" class="primary">Appliquer</button></div></form><div class="home-layout-proposal"><strong>Disposition de l’Accueil</strong><p>Replacer les modules autour du grand carnet, selon le schéma de référence. Tes positions actuelles seront conservées et récupérables.</p><div class="form-actions"><button type="button" id="homeRestorePreviousLayout">Restaurer mes positions</button><button type="button" id="homeApplyReferenceLayout">Essayer cette disposition</button></div></div>');
     const form=$('#homeModulePicker');
     $('#homeModuleAll').onclick=()=>form.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=true);
+    const backupKey='atelierHomeReferenceBackup_20261029';
+    const restoreButton=$('#homeRestorePreviousLayout');
+    restoreButton.disabled=!localStorage.getItem(backupKey);
+    $('#homeApplyReferenceLayout').onclick=()=>{
+      if(!homeCanvasReady)return;
+      const items=globalLayoutItems.filter(isHomeCanvasItem);
+      if(!localStorage.getItem(backupKey)){
+        const backup={};
+        for(const item of items)backup[item.id]=readGlobalLayout(item);
+        localStorage.setItem(backupKey,JSON.stringify(backup));
+      }
+      for(const item of items){
+        const spec=homeSuggestedLayout(item);
+        saveGlobalLayout(item,spec);
+        applyGlobalLayout(item,spec);
+      }
+      requestHomeCanvasMeasure();
+      closeModal();
+    };
+    restoreButton.onclick=()=>{
+      let backup;
+      try{backup=JSON.parse(localStorage.getItem(backupKey)||'{}');}catch(_){backup={}}
+      for(const item of globalLayoutItems.filter(isHomeCanvasItem)){
+        const value=backup[item.id];
+        if(!value)continue;
+        saveGlobalLayout(item,value);
+        applyGlobalLayout(item,value);
+      }
+      localStorage.removeItem(backupKey);
+      requestHomeCanvasMeasure();
+      closeModal();
+    };
     form.onsubmit=event=>{
       event.preventDefault();
       const inputs=[...form.querySelectorAll('input[data-module]')];
@@ -763,7 +1107,7 @@ function getGlobalLayoutSpecs(){
   // Ajouter toutes les cartes et sections stables de chaque rubrique,
   // y compris la Bibliothèque, le Budget et les sections du journal.
   const selector=[
-    '#homeBudgetWidget','#homeShortcutShelf .home-shortcut-card','#homeView .journal-section',
+    '#homeBudgetWidget','#homeDailyTrackersWidget','#homeShortcutShelf .home-shortcut-card','#homeView .journal-section',
     '#organisationView .organisation-module',
     '#budgetSummaryPanel','#budgetSummaryPanel article','#budgetView .budget-action-bar',
     '#budgetRulesPanel','#budgetDebtsPanel','#budgetOpeningPanel','#budgetLedgerPanel','#budgetNotesPanel',
@@ -926,8 +1270,71 @@ let homeCanvasReady=false;
 let homeCanvasActivationReady=false;
 let homeCanvas=null;
 let homeCanvasMeasurePending=false;
+let homeCanvasReflowPending=false;
+function homeVisibleX(savedX,canvasWidth,elementWidth){
+  const x=Number.isFinite(Number(savedX))?Number(savedX):0;
+  return Math.round(Math.max(0,Math.min(x,Math.max(0,canvasWidth-elementWidth))));
+}
+// Display-only adaptation: never mutate the saved layout on resize or F5.
+function reflowHomeCanvasViewport(){
+  if(!homeCanvasReady||!homeCanvas||state.view!=='home'||homeCanvasReflowPending)return;
+  homeCanvasReflowPending=true;
+  requestAnimationFrame(()=>{
+    homeCanvasReflowPending=false;
+    if(!homeCanvasReady||!homeCanvas||state.view!=='home')return;
+    for(const item of globalLayoutItems.filter(isHomeCanvasItem)){
+      if(!item.el.classList.contains('home-module-off'))
+        applyGlobalLayout(item,readGlobalLayout(item));
+    }
+    requestHomeCanvasMeasure();
+  });
+}
 function isHomeCanvasItem(item){return item.view==='home'&&Boolean(item.el.dataset.homeModule)}
 function homeCanvasStorageKey(item){return 'atelierHomeCanvasV2_'+item.id}
+/* Déplacement ponctuel demandé par Léo (capture 29/10) : la To-do list doit
+   occuper l'espace libre en haut à droite, autour de 640 × 250. Ne jamais
+   décaler silencieusement les autres cartes ni écraser un réglage manuel.
+   On photographie son ancien emplacement et on ne migre qu'une seule fois,
+   sur un écran suffisamment large et seulement si la place est libre. */
+function applyTodoTopRightReferenceOnce(items){
+  const flag='atelierTodoTopRightApplied_20261030';
+  const backup='atelierTodoTopRightPrevious_20261030';
+  if(localStorage.getItem(flag)==='1'||!homeCanvas||homeCanvas.clientWidth<1450)return;
+  const todo=items.find(item=>item.id==='homeDailyTrackersWidget');
+  if(!todo||todo.el.classList.contains('home-module-off'))return;
+  const width=640,marginRight=67;
+  const x=Math.max(0,Math.round(homeCanvas.clientWidth-width-marginRight)),y=10;
+  const origin=homeCanvas.getBoundingClientRect();
+  // Le rectangle dessiné est juste au-dessus du livre. Si le livre est
+  // placé un peu plus haut que sur la capture, raccourcir légèrement la
+  // carte plutôt que recouvrir les pages ou bouger le livre.
+  const occupied=[];
+  for(const item of items){
+    if(item===todo||item.el.classList.contains('home-module-off'))continue;
+    const elRect=item.el.getBoundingClientRect();
+    if(!elRect.width||!elRect.height)continue;
+    occupied.push({left:elRect.left-origin.left,top:elRect.top-origin.top,
+      right:elRect.right-origin.left,bottom:elRect.bottom-origin.top});
+  }
+  let height=250;
+  for(const other of occupied){
+    if(x>=other.right+8||x+width+8<=other.left)continue;
+    if(other.top>y+210&&other.top<y+height+10)
+      height=Math.min(height,Math.floor(other.top-y-10));
+  }
+  const rect={left:x,top:y,right:x+width,bottom:y+height};
+  const touches=(a,b,gap=8)=>a.left<b.right+gap&&a.right+gap>b.left&&
+    a.top<b.bottom+gap&&a.bottom+gap>b.top;
+  if(height<210||occupied.some(other=>touches(rect,other)))return;
+  const previous=localStorage.getItem(homeCanvasStorageKey(todo));
+  if(previous==null)return;
+  if(localStorage.getItem(backup)==null)localStorage.setItem(backup,previous);
+  const prior=readGlobalLayout(todo);
+  const next={...prior,x,y,width,height};
+  saveGlobalLayout(todo,next);
+  applyGlobalLayout(todo,next);
+  localStorage.setItem(flag,'1');
+}
 function requestHomeCanvasMeasure(){
   if(!homeCanvasReady||homeCanvasMeasurePending)return;
   homeCanvasMeasurePending=true;
@@ -960,19 +1367,23 @@ function requestHomeCanvasMeasure(){
 }
 function homeSuggestedLayout(item){
   const width=homeCanvas?.clientWidth||Math.max(700,window.innerWidth-40);
-  const narrow=width<900;
-  const left=12,center=Math.max(12,Math.round((width-540)/2)),right=Math.max(12,width-210);
+  const narrow=width<1160;
+  const left=14,bookWidth=narrow?Math.min(780,width-28):Math.min(820,Math.max(570,width-710));
+  const bookX=narrow?left:Math.max(312,Math.round((width-bookWidth)/2));
+  const calendarWidth=Math.min(255,Math.max(200,width-32));
+  const right=Math.max(left,width-calendarWidth-left);
   const defaults={
-    homeBudgetWidget:[left,12],
-    upcoming:[left,narrow?220:210],
-    journal:[narrow?left:center,narrow?465:12],
-    calendar:[narrow?left:right,narrow?800:12]
+    homeBudgetWidget:{x:left,y:14,width:280},
+    upcoming:{x:left,y:175,width:280},
+    journal:{x:bookX,y:narrow?530:88,width:bookWidth,height:460},
+    calendar:{x:right,y:14,width:calendarWidth},
+    homeDailyTrackersWidget:{x:left,y:narrow?1130:510,width:280,height:250}
   };
   const shortcutIndex=homeShortcutDefs.findIndex(entry=>entry.id===item.id.replace(/^homeShortcut_/,''));
-  const x=shortcutIndex<0?0:narrow?left:12+(shortcutIndex%3)*Math.max(210,Math.floor((width-34)/3));
-  const y=shortcutIndex<0?0:(narrow?1100+shortcutIndex*165:600+Math.floor(shortcutIndex/3)*165);
-  const [px,py]=defaults[item.id]||[x,y];
-  return {x:px,y:py,scale:1,width:null,height:null};
+  const x=shortcutIndex<0?left:narrow?left:14+(shortcutIndex%3)*Math.max(200,Math.floor((width-40)/3));
+  const y=shortcutIndex<0?0:(narrow?1550+shortcutIndex*170:770+Math.floor(shortcutIndex/3)*170);
+  const base=defaults[item.id]||{x,y,width:Math.min(300,width-28)};
+  return {...base,scale:1,height:null};
 }
 function activateHomeCanvas(){
   if(homeCanvasReady||state.view!=='home')return;
@@ -992,8 +1403,8 @@ function activateHomeCanvas(){
   canvas.id='homeCanvas';
   toolbar.after(canvas);
   const budget=$('#homeBudgetWidget'),row=home.querySelector('.desk-top-row');
-  const journal=$('#journalBook'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
-  for(const element of [budget,row,journal,shelf,empty])if(element)canvas.appendChild(element);
+  const journal=$('#journalBook'),daily=$('#homeDailyTrackersWidget'),shelf=$('#homeShortcutShelf'),empty=$('#homeModulesEmpty');
+  for(const element of [budget,row,journal,daily,shelf,empty])if(element)canvas.appendChild(element);
   homeCanvas=canvas;
   canvas.insertAdjacentHTML('beforeend','<div id="homeAlignmentGuideX" class="home-alignment-guide vertical" aria-hidden="true"></div><div id="homeAlignmentGuideY" class="home-alignment-guide horizontal" aria-hidden="true"></div>');
   canvas.addEventListener('pointerdown',event=>{
@@ -1003,9 +1414,18 @@ function activateHomeCanvas(){
   for(const m of measurements){
     const item=m.item;
     const key=homeCanvasStorageKey(item);
-    if(!m.persisted){
+    // Only migrate a card once. A saved canvas position always wins over
+    // measurements from the responsive legacy layout after F5/reopening.
+    const saved=(()=>{try{
+      const v=JSON.parse(m.persisted);
+      return v&&Number.isFinite(v.x)&&Number.isFinite(v.y)&&v.x>=0&&v.y>=0;
+    }catch(_){return false}})();
+    if(!saved){
       let next;
-      if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
+      if(item.id==='homeDailyTrackersWidget'){
+        // A new module must not adopt an arbitrary legacy-flow position.
+        next=homeSuggestedLayout(item);
+      }else if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
         next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};
       }else{
         next=homeSuggestedLayout(item);
@@ -1021,12 +1441,20 @@ function activateHomeCanvas(){
   homeCanvasReady=true;
   home.classList.add('home-free-ready');
   items.forEach(item=>applyGlobalLayout(item,readGlobalLayout(item)));
+  applyTodoTopRightReferenceOnce(items);
   if(typeof ResizeObserver==='function'){
-    const observer=new ResizeObserver(()=>requestHomeCanvasMeasure());
+    const observer=new ResizeObserver(()=>{
+      requestHomeCanvasMeasure();
+      reflowHomeCanvasViewport();
+    });
     items.forEach(item=>observer.observe(item.el));
   }
-  window.addEventListener('resize',requestHomeCanvasMeasure);
+  window.addEventListener('resize',reflowHomeCanvasViewport);
+  reflowHomeCanvasViewport();
   requestHomeCanvasMeasure();
+  // Old versions let the calendar protrude outside the page. WebView could
+  // restore that horizontal scroll after F5, hiding cards at the left.
+  if(window.scrollX!==0)window.scrollTo({left:0,top:window.scrollY,behavior:'instant'});
 }
 
 /* ALPHA 0.16.4 — édition visuelle de l'Accueil : une sélection à la fois.
@@ -1056,7 +1484,7 @@ function homeCanvasMagnet(item,x,y,event){
     if(other===item||other.el.classList.contains('home-module-off'))continue;
     const r=other.el.getBoundingClientRect();
     if(!r.width||!r.height)continue;
-    const left=readGlobalLayout(other).x,top=readGlobalLayout(other).y;
+    const left=parseFloat(other.el.style.left)||0,top=readGlobalLayout(other).y;
     candidatesX.push({value:left,line:left},{value:left+r.width-w,line:left+r.width},
       {value:left+(r.width-w)/2,line:left+r.width/2});
     candidatesY.push({value:top,line:top},{value:top+r.height-h,line:top+r.height},
@@ -1086,6 +1514,7 @@ function setupHomeCanvasKeyboard(){
     if(!selectedHomeCanvasItem||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;
     event.preventDefault();
     const item=selectedHomeCanvasItem,d=readGlobalLayout(item),step=event.shiftKey?10:1;
+    d.x=parseFloat(item.el.style.left)||0;
     const w=item.el.getBoundingClientRect().width;
     if(event.key==='ArrowLeft')d.x-=step;
     if(event.key==='ArrowRight')d.x+=step;
@@ -1107,7 +1536,7 @@ function beginHomeCanvasDrag(event,item){
   try{handle.setPointerCapture?.(pointerId)}catch(_){}
   selectHomeCanvasItem(item);
   const d=readGlobalLayout(item);
-  const initial={x:d.x,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
+  const initial={x:parseFloat(item.el.style.left)||0,y:d.y,clientX:event.clientX,clientY:event.clientY,scrollY:window.scrollY};
   let clientX=event.clientX,clientY=event.clientY,altHeld=event.altKey,active=true,frameId=0;
   item.el.classList.add('layout-selected');
   function updatePosition(){
@@ -1195,14 +1624,28 @@ function ensureLayoutNaturalHeight(item){
 }
 function applyGlobalLayout(item,d){
   if(homeCanvasReady&&isHomeCanvasItem(item)){
-    // Aucun décalage via transform : la position n'est plus dépendante d'une grille.
-    item.el.style.left=(d.x||0)+'px';
-    item.el.style.top=(d.y||0)+'px';
+    // Apply size first, then clamp the DISPLAY coordinate. The user's original
+    // x/width remain in localStorage and return when the window gets wider.
+    const canvasWidth=Math.max(1,homeCanvas.clientWidth);
+    item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
+    item.el.style.maxWidth=canvasWidth+'px';
+    item.el.style.left='0px';
+    const renderedWidth=item.el.getBoundingClientRect().width;
+    item.el.style.left=homeVisibleX(d.x,canvasWidth,renderedWidth)+'px';
+    item.el.style.top=Math.max(0,d.y||0)+'px';
     item.el.style.setProperty('--layout-x','0px');
     item.el.style.setProperty('--layout-y','0px');
     item.el.style.setProperty('--layout-scale',String(d.scale||1));
-    item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
-    item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
+    // Le livre possède une hauteur CSS par défaut : un minHeight seul
+    // ne permettait pas de le RÉTRÉCIR. Appliquer une vraie hauteur.
+    if(item.id==='journal'||item.id==='homeDailyTrackersWidget'){
+      // Comme pour le livre, utiliser une vraie hauteur : le minHeight
+      // empêchait de ramener une liste déjà étirée à 250 px.
+      item.el.style.height=d.height!=null?Math.round(d.height)+'px':'';
+      item.el.style.minHeight='';
+    }else{
+      item.el.style.minHeight=d.height!=null?Math.round(d.height)+'px':'';
+    }
     item.el.style.marginBottom='';
     const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
     if(value){
@@ -1250,7 +1693,9 @@ function syncGlobalLayoutEditing(){
   });
   const toggle=$('#globalLayoutEdit'),reset=$('#globalLayoutReset'),undo=$('#globalLayoutUndo');
   if(toggle){
-    toggle.textContent=globalLayoutEditing?'✓ Terminer':'Modifier';
+    toggle.innerHTML=globalLayoutEditing?"<svg class=\"top-ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m4 12 5 5L20 6\"/></svg><span class=\"top-action-label\">Terminer</span>":"<svg class=\"top-ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m4 20 4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20zM14.5 6.5l3 3\"/></svg><span class=\"top-action-label\">Modifier</span>";
+    toggle.setAttribute('aria-label',globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules');
+    toggle.title=globalLayoutEditing?'Terminer la modification des modules':'Modifier la disposition des modules';
     toggle.classList.toggle('is-active',globalLayoutEditing);
     toggle.setAttribute('aria-pressed',globalLayoutEditing?'true':'false');
   }
@@ -1258,6 +1703,43 @@ function syncGlobalLayoutEditing(){
   if(undo)undo.classList.toggle('hidden',!globalLayoutEditing||!localStorage.getItem(layoutUndoKey(state.view)));
   if(homeCanvasReady&&state.view==='home')requestHomeCanvasMeasure();
 }
+/* ALPHA 0.18 — géométrie type Canva, indépendante de la souris et du DOM.
+   Le bord opposé reste ancré. Un coin garde les proportions par défaut ;
+   maintenir Maj permet un étirement libre des deux axes. */
+function layoutResizeGeometry(axis,start,dx,dy,limits,freeform=false){
+  const directions={nw:[-1,-1],ne:[1,-1],sw:[-1,1],se:[1,1],
+    left:[-1,0],right:[1,0],top:[0,-1],bottom:[0,1],
+    width:[1,0],height:[0,1]};
+  const [horizontal,vertical]=directions[axis]||[0,0];
+  const x0=start.x,y0=start.y,w0=start.width,h0=start.height;
+  const right=x0+w0,bottom=y0+h0;
+  const minX=limits.minX??-Infinity,minY=limits.minY??-Infinity;
+  const maxRight=limits.maxRight??Infinity;
+  const capW=Math.max(1,Math.min(limits.maxWidth??Infinity,
+    horizontal<0?right-minX:maxRight-x0));
+  const capH=Math.max(1,Math.min(limits.maxHeight??Infinity,
+    vertical<0?bottom-minY:Infinity));
+  const minW=Math.min(capW,limits.minWidth??1),minH=Math.min(capH,limits.minHeight??1);
+  const clampSize=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  let width=w0,height=h0;
+  if(horizontal&&vertical&&!freeform){
+    // The movement in the stronger proportional direction controls the corner.
+    const dw=horizontal*dx/w0,dh=vertical*dy/h0;
+    const amount=Math.abs(dw)>=Math.abs(dh)?dw:dh;
+    const factor=clampSize(1+amount,Math.max(minW/w0,minH/h0),
+      Math.min(capW/w0,capH/h0));
+    width=w0*factor;height=h0*factor;
+  }else{
+    if(horizontal)width=clampSize(w0+horizontal*dx,minW,capW);
+    if(vertical)height=clampSize(h0+vertical*dy,minH,capH);
+  }
+  return {
+    x:Math.round(horizontal<0?right-width:x0),
+    y:Math.round(vertical<0?bottom-height:y0),
+    width:Math.round(width),height:Math.round(height)
+  };
+}
+
 function initGlobalLayoutEditor(){
   globalLayoutItems=getGlobalLayoutSpecs();
   setupHomeCanvasKeyboard();
@@ -1284,7 +1766,12 @@ function initGlobalLayoutEditor(){
         <span class="layout-scale-value" aria-label="Dimensions">—</span>
         <span class="layout-width-handle" title="Étirer la largeur" aria-label="Étirer la largeur">↔</span>
         <span class="layout-height-handle" title="Étirer la hauteur" aria-label="Étirer la hauteur">↕</span>
-        <span class="layout-resize-handle" title="Étirer largeur et hauteur" aria-label="Étirer largeur et hauteur">↘</span>`;
+        <span class="layout-resize-handle" title="Étirer largeur et hauteur" aria-label="Étirer largeur et hauteur">↘</span>
+        <span class="layout-corner layout-corner-nw" title="Tirer le coin haut gauche" aria-label="Tirer le coin haut gauche">↖</span>
+        <span class="layout-corner layout-corner-ne" title="Tirer le coin haut droit" aria-label="Tirer le coin haut droit">↗</span>
+        <span class="layout-corner layout-corner-sw" title="Tirer le coin bas gauche" aria-label="Tirer le coin bas gauche">↙</span>
+        <span class="layout-side layout-side-left" title="Étirer par la gauche" aria-label="Étirer par la gauche">↔</span>
+        <span class="layout-side layout-side-top" title="Étirer par le haut" aria-label="Étirer par le haut">↕</span>`;
       item.el.appendChild(controls);
     }
     applyGlobalLayout(item,readGlobalLayout(item));
@@ -1352,39 +1839,67 @@ function initGlobalLayoutEditor(){
     const beginResize=(axis,event)=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
       event.preventDefault();event.stopPropagation();
-      try{event.currentTarget.setPointerCapture?.(event.pointerId)}catch(_){}
-      const d=readGlobalLayout(item);
-      const rect=item.el.getBoundingClientRect();
-      const sx=event.clientX,sy=event.clientY;
-      const baseWidth=rect.width,baseHeight=rect.height;
-      const isSmallCard=item.el.closest('#budgetSummaryPanel')&&item.el.tagName==='ARTICLE';
-      const minWidth=isSmallCard?165:item.el.id==='openCalendarCard'?175:200;
-      const maxWidth=Math.max(minWidth,Math.min(1400,window.innerWidth-48));
-      const minHeight=isSmallCard?90:item.el.id==='openCalendarCard'?130:105;
-      const maxHeight=1600;
-      d.scale=1;
-      if(homeCanvasReady&&isHomeCanvasItem(item))selectHomeCanvasItem(item);
+      const handle=event.currentTarget,pointerId=event.pointerId;
+      try{handle.setPointerCapture?.(pointerId)}catch(_){}
+      const d=readGlobalLayout(item),rect=item.el.getBoundingClientRect();
+      const original={...d};
+      const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
+      const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
+      const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
+      const minHeight=item.id==='journal'?340:item.id==='homeDailyTrackersWidget'?185:item.id==='calendar'?130:90;
+      const bounds={
+        minX:canvasItem?0:-Infinity,minY:canvasItem?0:-Infinity,
+        maxRight:canvasItem?homeCanvas.clientWidth:Infinity,
+        minWidth,maxWidth:Math.max(minWidth,Math.min(1600,window.innerWidth-32)),
+        minHeight,maxHeight:2000
+      };
+      if(canvasItem)selectHomeCanvasItem(item);
       else item.el.classList.add('layout-selected');
-      const move=ev=>{
-        if(axis!=='height')d.width=clamp(baseWidth+ev.clientX-sx,minWidth,maxWidth);
-        if(axis!=='width')d.height=clamp(baseHeight+ev.clientY-sy,minHeight,maxHeight);
+      const sx=event.clientX,sy=event.clientY,scrollY=window.scrollY;
+      let active=true;
+      const apply=ev=>{
+        if(!active||ev.pointerId!==pointerId)return;
+        const next=layoutResizeGeometry(axis,initial,
+          ev.clientX-sx,ev.clientY-sy+window.scrollY-scrollY,bounds,ev.shiftKey);
+        d.x=next.x;d.y=next.y;d.scale=1;
+        if(!['top','bottom','height'].includes(axis))d.width=next.width;
+        if(!['left','right','width'].includes(axis))d.height=next.height;
         applyGlobalLayout(item,d);
-        // Persist also during dragging: a lost pointerup must never lose a placement.
+        // Enregistrer également pendant le glisser si Windows perd le pointerup.
         saveGlobalLayout(item,d);
       };
-      const up=()=>finishInteraction(d,move,up,cancel);
-      const cancel=()=>finishInteraction(d,move,up,cancel);
-      // Capture ensures release is received even when the pointer leaves the handle.
-      event.currentTarget.addEventListener('pointerup',up,{once:true});
-      event.currentTarget.addEventListener('pointercancel',cancel,{once:true});
-      window.addEventListener('pointermove',move);
+      const cleanup=(cancel=false)=>{
+        if(!active)return;
+        active=false;
+        window.removeEventListener('pointermove',apply);
+        window.removeEventListener('pointerup',up);
+        window.removeEventListener('pointercancel',cancelDrag);
+        window.removeEventListener('blur',cancelDrag);
+        try{if(handle.hasPointerCapture?.(pointerId))handle.releasePointerCapture(pointerId)}catch(_){}
+        if(cancel){
+          Object.assign(d,original);
+        }
+        saveGlobalLayout(item,d);
+        applyGlobalLayout(item,d);
+        if(!canvasItem)item.el.classList.remove('layout-selected');
+        if(canvasItem)requestHomeCanvasMeasure();
+      };
+      const up=ev=>{if(ev.pointerId===pointerId)cleanup()};
+      const cancelDrag=ev=>{if(ev?.pointerId!=null&&ev.pointerId!==pointerId)return;cleanup(true)};
+      window.addEventListener('pointermove',apply);
       window.addEventListener('pointerup',up);
-      window.addEventListener('pointercancel',cancel);
+      window.addEventListener('pointercancel',cancelDrag);
+      window.addEventListener('blur',cancelDrag);
     };
     controls.querySelector('.layout-move-handle')?.addEventListener('pointerdown',beginMove);
     controls.querySelector('.layout-width-handle')?.addEventListener('pointerdown',event=>beginResize('width',event));
     controls.querySelector('.layout-height-handle')?.addEventListener('pointerdown',event=>beginResize('height',event));
-    controls.querySelector('.layout-resize-handle')?.addEventListener('pointerdown',event=>beginResize('both',event));
+    controls.querySelector('.layout-resize-handle')?.addEventListener('pointerdown',event=>beginResize('se',event));
+    for(const direction of ['nw','ne','sw']){
+      controls.querySelector('.layout-corner-'+direction)?.addEventListener('pointerdown',event=>beginResize(direction,event));
+    }
+    controls.querySelector('.layout-side-left')?.addEventListener('pointerdown',event=>beginResize('left',event));
+    controls.querySelector('.layout-side-top')?.addEventListener('pointerdown',event=>beginResize('top',event));
   });
   $('#globalLayoutEdit').onclick=()=>{globalLayoutEditing=!globalLayoutEditing;syncGlobalLayoutEditing()};
   $('#globalLayoutReset').onclick=()=>{
@@ -1424,6 +1939,42 @@ refresh().then(()=>{
   if(state.view==='home'){showView('home');activateHomeCanvas()}
 }); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
+// Auto-read shared tasks created or edited by Goblin Android, without a page reload.
+// Update only the task-related views and never replace a form currently being edited.
+let atelierTaskPollBusy=false;
+let atelierTaskPollAt=0;
+function atelierTaskEditorIsBusy(){
+  const modal=document.getElementById('modalBackdrop');
+  if(modal && !modal.classList.contains('hidden'))return true;
+  const active=document.activeElement;
+  return !!(active && (active.isContentEditable ||
+    active.tagName==='TEXTAREA' ||
+    (active.tagName==='INPUT' && !['checkbox','radio','button'].includes(active.type))));
+}
+async function atelierPollSharedTasks(){
+  if(document.hidden || atelierTaskPollBusy || atelierTaskEditorIsBusy())return;
+  if(Date.now()-atelierTaskPollAt<8000)return;
+  atelierTaskPollAt=Date.now();
+  atelierTaskPollBusy=true;
+  const previous=JSON.stringify(state.tasks);
+  try{
+    const latest=await api('/api/tasks');
+    if(!Array.isArray(latest) || document.hidden || atelierTaskEditorIsBusy())return;
+    // Do not overwrite state updated by a local save during the network request.
+    if(JSON.stringify(state.tasks)!==previous || JSON.stringify(latest)===previous)return;
+    state.tasks=latest;
+    if(state.view==='tasks')renderTasks();
+    else if(state.view==='home')renderHome();
+  }catch(error){
+    console.warn('[Atelier] Actualisation des tâches différée',error);
+  }finally{
+    atelierTaskPollBusy=false;
+  }
+}
+setInterval(atelierPollSharedTasks,12000);
+window.addEventListener('focus',atelierPollSharedTasks);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)atelierPollSharedTasks()});
+
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
 let atelierLastDay=ymd(new Date());
@@ -1438,7 +1989,8 @@ async function refreshOrganisation(){
     if(serial!==organisationRefreshSerial)return;
     organisationState.habits=habits;organisationState.periods=periods;
     renderOrganisation();
-    renderMonth();renderMiniMonth();
+    renderMonth();renderWeek();
+    if(typeof renderCycleHeader==='function')renderCycleHeader();
   }catch(err){showUiError(err,'Impossible de charger le suivi')}
 }
 function localDayAdd(iso,days){
@@ -1451,21 +2003,57 @@ function isRecordedCycleDay(day){
   return organisationState.periods.some(p=>p.start_date<=day&&day<=(p.end_date||p.start_date));
 }
 function cycleEstimate(){
-  const dates=[...new Set(organisationState.periods.map(x=>x.start_date))].sort();
+  const dates=[...new Set(organisationState.periods.map(p=>p.start_date))].sort();
+  if(dates.length<2)return null;
   const intervals=[];
   for(let i=1;i<dates.length;i++){
-    const d=dayDistance(dates[i-1],dates[i]);
-    if(d>=21&&d<=45)intervals.push(d);
+    const length=dayDistance(dates[i-1],dates[i]);
+    if(length>=21&&length<=45)intervals.push(length);
   }
   if(!intervals.length)return null;
-  const recent=intervals.slice(-6),avg=Math.round(recent.reduce((a,b)=>a+b,0)/recent.length);
-  let next=localDayAdd(dates[dates.length-1],avg);
+  // Les six derniers cycles comptent davantage que les plus anciens.
+  // Une valeur très éloignée de la médiane est écartée seulement si
+  // au moins quatre cycles ont été mesurés (évite les sauts aberrants).
+  const recent=intervals.slice(-6);
+  const ordered=[...recent].sort((a,b)=>a-b);
+  const median=ordered[Math.floor(ordered.length/2)];
+  const reliable=recent.length>=4?recent.filter(v=>Math.abs(v-median)<=9):recent;
+  const values=reliable.length>=2?reliable:recent;
+  const weighted=values.reduce((sum,v,i)=>sum+v*(i+1),0);
+  const weight=values.reduce((sum,_,i)=>sum+i+1,0);
+  const avg=Math.max(21,Math.min(45,Math.round(weighted/weight)));
+  const spread=Math.max(2,Math.min(7,Math.ceil((Math.max(...values)-Math.min(...values))/2)));
+  // Durée probable : médiane des périodes réellement complétées,
+  // sinon 5 jours de visualisation, clairement identifiés comme estimés.
+  const durations=organisationState.periods.filter(p=>p.end_date).map(p=>dayDistance(p.start_date,p.end_date)+1).filter(d=>d>=1&&d<=15).sort((a,b)=>a-b);
+  const duration=durations.length?durations[Math.floor((durations.length-1)/2)]:5;
+  const last=dates[dates.length-1];
+  let next=localDayAdd(last,avg);
   const today=ymd(new Date());
-  while(next<today)next=localDayAdd(next,avg);
-  return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next))};
+  let skipped=0;
+  while(next<today&&skipped<240){next=localDayAdd(next,avg);skipped++;}
+  return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next)),
+    duration,spread,last,sampleCount:values.length,observedDuration:durations.length>0};
 }
+function cycleForecastForDay(day){
+  if(typeof cycleShowMarksPreference!=='function'||!cycleShowMarksPreference())return null;
+  if(isRecordedCycleDay(day)||day<ymd(new Date()))return null;
+  const estimate=cycleEstimate();
+  if(!estimate||day<=estimate.last)return null;
+  for(let n=0;n<6;n++){
+    const start=localDayAdd(estimate.next,n*estimate.average);
+    const end=localDayAdd(start,estimate.duration-1);
+    if(day>=start&&day<=end){
+      return {start,end,spread:estimate.spread,duration:estimate.duration,
+        observedDuration:estimate.observedDuration,index:n};
+    }
+    if(day<start)break;
+  }
+  return null;
+}
+
 function renderOrganisation(){
-  const habits=$('#habitList'),entries=$('#cycleEntries'),forecast=$('#cycleForecast');
+  const habits=$('#habitList');
   if(habits){
     const week=monday(new Date()),days=Array.from({length:7},(_,i)=>ymd(new Date(week.getFullYear(),week.getMonth(),week.getDate()+i)));
     habits.innerHTML=organisationState.habits.length?'':'<p class="muted">Aucune habitude enregistrée pour le moment.</p>';
@@ -1493,41 +2081,7 @@ function renderOrganisation(){
       habits.appendChild(card);
     }
   }
-  if(forecast){
-    const prediction=cycleEstimate();
-    forecast.textContent=prediction?'Prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+' (environ '+prediction.approxDays+' jour(s), cycle moyen de '+prediction.average+' jours).':'Ta période enregistrée apparaît dans le calendrier. Une seule date suffit pour le suivi ; deux débuts de cycles sont nécessaires pour une estimation indicative.';
-  }
-  if(entries){
-    entries.innerHTML=organisationState.periods.length?'':'<p class="muted">Aucune période enregistrée.</p>';
-    for(const period of organisationState.periods){
-      const card=document.createElement('div');card.className='cycle-entry';
-      card.innerHTML='<span>Début : '+esc(period.start_date)+(period.end_date?' · Fin : '+esc(period.end_date):'')+'</span><button type="button">Supprimer</button>';
-      card.querySelector('button').onclick=async()=>{
-        if(!card.querySelector('.cycle-inline-confirm')){
-          const ask=document.createElement('div');ask.className='cycle-inline-confirm';
-          ask.innerHTML='<span>Supprimer cette période enregistrée ?</span><button type="button" class="cycle-cancel-delete">Conserver</button><button type="button" class="cycle-accept-delete">Supprimer</button>';
-          ask.querySelector('.cycle-cancel-delete').onclick=()=>ask.remove();
-          ask.querySelector('.cycle-accept-delete').onclick=async()=>{
-            const response=await runUiAction('Supprimer la période',()=>api('/api/cycle-periods/'+period.id,{method:'DELETE'}));
-            if(response.ok)await refreshOrganisation();
-          };
-          card.appendChild(ask);
-        }
-      };entries.appendChild(card);
-    }
-  }
-  const hint=$('#calendarCycleHint');
-  if(hint){
-    const prediction=cycleEstimate();
-    hint.classList.toggle('hidden',!prediction);
-    hint.replaceChildren();
-    if(prediction){
-      const label=document.createElement('span');
-      label.textContent='Suivi du cycle : prochaines règles estimées vers le '+fmtFrenchDate(parseYMD(prediction.next))+'. ';
-      const link=document.createElement('button');link.type='button';link.textContent='Voir mon suivi →';link.onclick=()=>showView('organisation');
-      hint.append(label,link);
-    }
-  }
+
 }
 $('#habitFrequency')?.addEventListener('change',event=>{
   $('#habitTarget').value=event.target.value==='daily'?'7':'3';
@@ -1538,19 +2092,6 @@ $('#habitCreateForm')?.addEventListener('submit',async event=>{
   const result=await runUiAction('Créer une habitude',()=>api('/api/habits',{method:'POST',body:JSON.stringify({title,frequency:$('#habitFrequency').value,target_per_week:Number($('#habitTarget').value)})}));
   if(result.ok){$('#habitTitle').value='';await refreshOrganisation()}
 });
-$('#cycleForm')?.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const start_date=$('#cycleStart').value,end_date=$('#cycleEnd').value;
-  if(end_date&&end_date<start_date){showUiError(new Error('La fin doit suivre le début.'),'Vérifier les dates');return}
-  const submit=$('#cycleForm button[type="submit"]');if(submit.disabled)return;
-  submit.disabled=true;
-  try{
-    const result=await runUiAction('Enregistrer la période',()=>api('/api/cycle-periods',{method:'POST',body:JSON.stringify({start_date,end_date})}));
-    if(result.ok){$('#cycleForm').reset();await refreshOrganisation()}
-  }finally{submit.disabled=false}
-});
-
-
 /* ALPHA 0.15.1 — Budget financier local. Pas de données bancaires synchronisées. */
 let budgetData=null;
 let budgetSelectedMonth=ymd(new Date()).slice(0,7);

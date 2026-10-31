@@ -1,0 +1,777 @@
+/* Accueil — transposition du schéma annoté du 28 octobre.
+   Le canvas et toutes les clés locales de positions restent conservés. */
+#homeView .home-module-toolbar{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:0!important;overflow:hidden!important;
+  clip-path:inset(50%);white-space:nowrap;pointer-events:none
+}
+#homeView #homeCanvas{padding-top:3px}
+#homeView #homeBudgetWidget,
+#homeView #homeUpcomingWidget,
+#homeView #homeDailyTrackersWidget{
+  border-radius:13px;border-color:#665442;
+  box-shadow:0 12px 26px #0006;background:#201b17
+}
+#homeView #homeBudgetWidget{padding:12px 15px}
+#homeView #homeBudgetWidget .budget-home-title strong,
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head strong{
+  font-size:17px;letter-spacing:.01em
+}
+#homeView #homeBudgetOpen,#homeView #openDailyTrackers{
+  min-height:32px;border-radius:8px;padding:5px 9px;font-size:11px
+}
+#homeView #homeUpcomingWidget{
+  box-sizing:border-box;width:280px;
+  padding:11px 12px;overflow:visible
+}
+#homeUpcomingWidget .desk-note-head{font-size:14px;gap:6px;flex-wrap:wrap}
+#homeUpcomingWidget .desk-note-head .journal-link{white-space:nowrap}
+#homeUpcoming .home-appt-row{min-height:39px}
+#homeUpcoming .home-appt-main{grid-template-columns:48px minmax(0,1fr)}
+#homeUpcoming .home-appt-actions{opacity:.76;transition:opacity .13s}
+#homeUpcoming .home-appt-row:hover .home-appt-actions,
+#homeUpcoming .home-appt-row:focus-within .home-appt-actions{opacity:1}
+#homeUpcoming .home-appt-row .home-row-title{font-size:12px}
+#homeUpcoming .home-appt-row .home-row-meta{font-size:9px}
+/* L'extension devient un petit volet déroulant, pas une carte géante. */
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded{z-index:25!important}
+#homeView.home-free-ready:not(.layout-editing) #homeUpcomingWidget.home-upcoming-expanded #homeUpcoming{
+  max-height:min(50vh,370px)!important;overflow-y:auto!important;
+  background:#211b16;border:1px solid #806951;border-radius:8px;
+  padding:5px;box-shadow:0 18px 28px #000a;scrollbar-width:thin
+}
+#homeUpcoming .home-upcoming-toggle{
+  width:100%;min-height:32px;margin-top:5px;
+  border:1px solid #685541;border-radius:7px;
+  background:#30261d;font-size:11px
+}
+#homeView #journalBook{
+  width:min(820px,calc(100vw - 46px));
+  height:clamp(490px,70vh,680px);
+  min-height:490px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  border:1px solid #836d4e;border-radius:8px 13px 13px 8px;
+  box-shadow:12px 14px 0 -8px #ad956d,15px 18px 0 -9px #60462f,0 20px 45px #0009;
+}
+#homeView #journalBook::after{
+  z-index:2;width:20px;
+  background:linear-gradient(90deg,#b5a38933 0%,#4c39278a 45%,#21160db5 50%,#6c503c62 55%,#b5a38922 100%)
+}
+#homeView #journalBook .journal-page{
+  height:100%!important;min-height:0!important;box-sizing:border-box;
+  padding:24px 28px 46px;
+  background:radial-gradient(circle at 12% 15%,#f5e9d5 0 1px,transparent 2px),linear-gradient(105deg,#e5d4ba,#f0e2cb 58%,#e6d3b5);
+  background-size:24px 24px,auto;
+  gap:0
+}
+#homeView #journalBook .journal-left{border-radius:7px 0 0 7px;box-shadow:inset -22px 0 27px #866f4d33}
+#homeView #journalBook .journal-right{border-radius:0 12px 12px 0;box-shadow:inset 18px 0 28px #866f4d2e}
+#homeView #journalBook .journal-primary-content,
+#homeView #journalBook .journal-secondary-content{
+  min-width:0;min-height:0;flex:1 1 auto;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  scrollbar-width:thin;scrollbar-color:#b39b77 transparent;
+  padding:2px 7px 24px 0!important;overscroll-behavior:contain
+}
+#homeView #journalBook .journal-heading{
+  font-family:Georgia,serif;font-size:17px;line-height:1.35;
+  margin-bottom:8px;font-style:italic
+}
+#homeView #journalBook .journal-date{font-size:11px;margin-bottom:14px;color:#75634c}
+#homeView #journalBook .journal-section{margin:0 0 11px}
+#homeView #journalBook .journal-title-row{align-items:baseline;gap:8px}
+#homeView #journalBook .journal-link{font-size:11px;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+#homeView #journalBook .journal-task{
+  display:grid;grid-template-columns:20px minmax(0,1fr) auto;
+  gap:9px;min-height:36px;padding:5px 2px;font-size:12px
+}
+#homeView #journalBook .journal-task-open{
+  font-size:12px;line-height:1.35;text-align:left;white-space:normal;overflow-wrap:anywhere;
+}
+#homeView #journalBook .journal-task.is-completed{opacity:.6}
+#homeView #journalBook .journal-task.is-completed .journal-task-open{text-decoration:line-through}
+#homeView #journalBook .journal-task-check{width:17px;height:17px;accent-color:#81613d}
+#homeView #journalBook .deadline-line{
+  grid-template-columns:65px minmax(0,1fr) auto;gap:6px;
+  padding:7px 3px;font-size:11px;min-height:32px
+}
+#homeView #journalBook .deadline-empty{min-height:19px}
+#homeView #journalBook .deadline-time{white-space:nowrap}
+#homeView #journalBook .objective-suggestions{display:grid;gap:7px}
+#homeView #journalBook .objective-note{
+  display:block;text-align:left;padding:8px 9px;
+  border:1px solid #c9b695;border-left:3px solid #9d8563;
+  border-radius:7px;background:#f5ecd9a3;min-height:60px
+}
+#homeView #journalBook .objective-note:hover,
+#homeView #journalBook .objective-note:focus-visible{
+  background:#fff6e4;border-color:#9c8059;outline-offset:2px
+}
+#homeView #journalBook .objective-name{
+  font-size:13px;font-weight:700;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+#homeView #journalBook .objective-context{
+  font-size:11px;line-height:1.35;white-space:normal;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;margin:3px 0 5px
+}
+#homeView #journalBook .objective-progress-line{
+  display:flex;align-items:center;gap:9px;
+  font-style:normal;color:#66543f
+}
+#homeView #journalBook .objective-progress-track{
+  flex:1 1 auto;max-width:none;background:#d2c2a7;height:6px
+}
+#homeView #journalBook .objective-progress-track i{background:#8d7659}
+#homeView #journalBook .objective-percent{font-size:10px;min-width:32px;text-align:right}
+#homeView #journalBook #homeMealIdeaPicker{width:100%;display:flex;justify-content:space-between;align-items:center}
+#homeView #journalBook .meal-ideas{
+  padding:8px 12px;border:1px solid #c7b08e;border-radius:5px;
+  background:repeating-linear-gradient(#f6ead7,#f6ead7 27px,#b79d7b46 28px);
+  font-size:12px;min-height:45px
+}
+#homeView #journalBook .meal-line{
+  min-height:25px;font-size:12px;line-height:1.4
+}
+#homeView #journalBook .journal-page-turn{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  z-index:7;border:1px solid #ae9976;
+  background:#f3e7d0d9;border-radius:25px
+}
+#homeView #journalBook .journal-page-turn button{min-width:34px;min-height:32px}
+#homeView #journalBook .journal-page-turn span{color:#584936;font-size:12px}
+.home-layout-proposal{border-top:1px solid #675240;margin-top:14px;padding-top:12px}
+.home-layout-proposal strong{color:#dfc39d}
+.home-layout-proposal p{font-size:12px;color:#c8b9a4}
+.home-layout-proposal button{font-size:12px}
+@media(max-width:920px){
+  #homeView #journalBook{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  #homeView #journalBook .journal-page{padding:18px 16px 44px}
+  #homeView #journalBook .journal-heading{font-size:15px}
+}
+
+
+/* 29 octobre — corrections fidèles aux annotations par thème sur la capture Accueil. */
+.top-brand #globalHomeShortcut{
+  min-width:44px!important;width:44px!important;height:44px!important;padding:0!important;
+  border-radius:10px!important;
+}
+.top-brand #globalHomeShortcut .home-shortcut-text{display:none!important}
+#sideNavHeaderToggle{
+  min-width:40px;width:40px;height:40px;border:0;background:transparent;
+  color:#d7b985;font:600 24px/1 system-ui,sans-serif;border-radius:7px
+}
+#sideNavHeaderToggle:hover,#sideNavHeaderToggle:focus-visible{background:#433627;outline-color:#dfc28e}
+#topXpLevel{
+  display:flex;flex-direction:column;gap:5px;min-width:155px;max-width:200px;width:180px;
+  padding:7px 11px;border:1px solid #927a53;border-radius:10px;background:#29221a;
+  color:#f3dfb9;font-style:normal!important
+}
+#topXpLevel .top-xp-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#topXpLevel .top-xp-head strong{font:700 12px/1.2 system-ui,sans-serif}
+#topXpLevel .top-xp-head span{font:500 11px/1.2 system-ui,sans-serif;white-space:nowrap}
+#topXpLevel .top-xp-track{
+  width:100%;height:8px;border:1px solid #695338;border-radius:12px;
+  background:#1b1713;overflow:hidden
+}
+#topXpLevel .top-xp-fill{
+  display:block;height:100%;border-radius:12px;
+  background:linear-gradient(90deg,#9b8057,#dfbd78);transition:width .3s ease
+}
+.top-actions #quickPostitsHeader{font-size:23px;color:#e7d3aa}
+.top-actions #quickPostitsHeader:hover{background:#3b3022}
+.top-actions #globalLayoutEdit{
+  width:45px;min-width:45px;height:44px;padding:0!important;
+  font-size:0!important;border-radius:11px;display:grid;place-items:center
+}
+.top-actions #globalLayoutEdit::before{content:'✎';font:700 26px/1 Georgia,serif;display:block}
+.top-actions #globalLayoutEdit.is-active::before{content:'✓';font:700 23px/1 system-ui,sans-serif}
+#sideNav{
+  height:calc(100dvh - 96px)!important;max-height:calc(100dvh - 20px)!important;
+  display:flex!important;flex-direction:column;overflow:visible!important
+}
+#sideNav .side-nav-links{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;padding:4px 2px 12px
+}
+#sideNav.side-nav-on-left{border-left:0;border-right:1px solid #7c6347;border-radius:0 12px 12px 0}
+#sideNav:not(.side-nav-on-left){border-radius:12px 0 0 12px}
+#homeView #homeBudgetWidget:not(.layout-editing){cursor:pointer}
+#homeView #homeBudgetOpen,#homeView #openDailyTrackers,
+#homeView #homeTodoOpenTasks{transition:opacity .13s,border-color .13s}
+#homeView #homeBudgetOpen{
+  background:transparent;border:0;color:#e2c59a;font-size:0;min-width:33px
+}
+#homeView #homeBudgetOpen::before{content:'↗';font:600 19px/1.1 system-ui,sans-serif}
+#homeView #homeBudgetOpen:not(:focus-visible){opacity:.23}
+#homeView #homeBudgetWidget:hover #homeBudgetOpen,
+#homeView #homeBudgetOpen:focus-visible{opacity:1}
+#homeView #upcomingTitle{
+  padding:0;border:0;background:none;color:#d8b987;font:italic 600 14px/1.35 Georgia,serif;
+  text-align:left;min-width:0
+}
+#homeView #upcomingTitle:hover,#homeView #upcomingTitle:focus-visible{color:#f4dbad;text-decoration:underline}
+#homeView #homeUpcoming .home-upcoming-toggle{
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  min-height:27px;padding:4px 9px;margin-top:1px;
+  background:transparent;border:0;border-radius:7px;color:#e8cb95;
+  font:600 10px/1.2 system-ui,sans-serif;opacity:.12;
+  transition:opacity .15s ease,background .15s ease
+}
+#homeView #homeUpcomingWidget:hover .home-upcoming-toggle,
+#homeView #homeUpcomingWidget:focus-within .home-upcoming-toggle,
+#homeView #homeUpcomingWidget.home-upcoming-expanded .home-upcoming-toggle{
+  opacity:1;background:#32271b
+}
+@media(hover:none){#homeView #homeUpcoming .home-upcoming-toggle{opacity:1!important}}
+#homeView #journalBook .journal-title-row{gap:6px}
+#homeView #journalBook .journal-heading{font-size:15px!important;line-height:1.3;margin-bottom:6px}
+#homeView #journalBook .objective-suggestions{display:block}
+#homeView #journalBook .objective-note{
+  display:block!important;width:100%;min-height:0!important;padding:7px 2px 8px!important;
+  margin:0!important;border:0!important;border-bottom:1px dotted #a99678!important;
+  border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:#3a2e20;text-align:left
+}
+#homeView #journalBook .objective-note:hover,
+#homeView #journalBook .objective-note:focus-visible{
+  background:#6b573214!important;color:#241b13;outline-offset:1px
+}
+#homeView #journalBook .objective-name{
+  font-size:12px!important;font-weight:600!important;line-height:1.3!important;
+  white-space:normal;overflow-wrap:anywhere
+}
+#homeView #journalBook .objective-context{
+  font-size:10px!important;font-style:normal;line-height:1.35!important;
+  margin:3px 0 5px!important;
+}
+#homeView #journalBook .objective-progress-track{
+  background:transparent!important;border-bottom:1px solid #b7a583;
+  height:5px!important;overflow:hidden
+}
+#homeView #journalBook .objective-progress-track i{
+  display:block;height:4px!important;background:#aa9068
+}
+#homeView #journalBook .objective-percent{font-size:10px!important}
+#homeView #journalBook #homeAllObjectives{
+  padding:0 5px;font:600 17px/1 Georgia,serif;opacity:.28;text-decoration:none
+}
+#homeView #journalBook .journal-title-row:hover #homeAllObjectives,
+#homeView #journalBook #homeAllObjectives:focus-visible{opacity:1}
+#homeView #journalBook .journal-week-link{
+  display:block;width:fit-content;margin:0 0 10px auto;padding:2px 0;
+  border:0;border-bottom:1px dotted #a18c70;border-radius:0;background:transparent;
+  color:#6a533c;font-size:11px;font-style:italic
+}
+#homeView #journalBook .journal-week-link:hover{text-decoration:underline}
+#homeView #journalBook .meal-ideas{
+  padding:4px 2px;border:0!important;border-radius:0!important;background:transparent!important;
+  font-size:11px;min-height:0
+}
+#homeView #journalBook .meal-line{padding:5px 1px}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head{align-items:center}
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:12px 0 6px;padding:8px 0 0;border-top:1px solid #695743;
+  color:#e2c69a;font:600 12px/1.2 system-ui,sans-serif
+}
+#homeView #homeDailyTrackersWidget #homeTodoOpenTasks,
+#homeView #homeDailyTrackersWidget #openDailyTrackers{
+  border:0!important;background:transparent!important;color:#c8b38e;font:500 11px/1.2 system-ui,sans-serif
+}
+#homeView #homeTodoPreview{
+  display:flex;flex-direction:column;gap:1px;max-height:170px;overflow-y:auto;
+  scrollbar-width:thin;overscroll-behavior:contain
+}
+#homeView #homeTodoPreview .home-todo-row{
+  display:flex;align-items:center;gap:8px;min-height:35px;
+  padding:4px 2px;border-bottom:1px solid #554638;background:transparent
+}
+#homeView #homeTodoPreview .home-todo-row input{
+  width:16px;height:16px;flex:none;accent-color:#a88b60;cursor:pointer
+}
+#homeView #homeTodoPreview .home-todo-row>button{
+  flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:4px 2px;
+  color:#e2d2bc;font:500 12px/1.3 Georgia,serif;
+  white-space:normal;overflow-wrap:anywhere
+}
+#homeView #homeTodoPreview .home-todo-row.is-done>button{
+  color:#948674;text-decoration:line-through
+}
+#homeView #homeTodoPreview p{margin:8px 0;color:#b9a890;font-size:12px}
+#homeView #homeDailyTrackersDate{font-size:10px;margin:0 0 5px}
+@media(max-width:1100px){
+  #topXpLevel{width:155px;min-width:130px}
+  #homeView #journalBook .journal-heading{font-size:14px!important}
+  #sideNav{height:calc(100dvh - 76px)!important}
+}
+
+
+/* Accueil — deuxième retour annoté : les titres remplacent les actions redondantes,
+   les champs du carnet ont leur propre défilement et les icônes parlent d'une seule voix. */
+.topbar .top-ui-icon{width:22px;height:22px;display:block;flex:none}
+.topbar #globalHomeShortcut,.topbar #sideNavHeaderToggle,
+.topbar #quickPostitsHeader,.topbar #quickAddHomeModule,
+.topbar #settingsBtn,.topbar #globalLayoutEdit,.topbar #notifyBtn{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:43px!important;min-width:43px!important;height:43px!important;
+  padding:0!important;border:1px solid #554b3d!important;
+  border-radius:11px!important;color:#e9d6b5!important;
+  background:#241e18!important;box-shadow:none!important;cursor:pointer
+}
+.topbar #globalHomeShortcut:hover,.topbar #sideNavHeaderToggle:hover,
+.topbar #quickPostitsHeader:hover,.topbar #quickAddHomeModule:hover,
+.topbar #settingsBtn:hover,.topbar #globalLayoutEdit:hover,.topbar #notifyBtn:hover{
+  color:#fff0d1!important;border-color:#ba9b68!important;background:#382b1e!important
+}
+.topbar #globalLayoutEdit.is-active{background:#493724!important;border-color:#e1b97d!important}
+.topbar #globalLayoutEdit::before,.topbar #globalLayoutEdit.is-active::before{
+  content:none!important;display:none!important
+}
+.topbar #globalLayoutEdit{font-size:inherit!important}
+.topbar .top-action-label{
+  position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap
+}
+.topbar #topXpLevel{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:4px 0!important;min-width:142px
+}
+.topbar #topXpLevel .top-xp-track{border-color:#746345;background:#2b251d}
+/* Sur l'Accueil le hamburger remplace la languette latérale.
+   Les autres rubriques conservent la languette pour la compatibilité. */
+body.home-active #sideNavToggle{display:none!important}
+#homeView .home-heading-button{
+  display:inline-block;cursor:pointer;text-align:left;
+  color:inherit;border:0!important;background:transparent!important;
+  padding:0!important;min-width:0;font:inherit;line-height:inherit
+}
+#homeView .home-heading-button:hover,
+#homeView .home-heading-button:focus-visible{
+  color:#cfad76!important;text-decoration:underline;text-underline-offset:3px
+}
+#homeView #homeBudgetOpen{font-size:inherit!important;opacity:1!important;color:#f0e5d3!important}
+#homeView #homeBudgetOpen::before{content:none!important}
+#homeView .pinned-calendar-head span:last-child{display:none}
+#homeView #openCalendarFromUpcoming{display:none}
+#homeView #homeUpcomingWidget #upcomingTitle{font:italic 600 15px/1.3 Georgia,serif}
+#homeView #homeDailyTrackersWidget{padding:13px 13px 12px}
+#homeView #homeDailyTrackersWidget .home-todo-columns{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:13px;align-items:start;min-width:0
+}
+#homeView #homeDailyTrackersWidget .home-tasks-pane,
+#homeView #homeDailyTrackersWidget .home-habits-pane{min-width:0}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  height:auto;min-height:30px;margin:0 0 7px!important;padding:0!important;
+  border:0!important;align-items:center
+}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head .home-heading-button{
+  color:#e6cf9e;font:700 17px/1.2 Georgia,serif
+}
+#homeView #homeDailyTrackersWidget .home-trackers-subheading .home-heading-button{
+  color:#e6cf9e;font:700 14px/1.25 Georgia,serif
+}
+#homeView #homeDailyTrackersWidget #homeTodoPreview,
+#homeView #homeDailyTrackersWidget #homeDailyTrackersList{
+  max-height:255px;overflow-y:auto;overflow-x:hidden;min-height:0;
+  scrollbar-width:thin;overscroll-behavior:contain
+}
+#homeView #homeDailyTrackersWidget #homeDailyTrackersDate{
+  font-size:10px;margin:0 0 7px!important;line-height:1.2
+}
+#homeView #homeDailyTrackersWidget .home-todo-row{gap:5px}
+#homeView #homeDailyTrackersWidget .home-todo-row>button{font-size:11px;line-height:1.25}
+#homeView #journalBook .journal-title-row{margin:0 0 5px;align-items:center}
+#homeView #journalBook .journal-heading{
+  font-size:15px!important;line-height:1.22!important;margin-bottom:5px!important
+}
+#homeView #journalBook .journal-heading.home-heading-button{
+  font:italic 700 15px/1.22 Georgia,serif!important;color:#30271e!important
+}
+#homeView #journalBook .journal-heading.home-heading-button:hover{color:#805a33!important}
+#homeView #journalBook .deadline-line{
+  grid-template-columns:64px minmax(0,1fr)!important;gap:2px 6px!important;
+  min-height:25px!important;padding:3px 2px!important;line-height:1.2!important;
+  font-size:11px!important
+}
+#homeView #journalBook .deadline-time{
+  grid-column:2!important;line-height:1.1!important;font-size:10px!important
+}
+#homeView #journalBook .deadline-tag{line-height:1.2}
+#homeView #journalBook .journal-task-list{
+  max-height:155px!important;overflow-y:auto!important;scrollbar-width:thin;
+  overscroll-behavior:contain;padding-right:5px!important
+}
+#homeView #journalBook .journal-task{
+  min-height:28px!important;grid-template-columns:18px minmax(0,1fr) auto!important;
+  padding:3px 0!important;gap:5px!important;align-items:start;line-height:1.14!important
+}
+#homeView #journalBook .journal-task-open{
+  font-size:12px!important;line-height:1.22!important;padding:0!important
+}
+#homeView #journalBook .journal-section{margin-bottom:8px}
+#homeView #journalBook .journal-divider{margin:6px 0 8px}
+#homeView #journalBook #homeAllObjectives{font:italic 700 15px/1.22 Georgia,serif!important;opacity:1!important}
+@media(max-width:720px){
+  #homeView #homeDailyTrackersWidget .home-todo-columns{gap:8px}
+  #homeView #homeDailyTrackersWidget .home-todo-row>button{font-size:10px}
+  #homeView #journalBook .deadline-line{grid-template-columns:55px 1fr!important}
+}
+
+/* Le titre Budget reste un <strong> pour les préférences de renommage.
+   Le bouton historique demeure dans le DOM, mais n'est plus un doublon visuel. */
+#homeView #homeBudgetTitle{cursor:pointer}
+#homeView #homeBudgetTitle:hover,#homeView #homeBudgetTitle:focus-visible{
+  color:#cfad76;text-decoration:underline;text-underline-offset:3px
+}
+#homeView #homeBudgetOpen{display:none!important}
+
+
+/* ACCUEIL — 29/10 : corriger les dimensions du livre et remplacer les flèches
+   centrales volumineuses par un coin de page soulevable, sans image générée. */
+#homeView.home-free-ready #journalBook{
+  height:clamp(380px,57vh,520px);
+  min-height:340px!important;
+  max-height:none;
+}
+#homeView #journalBook .journal-page{
+  min-height:0!important;
+  overflow:hidden;
+}
+#homeView #journalBook .journal-primary-content,
+#homeView #journalBook .journal-secondary-content,
+#homeView #journalBook .journal-task-list{
+  /* Le contenu reste défilable avec la molette, le clavier et le tactile,
+     mais la grosse barre marron ne coupe plus visuellement la feuille. */
+  scrollbar-width:none!important;
+}
+#homeView #journalBook .journal-primary-content::-webkit-scrollbar,
+#homeView #journalBook .journal-secondary-content::-webkit-scrollbar,
+#homeView #journalBook .journal-task-list::-webkit-scrollbar{
+  display:none;width:0;height:0;
+}
+#homeView #journalBook .journal-page-turn{
+  z-index:8;bottom:4px;
+  padding:1px 3px!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;opacity:.58;
+}
+#homeView #journalBook .journal-page-turn button{
+  min-width:26px;min-height:24px;padding:0 5px;
+  font-size:15px;border-radius:5px
+}
+#homeView #journalBook .journal-page-turn button:hover,
+#homeView #journalBook .journal-page-turn button:focus-visible{
+  background:#aa916137;opacity:1;
+}
+#homeView #journalBook .journal-corner-turn{
+  position:absolute;bottom:0;z-index:19;
+  width:76px;height:76px;min-width:0;padding:0;
+  border:0;background:transparent;
+  cursor:pointer;overflow:visible;
+  -webkit-tap-highlight-color:transparent;
+}
+#homeView #journalBook .journal-corner-next{right:0}
+#homeView #journalBook .journal-corner-prev{left:0;display:none}
+#homeView #journalBook.journal-page-2 .journal-corner-next{display:none}
+#homeView #journalBook.journal-page-2 .journal-corner-prev{display:block}
+#homeView #journalBook .journal-corner-turn::before{
+  content:'';position:absolute;bottom:0;
+  width:27px;height:27px;
+  background:linear-gradient(135deg,#d3bd94 0%,#f8efd8 52%,#b59b73 100%);
+  box-shadow:-3px -3px 9px #62482945;
+  transition:width .19s ease,height .19s ease,filter .19s ease;
+}
+#homeView #journalBook .journal-corner-next::before{
+  right:0;clip-path:polygon(100% 0,0 100%,100% 100%);
+  border-radius:0 0 10px 0;
+}
+#homeView #journalBook .journal-corner-prev::before{
+  left:0;clip-path:polygon(0 0,100% 100%,0 100%);
+  border-radius:0 0 0 8px;
+  box-shadow:3px -3px 9px #62482945;
+}
+#homeView #journalBook .journal-corner-turn:hover::before,
+#homeView #journalBook .journal-corner-turn:focus-visible::before{
+  width:64px;height:64px;filter:brightness(1.06);
+}
+#homeView #journalBook .journal-corner-turn span{
+  position:absolute;bottom:12px;opacity:0;z-index:2;
+  font:700 24px/1 Georgia,serif;color:#6d5839;
+  transition:opacity .15s ease;
+}
+#homeView #journalBook .journal-corner-next span{right:13px}
+#homeView #journalBook .journal-corner-prev span{left:13px}
+#homeView #journalBook .journal-corner-turn:hover span,
+#homeView #journalBook .journal-corner-turn:focus-visible span{opacity:1}
+#homeView #journalBook .journal-corner-turn:focus-visible{
+  outline:2px solid #8f754d;outline-offset:-4px;border-radius:8px;
+}
+#homeView.layout-editing #journalBook .journal-corner-turn{
+  visibility:hidden;pointer-events:none;
+}
+#homeView #journalBook.journal-flip-next .journal-right,
+#homeView #journalBook.journal-flip-prev .journal-left{
+  animation:atelier-leaf-flip .4s ease-out;
+}
+@keyframes atelier-leaf-flip{
+  0%{filter:brightness(.91)}
+  30%{filter:brightness(1.08)}
+  100%{filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  #homeView #journalBook .journal-corner-turn::before{transition:none}
+  #homeView #journalBook.journal-flip-next .journal-right,
+  #homeView #journalBook.journal-flip-prev .journal-left{animation:none}
+}
+/* TO-DO / HABITUDES : titres plus contrastés et moins de vide dans la carte ;
+   les dimensions personnelles restent ajustables avec Modifier. */
+#homeView #homeDailyTrackersWidget .home-todo-columns{
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:12px;
+}
+#homeView #homeDailyTrackersWidget .home-todo-columns .home-heading-button{
+  color:#f1dcb9!important;font-size:15px!important;
+  font-weight:700;line-height:1.2;
+}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  min-height:24px!important;margin-bottom:5px!important;
+}
+#homeView #homeDailyTrackersWidget #homeTodoPreview,
+#homeView #homeDailyTrackersWidget #homeDailyTrackersList{
+  max-height:206px;
+}
+#homeView #homeDailyTrackersWidget #homeDailyTrackersDate{margin-bottom:5px!important}
+#homeView #homeDailyTrackersWidget .home-todo-row{min-height:30px;padding:3px 1px}
+#homeView #homeDailyTrackersWidget .home-todo-row>button{
+  font-size:12px;line-height:1.25;color:#f1e1cc;
+}
+
+
+/* 30/10 — Repositionnement final de la To-do list.
+   Le panneau prend la forme large et basse esquissée, sans toucher au livre.
+   La largeur et la hauteur sont pilotées par les dimensions personnalisées. */
+#homeView.home-free-ready #homeDailyTrackersWidget{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-sizing:border-box;
+  min-height:0;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-todo-columns{
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr);
+  flex:1 1 auto;
+  height:100%;
+  min-height:0;
+  min-width:0;
+  align-items:stretch;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-tasks-pane,
+#homeView.home-free-ready #homeDailyTrackersWidget .home-habits-pane{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  min-width:0;
+  overflow:hidden;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView.home-free-ready #homeDailyTrackersWidget .home-trackers-subheading,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersDate{
+  flex:0 0 auto;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget #homeTodoPreview,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersList{
+  flex:1 1 auto;
+  min-height:0!important;
+  max-height:160px!important; /* Environ cinq lignes : les suivantes défilent. */
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scrollbar-width:none!important;
+  overscroll-behavior:contain;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget #homeTodoPreview::-webkit-scrollbar,
+#homeView.home-free-ready #homeDailyTrackersWidget #homeDailyTrackersList::-webkit-scrollbar{
+  display:none;width:0;height:0;
+}
+#homeView.home-free-ready #homeDailyTrackersWidget .home-todo-row{
+  flex:none;
+}
+@media(max-width:750px){
+  #homeView.home-free-ready #homeDailyTrackersWidget .home-todo-columns{
+    column-gap:9px;
+  }
+}
+
+
+/* Accueil — ajustements visuels validés le 30/10/2026.
+   Aucun déplacement forcé de module ni effacement des dimensions enregistrées. */
+/* Une date d'en-tête plus lisible, sans changer sa boîte ni le canvas. */
+#jumpDateLabel.top-date-label{font-size:clamp(22px,1.7vw,29px);line-height:1.12}
+/* Journal : date à gauche, titre proche de la date. */
+#homeView #journalBook .journal-date{
+  text-align:left!important;
+  margin:0 0 5px!important;
+  font-size:clamp(11px,1.15vw,15px);
+}
+#homeView #journalBook .journal-date + .journal-section{
+  margin-top:0!important;
+}
+/* Activité : présentation compacte du domaine puis de l'objectif suivi.
+   Garder les barres d'avancement et leur pourcentage. */
+#homeView #journalBook .objective-note{
+  padding:3px 2px 4px!important;
+  line-height:1.15!important;
+}
+#homeView #journalBook .objective-domain{
+  color:#796246;
+  font-size:11px;
+  line-height:1.2;
+  margin:0 0 1px;
+  font-style:normal;
+}
+#homeView #journalBook .objective-name{
+  margin:0 0 2px!important;
+  line-height:1.2!important;
+}
+#homeView #journalBook .objective-progress-line{
+  margin:2px 0 0!important;
+  gap:6px!important;
+}
+#homeView #journalBook .objective-suggestions{gap:0!important}
+/* To-do et Habitudes : alignement des titres et séparation douce. */
+#homeView #homeDailyTrackersWidget .home-tasks-pane,
+#homeView #homeDailyTrackersWidget .home-habits-pane{min-width:0}
+#homeView #homeDailyTrackersWidget .home-habits-pane{
+  border-left:1px solid rgba(185,157,115,.32);
+  padding-left:12px;
+}
+#homeView #homeDailyTrackersWidget .home-daily-trackers-head,
+#homeView #homeDailyTrackersWidget .home-trackers-subheading{
+  display:flex!important;
+  align-items:center!important;
+  min-height:28px!important;
+  height:28px!important;
+  margin:0 0 5px!important;
+  padding:0!important;
+  box-sizing:border-box;
+}
+#homeView #homeDailyTrackersWidget .home-todo-columns .home-heading-button{
+  font:700 16px/1.2 Georgia,serif!important;
+  color:#f1dcb9!important;
+}
+/* Cases moins blanches, surface chaude et contour discret. */
+#homeView #homeDailyTrackersWidget input[type="checkbox"]{
+  appearance:none;
+  -webkit-appearance:none;
+  box-sizing:border-box;
+  width:18px;height:18px;
+  min-width:18px;
+  border:1px solid #ac987c;
+  border-radius:4px;
+  background:#ded1b9;
+  box-shadow:inset 0 1px 2px #55463628;
+  cursor:pointer;
+  position:relative;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked{
+  background:#a5b4a6;
+  border-color:#8d9d8c;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked::after{
+  content:"";
+  position:absolute;
+  left:5px;top:2px;
+  width:5px;height:9px;
+  border:solid #263a2c;
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:focus-visible{
+  outline:2px solid #edce91;outline-offset:2px;
+}
+@media(max-width:750px){
+ #homeView #homeDailyTrackersWidget .home-habits-pane{padding-left:8px}
+ #homeView #homeDailyTrackersWidget .home-todo-columns .home-heading-button{font-size:14px!important}
+}
+
+
+/* 30 octobre — finitions suivant TOUTES les annotations de la capture.
+   Ne pas toucher aux positions, tailles des cartes ni aux données personnelles. */
+/* Date du bandeau : rendre les lettres nettement plus grandes, sans déplacer la date. */
+.topbar .top-date-wrap #jumpDateLabel.top-date-label{
+  font-size:clamp(29px,2.25vw,39px)!important;
+  line-height:1.12!important;
+  font-weight:700!important;
+  white-space:nowrap;
+}
+/* Cases petites et pastel, dans la To-do, les habitudes ET les pages du journal. */
+#homeView #homeDailyTrackersWidget input[type="checkbox"],
+#homeView #journalBook input[type="checkbox"].journal-task-check{
+  appearance:none!important;-webkit-appearance:none!important;
+  display:inline-block!important;position:relative!important;
+  width:15px!important;height:15px!important;
+  min-width:15px!important;min-height:15px!important;
+  flex:0 0 15px!important;
+  margin:0 5px 0 0!important;
+  padding:0!important;box-sizing:border-box!important;
+  border:1px solid #9c8b74!important;border-radius:3px!important;
+  background:#d5c6aa!important;
+  box-shadow:inset 0 1px 2px #5e50321f!important;
+  vertical-align:middle!important;
+  cursor:pointer;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked,
+#homeView #journalBook input[type="checkbox"].journal-task-check:checked{
+  background:#acb9a5!important;border-color:#778b75!important;
+}
+#homeView #homeDailyTrackersWidget input[type="checkbox"]:checked::after,
+#homeView #journalBook input[type="checkbox"].journal-task-check:checked::after{
+  content:""!important;position:absolute!important;
+  left:4px!important;top:1px!important;width:4px!important;height:8px!important;
+  border:solid #29402f!important;border-width:0 2px 2px 0!important;
+  transform:rotate(45deg)!important;
+}
+#homeView #journalBook input[type="checkbox"].journal-task-check:focus-visible{
+  outline:2px solid #876a47;outline-offset:2px;
+}
+/* Activité : raccourcir la hauteur verticale de chaque domaine + objectif. */
+#homeView #journalBook .objective-note{
+  padding:1px 2px 2px!important;margin:0!important;
+}
+#homeView #journalBook .objective-domain{margin:0!important;line-height:1.08!important}
+#homeView #journalBook .objective-name{margin:0 0 1px!important;line-height:1.13!important}
+#homeView #journalBook .objective-progress-line{margin:0!important;min-height:0!important}
+#homeView #journalBook .objective-progress-track{height:4px!important}
+
+/* Documentation onglet 2 — le domaine et sa progression partagent une ligne.
+   Gain de place dans le Carnet sans masquer les objectifs ni les pourcentages. */
+#homeView #journalBook .objective-domain-line{
+ display:flex;align-items:center;gap:7px;min-width:0;margin:0 0 1px;
+}
+#homeView #journalBook .objective-domain-line .objective-domain{
+ flex:0 1 auto;min-width:0;margin:0!important;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;
+}
+#homeView #journalBook .objective-domain-line .objective-progress-line{
+ flex:1 1 auto;min-width:35px;display:flex;align-items:center;gap:5px;
+ margin:0!important;
+}
+#homeView #journalBook .objective-domain-line .objective-progress-track{
+ flex:1 1 auto;min-width:20px;
+}
+#homeView #journalBook .objective-note{padding:1px 2px 3px!important}
+#homeView #journalBook .objective-name{margin:0!important}
+
+/* Journal / Activité : domaines en gras, objectifs secondaires gris,
+   jauges strictement égales et collées au bord droit du contenu. */
+#homeView #journalBook .objective-domain-line{display:grid!important;grid-template-columns:minmax(0,1fr) 108px!important;gap:8px!important;width:100%!important;align-items:center!important}
+#homeView #journalBook .objective-domain-line .objective-domain{font-weight:700!important;color:#4c3c2a!important;font-style:normal!important;min-width:0}
+#homeView #journalBook .objective-domain-line .objective-progress-line{width:108px!important;min-width:108px!important;max-width:108px!important;justify-self:end!important;flex:none!important;gap:5px!important}
+#homeView #journalBook .objective-domain-line .objective-progress-track{width:75px!important;min-width:75px!important;max-width:75px!important;flex:none!important}
+#homeView #journalBook .objective-domain-line .objective-percent{width:28px!important;min-width:28px!important;text-align:right!important;white-space:nowrap!important}
+#homeView #journalBook .objective-name{color:#888078!important;font-weight:400!important;font-style:normal!important}

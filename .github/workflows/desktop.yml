@@ -1,0 +1,99 @@
+name: L’Atelier du Goblin — Windows TEST
+
+on:
+  pull_request:
+    branches: [main, feature/0180-progression-foundations]
+    paths:
+      - "app/desktop_shell.py"
+      - "tools/create_desktop_icon.py"
+      - "tools/windows_version_info.txt"
+      - "tools/windows_desktop_test.ps1"
+      - "tools/windows_desktop_shutdown_test.ps1"
+      - "tools/test_desktop_shutdown_integration.py"
+      - "tests/test_desktop_shutdown.py"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-test-app:
+    runs-on: windows-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install native shell and packaging
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check "pywebview==6.2.1" "pyinstaller>=6.16,<7" "pillow>=11,<13"
+      - name: Verify source and generate multi-resolution ICO
+        shell: pwsh
+        run: |
+          python -m py_compile app/desktop_shell.py tools/create_desktop_icon.py
+          python app/desktop_shell.py --self-test
+          python tools/create_desktop_icon.py
+      - name: Test real Windows server shutdown and port release after GUI close
+        shell: pwsh
+        run: ./tools/windows_desktop_shutdown_test.ps1
+      - name: Package real Windows EXE without browser chrome
+        shell: pwsh
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name LAtelierDuGoblin_TEST --version-file tools/windows_version_info.txt --icon build/atelier.ico --hidden-import webview.platforms.winforms app/desktop_shell.py
+          if (-not (Test-Path dist/LAtelierDuGoblin_TEST.exe)) { throw "Windows executable missing" }
+          if ((Get-Item dist/LAtelierDuGoblin_TEST.exe).Length -lt 1000000) { throw "Executable unexpectedly small" }
+      - name: Verify executable entrypoint
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist/LAtelierDuGoblin_TEST.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "The packaged EXE fails its self-test: $($p.ExitCode)" }
+          Add-Type -AssemblyName System.Drawing
+          $ico = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path "dist/LAtelierDuGoblin_TEST.exe"))
+          if ($null -eq $ico) { throw "The executable icon is missing." }
+          $exe = Get-Item "dist/LAtelierDuGoblin_TEST.exe"
+          if ($exe.VersionInfo.CompanyName -ne "Petit Goblin") { throw "CompanyName must be Petit Goblin" }
+          if ($exe.VersionInfo.ProductName -ne "L'Atelier du Goblin") { throw "ProductName does not match" }
+          if ($exe.VersionInfo.FileDescription -notlike "L'Atelier du Goblin*") { throw "FileDescription does not match" }
+          Write-Host "PASS: native Windows executable, icon and Petit Goblin version metadata"
+      - name: Test executable auto-install and real Windows Desktop shortcut
+        shell: pwsh
+        run: ./tools/windows_desktop_test.ps1
+      - name: Prepare use instructions
+        shell: pwsh
+        run: |
+          @'
+          L'ATELIER DU GOBLIN — WINDOWS TEST 0.18.0
+
+          1. Keep your existing TEST installation in E:\LATELIER_TEST_0180.
+          2. Close the previous LAtelier_TEST window, then double-click LAtelierDuGoblin_TEST.exe.
+          3. It checks your TEST data, installs itself under
+             E:\LATELIER_TEST_0180\desktop\LAtelierDuGoblin_TEST.exe,
+             creates "L'Atelier du Goblin TEST" on your Windows Desktop and opens
+             L'Atelier in its own WebView2 window (no Brave tab).
+          4. The current TEST Python server and its updates are reused.
+          5. Your old Brave localStorage (interface preferences) is not
+             automatically transferred into the new WebView2 profile.
+             All SQLite application data remains in the TEST data folder.
+
+          Metadata CompanyName=Petit Goblin does not constitute a digital signature.
+          This build remains UNSIGNED; SmartScreen may show Unknown Publisher.
+          Download only from this project's verified CI build.
+          NEVER use it with E:\00_LATELIER (stable 0.17.0).
+
+          Existing LAtelier_TEST.exe and its shortcut are intentionally left untouched.
+          After validating the new shortcut, you may delete the older shortcut by hand.
+          Post-it on the Windows Desktop is a separate feature, not included
+          in this first native-window shell.
+          '@ | Set-Content build/LIRE_AVANT_INSTALLATION.txt -Encoding UTF8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LAtelierDuGoblin_TEST_Windows_EXE_icone
+          path: |
+            dist/LAtelierDuGoblin_TEST.exe
+            build/atelier.ico
+            build/LIRE_AVANT_INSTALLATION.txt
+          if-no-files-found: error
+          retention-days: 14

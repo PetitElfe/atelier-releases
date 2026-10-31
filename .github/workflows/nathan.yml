@@ -1,0 +1,155 @@
+name: L’Atelier du Goblin — Nathan private Windows app
+
+on:
+  push:
+    branches: ['feature/0180-*']
+    paths:
+      - "app/app_part2.py"
+      - "app/public/app_part3.js"
+      - "app/public/index.html"
+      - "manifest.json"
+      - "tools/nathan_launcher.py"
+      - "tools/nathan_patch.py"
+      - "tools/build_nathan_bundle.py"
+      - ".github/workflows/nathan.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/nathan_launcher.py"
+      - "tools/nathan_patch.py"
+      - "tools/build_nathan_bundle.py"
+      - ".github/workflows/nathan.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-nathan:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build dependencies
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check "pywebview==6.2.1" "pyinstaller>=6.16,<7" "pillow>=11,<13"
+      - name: Create independently configured source with verified hashes
+        shell: pwsh
+        run: |
+          python -m py_compile tools/nathan_launcher.py tools/nathan_patch.py tools/build_nathan_bundle.py
+          python tools/build_nathan_bundle.py
+          python -c "import sys;sys.path.insert(0,'build/nathan_code/app');import updater,desktop_postits;assert updater.PORT==8877 and desktop_postits.DATA.name=='data' and 'LAtelierDuGoblinNathan' in str(updater.BASE);print('PASS: independent Nathan paths')"
+      - name: Build bundled Windows EXE including its own Python runtime and app
+        shell: pwsh
+        run: |
+          python tools/create_desktop_icon.py
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name LAtelierDuGoblin_Nathan --icon build/atelier.ico --version-file tools/windows_version_info.txt --add-data "build/nathan_code;nathan_code" --hidden-import webview.platforms.winforms --hidden-import http.server --hidden-import urllib.parse --hidden-import urllib.request --hidden-import http.client --hidden-import sqlite3 --hidden-import tkinter --hidden-import tkinter.messagebox --hidden-import calendar --hidden-import email.mime --hidden-import xml.etree.ElementTree --hidden-import mimetypes --hidden-import ipaddress --hidden-import ctypes.wintypes --hidden-import zipfile --hidden-import hashlib --hidden-import socketserver tools/nathan_launcher.py
+          if (-not (Test-Path dist/LAtelierDuGoblin_Nathan.exe)) { throw "Nathan exe missing" }
+          if ((Get-Item dist/LAtelierDuGoblin_Nathan.exe).Length -lt 4000000) { throw "Nathan exe unexpectedly small" }
+      - name: Verify frozen exe and isolated install in disposable LOCALAPPDATA
+        shell: pwsh
+        run: |
+          $work=Join-Path $env:RUNNER_TEMP "nathan-isolation-test"
+          New-Item -ItemType Directory -Force $work | Out-Null
+          $env:LOCALAPPDATA=$work
+          $p=Start-Process -FilePath (Resolve-Path "dist/LAtelierDuGoblin_Nathan.exe") -ArgumentList '--self-test' -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Nathan exe self-test failed" }
+          # Verify no files are copied into the original TEST or stable paths:
+          if (Test-Path (Join-Path $work "LAtelierDuGoblinNathan\data\atelier.db")) {
+            throw "The self-test should not create Nathan data"
+          }
+          python -c "import sys;sys.path.insert(0,'build/nathan_code/app');import nathan_patch;assert nathan_patch.PORT==8877;print('PASS: Nathan patcher')"
+          Write-Host "PASS: Nathan bundle is separate; user's real Windows GUI needs human test"
+      - name: Test fresh private install, bundled Python server, and SQLite on Windows
+        shell: pwsh
+        run: |
+          $testRoot=Join-Path $env:RUNNER_TEMP "nathan-real-install"
+          New-Item -ItemType Directory -Force $testRoot | Out-Null
+          $env:LOCALAPPDATA=$testRoot
+          $exe=(Resolve-Path "dist/LAtelierDuGoblin_Nathan.exe").Path
+          $install=Start-Process -FilePath $exe -ArgumentList '--nathan-install-only' -PassThru -Wait
+          if ($install.ExitCode -ne 0) { throw "Independent Nathan install failed: $($install.ExitCode)" }
+          $userRoot=Join-Path $testRoot 'LAtelierDuGoblinNathan'
+          $installedExe=Join-Path $userRoot 'desktop\LAtelierDuGoblin_Nathan.exe'
+          if (-not (Test-Path $installedExe)) { throw "Nathan private exe missing" }
+          if (Test-Path (Join-Path $userRoot 'data\atelier.db')) { throw "User database must start empty before first server launch" }
+          $server=Start-Process -FilePath $installedExe -ArgumentList '--nathan-server' -PassThru
+          try {
+            $ready=$false
+            for($i=0;$i -lt 70;$i++){
+              Start-Sleep -Milliseconds 600
+              if($server.HasExited){break}
+              try {
+                $response=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/runtime-version' -TimeoutSec 1
+                if($response.version -eq '0.18.0'){$ready=$true;break}
+              }catch{}
+            }
+            if(-not $ready){
+              $log=Join-Path $userRoot 'data\desktop-server.log'
+              if(Test-Path $log){Write-Host (Get-Content $log -Tail 50)}
+              throw "Nathan frozen Python server did not start"
+            }
+            if(-not(Test-Path (Join-Path $userRoot 'data\atelier.db'))){throw 'Fresh Nathan SQLite missing'}
+            $read=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/postits' -TimeoutSec 4
+            $revision=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/update/status' -TimeoutSec 4
+            if($null -eq $read -or -not $revision){throw "Nathan API unavailable"}
+            # Verify native actions accept Nathan's 8877 origin and reject the TEST origin.
+            # Invalid input is used deliberately: no update or Post-it startup is performed.
+            $originCheck=@'
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          import json
+          base='http://127.0.0.1:8877'
+          def response_status(path, origin, header, body):
+              request=Request(base+path, data=json.dumps(body).encode('utf-8'),
+                  headers={'Origin':origin,header:'1','Content-Type':'application/json'},method='POST')
+              try:
+                  with urlopen(request,timeout=8) as response:return response.status
+              except HTTPError as exc:return exc.code
+          for path,header,body,accepted in [
+              ('/api/update/start','X-Atelier-Update',{'revision':'invalid'},409),
+              ('/api/desktop-postits/startup','X-Atelier-Desktop',{'enabled':'invalid'},400)
+          ]:
+              assert response_status(path,'http://127.0.0.1:8876',header,body)==403,path+' foreign origin accepted'
+              assert response_status(path,base,header,body)==accepted,path+' own origin rejected'
+          print('PASS: Nathan localhost-origin authorization for update and desktop Post-it actions')
+          '@
+            $originCheck | python -
+            if($LASTEXITCODE -ne 0){throw 'Nathan origin authorization failed'}
+            Write-Host "PASS: standalone frozen server, empty personal DB initialized, GET API, separate port 8877"
+          } finally {
+            if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}
+          }
+      - name: Instructions
+        shell: pwsh
+        run: |
+          @'
+          L'ATELIER DU GOBLIN — NATHAN (BÊTA PERSONNELLE)
+
+          Ceci est une NOUVELLE application, indépendante de la version TEST.
+          Sur le PC de Nathan : extraire le ZIP, ouvrir LAtelierDuGoblin_Nathan.exe.
+          L'application s'installera pour son compte Windows (sans administrateur)
+          dans %LOCALAPPDATA%\LAtelierDuGoblinNathan.
+          Sa base SQLite est créée NEUVE au premier démarrage. Il n'y a aucune
+          copie des données d'un autre ordinateur ni d'un autre profil Windows.
+          Raccourci Bureau : "L'Atelier du Goblin - Nathan".
+          Port local 8877. La version stable et le TEST sur E: ne sont pas lus.
+          Python est inclus dans ce .exe. Windows WebView2 est nécessaire.
+
+          Paramètres : une pastille dorée informe des nouvelles révisions TEST.
+          Les mises à jour demandent confirmation et créent une sauvegarde.
+          Toute première installation reste à valider sur le véritable PC Nathan.
+          NE PAS copier de dossier « data » ou de bases SQLite depuis quelqu'un.
+          L'exécutable n'est pas signé : SmartScreen peut signaler Éditeur inconnu.
+          '@ | Set-Content build/LIRE_NATHAN.txt -Encoding UTF8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LAtelierDuGoblin_Nathan_Windows_BETA
+          path: |
+            dist/LAtelierDuGoblin_Nathan.exe
+            build/LIRE_NATHAN.txt
+          if-no-files-found: error
+          retention-days: 14

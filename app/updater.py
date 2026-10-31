@@ -1,0 +1,377 @@
+"""L'Atelier: safe in-place updates for the isolated Windows TEST copy only."""
+import hashlib, io, json, os, re, shutil, socket, sqlite3, subprocess, sys, time
+from pathlib import Path, PurePosixPath
+from datetime import datetime
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+from zipfile import ZipFile
+
+BASE = Path(r'E:\LATELIER_TEST_0180')
+CODE = BASE / 'code_0180'
+DATA = BASE / 'data'
+PORT = 8876
+REPO = 'PetitElfe/atelier-releases'
+BRANCH = 'feature/0180-progression-foundations'
+STATUS = DATA / 'updater-state.json'
+LOCK = DATA / 'updater.lock'
+LOG = DATA / 'updater-worker.log'
+
+def _sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+def guard():
+    if os.name != 'nt':
+        raise RuntimeError('Mise à jour en un clic disponible uniquement dans Windows TEST.')
+    if (Path(__file__).resolve().parent != (CODE / 'app').resolve()
+            or Path(os.environ.get('ATELIER_DATA_DIR', '')).resolve() != DATA.resolve()
+            or os.environ.get('ATELIER_PORT') != str(PORT)):
+        raise RuntimeError('Opération interdite hors de L’Atelier TEST (port 8876).')
+    if not (DATA / 'atelier.db').is_file() or not (CODE / 'manifest.json').is_file():
+        raise RuntimeError('Dossier de test ou base de données introuvable.')
+    for base in (CODE, DATA):
+        if base.is_symlink() or getattr(base, 'is_junction', lambda: False)():
+            raise RuntimeError('Dossier de test redirigé : mise à jour refusée.')
+
+def status():
+    try: return json.loads(STATUS.read_text(encoding='utf-8'))
+    except (OSError, ValueError): return {'phase': 'idle', 'detail': ''}
+
+def _status(phase, detail='', revision=''):
+    DATA.mkdir(parents=True, exist_ok=True)
+    temp = DATA / ('updater-state-' + str(os.getpid()) + '.tmp')
+    temp.write_text(json.dumps({'phase': phase, 'detail': str(detail)[:450],
+                     'revision': revision}, ensure_ascii=False), encoding='utf-8')
+    os.replace(temp, STATUS)
+
+def _get(url, maximum=80000000):
+    req = Request(url, headers={'User-Agent':'LAtelier-TEST-Updater/0.18',
+                                'Cache-Control':'no-cache'})
+    with urlopen(req, timeout=60) as response: data=response.read(maximum+1)
+    if len(data)>maximum: raise RuntimeError('Téléchargement trop volumineux.')
+    return data
+
+def _manifest(data):
+    manifest=json.loads(data.decode('utf-8-sig'))
+    if manifest.get('version')!='0.18.0' or manifest.get('format')!=2:
+        raise RuntimeError('Version de mise à jour TEST inattendue.')
+    entries=manifest.get('files')
+    if not isinstance(entries,list) or len(entries)<16: raise RuntimeError('Manifeste incomplet.')
+    seen=set()
+    for item in entries:
+        rel=item.get('path','') if isinstance(item,dict) else ''
+        p=PurePosixPath(rel)
+        if (not rel or '\\' in rel or ':' in rel or p.is_absolute() or
+            '..' in p.parts or rel in seen or
+            not re.fullmatch(r'[0-9a-f]{64}',str(item.get('sha256','')))):
+            raise RuntimeError('Manifeste non sécurisé : '+str(rel))
+        seen.add(rel)
+    if not {'app.py','app_part1.py','app_part2.py','app_part3.py',
+            'updater.py','public/index.html','public/styles.css','VERSION'}.issubset(seen):
+        raise RuntimeError('Fichier critique manquant.')
+    return manifest
+
+def _latest_revision():
+    """Resolve an immutable SHA without depending on GitHub's shared API quota."""
+    import xml.etree.ElementTree as ET
+    reasons=[]
+    try:
+        feed=_get('https://github.com/'+REPO+'/commits/'+BRANCH+'.atom',400000)
+        root=ET.fromstring(feed)
+        entry=root.find('{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}id')
+        match=re.search(r'([a-f0-9]{40})$',entry.text if entry is not None else '')
+        if match:return match.group(1)
+        reasons.append('flux de commits vide')
+    except Exception as exc:reasons.append('flux Atom : '+str(exc))
+    try:
+        ref='https://api.github.com/repos/'+REPO+'/commits/'+quote(BRANCH,safe='')
+        revision=json.loads(_get(ref,200000)).get('sha','')
+        if re.fullmatch(r'[a-f0-9]{40}',revision):return revision
+        reasons.append('réponse API invalide')
+    except Exception as exc:reasons.append('API GitHub : '+str(exc))
+    if shutil.which('git'):
+        try:
+            out=subprocess.check_output(['git','ls-remote','https://github.com/'+REPO+'.git',
+                                         'refs/heads/'+BRANCH],
+                                         timeout=20,text=True,stderr=subprocess.DEVNULL).strip()
+            revision=out.split()[0] if out else ''
+            if re.fullmatch(r'[a-f0-9]{40}',revision):return revision
+        except Exception as exc:reasons.append('Git : '+str(exc))
+    raise RuntimeError('Révision GitHub indisponible : '+'; '.join(reasons)[:230])
+
+def check():
+    guard()
+    revision=_latest_revision()
+    remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
+    local_manifest=(CODE/'manifest.json').read_bytes()
+    installed=_manifest(local_manifest)
+    installed_build=_sha(local_manifest.replace(b'\r\n',b'\n'))[:8]
+    old={x['path']:x['sha256'] for x in installed['files']}
+    new={x['path']:x['sha256'] for x in remote['files']}
+    return {'version':'0.18.0','channel':'TEST','revision':revision,
+            'available':old!=new,'installed_version':installed['version'],
+            'installed_build':installed_build}
+
+def _stage(revision):
+    raw=_get('https://codeload.github.com/'+REPO+'/zip/'+revision)
+    with ZipFile(io.BytesIO(raw)) as z:
+        paths=[x for x in z.namelist() if x.count('/')==1 and x.endswith('/manifest.json')]
+        if len(paths)!=1: raise RuntimeError('Manifeste absent de l’archive.')
+        prefix=paths[0][:-len('manifest.json')]
+        data=z.read(prefix+'manifest.json')
+        target=_manifest(data)
+        remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
+        if target!=remote: raise RuntimeError('Manifeste distant différent.')
+        files={};total=0
+        for entry in target['files']:
+            rel=entry['path'];info=z.getinfo(prefix+'app/'+rel)
+            if info.file_size>12_000_000 or info.is_dir() or ((info.external_attr>>16)&0o170000)==0o120000:
+                raise RuntimeError('Fichier distant non autorisé : '+rel)
+            total+=info.file_size
+            if total>70_000_000: raise RuntimeError('Archive extraite trop volumineuse.')
+            content=z.read(info)
+            if _sha(content)!=entry['sha256']: raise RuntimeError('SHA-256 invalide : '+rel)
+            files[rel]=content
+    stage=BASE/('_atelier_prepare_'+revision[:12])
+    if stage.exists(): raise RuntimeError('Ancienne préparation déjà présente.')
+    for folder in (CODE,DATA):
+        for item in folder.rglob('*'):
+            if item.is_symlink() or getattr(item,'is_junction',lambda:False)():
+                raise RuntimeError('Lien ou jonction non autorisé : '+str(item))
+    shutil.copytree(CODE,stage)
+    for rel,content in files.items():
+        dest=stage/'app'/Path(*PurePosixPath(rel).parts)
+        dest.parent.mkdir(parents=True,exist_ok=True)
+        dest.write_bytes(content)
+    (stage/'manifest.json').write_text(json.dumps(target,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    return stage
+
+def _port():
+    with socket.socket() as s:
+        s.settimeout(.3)
+        return s.connect_ex(('127.0.0.1',PORT))==0
+
+def _stop():
+    if not _port(): raise RuntimeError('Le serveur TEST ne répond plus.')
+    # Check ownership BEFORE requesting a shutdown: never stop a foreign server.
+    with urlopen('http://127.0.0.1:'+str(PORT)+'/api/runtime-version',timeout=3) as probe:
+        if not probe.headers.get('Server','').startswith('AtelierLocal/'):
+            raise RuntimeError('Le port 8876 appartient à une autre application.')
+        if json.load(probe).get('version')!='0.18.0':
+            raise RuntimeError('Serveur de test inattendu sur le port 8876.')
+    req=Request('http://127.0.0.1:'+str(PORT)+'/api/shutdown',
+                data=b'{}',method='POST',headers={'Content-Type':'application/json'})
+    with urlopen(req,timeout=4) as r:
+        if not r.headers.get('Server','').startswith('AtelierLocal/'):
+            raise RuntimeError('Le port 8876 appartient à une autre application.')
+        r.read(1024)
+    for _ in range(100):
+        if not _port() and not (DATA/'server.pid').exists(): return
+        time.sleep(.2)
+    raise RuntimeError('Le serveur ne s’est pas arrêté proprement.')
+
+def _backup(backup):
+    # Native desktop Post-its can own SQLite connections even after the main
+    # server stops. Never copy a live WAL-mode database byte-by-byte.
+    ephemeral={'updater-state.json','updater.lock','updater-worker.log',
+               'desktop-postits.lock','desktop-postits-wake.txt',
+               'desktop-postits.log','desktop-launch.log','desktop-server.log'}
+    database_files={'atelier.db','atelier.db-wal','atelier.db-shm'}
+    ignored=ephemeral|database_files
+    shutil.copytree(DATA,backup/'data',
+                    ignore=lambda parent,names:ignored & set(names)
+                    if Path(parent).resolve()==DATA.resolve() else set())
+    source=sqlite3.connect(DATA/'atelier.db',timeout=15)
+    destination=sqlite3.connect(backup/'data'/'atelier.db',timeout=15)
+    try:
+        source.backup(destination, pages=64, sleep=0.05)
+    finally:
+        destination.close()
+        source.close()
+    for item in DATA.rglob('*'):
+        if not item.is_file() or item.name in ignored or item.name.startswith('updater-state-'):
+            continue
+        saved=backup/'data'/item.relative_to(DATA)
+        if not saved.is_file() or _sha(item.read_bytes())!=_sha(saved.read_bytes()):
+            raise RuntimeError('Sauvegarde non conforme : '+str(item))
+    for item in (backup/'data').rglob('*.db'):
+        with sqlite3.connect(item) as c:
+            if c.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
+                raise RuntimeError('Base sauvegardée invalide.')
+
+def _restore_database_from_snapshot(snapshot, target):
+    # SQLite online backup is atomic against another connected client. Do not
+    # overwrite an open .db while its WAL/SHM files still exist.
+    source=sqlite3.connect(snapshot,timeout=15)
+    destination=sqlite3.connect(target,timeout=15)
+    try:
+        source.backup(destination,pages=64,sleep=0.05)
+    finally:
+        destination.close()
+        source.close()
+
+def _start():
+    env=dict(os.environ)
+    env.update(ATELIER_DATA_DIR=str(DATA),ATELIER_PORT=str(PORT),ATELIER_NO_BROWSER='1')
+    flags=(getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
+           getattr(subprocess,'CREATE_NO_WINDOW',0))
+    with open(LOG,'ab',buffering=0) as out:
+        child=subprocess.Popen([sys.executable,'-u',str(CODE/'app'/'app.py')],
+           cwd=str(CODE),env=env,stdin=subprocess.DEVNULL,stdout=out,stderr=subprocess.STDOUT,
+           close_fds=True,creationflags=flags)
+    for _ in range(100):
+        if child.poll() is not None:raise RuntimeError('Le serveur redémarré s’est arrêté.')
+        try:
+            with urlopen('http://127.0.0.1:'+str(PORT)+'/api/runtime-version',timeout=.5) as r:
+                if r.headers.get('Server','').startswith('AtelierLocal/') and json.load(r).get('version')=='0.18.0':return
+        except (OSError,ValueError):pass
+        time.sleep(.2)
+    raise RuntimeError('Serveur TEST inaccessible après installation.')
+
+def _atomic_copy(source, target):
+    """Replace a single verified code file, never the live code directory.
+
+    Windows keeps a directory busy while a desktop Post-it process uses it as
+    its working directory. File-level replacements avoid that WinError 5.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp = target.with_name(target.name + '.atelier-install-' + str(os.getpid()))
+    if temp.exists():
+        raise RuntimeError('Installation temporaire déjà présente : ' + str(temp))
+    try:
+        shutil.copy2(source, temp)
+        for attempt in range(12):
+            try:
+                os.replace(temp, target)
+                return
+            except PermissionError as exc:
+                if attempt == 11:
+                    raise RuntimeError(
+                        'Windows bloque un fichier de L’Atelier : ' + str(target) +
+                        '. Ferme les Post-it Windows depuis leur icône près de '
+                        'l’horloge et réessaie. La sauvegarde est conservée.'
+                    ) from exc
+                time.sleep(0.4)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def _install_staged(stage, backup, applied):
+    """Keep CODE in place; snapshot all existing code before changing any file."""
+    shutil.copytree(CODE, backup / 'code_avant')
+    manifest = _manifest((stage / 'manifest.json').read_bytes())
+    changes = []
+    for entry in manifest['files']:
+        rel = Path('app') / Path(*PurePosixPath(entry['path']).parts)
+        source, target = stage / rel, CODE / rel
+        if _sha(source.read_bytes()) != entry['sha256']:
+            raise RuntimeError('Fichier préparé invalide : ' + entry['path'])
+        if not target.is_file() or _sha(target.read_bytes()) != entry['sha256']:
+            changes.append((rel, source, target))
+    # The manifest is the final commit marker: do not report the new build
+    # until all verified application files have been installed.
+    if (stage / 'manifest.json').read_bytes() != (CODE / 'manifest.json').read_bytes():
+        changes.append((Path('manifest.json'), stage / 'manifest.json',
+                        CODE / 'manifest.json'))
+    for rel, source, target in changes:
+        applied.append(rel)
+        _atomic_copy(source, target)
+        if _sha(source.read_bytes()) != _sha(target.read_bytes()):
+            raise RuntimeError('Contrôle de fichier installé invalide : ' + str(rel))
+
+
+def _rollback_code(backup, applied):
+    """Restore only files touched by this attempt; preserve other user files."""
+    old = backup / 'code_avant'
+    for rel in reversed(applied):
+        source, target = old / rel, CODE / rel
+        if source.is_file():
+            _atomic_copy(source, target)
+        elif target.is_file():
+            target.unlink()
+    if applied and _sha((old / 'manifest.json').read_bytes()) != _sha(
+            (CODE / 'manifest.json').read_bytes()):
+        raise RuntimeError('Le manifeste de l’ancienne version n’a pas été restauré.')
+
+
+def worker(revision):
+    lock=None;stage=None;backup=None;stopped=False;started_new=False
+    applied=[]
+    try:
+        guard()
+        if not re.fullmatch(r'[a-f0-9]{40}',revision):raise RuntimeError('Révision incorrecte.')
+        lock=os.open(LOCK,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+        os.write(lock,str(os.getpid()).encode('ascii'))
+        _status('download','Téléchargement et contrôle des fichiers…',revision)
+        stage=_stage(revision)
+        _status('stopping','Préparation vérifiée. Redémarrage en cours…',revision)
+        _stop();stopped=True
+        backup=BASE/('SAUVEGARDE_AUTO_TEST_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+revision[:8])
+        backup.mkdir()
+        _status('backup','Sauvegarde de secours en cours…',revision)
+        _backup(backup)
+        _status('installing','Installation de la révision testée…',revision)
+        _install_staged(stage,backup,applied)
+        started_new=True
+        _start()
+        _status('success','L’Atelier TEST a redémarré avec succès.',revision)
+    except Exception as exc:
+        message=str(exc)
+        if stopped:
+            try:
+                if _port():_stop()
+                if applied and backup and (backup/'code_avant').is_dir():
+                    _rollback_code(backup,applied)
+                # Only a newly started server can have migrated user data.
+                # Never roll back a live SQLite DB merely because a file was locked.
+                if started_new and backup and (backup/'data'/'atelier.db').is_file():
+                    for saved in (backup/'data').rglob('*'):
+                        if saved.is_file() and saved.name!='atelier.db':
+                            dest=DATA/saved.relative_to(backup/'data')
+                            dest.parent.mkdir(parents=True,exist_ok=True)
+                            shutil.copy2(saved,dest)
+                    _restore_database_from_snapshot(backup/'data'/'atelier.db',
+                                                    DATA/'atelier.db')
+                if (CODE/'app'/'app.py').is_file():_start()
+                message+=' Ancienne version TEST restaurée.'
+            except Exception as rollback:
+                message+=' ATTENTION : restauration à contrôler : '+str(rollback)
+        if not stopped and not _port():
+            try:
+                _start()
+                message+=' Serveur TEST relancé.'
+            except Exception as restart_error:
+                message+=' Serveur à relancer manuellement : '+str(restart_error)
+        _status('error',message,revision)
+    finally:
+        if stage and stage.is_dir():
+            try: shutil.rmtree(stage)
+            except OSError: pass
+        if lock is not None:
+            os.close(lock)
+            try:LOCK.unlink(missing_ok=True)
+            except OSError:pass
+
+def begin(revision):
+    guard()
+    if not re.fullmatch(r'[a-f0-9]{40}',revision):raise RuntimeError('Révision demandée invalide.')
+    if LOCK.exists() or status().get('phase') in ('starting','download','stopping','backup','installing'):
+        raise RuntimeError('Une mise à jour est déjà en cours.')
+    current=check()
+    if current['revision']!=revision or not current['available']:
+        raise RuntimeError('Révision modifiée : effectue une nouvelle vérification.')
+    _status('starting','Préparation de la mise à jour…',revision)
+    flags=(getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
+           getattr(subprocess,'CREATE_NO_WINDOW',0))
+    try:
+        with open(LOG,'ab',buffering=0) as output:
+            subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--worker',revision],
+              cwd=str(BASE),env=os.environ.copy(),stdin=subprocess.DEVNULL,
+              stdout=output,stderr=subprocess.STDOUT,close_fds=True,creationflags=flags)
+    except Exception:
+        _status('error','Impossible de démarrer l’assistant de mise à jour.',revision)
+        raise
+    return {'ok':True,'revision':revision}
+
+if __name__=='__main__':
+    if len(sys.argv)==3 and sys.argv[1]=='--worker':worker(sys.argv[2])
+    else:raise SystemExit('Lancement direct de cet assistant désactivé.')
