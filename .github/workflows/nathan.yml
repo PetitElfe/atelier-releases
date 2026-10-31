@@ -131,8 +131,14 @@ jobs:
           $db=Join-Path $userRoot 'data\atelier.db'
           if(-not(Test-Path $db)){throw 'Old Nathan personal SQLite missing'}
           python -c "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);c.execute('CREATE TABLE IF NOT EXISTS nathan_upgrade_guard (token TEXT)');c.execute('INSERT INTO nathan_upgrade_guard VALUES (?)',('do-not-delete',));c.commit();c.close()" $db
-          $upgrade=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_Nathan.exe') -ArgumentList '--nathan-upgrade' -PassThru -Wait
+          Write-Host 'Starting explicit Nathan migration on disposable Windows profile'
+          $upgrade=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_Nathan.exe') -ArgumentList '--nathan-upgrade' -PassThru
+          if(-not $upgrade.WaitForExit(120000)){
+            Stop-Process -Id $upgrade.Id -Force -ErrorAction SilentlyContinue
+            throw 'Nathan upgrade exceeded 120 seconds: investigate before release'
+          }
           if($upgrade.ExitCode -ne 0){throw "Nathan in-place upgrade failed: $($upgrade.ExitCode)"}
+          Write-Host 'Migration completed; checking preserved SQLite data'
           python -c "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);assert c.execute('SELECT token FROM nathan_upgrade_guard').fetchone()[0]=='do-not-delete';print('PASS: prior Nathan SQLite data survived')" $db
           $code=Join-Path $userRoot 'code'
           if(Test-Path (Join-Path $code 'app\public\jdr.html')){throw 'Nathan contains JDR page'}
