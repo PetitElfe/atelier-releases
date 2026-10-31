@@ -32,14 +32,23 @@ body.theme-classic{--page-bg:#24372d;--header-bg:#24372d;--paper-bg:#f1e5c9;--ca
 body.theme-classic header{color:#f0e2c3}
 body.theme-classic .nav{color:#f0e2c3}
 body.theme-classic .star-tab{color:#fff}
+header .header-home{font:700 clamp(16px,4.3vw,22px) Georgia,serif;max-width:74vw;text-align:center;white-space:normal;padding:6px 3px;border-radius:9px}
+header .header-home:focus-visible{outline:2px solid var(--accent)}
+.jdr-tags{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.jdr-tag{background:var(--field-bg);border:1px solid var(--card-border);border-radius:20px;color:var(--ink);padding:7px 10px;font-size:13px}
+.jdr-tag.selected{background:#51785a;color:white}
+.jdr-item{border-top:1px solid var(--card-border);padding:12px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.jdr-item h3{font-size:16px;margin:0 0 8px;color:var(--accent)}
+.jdr-item .action{margin-right:6px}
+.jdr-hint{font-size:13px;line-height:1.5;color:var(--muted-ink)}
 @media(min-width:680px){.paper{max-width:640px;margin:auto}.mobile-tabs{justify-content:center;gap:50px}}
 </style></head><body>
-<header><button id="menu" aria-label="Ouvrir le menu">☰</button><strong>L’Atelier du Goblin</strong><span aria-hidden="true">🌿</span></header>
-<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
+<header><button id="menu" aria-label="Ouvrir le menu">☰</button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><span aria-hidden="true">🌿</span></header>
+<nav class="nav" id="nav" hidden><button id="close">✕ Fermer</button><button data-page="journal">📖 Mon journal</button><button data-page="tasks">☑ Mes tâches</button><button data-page="shopping">🧺 Mes courses</button><button data-page="calendar">▦ Calendrier</button><button data-page="capture">✎ Note rapide</button><button data-page="connected">🔄 Mon Atelier synchronisé</button><button data-page="jdr"># Mes notes classées</button><button data-page="settings">⚙ Personnaliser</button><button data-page="tools">☆ Mes outils</button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
 <button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon">▦</span>Calendrier</button>
-<button type="button" data-mobile-go="connected" data-mobile-section="notes"><span class="tab-icon">✎</span>Notes JDR</button>
+<button type="button" data-mobile-go="jdr"><span class="tab-icon">✎</span>Notes JDR</button>
 <button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement"><span class="tab-icon">☆</span></button>
 <button type="button" data-mobile-go="connected" data-mobile-section="shopping"><span class="tab-icon">♧</span>Courses</button>
 <button type="button" data-mobile-go="connected" data-mobile-section="tasks"><span class="tab-icon">☑</span>To-Do</button>
@@ -212,6 +221,97 @@ render=function(){
  previousRender();
  if(state.page==='settings'){backupSettings(document.getElementById('content'));connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
 };
+
+/* Local-first, hashtag-classified JDR notes. Separate from the historic journal key. */
+const jdrKey='goblin-mobile-jdr-notes-v1';
+let jdrNotes=[];try{const stored=JSON.parse(localStorage.getItem(jdrKey)||'[]');if(Array.isArray(stored))jdrNotes=stored.filter(x=>x&&typeof x==='object'&&typeof x.content==='string')}catch(e){}
+let jdrFilter='',jdrQuery='',jdrEdit=null;
+const safeText=value=>String(value||'').trim();
+function noteTags(text){return [...new Set((String(text||'').match(/#[\p{L}\p{N}_-]+/gu)||[]).map(x=>x.toLocaleLowerCase('fr-FR')))].slice(0,30)}
+function storeJdr(){localStorage.setItem(jdrKey,JSON.stringify(jdrNotes))}
+function jdrView(root){
+ const intro=panel(root,'# Mes notes classées');
+ intro.append(el('p',{class:'jdr-hint'},'Écris tes idées et range-les avec des # comme sur ton PC : #JDR, #personnage, #quête… Tu peux utiliser tes notes même sans connexion Windows.'));
+ const query=el('input',{type:'text',placeholder:'Rechercher une note ou un #…','aria-label':'Rechercher dans mes notes'});query.value=jdrQuery;query.oninput=()=>{jdrQuery=query.value;renderJdrRows()};intro.append(query);
+ const allTags=[...new Set(jdrNotes.flatMap(n=>noteTags((n.tags||[]).join(' ')+' '+n.content+' '+n.title)))].sort();
+ const chips=el('div',{class:'jdr-tags'});intro.append(chips);
+ for(const tag of ['',...allTags]){const chip=el('button',{type:'button',class:'jdr-tag'+(jdrFilter===tag?' selected':''), 'aria-pressed':String(jdrFilter===tag)},tag||'Toutes');chip.onclick=()=>{jdrFilter=tag;render()};chips.append(chip)}
+ const editor=panel(root,jdrEdit?'Modifier ma note':'Nouvelle note JDR');
+ const editing=jdrEdit?jdrNotes.find(n=>n.id===jdrEdit):null;
+ const title=el('input',{type:'text',placeholder:'Titre de la note','aria-label':'Titre de ma note'});title.value=editing?.title||'';
+ const tags=el('input',{type:'text',placeholder:'#JDR #personnage #quête…','aria-label':'Étiquettes de ma note'});tags.value=(editing?.tags||[]).join(' ');
+ const content=el('textarea',{placeholder:'Écris ta note ici. Tu peux aussi utiliser des # dans le texte.','aria-label':'Contenu de ma note'});content.value=editing?.content||'';content.style.minHeight='170px';
+ const saveBtn=el('button',{type:'button',class:'action'},editing?'Sauvegarder les modifications':'Enregistrer sur mon téléphone');
+ saveBtn.onclick=()=>{
+  if(!title.value.trim()&&!content.value.trim()){alert('Écris au moins un titre ou une note.');return}
+  const now=new Date().toISOString();
+  const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value),content:content.value.trim(),created:editing?.created||now,updated:now};
+  if(editing)jdrNotes=jdrNotes.map(n=>n.id===editing.id?note:n);else jdrNotes.unshift(note);
+  storeJdr();jdrEdit=null;render();
+ };
+ editor.append(title,tags,content,saveBtn);
+ if(editing){const cancel=el('button',{type:'button',class:'action'},'Annuler');cancel.onclick=()=>{jdrEdit=null;render()};editor.append(cancel)}
+ const notesPanel=panel(root,'Mes notes sur ce téléphone ('+jdrNotes.length+')');
+ const rows=el('div');notesPanel.append(rows);
+ function renderJdrRows(){
+  rows.replaceChildren();
+  const search=jdrQuery.trim().toLocaleLowerCase('fr-FR');
+  const visible=jdrNotes.filter(n=>(!jdrFilter||noteTags((n.tags||[]).join(' ')+' '+n.title+' '+n.content).includes(jdrFilter))&&(!search||(n.title+' '+n.content+' '+(n.tags||[]).join(' ')).toLocaleLowerCase('fr-FR').includes(search)));
+  if(!visible.length)rows.append(el('p',{class:'jdr-hint'},'Aucune note pour cette recherche.'));
+  visible.forEach(note=>{
+   const block=el('article',{class:'jdr-item'});block.append(el('h3',{},note.title));
+   const tagLine=el('p',{class:'jdr-hint'},noteTags((note.tags||[]).join(' ')+' '+note.title+' '+note.content).join(' '));block.append(tagLine);
+   const body=el('p',{},note.content);body.style.userSelect='text';block.append(body);
+   const edit=el('button',{class:'action'},'Modifier');edit.onclick=()=>{jdrEdit=note.id;render();window.scrollTo(0,0)};
+   const copy=el('button',{class:'action'},'Copier');copy.onclick=async()=>{try{await navigator.clipboard.writeText(note.title+'\n'+(note.tags||[]).join(' ')+'\n'+note.content);alert('Note copiée.')}catch(e){prompt('Copie ma note :',note.content)}};
+   block.append(edit,copy);
+   if(online){
+    const send=el('button',{class:'action'},'Envoyer au PC');
+    send.onclick=async()=>{send.disabled=true;try{
+     const latest=await callPc('GET','/api/mobile/notes');
+     if(!Array.isArray(latest))throw Error('Réponse PC inattendue');
+     if(JSON.stringify(latest)!==JSON.stringify(pc.notes)){pc.notes=latest;throw Error('Les notes du PC ont changé : actualise et recommence pour éviter un écrasement.')}
+     const remote={id:note.id,title:note.title,category:'JDR',content:((note.tags||[]).join(' ')+'\n'+note.content).trim(),updated:note.updated};
+     if(latest.some(n=>n.id===note.id))throw Error('Cette note existe déjà sur le PC. Aucun doublon créé : vérifie les modifications sur PC.');
+     await callPc('POST','/api/mobile/notes',{notes:[...latest,remote]});
+     await syncPull();alert('Copie de la note envoyée au PC. La note locale reste intacte.');
+    }catch(e){alert('Envoi non effectué : '+e.message)}finally{send.disabled=false}};
+    block.append(send);
+   }
+   const del=el('button',{class:'action'},'Supprimer');del.onclick=()=>{if(!confirm('Supprimer cette note enregistrée sur le téléphone ?'))return;jdrNotes=jdrNotes.filter(n=>n.id!==note.id);storeJdr();render()};block.append(del);rows.append(block)
+  });
+ }
+ renderJdrRows();
+ const remote=panel(root,'Notes JDR de mon PC');
+ if(!online){remote.append(el('p',{class:'jdr-hint'},'Hors connexion. Tes notes locales restent accessibles. Pour récupérer celles du PC, connecte-le avec Tailscale depuis Personnaliser.'));const c=el('button',{class:'action'},'Configurer mon PC');c.onclick=()=>{state.page='settings';save();render()};remote.append(c)}
+ else{
+  remote.append(el('p',{class:'jdr-hint'},'Notes récupérées depuis Windows. Elles ne sont pas supprimées par les notes locales.'));
+  (Array.isArray(pc.notes)?pc.notes:[]).slice().reverse().forEach(n=>{const row=el('details',{class:'jdr-item'});row.append(el('summary',{},'#'+(n.category||'Général')+' — '+(n.title||'Sans titre')));const body=el('p',{},n.content||'');body.style.userSelect='text';row.append(body);remote.append(row)});
+  const refresh=el('button',{class:'action'},'↻ Actualiser le PC');refresh.onclick=syncPull;remote.append(refresh);
+ }
+}
+const existingRenderGoblin=render;
+render=function(){
+ if(state.page==='jdr'){
+  document.getElementById('title').textContent='Notes JDR #';
+  document.getElementById('subtitle').textContent='Classer et retrouver mes idées, même sans PC.';
+  const root=document.getElementById('content');root.replaceChildren();jdrView(root);updateNav();return;
+ }
+ existingRenderGoblin();
+};
+function goHome(){
+ document.getElementById('nav').hidden=true;
+ jdrEdit=null;
+ state.page='journal';save();render();window.scrollTo(0,0);
+}
+document.getElementById('home').onclick=goHome;
+window.__atelierHandleAndroidBack=function(){
+ if(!document.getElementById('nav').hidden){document.getElementById('nav').hidden=true;return 'handled'}
+ if(jdrEdit){jdrEdit=null;render();return 'handled'}
+ if(state.page!=='journal'){goHome();return 'handled'}
+ return 'exit';
+};
+
 render();
 if(pcUrl)syncPull();
 
