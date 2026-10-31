@@ -48,6 +48,8 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon dans J−14/);
   assert.equal(await page.locator('#monthGrid .day-cell.today.cycle-recorded').count(),1);
   await page.locator('#settingsBtn').click();
+  // Settings is now a single-card sidebar; select the cycle section first.
+  await page.locator('.atelier-settings-nav button[data-target="settingsCycleCard"]').click();
   await page.locator('#settingsCycleShowInfo').waitFor({state:'visible'});
   assert.equal(await page.locator('#settingsCycleShowInfo').isChecked(),true);
   assert.equal(await page.locator('#settingsCycleShowMarks').isChecked(),true);
