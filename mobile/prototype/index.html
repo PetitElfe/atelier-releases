@@ -149,7 +149,9 @@ function autoCheckGoblin(){
 
 const computerKey='atelier-private-pc-url-v1';
 let pcUrl=localStorage.getItem(computerKey)||'';
-let pc={tasks:[],shopping:[],recipes:[],events:[],notes:[]},online=false,error='',tab='calendar',calendarView='month',selected=new Date(),requests=new Map(),seq=0,loadId=0;
+let pc={tasks:[],shopping:[],recipes:[],events:[],notes:[]},online=false,error='',tab='calendar',calendarView='month',selected=new Date(),requests=new Map(),seq=0,loadId=0,lastSyncAt=0;
+function pcSyncStamp(){return lastSyncAt?'Dernière actualisation réussie : '+new Date(lastSyncAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Pas encore de synchronisation confirmée';}
+function updatePcSyncStamp(){const el=document.getElementById('pcSyncStamp');if(el)el.textContent=pcSyncStamp();}
 window.__atelierSyncResponse=(id,code,raw)=>{
  const x=requests.get(id);if(!x)return;requests.delete(id);clearTimeout(x.timeout);
  let body;try{body=JSON.parse(raw)}catch(e){body={error:'Réponse illisible'}};
@@ -193,6 +195,8 @@ async function syncPull({quiet=false}={}){
    else unavailable.push(keys[i]);
   });
   online=valid>0;
+  if(online)lastSyncAt=Date.now();
+  updatePcSyncStamp();
   error=unavailable.length?'Rubriques Windows indisponibles : '+unavailable.join(', ')+'. Vérifie la version de L’Atelier PC.':'';
   if(!online)error='Le PC ne répond pas aux rubriques demandées. Vérifie Tailscale et L’Atelier Windows.';
   if(!quiet || ((wasOnline!==online || previousError!==error || before!==JSON.stringify(pc)) && !syncEditorActive()))render();
@@ -259,9 +263,11 @@ function connectedSettings(root){
 }
 function connectedView(root){
  const p=panel(root,'Les données de mon ordinateur');
+ p.append(el('p',{class:'muted',id:'pcSyncStamp'},pcSyncStamp()));
  p.append(el('p',{class:'muted'},online?'✓ Connecté en privé via Tailscale':error?'⚠ '+error:'Connexion au PC en cours…'));
  if(online&&error)p.append(el('p',{class:'muted'},'⚠ '+error));
  const refresh=el('button',{class:'action'},'↻ Actualiser');refresh.onclick=syncPull;p.append(refresh);
+ if(online)p.append(el('p',{class:'muted'},'Actualisation automatique toutes les 25 secondes pendant que cet écran est ouvert.'));
  if(!online){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
  const tabs=el('div',{class:'connected-tabs',role:'group','aria-label':'Rubriques synchronisées'});
  [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes JDR']].forEach(([key,title])=>{
