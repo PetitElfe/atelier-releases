@@ -54,7 +54,7 @@ jobs:
           assert(html.includes('window.AtelierTailnet.request'),'Tailscale bridge absent');
           const gradle=fs.readFileSync('mobile/android/app/build.gradle','utf8');
           assert(gradle.includes("applicationId 'fr.atelierdugoblin.mobile'"),'Package identifier changed');
-          assert(gradle.includes(' : [0,1,2]'),'Test version code unexpectedly changed');
+          assert(gradle.includes(' : [0,1,3]'),'Test version code unexpectedly changed');
           const main=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/MainActivity.java','utf8');
           assert(main.includes('Intent.ACTION_CREATE_DOCUMENT'),'Android backup export missing');
           assert(main.includes('webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")'),'App origin changed, historic WebView storage at risk');
@@ -70,7 +70,7 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
-          "$AAPT" dump badging "$APK" | grep -q "versionCode='102'"
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='103'"
           unzip -p "$APK" assets/index.html | grep -q 'data-mobile-go="jdr"'
       - name: Build baseline Android debug APK for non-destructive upgrade test
         run: |
