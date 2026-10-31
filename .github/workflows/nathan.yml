@@ -123,11 +123,50 @@ jobs:
           } finally {
             if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}
           }
+      - name: Verify existing Nathan upgrade preserves SQLite and blocks JDR
+        shell: pwsh
+        run: |
+          $env:LOCALAPPDATA=Join-Path $env:RUNNER_TEMP "nathan-real-install"
+          $userRoot=Join-Path $env:LOCALAPPDATA 'LAtelierDuGoblinNathan'
+          $db=Join-Path $userRoot 'data\atelier.db'
+          if(-not(Test-Path $db)){throw 'Old Nathan personal SQLite missing'}
+          python -c "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);c.execute('CREATE TABLE IF NOT EXISTS nathan_upgrade_guard (token TEXT)');c.execute('INSERT INTO nathan_upgrade_guard VALUES (?)',('do-not-delete',));c.commit();c.close()" $db
+          $upgrade=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_Nathan.exe') -ArgumentList '--nathan-upgrade' -PassThru -Wait
+          if($upgrade.ExitCode -ne 0){throw "Nathan in-place upgrade failed: $($upgrade.ExitCode)"}
+          python -c "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);assert c.execute('SELECT token FROM nathan_upgrade_guard').fetchone()[0]=='do-not-delete';print('PASS: prior Nathan SQLite data survived')" $db
+          $code=Join-Path $userRoot 'code'
+          if(Test-Path (Join-Path $code 'app\public\jdr.html')){throw 'Nathan contains JDR page'}
+          if(Test-Path (Join-Path $code 'app\public\jdr-mj.html')){throw 'Nathan contains MJ page'}
+          $server=Start-Process -FilePath (Join-Path $userRoot 'desktop\LAtelierDuGoblin_Nathan.exe') -ArgumentList '--nathan-server' -PassThru
+          try {
+            $ready=$false
+            for($i=0;$i -lt 70;$i++){
+              Start-Sleep -Milliseconds 600
+              if($server.HasExited){break}
+              try {$r=Invoke-WebRequest -Uri 'http://127.0.0.1:8877/api/runtime-version' -UseBasicParsing -TimeoutSec 1; if($r.StatusCode -eq 200){$ready=$true;break}}catch{}
+            }
+            if(-not $ready){throw 'Updated Nathan server did not start'}
+            foreach($route in @('jdr.html','jdr-mj.html','api/jdr/state')){
+              try {$r=Invoke-WebRequest -Uri ("http://127.0.0.1:8877/"+$route) -UseBasicParsing -TimeoutSec 4; throw "JDR route exposed: $route"}
+              catch [System.Net.WebException] { if([int]$_.Exception.Response.StatusCode -ne 404){throw "Unexpected JDR route result: $route"} }
+            }
+            Write-Host 'PASS: Nathan upgrade, data isolation, JDR 404 on live Windows server'
+          } finally {if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}}
       - name: Instructions
         shell: pwsh
         run: |
           @'
-          L'ATELIER DU GOBLIN — NATHAN (BÊTA PERSONNELLE)
+          L'ATELIER DU GOBLIN — NATHAN (BÊTA PERSONNELLE, SANS JDR)
+
+          SI NATHAN A DEJA L'APPLICATION :
+          1. Fermer L'Atelier de Nathan et ses Post-it.
+          2. Extraire tout le ZIP.
+          3. Lancer build/Mettre_a_jour_Nathan.cmd (pas directement l'EXE).
+          4. Le programme sauvegarde l'ancienne application et SQLite et
+             refuse toute mise a jour incomplete; donnees personnelles conservees.
+          5. Ouvrir son raccourci existant sur le Bureau.
+
+          SI NATHAN N'A JAMAIS INSTALLE L'APPLICATION :
 
           Ceci est une NOUVELLE application, indépendante de la version TEST.
           Sur le PC de Nathan : extraire le ZIP, ouvrir LAtelierDuGoblin_Nathan.exe.
@@ -145,11 +184,30 @@ jobs:
           NE PAS copier de dossier « data » ou de bases SQLite depuis quelqu'un.
           L'exécutable n'est pas signé : SmartScreen peut signaler Éditeur inconnu.
           '@ | Set-Content build/LIRE_NATHAN.txt -Encoding UTF8
+          @'
+          @echo off
+          setlocal
+          echo Fermer d'abord L'Atelier de Nathan et ses Post-it.
+          if not exist "%~dp0..\dist\LAtelierDuGoblin_Nathan.exe" (
+            echo Paquet incomplet : extraire tout le ZIP avant de continuer.
+            pause
+            exit /b 1
+          )
+          "%~dp0..\dist\LAtelierDuGoblin_Nathan.exe" --nathan-upgrade
+          if errorlevel 1 (
+            echo Mise a jour non terminee. Ne pas supprimer l'ancienne application.
+            pause
+            exit /b 1
+          )
+          echo Mise a jour de Nathan terminee. Les donnees ont ete conservees.
+          pause
+          '@ | Set-Content build/Mettre_a_jour_Nathan.cmd -Encoding ASCII
       - uses: actions/upload-artifact@v4
         with:
           name: LAtelierDuGoblin_Nathan_Windows_BETA
           path: |
             dist/LAtelierDuGoblin_Nathan.exe
             build/LIRE_NATHAN.txt
+            build/Mettre_a_jour_Nathan.cmd
           if-no-files-found: error
           retention-days: 14
