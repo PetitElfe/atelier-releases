@@ -77,6 +77,24 @@ let startX=0,startY=0;
 const main=document.querySelector('main');
 main.addEventListener('touchstart',e=>{if(e.touches.length===1){startX=e.touches[0].clientX;startY=e.touches[0].clientY}},{passive:true});
 main.addEventListener('touchend',e=>{if(!startX||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-startX,dy=e.changedTouches[0].clientY-startY;startX=0;startY=0;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.5){const next=pages.indexOf(state.page)+(dx<0?1:-1);if(next>=0&&next<pages.length){state.page=pages[next];save();render();window.scrollTo(0,0)}}},{passive:true});
+
+/* One matching vector icon system for the drawer; no emoji icon fonts. */
+const drawerShapes={
+ journal:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+ tasks:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m8 13 3 3 5-6"/>',
+ shopping:'<path d="m5 10 4-7M19 10l-4-7M3 10h18l-2 10H5L3 10Z"/><path d="M9 13v4M15 13v4"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3"/>',
+ capture:'<path d="M4 20h5L20 9a2 2 0 0 0-5-5L4 15v5ZM13 6l5 5"/>',
+ connected:'<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4M6 10h3m6 0h3"/>',
+ jdr:'<path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4Z"/><path d="M9 9h6M9 13h6M9 17h4"/>',
+ grimoire:'<path d="M4 10h16v3a8 8 0 0 1-16 0v-3ZM7 18h10M8 2v4M12 2v4M16 2v4"/>',
+ tools:'<path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.4-6 3.4 1-7-5-5 7-1L12 2Z"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
+};
+document.querySelectorAll('[data-drawer-icon]').forEach(slot=>{
+ const shape=drawerShapes[slot.dataset.drawerIcon];if(!shape)return;
+ slot.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+shape+'</svg>';
+});
 document.getElementById('menu').onclick=()=>document.getElementById('nav').hidden=false;
 document.getElementById('close').onclick=()=>document.getElementById('nav').hidden=true;
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.dataset.page;save();document.getElementById('nav').hidden=true;render()});
