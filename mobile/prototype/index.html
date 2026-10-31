@@ -181,6 +181,19 @@ async function syncPull(){
   render();
  }catch(e){if(requestVersion===loadId){online=false;error=e.message;render()}}
 }
+// Refresh remote lists on foreground return, without touching offline journal data.
+let lastForegroundSync=0;
+function refreshPcOnResume(){
+ if(!pcUrl||document.visibilityState==='hidden')return;
+ const now=Date.now();
+ if(now-lastForegroundSync<20000)return;
+ lastForegroundSync=now;
+ syncPull();
+}
+window.__atelierOnResume=refreshPcOnResume;
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible')refreshPcOnResume();
+});
 async function syncWrite(method,path,payload){try{await callPc(method,path,payload);await syncPull()}catch(e){alert('Modification non confirmée : '+e.message)}}
 function connectedSettings(root){
  const p=panel(root,'Synchronisation privée avec le PC');
