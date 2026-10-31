@@ -564,12 +564,15 @@ function grimoireView(root){
  mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;render()};timers.append(mute);
  const voice=el('button',{class:'action'},kitchenVoiceEnabled?'🗣 Mia miam activé':'🗣 Mia miam désactivé');voice.onclick=()=>{kitchenVoiceEnabled=!kitchenVoiceEnabled;render()};timers.append(voice);
  const testMiam=el('button',{class:'action',type:'button'},'▶ Tester « Miam miam »');
+ const testMiamStatus=el('p',{class:'jdr-hint',role:'status','aria-live':'polite'},'');
  testMiam.onclick=()=>{
   kitchenChime();
   const requested=kitchenSpeakMiam(true);
-  alert(requested?'Test vocal envoyé. Si tu n’entends rien, vérifie le volume multimédia et la voix de synthèse vocale Android.':'Aucune voix de synthèse disponible sur cet appareil. Le carillon peut encore fonctionner.');
+  testMiamStatus.textContent=requested?
+   'Test lancé : écoute le volume multimédia. Si la voix reste muette, vérifie le moteur vocal Android dans les Paramètres du téléphone.':
+   'Aucune voix disponible ; le carillon reste utilisable.';
  };
- timers.append(testMiam);
+ timers.append(testMiam,testMiamStatus);
  timers.append(el('p',{class:'jdr-hint'},'Le son de fin de cuisson fonctionne lorsque Goblin reste ouverte. Les alertes natives écran verrouillé sont encore en développement.'));
  const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
  kitchenTimers.forEach(t=>{
