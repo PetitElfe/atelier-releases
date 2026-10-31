@@ -146,7 +146,8 @@ def _upgrade_existing():
             raise RuntimeError("Fichier du paquet non vérifié : "+str(row["path"]))
     stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
     backup=base/"backups"/("NATHAN_AVANT_MAJ_"+stamp)
-    if backup.exists():raise RuntimeError("Sauvegarde déjà présente.")
+    if backup.exists() or backup.parent.is_symlink() or getattr(backup.parent,"is_junction",lambda:False)():
+        raise RuntimeError("Dossier de sauvegarde Nathan non sûr.")
     staged=base/"code.nathan-new"
     previous=base/"code.nathan-previous"
     new_exe=exe.with_suffix(".new")
@@ -173,6 +174,8 @@ def _upgrade_existing():
         if not _same(current,new_exe):
             new_exe.unlink(missing_ok=True)
             raise RuntimeError("Copie du nouvel exécutable invalide.")
+        revision_file=data/"installed-revision.txt"
+        previous_revision=revision_file.read_bytes() if revision_file.exists() else None
         code_swapped=False
         exe_swapped=False
         try:
@@ -193,6 +196,10 @@ def _upgrade_existing():
             if code_swapped:
                 if code.exists():shutil.rmtree(code)
                 previous.rename(code)
+            if previous_revision is None:
+                revision_file.unlink(missing_ok=True)
+            else:
+                revision_file.write_bytes(previous_revision)
             if new_exe.exists():new_exe.unlink()
             raise
         shutil.rmtree(previous)
