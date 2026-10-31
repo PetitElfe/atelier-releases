@@ -45,3 +45,14 @@ La version 0.1.2 TEST signée a été installée par l’utilisatrice avec ses a
 - Export JSON mobile : inclut maintenant les notes JDR et minuteurs, en plus du journal historique et des préférences.
 
 Tests obligatoires pour livrer 0.1.3 : workflow Android debug vert ; workflow signed 0.1.3 vert avec contrôle du certificat publié 0.1.1 et test d’installation réelle **0.1.2 signée → 0.1.3 signée** sur émulateur. Le parcours réel, les notes et recettes via Tailscale, le bouton retour et le mode immersif doivent ensuite être vérifiés sur l’appareil physique. Ne pas publier avant ces vérifications.
+
+
+## Système de mises à jour Android 0.1.4 (test)
+
+- L'app en fonctionnement vérifie les GitHub Releases officielles du dépôt public une fois au lancement si la dernière vérification date de plus de 24 heures, ou à la demande dans **Personnaliser → Mises à jour de Goblin**. Une pastille dans le menu signale une version disponible.
+- Version actuelle lue depuis le PackageManager Android ; versions cibles uniquement via tags android-vX.Y.Z, non brouillons/non prereleases avec assets LAtelierDuGoblin-Mobile.apk et .sha256. Les artefacts de CI (TEST) ne sont pas pris en compte.
+- Aucun jeton GitHub dans l'app. Téléchargement à la demande sur HTTPS officiel, redirections strictement limitées aux domaines des téléchargements de GitHub, taille limitée, empreinte SHA-256 validée.
+- Le pont natif compare applicationId, versionCode strictement supérieur et SHA-256 du certificat de signature installée. Une APK de signature inconnue est refusée. Android sollicite l'autorisation **Installer des applications inconnues** au premier usage et demande ensuite l'accord d'installation ; aucune installation silencieuse ni suppression des données.
+- Le FileProvider est non exporté et expose uniquement le cache updates/ au gestionnaire d'installation.
+- **Important :** la version 0.1.4 signée doit être installée manuellement une fois, par-dessus l'application existante. Les mises à jour futures devront être publiées comme release Android officielle pour que la vérification fonctionne. Le système ne surveille pas en arrière-plan quand Goblin est fermé.
+- Vérifier avant livraison : Java compile, JS valide, APK signée avec certificat historique, test émulateur mise à jour 0.1.3 signée → 0.1.4 signée, et usage réel sur le téléphone Android. La vérification réseau vers l'API GitHub et la demande d'autorisation d'installation n'ont pas encore été exercées sur l'appareil physique.
