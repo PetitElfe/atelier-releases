@@ -54,7 +54,7 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        webView.addJavascriptInterface(new UpdateBridge(this), "AtelierUpdates");
+        webView.addJavascriptInterface(new UpdateBridge(this, webView), "AtelierUpdates");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new Object() {
