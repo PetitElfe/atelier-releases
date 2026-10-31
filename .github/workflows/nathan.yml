@@ -121,7 +121,7 @@ jobs:
             if($LASTEXITCODE -ne 0){throw 'Nathan origin authorization failed'}
             Write-Host "PASS: standalone frozen server, empty personal DB initialized, GET API, separate port 8877"
           } finally {
-            if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}
+            if(-not $server.HasExited){taskkill.exe /PID $server.Id /T /F 2>&1 | Out-Null; Start-Sleep -Seconds 2}
           }
       - name: Verify existing Nathan upgrade preserves SQLite and blocks JDR
         shell: pwsh
@@ -135,9 +135,15 @@ jobs:
           $upgrade=Start-Process -FilePath (Resolve-Path 'dist/LAtelierDuGoblin_Nathan.exe') -ArgumentList '--nathan-upgrade' -PassThru
           if(-not $upgrade.WaitForExit(120000)){
             Stop-Process -Id $upgrade.Id -Force -ErrorAction SilentlyContinue
+            $report=Join-Path $userRoot 'data\nathan-upgrade-error.log'
+            if(Test-Path $report){Get-Content $report -Tail 30 | Write-Host}
             throw 'Nathan upgrade exceeded 120 seconds: investigate before release'
           }
-          if($upgrade.ExitCode -ne 0){throw "Nathan in-place upgrade failed: $($upgrade.ExitCode)"}
+          if($upgrade.ExitCode -ne 0){
+            $report=Join-Path $userRoot 'data\nathan-upgrade-error.log'
+            if(Test-Path $report){Get-Content $report -Tail 30 | Write-Host}
+            throw "Nathan in-place upgrade failed: $($upgrade.ExitCode)"
+          }
           Write-Host 'Migration completed; checking preserved SQLite data'
           python -c "import sqlite3,sys;c=sqlite3.connect(sys.argv[1]);assert c.execute('SELECT token FROM nathan_upgrade_guard').fetchone()[0]=='do-not-delete';print('PASS: prior Nathan SQLite data survived')" $db
           $code=Join-Path $userRoot 'code'
@@ -159,7 +165,7 @@ jobs:
               if($status -ne 404){throw "JDR route exposed or unavailable: $route ($status)"}
             }
             Write-Host 'PASS: Nathan upgrade, data isolation, JDR 404 on live Windows server'
-          } finally {if(-not $server.HasExited){Stop-Process -Id $server.Id -Force}}
+          } finally {if(-not $server.HasExited){taskkill.exe /PID $server.Id /T /F 2>&1 | Out-Null; Start-Sleep -Seconds 2}}
       - name: Instructions
         shell: pwsh
         run: |
