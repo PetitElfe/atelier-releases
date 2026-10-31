@@ -165,9 +165,19 @@ function callPc(method,path,data,base=pcUrl){
  });
 }
 function isoDay(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
-async function syncPull(){
- if(!pcUrl)return;
+// Keep keyboard input and local journal drafts intact during background syncs.
+function syncEditorActive(){
+ const active=document.activeElement;
+ return !!(active && active.closest && active.closest('#content') &&
+  (active.isContentEditable || active.tagName==='TEXTAREA' ||
+   (active.tagName==='INPUT' && !['checkbox','radio','button'].includes(active.type)) ||
+   active.tagName==='SELECT'));
+}
+async function syncPull({quiet=false}={}){
+ if(!pcUrl || (quiet && (document.visibilityState==='hidden' || syncEditorActive())))return;
  const requestVersion=++loadId;
+ const before=quiet?JSON.stringify(pc):null;
+ const wasOnline=online,previousError=error;
  try{
   const period=selected,from=new Date(period.getFullYear(),period.getMonth()-1,1),until=new Date(period.getFullYear(),period.getMonth()+2,0);
   // Independent reads: an older Windows build may not offer all optional routes.
@@ -185,22 +195,34 @@ async function syncPull(){
   online=valid>0;
   error=unavailable.length?'Rubriques Windows indisponibles : '+unavailable.join(', ')+'. Vérifie la version de L’Atelier PC.':'';
   if(!online)error='Le PC ne répond pas aux rubriques demandées. Vérifie Tailscale et L’Atelier Windows.';
-  render();
- }catch(e){if(requestVersion===loadId){online=false;error=e.message;render()}}
+  if(!quiet || ((wasOnline!==online || previousError!==error || before!==JSON.stringify(pc)) && !syncEditorActive()))render();
+ }catch(e){
+  if(requestVersion===loadId){
+   online=false;error=e.message;
+   if(!quiet || ((wasOnline!==online || previousError!==error) && !syncEditorActive()))render();
+  }
+ }
 }
-// Refresh remote lists on foreground return, without touching offline journal data.
+// Poll only while Goblin is open on the synced page; never poll while editing.
+// No background service and no changes to the historic offline journal.
 let lastForegroundSync=0;
 function refreshPcOnResume(){
  if(!pcUrl||document.visibilityState==='hidden')return;
  const now=Date.now();
  if(now-lastForegroundSync<20000)return;
  lastForegroundSync=now;
- syncPull();
+ syncPull({quiet:true});
 }
 window.__atelierOnResume=refreshPcOnResume;
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible')refreshPcOnResume();
 });
+setInterval(()=>{
+ if(pcUrl && document.visibilityState==='visible' && state.page==='connected' && !syncEditorActive()){
+  lastForegroundSync=Date.now();
+  syncPull({quiet:true});
+ }
+},25000);
 async function syncWrite(method,path,payload){try{await callPc(method,path,payload);await syncPull()}catch(e){alert('Modification non confirmée : '+e.message)}}
 function connectedSettings(root){
  const p=panel(root,'Synchronisation privée avec le PC');
