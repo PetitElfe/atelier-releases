@@ -26,6 +26,7 @@ import androidx.webkit.WebViewClientCompat;
 public class MainActivity extends Activity {
     private WebView webView;
     private TailnetBridge tailnet;
+    private UpdateBridge updateBridge;
     private String pendingBackup;
     private static final int BACKUP_REQUEST=7281;
     private boolean nativeBackRegistered = false;
@@ -54,7 +55,8 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
-        webView.addJavascriptInterface(new UpdateBridge(this, webView), "AtelierUpdates");
+        updateBridge = new UpdateBridge(this, webView);
+        webView.addJavascriptInterface(updateBridge, "AtelierUpdates");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new Object() {
@@ -145,6 +147,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         if (tailnet != null) tailnet.close();
+        if (updateBridge != null) updateBridge.close();
         webView.destroy();
         super.onDestroy();
     }
