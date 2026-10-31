@@ -624,8 +624,8 @@ function grimoireView(root){
   const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
   const countdown=el('p',{'data-kitchen-countdown':t.id},t.ringing?'🔔 Terminé !':clockTime(t.running?t.end-Date.now():t.remaining));countdown.style.fontSize='24px';row.append(countdown);
   const toggle=el('button',{class:'action'},t.ringing?'Arrêter l’alerte':t.running?'Pause':'Reprendre');
-  toggle.onclick=()=>{if(t.ringing){t.ringing=false;t.remaining=0}else if(t.running){t.remaining=Math.max(0,t.end-Date.now());t.running=false}else{t.end=Date.now()+Math.max(1000,t.remaining);t.running=true}timerSave();render()};
-  const del=el('button',{class:'action'},'Supprimer');del.onclick=()=>{kitchenTimers=kitchenTimers.filter(x=>x.id!==t.id);timerSave();render()};
+  toggle.onclick=()=>{if(t.ringing){t.ringing=false;t.remaining=0;kitchenStopMiam()}else if(t.running){t.remaining=Math.max(0,t.end-Date.now());t.running=false}else{t.end=Date.now()+Math.max(1000,t.remaining);t.running=true}timerSave();render()};
+  const del=el('button',{class:'action'},'Supprimer');del.onclick=()=>{if(t.ringing)kitchenStopMiam();kitchenTimers=kitchenTimers.filter(x=>x.id!==t.id);timerSave();render()};
   row.append(toggle,del);timers.append(row);
  });
  timers.append(el('p',{class:'jdr-hint'},'Important : laisse Goblin ouvert au premier plan pour entendre l’alerte. En arrière-plan ou écran verrouillé, Android peut suspendre le son et les scripts. Le temps restant est recalculé lorsque tu reviens.'));
