@@ -115,6 +115,13 @@ function updateUi(){
  if(leaf)leaf.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
  const badge=document.getElementById('headerUpdateBadge');if(badge)badge.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
  const drawerBadge=document.getElementById('drawerUpdateBadge');if(drawerBadge)drawerBadge.hidden=badge?badge.hidden:true;
+ const banner=document.getElementById('goblinUpdateBanner');
+ const availableVersion=goblinUpdate.type==='available'?goblinUpdate.version:(localStorage.getItem('goblin-update-available-v1')||'');
+ if(banner){
+  banner.hidden=!availableVersion||sessionStorage.getItem('goblin-update-banner-dismissed')===availableVersion;
+  const label=document.getElementById('goblinUpdateBannerText');
+  if(label&&availableVersion)label.textContent='Goblin '+availableVersion+' est disponible — mise à jour depuis Paramètres';
+ }
 }
 window.__atelierUpdateResponse=function(raw){
  try{
@@ -527,6 +534,12 @@ function goHome(){
 }
 document.getElementById('home').onclick=goHome;
 document.getElementById('quickSettings').onclick=()=>{state.page='settings';save();render();window.scrollTo(0,0)};
+document.getElementById('openGoblinUpdate').onclick=()=>{state.page='settings';save();render();window.scrollTo(0,0)};
+document.getElementById('dismissGoblinUpdate').onclick=()=>{
+ const version=goblinUpdate.version||localStorage.getItem('goblin-update-available-v1')||'';
+ sessionStorage.setItem('goblin-update-banner-dismissed',version);
+ updateUi();
+};
 window.__atelierHandleAndroidBack=function(){
  if(!document.getElementById('nav').hidden){document.getElementById('nav').hidden=true;return 'handled'}
  if(jdrEdit){jdrEdit=null;render();return 'handled'}
@@ -536,6 +549,7 @@ window.__atelierHandleAndroidBack=function(){
 
 render();
 if(pcUrl)syncPull();
+updateUi();
 setTimeout(autoCheckGoblin,1800);
 
 </script></body></html>
