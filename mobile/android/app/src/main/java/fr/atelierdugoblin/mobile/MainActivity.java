@@ -6,6 +6,9 @@ import android.graphics.Color;
 import android.os.Build;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.window.OnBackInvokedDispatcher;
+import android.window.OnBackInvokedCallback;
 import android.widget.FrameLayout;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
@@ -25,10 +28,11 @@ public class MainActivity extends Activity {
     private TailnetBridge tailnet;
     private String pendingBackup;
     private static final int BACKUP_REQUEST=7281;
+    private boolean nativeBackRegistered = false;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().setStatusBarColor(Color.rgb(36, 55, 45));
-        getWindow().setNavigationBarColor(Color.rgb(241, 229, 201));
+        getWindow().setNavigationBarColor(Color.rgb(25, 43, 34));
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -75,20 +79,27 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams.MATCH_PARENT));
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
         } else {
             getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
         frame.setOnApplyWindowInsetsListener((view, insets) -> {
             int top, bottom;
             if (Build.VERSION.SDK_INT >= 30) {
                 top = insets.getInsets(WindowInsets.Type.statusBars()).top;
-                bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+                bottom = 0; // Navigation controls are hidden; WebView gets the full usable height.
             } else {
                 top = insets.getSystemWindowInsetTop();
-                bottom = insets.getSystemWindowInsetBottom();
+                bottom = 0;
             }
             FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) webView.getLayoutParams();
             if (params.topMargin != top || params.bottomMargin != bottom) {
@@ -101,6 +112,23 @@ public class MainActivity extends Activity {
         setContentView(frame);
         frame.requestApplyInsets();
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                () -> dispatchBackToWeb());
+            nativeBackRegistered = true;
+        }
+    }
+    private void dispatchBackToWeb() {
+        if (webView == null) { moveTaskToBack(true); return; }
+        webView.evaluateJavascript(
+            "(window.__atelierHandleAndroidBack ? window.__atelierHandleAndroidBack() : 'exit')",
+            result -> {
+                if (result == null || "\"exit\"".equals(result)) moveTaskToBack(true);
+            });
+    }
+    @Override public void onBackPressed() {
+        dispatchBackToWeb();
     }
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
         super.onActivityResult(requestCode,resultCode,data);
