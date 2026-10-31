@@ -1939,6 +1939,42 @@ refresh().then(()=>{
   if(state.view==='home'){showView('home');activateHomeCanvas()}
 }); checkRuntimeCompatibility();
 setInterval(checkDue,10000); setInterval(updateClock,30000); setTimeout(checkDue,1000);
+// Auto-read shared tasks created or edited by Goblin Android, without a page reload.
+// Update only the task-related views and never replace a form currently being edited.
+let atelierTaskPollBusy=false;
+let atelierTaskPollAt=0;
+function atelierTaskEditorIsBusy(){
+  const modal=document.getElementById('modalBackdrop');
+  if(modal && !modal.classList.contains('hidden'))return true;
+  const active=document.activeElement;
+  return !!(active && (active.isContentEditable ||
+    active.tagName==='TEXTAREA' ||
+    (active.tagName==='INPUT' && !['checkbox','radio','button'].includes(active.type))));
+}
+async function atelierPollSharedTasks(){
+  if(document.hidden || atelierTaskPollBusy || atelierTaskEditorIsBusy())return;
+  if(Date.now()-atelierTaskPollAt<8000)return;
+  atelierTaskPollAt=Date.now();
+  atelierTaskPollBusy=true;
+  const previous=JSON.stringify(state.tasks);
+  try{
+    const latest=await api('/api/tasks');
+    if(!Array.isArray(latest) || document.hidden || atelierTaskEditorIsBusy())return;
+    // Do not overwrite state updated by a local save during the network request.
+    if(JSON.stringify(state.tasks)!==previous || JSON.stringify(latest)===previous)return;
+    state.tasks=latest;
+    if(state.view==='tasks')renderTasks();
+    else if(state.view==='home')renderHome();
+  }catch(error){
+    console.warn('[Atelier] Actualisation des tâches différée',error);
+  }finally{
+    atelierTaskPollBusy=false;
+  }
+}
+setInterval(atelierPollSharedTasks,12000);
+window.addEventListener('focus',atelierPollSharedTasks);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)atelierPollSharedTasks()});
+
 window.addEventListener('focus',checkDue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()});
 let atelierLastDay=ymd(new Date());
