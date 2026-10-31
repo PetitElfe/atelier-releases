@@ -82,10 +82,15 @@ jobs:
           test -s "$RUNNER_TEMP/atelier-previous/mobile/android/app/build/outputs/apk/debug/app-debug.apk"
       - name: Enable KVM acceleration for Android emulator
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          test -r /dev/kvm && test -w /dev/kvm
+          # GitHub-hosted images often have no udev daemon.
+          # Set permissions on the existing KVM device directly instead.
+          if [ -e /dev/kvm ]; then
+            sudo chmod a+rw /dev/kvm
+            ls -l /dev/kvm
+            test -r /dev/kvm && test -w /dev/kvm
+          else
+            echo "::warning::/dev/kvm unavailable; emulator will use slower software acceleration"
+          fi
       - name: Boot Android emulator and smoke-test app
         uses: reactivecircus/android-emulator-runner@v2
         with:
