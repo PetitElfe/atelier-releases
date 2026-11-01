@@ -10,6 +10,10 @@ const data=mkdtempSync(join(tmpdir(),'atelier-manoir-v3-'));
 const proc=spawn('python',[resolve(__dirname,'..','app','app.py')],{env:{...process.env,ATELIER_DATA_DIR:data,ATELIER_PORT:String(PORT),ATELIER_NO_BROWSER:'1'},stdio:'ignore'});
 async function ready(){for(let i=0;i<130;i++){try{if((await fetch(BASE+'/api/version')).ok)return}catch(_){}await new Promise(r=>setTimeout(r,130))}throw Error('server timeout')}
 async function getState(){return (await (await fetch(BASE+'/api/jdr/manoir')).json()).state}
+async function waitForState(predicate,description){
+ for(let i=0;i<95;i++){const state=await getState();if(predicate(state))return state;await new Promise(r=>setTimeout(r,180))}
+ throw Error('API state timeout: '+description+' / '+JSON.stringify(await getState()).slice(0,850))
+}
 async function main(){
  let browser;
  try{
@@ -26,13 +30,8 @@ async function main(){
   assert.deepEqual(atlas,{width:1120,height:770});
   await page.locator('#roomSelect').selectOption('hall');
   await page.locator('#spawnParty').click();
-  await page.waitForFunction(async()=>{
-   const state=(await (await fetch('/api/jdr/manoir')).json()).state;
-   return state&&state.seen.hall&&state.tokens.filter(x=>x.kind==='PJ').every(x=>x.x!==null);
-  },{timeout:15000});
-  let state=await getState();
+  let state=await waitForState(s=>s&&s.seen.hall&&s.tokens.filter(x=>x.kind==='PJ').every(x=>x.x!=null),'group spawn');
   const local=await page.evaluate(()=>JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v3')));
-  console.log('DEBUG JDR group local/server:',JSON.stringify(local?.tokens?.filter(x=>x.kind==='PJ')),JSON.stringify(state?.tokens?.filter(x=>x.kind==='PJ')));
   const pj=state.tokens.filter(x=>x.kind==='PJ');
   assert.equal(pj.length,3);
   assert.equal(new Set(pj.map(t=>t.x+','+t.y)).size,3,'Group is not stacked: '+JSON.stringify(pj));
@@ -51,18 +50,11 @@ async function main(){
   },{source:first});
   await popup.mouse.move(points.from.x,points.from.y);await popup.mouse.down();
   await popup.mouse.move(points.to.x,points.to.y,{steps:8});await popup.mouse.up();
-  await page.waitForFunction(async({id,y})=>{
-    const state=(await (await fetch('/api/jdr/manoir')).json()).state;
-    return state?.tokens.find(t=>t.id===id)?.y===y+1;
-  },{id:first.id,y:first.y},{timeout:12000});
-  state=await getState();
+  state=await waitForState(s=>s?.tokens.find(t=>t.id===first.id)?.y===first.y+1,'player drag');
   assert.equal(state.tokens.find(x=>x.id===first.id).y,first.y+1,'Drag moved token independently');
   await page.locator('#roomSelect').selectOption('salon');
   await page.locator('#revealRoom').click();
-  await page.waitForFunction(async()=>{
-    const state=(await (await fetch('/api/jdr/manoir')).json()).state;
-    return state?.seen?.salon===true;
-  },{timeout:12000});
+  await waitForState(s=>s?.seen?.salon===true,'reveal salon');
 
   await page.locator('[data-tab="shoulkar"]').click();
   assert.ok(await page.locator('#miniBoard').isVisible());
@@ -78,6 +70,7 @@ async function main(){
   await page.locator('#sheetFiles').setInputFiles({name:'rodeur.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(imported))});
   await page.waitForFunction(()=>document.querySelectorAll('#sheetTabs button').length>=2);
   assert.ok((await page.locator('#sheetTabs').innerText()).includes('Rôdeur'));
+  await waitForState(s=>s?.shoulkar?.hp===43&&s?.sheets?.some(x=>x.name==='Rôdeur')&&s?.sheets?.some(x=>x.name==='Sorcière du groupe'),'sheet persistence');
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.getElementById('syncStatus').textContent.includes('Relié à L’Atelier'));
   state=await getState();
