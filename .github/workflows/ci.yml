@@ -68,6 +68,8 @@ jobs:
           npx playwright install --only-shell chromium
       - name: Verify Manor V3 player window, reveal, group movement and sheets
         run: node tools/jdr_manoir_v3_browser_test.cjs
+      - name: Verify MJ room reveal/hide and confirmed Ponga maneuvers
+        run: node tools/jdr_reveal_hide_ponga_test.cjs
       - name: Verify final Shoulkar boss tracker and three canonical player sheets
         run: node tools/jdr_shoulkar_final_browser_test.cjs
       - name: Verify customizable MJ YouTube ambience buttons and exclusive playback
