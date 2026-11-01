@@ -21,16 +21,23 @@ async function main(){let browser;
   assert.equal(await player.locator('#miniBoard').isVisible(),false,'Main window must not display MJ mini map');
   assert.equal(await player.locator('#shHp').isVisible(),false,'Player stream must not display Shoulkar stats');
   assert.equal(await player.locator('#playerFullscreen').isVisible(),true);
+  assert.equal(await player.locator('#playerStage .player-return').isVisible(),true,'The game window must provide a return to Atelier');
+  assert.equal(await player.locator('#playerModeStatus').isVisible(),false,'Private sync status must not appear on the streamed map');
+  assert.equal(await player.locator('#launchMjConsole').isVisible(),false,'MJ launcher must stay tucked away until the host opens setup');
+  assert.equal(await player.locator('.jdr-head-actions').isVisible(),false,'MJ actions must never appear in player mode');
   await waitFor(s=>s&&Array.isArray(s.tokens),'initial manor save');
   const initial=await player.locator('#playerStageCanvas').evaluate(c=>c.toDataURL('image/png'));
   // On Linux the native Edge launcher is unavailable; button must gracefully use popup.
   const mjPopup=player.waitForEvent('popup',{timeout:12000});
+  await player.locator('#playerStage .host-tools summary').click();
   await player.locator('#launchMjConsole').click();
   const mj=await mjPopup;await mj.waitForLoadState();
   mj.on('pageerror',e=>errors.push('MJ: '+e.message));
   assert.ok(mj.url().includes('mode=mj'),'MJ uses separate console URL');
   assert.equal(await mj.locator('#miniBoard').isVisible(),true);
   assert.equal(await mj.locator('#playerStageCanvas').isVisible(),false);
+  assert.equal(await mj.locator('.jdr-top .mj-return').isVisible(),true,'MJ console must provide a return to Atelier');
+  assert.equal(await mj.locator('#syncStatus').isVisible(),true,'Connection diagnostics should stay in MJ console');
   await mj.locator('#roomSelect').selectOption('hall');
   await mj.locator('#spawnParty').click();
   const withPlayers=await waitFor(s=>s?.seen?.hall===true&&s?.tokens?.filter(t=>t.kind==='PJ').every(t=>t.x!=null),'3 PJ in hall');
@@ -49,6 +56,20 @@ async function main(){let browser;
   // If moved within the hall, one row up is valid (unless the spawn was against top wall).
   await waitFor(s=>s?.tokens.find(t=>t.id===pj.id)?.y===pj.y-1,'player window drag');
   assert.deepEqual(errors,[]);
-  console.log('PASS: Atelier player-only full map, separate MJ window, live room visibility and player pawn drag.');
+  // Full-screen player sharing must hide all preparation / navigation chrome.
+  await player.locator('#playerFullscreen').click();
+  await player.waitForFunction(()=>document.fullscreenElement?.id==='playerStage',{timeout:10000});
+  assert.equal(await player.locator('#playerStage .player-bar').first().isVisible(),false,'No host/MJ toolbar should be streamed in fullscreen');
+  assert.equal(await player.locator('#playerStageCanvas').isVisible(),true);
+  await player.keyboard.press('Escape');
+  await player.waitForFunction(()=>!document.fullscreenElement);
+  // Both return links are functional, not merely decorative.
+  await player.locator('#playerStage .player-return').click();
+  await player.waitForURL(url=>url.pathname==='/',{timeout:10000});
+  assert.ok(await player.locator('#homeView').count(),'Player return should open Atelier');
+  await mj.locator('.jdr-top .mj-return').click();
+  await mj.waitForURL(url=>url.pathname==='/',{timeout:10000});
+  assert.ok(await mj.locator('#homeView').count(),'MJ return should open Atelier');
+  console.log('PASS: separate streamed map, GM-only controls/status, return links and fullscreen without chrome.');
  }finally{if(browser)await browser.close();server.kill();rmSync(db,{recursive:true,force:true,maxRetries:5,retryDelay:100})}}
 main().catch(e=>{console.error(e);process.exitCode=1});
