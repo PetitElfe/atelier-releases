@@ -41,6 +41,7 @@ jobs:
         run: |
           python -m py_compile tools/nathan_launcher.py tools/nathan_patch.py tools/build_nathan_bundle.py
           python tools/build_nathan_bundle.py
+          python -c "from pathlib import Path; p=Path('build/nathan_code/app/public'); assert not any(p.glob('jdr*.html')); assert '/jdr' not in (p/'index.html').read_text(encoding='utf-8'); print('PASS: Nathan has no JDR pages or links')"
           python -c "import sys;sys.path.insert(0,'build/nathan_code/app');import updater,desktop_postits;assert updater.PORT==8877 and desktop_postits.DATA.name=='data' and 'LAtelierDuGoblinNathan' in str(updater.BASE);print('PASS: independent Nathan paths')"
       - name: Build bundled Windows EXE including its own Python runtime and app
         shell: pwsh
@@ -93,6 +94,10 @@ jobs:
               throw "Nathan frozen Python server did not start"
             }
             if(-not(Test-Path (Join-Path $userRoot 'data\atelier.db'))){throw 'Fresh Nathan SQLite missing'}
+            foreach($blocked in @('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/api/jdr/manoir','/api/jdr/state')) {
+              try { Invoke-WebRequest -UseBasicParsing -Uri ('http://127.0.0.1:8877'+$blocked) -TimeoutSec 4 | Out-Null; throw ('Nathan leaked JDR: '+$blocked) }
+              catch { if(-not $_.Exception.Response -or [int]$_.Exception.Response.StatusCode -ne 404){ throw } }
+            }
             $read=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/postits' -TimeoutSec 4
             $revision=Invoke-RestMethod -Uri 'http://127.0.0.1:8877/api/update/status' -TimeoutSec 4
             if($null -eq $read -or -not $revision){throw "Nathan API unavailable"}
