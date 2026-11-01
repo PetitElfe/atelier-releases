@@ -13,7 +13,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "4c7b05be8826b10da79e86906a38c689499bd712255f1c87b5cd37d79ac03313"
+      "sha256": "ba10355fe7534e817bb98e6e8506c57132cbbb09e1045015bbbeab4400cedeaa"
     },
     {
       "path": "app_part3.py",
@@ -105,7 +105,7 @@
     },
     {
       "path": "public/jdr-manoir.html",
-      "sha256": "446afa144dbd2b0af5d3cc99b13b13b33a910d03c3ff3cf23c6e21b15552a327"
+      "sha256": "7cbebe385dc90e2e66a1508216870bd8ab6213c6d823861380d7c74e631bc3a2"
     },
     {
       "path": "public/jdr-mj.html",
