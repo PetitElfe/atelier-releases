@@ -80,10 +80,11 @@
       ],
       "notes": "",
       "checks": [
-        "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité.",
+        "La personnalité ci-dessus est une proposition de la MJ, à adapter librement avec Nathan.",
         "La fiche d'Earendil servait de modèle : ne pas importer ses aptitudes de barde, ses sorts, sa flûte ni sa personnalité dans la fiche de Ponga. Son armure, sa monnaie, ses manœuvres et ses choix personnels restent à confirmer."
       ],
-      "equipment": []
+      "equipment": [],
+      "biography": "Ponga a fui un cirque où l'on le forçait à jouer le bouffon. Un kobold a fui avec lui : son premier véritable ami. Il l'aide même lorsqu'il a peur. Loyal et ingénieux, il guette toujours les sorties et redoute la trahison. Il pense que personne ne doit être exposé comme une bête de foire. Son but est de trouver un foyer où ils seront libres tous les deux. Proposition de personnalité à confirmer avec Nathan."
     },
     {
       "id": "roster-earendil",
