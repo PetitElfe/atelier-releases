@@ -170,11 +170,44 @@ body.player-mode #playerStage .player-only-status{display:none!important}
   </div>
 </section>
 <section data-panel="shoulkar"><div class="panel sheet-panel">
-  <h2>Shoulkar — aberration parasite (créature homebrew)</h2>
-  <p>Créature qui dévore la vitalité, les souvenirs et les émotions. Elle imite les identités prises, ne comprend pas initialement la douleur ni la mort, et cherche à quitter le manoir. Ses pouvoirs et statistiques sont des propositions pour trois PJ de niveau 3 : adapte-les selon tes joueurs.</p>
-  <div class="sheet-grid"><label>PV actuels<input type="number" min="0" id="shHp"></label><label>PV max<input type="number" min="1" id="shMaxHp"></label><label>Classe d’armure<input type="number" min="1" id="shAc"></label><label>DD de sauvegarde<input type="number" min="1" id="shSave"></label><label>Bonus attaque<input type="number" id="shAttack"></label><label>Vitesse (m)<input type="number" id="shSpeed"></label><label>TP restants<input type="number" min="0" id="shTp"></label><label>Initiative<input type="number" id="shInit"></label></div>
-  <div class="row" style="margin-top:10px"><button id="shDmg5">− 5 PV</button><button id="shDmg10">− 10 PV</button><button id="shHeal5">+ 5 PV</button><button id="shReset">Restaurer PV</button><button id="shPlace">Placer le Shoulkar sur la carte</button></div>
-  <div class="shoulkar-grid"><div class="shoulkar-powers"><h3>Actions</h3><p><b>Vol de vitalité :</b> attaque +4, 1d6+2 dégâts nécrotiques ; le Shoulkar regagne 3 PV s'il touche.</p><p><b>Murmure des souvenirs :</b> sauvegarde de Sagesse DD 12 ; 1d6 dégâts psychiques en cas d'échec.</p><p><b>Cauchemar imposé :</b> peur / trouble, SAG DD 12 (interprétation MJ).</p></div><div class="shoulkar-powers"><h3>Capacités</h3><p><b>Téléportation courte :</b> 9 m, deux utilisations proposées.</p><p><b>Ombres :</b> trois doubles défensifs inspirés d'Image miroir (pas de tours séparés).</p><p><b>Fuite :</b> si le Shoulkar quitte le manoir, il hante d'abord la forêt. « Dommage… j'aimais bien cet hôte. »</p></div></div>
+  <h2>Shoulkar — le dévoreur de souvenirs (boss maison)</h2>
+  <p>Créature parasite du manoir, imitant les voix des victimes et cherchant à sortir. Ce bloc est adapté pour <strong>3 PJ de niveau 3</strong> et n'est pas un monstre officiel de D&D.</p>
+  <div class="sheet-grid">
+    <label>PV actuels<input type="number" min="0" id="shHp"></label>
+    <label>PV maximum<input type="number" min="1" id="shMaxHp"></label>
+    <label>Classe d’armure<input type="number" min="1" id="shAc"></label>
+    <label>DD des pouvoirs<input type="number" min="1" id="shSave"></label>
+    <label>Bonus au toucher<input type="number" id="shAttack"></label>
+    <label>Vitesse (m)<input type="number" id="shSpeed"></label>
+    <label>Téléportations restantes<input type="number" min="0" max="2" id="shTp"></label>
+    <label>Initiative (bonus)<input type="number" id="shInit"></label>
+    <label>Faux reflets restants<input type="number" min="0" max="2" id="shShadow"></label>
+    <label>Cauchemar utilisé <input type="checkbox" id="shNightmare"></label>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <label>Dégâts ou soins<input type="number" id="shDelta" min="0" value="1" style="max-width:95px"></label>
+    <button id="shDamage" class="primary">Retirer ces PV</button>
+    <button id="shHeal">Soigner ces PV</button>
+    <button id="shDmg5">− 5 PV</button>
+    <button id="shDmg10">− 10 PV</button>
+    <button id="shHeal5">+ 5 PV</button>
+  </div>
+  <div class="row"><button id="shUseTp">Utiliser 1 téléportation</button><button id="shUseShadow">Utiliser 1 reflet</button><button id="shUseNightmare">Utiliser le cauchemar</button><button id="shReset">Restaurer les PV</button><button id="shResetAbilities">Récupérer les pouvoirs</button><button id="shPlace">Placer le Shoulkar sur la carte</button></div>
+  <div class="shoulkar-grid">
+    <div class="shoulkar-powers">
+      <h3>Actions — une seule par tour</h3>
+      <p><b>Vol de vitalité (corps à corps) :</b> +4 pour toucher, portée 1,5 m ; <strong>1d6+2 dégâts nécrotiques</strong>. Le Shoulkar récupère 3 PV s'il touche (maximum 48).</p>
+      <p><b>Murmure des souvenirs (action) :</b> cible à 9 m, sauvegarde de Sagesse <strong>DD 12</strong>. Échec : <strong>1d6 dégâts psychiques</strong>, et la cible ne peut pas utiliser de réaction jusqu’au début de son prochain tour. Réussite : rien.</p>
+      <p><b>Cauchemar fugace (action, 1/combat) :</b> cible à 9 m ; Sagesse DD 12. Échec : <b>effrayée</b> jusqu'à la fin de son prochain tour. Réussite : rien.</p>
+    </div>
+    <div class="shoulkar-powers">
+      <h3>Action bonus, réaction et conseils</h3>
+      <p><b>Pas entre les ombres (bonus, 2/combat) :</b> téléportation de <strong>9 m</strong> vers une case libre visible (6 cases). Clique « Utiliser 1 téléportation ».</p>
+      <p><b>Faux reflets (réaction, 2/combat) :</b> lorsqu'une attaque touche, réduis les dégâts subis de <strong>1d6</strong> (minimum 0). Une illusion disparaît ; aucun double n'agit séparément.</p>
+      <p><b>Référence :</b> FOR 8 (−1), DEX 14 (+2), CON 14 (+2), INT 10 (+0), SAG 13 (+1), CHA 16 (+3). Perception passive 13. Vision dans le noir 18 m ; imite les voix entendues.</p>
+      <p><b>Fin prévue (secret MJ) :</b> le Shoulkar peut s'enfuir vers la forêt lorsqu’il se disperse. « Dommage… j’aimais bien cet hôte. » Respecte les décisions des joueurs.</p>
+    </div>
+  </div>
   <label>Notes secrètes sur le Shoulkar</label><textarea id="shNotes" rows="5" placeholder="Faiblesses, souvenirs, intentions, réactions aux PJ..."></textarea>
 </div></section>
 <section data-panel="sheets"><div class="panel sheet-panel">
@@ -229,7 +262,7 @@ const windows=[['library','left',3],['library','bottom',3],['salon','right',10],
 const inside=(x,y)=>x>=0&&x<W&&y>=0&&y<H,at=(x,y)=>rooms.find(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h),byId=id=>rooms.find(r=>r.id===id),edgeKey=(x,y,xx,yy)=>[[x,y],[xx,yy]].map(p=>p.join(',')).sort().join('|');
 const exits=new Set(doorDefs.map(d=>edgeKey(d[2],d[3],d[4],d[5])));
 function walkable(a,b){if(!inside(b.x,b.y)||!at(b.x,b.y))return false;const r1=at(a.x,a.y),r2=at(b.x,b.y);return !!r1&&!!r2&&(r1.id===r2.id||exits.has(edgeKey(a.x,a.y,b.x,b.y)))}
-const data={version:3,seen:{},sheets:[],ambiences:[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:''},tokens:[
+const data={version:3,seen:{},sheets:[],ambiences:[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,shadowCharges:2,nightmareUsed:false,initiative:2,notes:''},tokens:[
 {id:'pj1',name:'PJ 1',kind:'PJ',speed:9,visible:true,x:null,y:null},
 {id:'pj2',name:'PJ 2',kind:'PJ',speed:9,visible:true,x:null,y:null},
 {id:'pj3',name:'PJ 3',kind:'PJ',speed:9,visible:true,x:null,y:null},
@@ -238,7 +271,7 @@ const data={version:3,seen:{},sheets:[],ambiences:[{id:'ambient-market',name:'Ma
 {id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null}
 ]};rooms.forEach(r=>data.seen[r.id]=false);
 function load(){try{let v=JSON.parse(localStorage.getItem(key)||'null');if(v&&[2,3].includes(v.version)&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v2')||'null');if(v&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin_map_unique_v1')||'null');if(v&&v.revealed&&Array.isArray(v.tokens)){for(const r of rooms)if(Object.hasOwn(v.revealed,r.id))data.seen[r.id]=!!v.revealed[r.id];data.tokens=v.tokens.map(t=>({...t,speed:typeof t.speed==='number'?t.speed:9,x:t.x==null?null:W-1-t.x,y:t.y==null?null:H-1-t.y}));}}catch(e){}finally{normaliseData()}}
-function normaliseData(){data.version=3;data.sheets=Array.isArray(data.sheets)?data.sheets:[];data.ambiences=Array.isArray(data.ambiences)?data.ambiences.filter(x=>x&&typeof x.name==='string'&&typeof x.url==='string').slice(0,35):[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}];data.shoulkar={hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:'',...data.shoulkar};const p=data.tokens.find(t=>t.id==='parasite'||t.name==='Le Parasite');if(p){p.name='Shoulkar';p.id=p.id||'parasite';p.kind='Monstre';p.visible=!!p.visible;}else data.tokens.push({id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null});for(const r of rooms)if(!(r.id in data.seen))data.seen[r.id]=false;}
+function normaliseData(){data.version=3;data.sheets=Array.isArray(data.sheets)?data.sheets:[];data.ambiences=Array.isArray(data.ambiences)?data.ambiences.filter(x=>x&&typeof x.name==='string'&&typeof x.url==='string').slice(0,35):[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}];data.shoulkar={hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,shadowCharges:2,nightmareUsed:false,initiative:2,notes:'',...data.shoulkar};const p=data.tokens.find(t=>t.id==='parasite'||t.name==='Le Parasite');if(p){p.name='Shoulkar';p.id=p.id||'parasite';p.kind='Monstre';p.visible=!!p.visible;}else data.tokens.push({id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null});for(const r of rooms)if(!(r.id in data.seen))data.seen[r.id]=false;}
 
 function message(t){$('status').textContent=t}
 function tint(hex,delta){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('')}
@@ -322,9 +355,19 @@ function bindPlayerDrag(c){let drag=null;
 }
 // The main Atelier screen supports dragging one pawn at a time.
 bindPlayerDrag($('playerStageCanvas'));
-function renderShoulkar(){const s=data.shoulkar;for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(s[key]??0)}if(document.activeElement!==$('shNotes'))$('shNotes').value=s.notes||'';}
+function renderShoulkar(){const s=data.shoulkar;const tab=document.querySelector('[data-tab="shoulkar"]');if(tab)tab.textContent='Shoulkar · '+s.hp+'/'+s.maxHp+' PV';$('shShadow').value=String(s.shadowCharges??2);$('shNightmare').checked=!!s.nightmareUsed;for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(s[key]??0)}if(document.activeElement!==$('shNotes'))$('shNotes').value=s.notes||'';}
 for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){$(id).addEventListener('change',e=>{data.shoulkar[key]=Number(e.target.value)||0;if(key==='maxHp')data.shoulkar.hp=Math.min(data.shoulkar.hp,data.shoulkar.maxHp);const t=data.tokens.find(x=>x.id==='parasite');if(t&&key==='speed')t.speed=data.shoulkar.speed;store();renderShoulkar()})}
 $('shNotes').addEventListener('change',e=>{data.shoulkar.notes=e.target.value;store()});
+$('shShadow').addEventListener('change',e=>{data.shoulkar.shadowCharges=Math.max(0,Math.min(2,Number(e.target.value)||0));store();renderShoulkar()});
+$('shNightmare').addEventListener('change',e=>{data.shoulkar.nightmareUsed=e.target.checked;store();renderShoulkar()});
+function modifyShoulkarHp(delta){data.shoulkar.hp=Math.max(0,Math.min(data.shoulkar.maxHp,data.shoulkar.hp+delta));store();renderShoulkar()}
+$('shDamage').onclick=()=>modifyShoulkarHp(-Math.max(0,Math.floor(Number($('shDelta').value)||0)));
+$('shHeal').onclick=()=>modifyShoulkarHp(Math.max(0,Math.floor(Number($('shDelta').value)||0)));
+$('shUseTp').onclick=()=>{data.shoulkar.teleports=Math.max(0,(Number(data.shoulkar.teleports)||0)-1);store();renderShoulkar()};
+$('shUseShadow').onclick=()=>{data.shoulkar.shadowCharges=Math.max(0,(Number(data.shoulkar.shadowCharges)||0)-1);store();renderShoulkar()};
+$('shUseNightmare').onclick=()=>{data.shoulkar.nightmareUsed=true;store();renderShoulkar()};
+$('shResetAbilities').onclick=()=>{data.shoulkar.teleports=2;data.shoulkar.shadowCharges=2;data.shoulkar.nightmareUsed=false;store();renderShoulkar()};
+
 for(const [id,delta] of [['shDmg5',-5],['shDmg10',-10],['shHeal5',5]])$(id).onclick=()=>{data.shoulkar.hp=Math.max(0,Math.min(data.shoulkar.maxHp,data.shoulkar.hp+delta));store();renderShoulkar()};
 $('shReset').onclick=()=>{data.shoulkar.hp=data.shoulkar.maxHp;store();renderShoulkar()};
 $('shPlace').onclick=()=>{const t=data.tokens.find(x=>x.id==='parasite');if(!t)return;openTab('map');$('activeToken').value=t.id;$('tool').value='move';message('Shoulkar sélectionné. Clique sur la carte MJ pour le placer.')};
@@ -346,10 +389,12 @@ async function ensureManorRoster(){
    const pack=await response.json();
    if(!Array.isArray(pack.characters))return;
    let added=false;
+   const pongaModel=pack.characters.find(c=>c.name==='Ponga');
    // Repair pre-existing Ponga sheets as well as future imports. Do not reset
    // HP, notes or any edited information; remove ONLY the copied bard feature.
    for(const existing of data.sheets){
      if(existing?.id!=='roster-ponga'&&String(existing?.name||'').trim().toLowerCase()!=='ponga')continue;
+     if(pongaModel?.biography&&!existing.biography){existing.biography=pongaModel.biography;added=true}
      if(!Array.isArray(existing.features))continue;
      const oldSize=existing.features.length;
      existing.features=existing.features.filter(f=>!/^f[eé]e florale$/i.test(String(f?.name||'').trim()));
@@ -380,6 +425,7 @@ async function deleteAttachment(id){try{const db=await openSheetDB();const tx=db
 function renderSheets(){const tabs=$('sheetTabs'),body=$('sheetContent');tabs.replaceChildren();body.replaceChildren();for(const sheet of data.sheets){const b=document.createElement('button');b.className=sheet.id===selectedSheetId?'active':'';b.textContent=sheet.name;b.onclick=()=>{selectedSheetId=sheet.id;renderSheets()};tabs.append(b)}if(!data.sheets.length){body.textContent='Aucune fiche importée. Clique sur « Ajouter » ou « Importer » pour commencer.';return}let sheet=data.sheets.find(s=>s.id===selectedSheetId)||data.sheets[0];selectedSheetId=sheet.id;const title=document.createElement('h2');title.textContent=sheet.name;body.append(title);const grid=document.createElement('div');grid.className='sheet-grid';body.append(grid);
 const fields=[['Nom','name','text'],['Classe','characterClass','text'],['Race','race','text'],['Niveau','level','number'],['PV actuels','hp','number'],['PV max','maxHp','number'],['Classe d’armure','ac','number'],['Initiative','initiative','number'],['Vitesse (m)','speed','number']];for(const [label,key,type] of fields){const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.type=type;input.value=sheet[key]??'';input.onchange=()=>{sheet[key]=type==='number'?Number(input.value)||0:input.value;store();renderSheets()};wrap.append(input);grid.append(wrap)}
 
+const bioLabel=document.createElement('label');bioLabel.textContent='Passé et personnalité (modifiable par la MJ)';bioLabel.className='wide';const bioTa=document.createElement('textarea');bioTa.rows=4;bioTa.value=sheet.biography||'';bioTa.onchange=()=>{sheet.biography=bioTa.value;store()};bioLabel.append(bioTa);grid.append(bioLabel);
 const nLabel=document.createElement('label');nLabel.textContent='Notes MJ et capacités';nLabel.className='wide';const ta=document.createElement('textarea');ta.value=sheet.notes||'';ta.onchange=()=>{sheet.notes=ta.value;store()};nLabel.append(ta);grid.append(nLabel);
 normalizeSheet(sheet);
 const combat=document.createElement('section');combat.className='pj-combat';body.append(combat);
