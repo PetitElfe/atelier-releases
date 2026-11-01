@@ -76,15 +76,12 @@
         {
           "name": "Maître de guerre",
           "detail": "Trois manœuvres à noter (pas choisies sur la feuille)."
-        },
-        {
-          "name": "Fée florale",
-          "detail": "Capacité de campagne à confirmer."
         }
       ],
       "notes": "",
       "checks": [
-        "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité."
+        "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité.",
+        "La fiche d'Earendil servait de modèle : ne pas importer ses aptitudes de barde, ses sorts, sa flûte ni sa personnalité dans la fiche de Ponga. Son armure, sa monnaie, ses manœuvres et ses choix personnels restent à confirmer."
       ],
       "equipment": []
     },
