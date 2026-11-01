@@ -52,6 +52,28 @@ body.player-mode #playerStage{display:flex;position:fixed;inset:0;z-index:120;ba
 #playerStage .player-map-viewport{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
 #playerStage canvas{display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;border:1px solid #617d66;border-radius:8px;background:#101811;touch-action:none;cursor:grab}
 #playerStage:fullscreen{background:#101811}
+
+/* Ambiance buttons are MJ-only; the official visible YouTube player stays outside tab panels. */
+.ambience-panel{display:flex;flex-direction:column;gap:8px;flex:1 1 100%;min-width:0;border-top:1px solid #5a745b;padding-top:8px}
+.ambience-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ambience-heading strong{font-size:14px;color:#e9ddb5}
+.ambience-buttons{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.ambience-buttons button{font-size:13px;padding:7px 11px}
+.ambience-buttons button.playing{background:#547b4f;border-color:#e5d4a8}
+.ambience-buttons .ambience-stop{background:#50372d;border-color:#b79281}
+.ambience-editor{border:1px solid #5f785e;border-radius:10px;padding:10px;background:#1e3224}
+.ambience-editor summary{cursor:pointer;color:#d6eacb;font-size:13px}
+.ambience-editor .ambience-form{display:grid;grid-template-columns:minmax(130px,1fr) minmax(200px,3fr) auto auto;gap:7px;align-items:end;padding-top:7px}
+.ambience-form label{min-width:0;margin:0}
+.ambience-form input{font-size:13px;padding:7px}
+.ambience-form button{font-size:12px;padding:7px}
+.ambience-playback{margin:8px 14px;padding:10px 12px;border:1px solid #5e785e;border-radius:12px;background:#192b20;display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px}
+.ambience-playback[hidden]{display:none!important}
+.ambience-playback iframe{width:min(100%,360px);height:210px;border:1px solid #7e957d;border-radius:8px;background:#101510}
+.ambience-playback .ambience-advice{font-size:13px;max-width:360px}
+.ambience-playback a{color:#d6e7c4;text-decoration:underline}
+body.player-mode .ambience-panel,body.player-mode .ambience-playback{display:none!important}
+@media(max-width:850px){.ambience-editor .ambience-form{grid-template-columns:1fr 1fr}.ambience-playback iframe{width:100%}}
 #playerStage .player-status{color:#cdddc8;font-size:12px}
 #playerStage .player-return,.mj-return{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #98b296;border-radius:8px;padding:9px 13px;color:#f3efde;text-decoration:none;background:#2d4933;font-weight:650;white-space:nowrap}
 #playerStage .player-return:hover,.mj-return:hover{background:#46694a;color:#fff}
@@ -96,7 +118,29 @@ body.player-mode #playerStage .player-only-status{display:none!important}
     <button id="spawnParty" class="primary">Faire apparaître les 3 PJ</button>
     <button id="openPlayers">Écran joueurs</button>
   </div>
+  <div class="ambience-panel" id="ambiencePanel" aria-label="Ambiances sonores de la console MJ">
+    <div class="ambience-heading"><strong>Ambiances sonores</strong><small id="ambienceStatus" role="status" aria-live="polite">Aucun son en lecture</small></div>
+    <div class="ambience-buttons" id="ambienceButtons" aria-label="Lancer une ambiance YouTube"></div>
+    <details class="ambience-editor" id="ambienceEditor">
+      <summary>Configurer les boutons (nom + lien YouTube)</summary>
+      <div class="ambience-form">
+        <label>Nom du bouton<input id="ambienceName" maxlength="55" placeholder="Ex. Marché animé"></label>
+        <label>URL YouTube<input id="ambienceUrl" type="url" placeholder="https://www.youtube.com/watch?v=..."></label>
+        <button id="ambienceSave" type="button" class="primary">Enregistrer</button>
+        <button id="ambienceDelete" type="button">Supprimer</button>
+      </div>
+      <small>Choisis « Modifier » sur un bouton, puis colle son URL. Une nouvelle ambiance arrête automatiquement la précédente.</small>
+    </details>
+  </div>
 </header>
+<div class="ambience-playback" id="ambiencePlayback" hidden aria-label="Lecteur YouTube de la console MJ">
+  <div id="ambienceFrameHolder"></div>
+  <div class="ambience-advice">
+    <strong id="ambienceCurrentTitle">Ambiance</strong>
+    <p>Le son continue pendant que tu consultes les fiches MJ. Lance une autre ambiance pour arrêter celle-ci.</p>
+    <p>Si YouTube refuse la lecture intégrée, utilise <a id="ambienceExternal" href="#" target="AtelierAmbianceYouTube" rel="noopener">Ouvrir dans YouTube</a>. La fenêtre externe peut être fermée ou remplacée à la prochaine ambiance.</p>
+  </div>
+</div>
 <nav class="tabstrip" aria-label="Onglets de la console MJ">
   <button data-tab="map" class="active">Carte & pions</button>
   <button data-tab="shoulkar">Shoulkar · fiche monstre</button>
@@ -184,7 +228,7 @@ const windows=[['library','left',3],['library','bottom',3],['salon','right',10],
 const inside=(x,y)=>x>=0&&x<W&&y>=0&&y<H,at=(x,y)=>rooms.find(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h),byId=id=>rooms.find(r=>r.id===id),edgeKey=(x,y,xx,yy)=>[[x,y],[xx,yy]].map(p=>p.join(',')).sort().join('|');
 const exits=new Set(doorDefs.map(d=>edgeKey(d[2],d[3],d[4],d[5])));
 function walkable(a,b){if(!inside(b.x,b.y)||!at(b.x,b.y))return false;const r1=at(a.x,a.y),r2=at(b.x,b.y);return !!r1&&!!r2&&(r1.id===r2.id||exits.has(edgeKey(a.x,a.y,b.x,b.y)))}
-const data={version:3,seen:{},sheets:[],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:''},tokens:[
+const data={version:3,seen:{},sheets:[],ambiences:[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:''},tokens:[
 {id:'pj1',name:'PJ 1',kind:'PJ',speed:9,visible:true,x:null,y:null},
 {id:'pj2',name:'PJ 2',kind:'PJ',speed:9,visible:true,x:null,y:null},
 {id:'pj3',name:'PJ 3',kind:'PJ',speed:9,visible:true,x:null,y:null},
@@ -193,7 +237,7 @@ const data={version:3,seen:{},sheets:[],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12
 {id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null}
 ]};rooms.forEach(r=>data.seen[r.id]=false);
 function load(){try{let v=JSON.parse(localStorage.getItem(key)||'null');if(v&&[2,3].includes(v.version)&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v2')||'null');if(v&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin_map_unique_v1')||'null');if(v&&v.revealed&&Array.isArray(v.tokens)){for(const r of rooms)if(Object.hasOwn(v.revealed,r.id))data.seen[r.id]=!!v.revealed[r.id];data.tokens=v.tokens.map(t=>({...t,speed:typeof t.speed==='number'?t.speed:9,x:t.x==null?null:W-1-t.x,y:t.y==null?null:H-1-t.y}));}}catch(e){}finally{normaliseData()}}
-function normaliseData(){data.version=3;data.sheets=Array.isArray(data.sheets)?data.sheets:[];data.shoulkar={hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:'',...data.shoulkar};const p=data.tokens.find(t=>t.id==='parasite'||t.name==='Le Parasite');if(p){p.name='Shoulkar';p.id=p.id||'parasite';p.kind='Monstre';p.visible=!!p.visible;}else data.tokens.push({id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null});for(const r of rooms)if(!(r.id in data.seen))data.seen[r.id]=false;}
+function normaliseData(){data.version=3;data.sheets=Array.isArray(data.sheets)?data.sheets:[];data.ambiences=Array.isArray(data.ambiences)?data.ambiences.filter(x=>x&&typeof x.name==='string'&&typeof x.url==='string').slice(0,35):[{id:'ambient-market',name:'Marché',url:''},{id:'ambient-forest',name:'Forêt',url:''},{id:'ambient-manor',name:'Manoir',url:''},{id:'ambient-combat',name:'Combat',url:''}];data.shoulkar={hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:'',...data.shoulkar};const p=data.tokens.find(t=>t.id==='parasite'||t.name==='Le Parasite');if(p){p.name='Shoulkar';p.id=p.id||'parasite';p.kind='Monstre';p.visible=!!p.visible;}else data.tokens.push({id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null});for(const r of rooms)if(!(r.id in data.seen))data.seen[r.id]=false;}
 
 function message(t){$('status').textContent=t}
 function tint(hex,delta){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('')}
@@ -389,11 +433,106 @@ function scheduleServerSave(){if(!serverLoadDone)return;serverQueued=true;if(ser
 async function flushServer(){if(!serverConnected||serverSaving||!serverQueued)return;serverSaving=true;serverQueued=false;const snapshot=JSON.parse(JSON.stringify(data));try{const response=await fetch('/api/jdr/manoir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rev:serverRev,state:snapshot})});const body=await response.json();if(response.status===409){serverConnected=false;syncLabel('Conflit avec une autre fenêtre : exporte puis recharge la partie.');message('Une autre console MJ a modifié la partie : les données locales sont conservées, pas écrasées.');return}if(!response.ok)throw Error(body.error||'Échec serveur');serverRev=body.rev;syncLabel('Relié à L’Atelier · sauvegarde réussie')}catch(e){syncLabel('Mode local : sauvegarde Atelier indisponible')}finally{serverSaving=false;if(serverQueued)flushServer()}}
 async function setupServerState(){// file:// offline standalone remains fully usable.
   if(location.protocol==='file:'){serverLoadDone=true;syncLabel('Mode autonome · copie locale (export JSON conseillé)');return}
-  try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)throw Error('API manoir absente');const result=await r.json();serverRev=Number(result.rev)||0;if(result.state&&Array.isArray(result.state.tokens)&&result.state.seen){Object.assign(data,result.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderSheets();}serverConnected=true;serverLoadDone=true;syncLabel('Relié à L’Atelier · sauvegarde partagée');if(!result.state){serverQueued=true;flushServer()}await ensureManorRoster()}
+  try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)throw Error('API manoir absente');const result=await r.json();serverRev=Number(result.rev)||0;if(result.state&&Array.isArray(result.state.tokens)&&result.state.seen){Object.assign(data,result.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderSheets();renderAmbienceButtons();}serverConnected=true;serverLoadDone=true;syncLabel('Relié à L’Atelier · sauvegarde partagée');if(!result.state){serverQueued=true;flushServer()}await ensureManorRoster()}
   catch(e){serverConnected=false;serverLoadDone=true;syncLabel('Mode local (API non disponible) · JSON exportable')}
-  setInterval(async()=>{if(!serverConnected||serverSaving||serverQueued||(document.hidden&&!playerMode))return;try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote.rev>serverRev&&remote.state){serverRev=remote.rev;Object.assign(data,remote.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();if(activeTab==='sheets')renderSheets();syncLabel('L’Atelier synchronisé · révision '+serverRev)}}catch(e){}},1500);
+  setInterval(async()=>{if(!serverConnected||serverSaving||serverQueued||(document.hidden&&!playerMode))return;try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote.rev>serverRev&&remote.state){serverRev=remote.rev;Object.assign(data,remote.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderAmbienceButtons();if(activeTab==='sheets')renderSheets();syncLabel('L’Atelier synchronisé · révision '+serverRev)}}catch(e){}},1500);
 }
 
+// Ambience playback belongs to the MJ window only. Replacing/removing the iframe
+// terminates the previous YouTube player; switching tabs never touches it.
+let activeAmbienceId=null,editingAmbienceId=null,ambienceExternalWindow=null;
+function youtubeEmbedInfo(link){
+ try{
+  const u=new URL(link.trim());
+  if(u.protocol!=='https:')return null;
+  const host=u.hostname.toLowerCase();
+  let id='',list='';
+  if(host==='youtu.be'){id=u.pathname.split('/').filter(Boolean)[0]||''}
+  else if(['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com'].includes(host)){
+   const bits=u.pathname.split('/').filter(Boolean);
+   if(bits[0]==='watch')id=u.searchParams.get('v')||'';
+   else if(['embed','live','shorts'].includes(bits[0]))id=bits[1]||'';
+   if(u.searchParams.get('list'))list=u.searchParams.get('list');
+   if(bits[0]==='playlist'&&!id&&list&&/^[A-Za-z0-9_-]{8,100}$/.test(list))
+    return {embed:'https://www.youtube-nocookie.com/embed/videoseries?list='+encodeURIComponent(list)+'&autoplay=1&playsinline=1',url:u.toString()};
+  }else return null;
+  if(!/^[A-Za-z0-9_-]{11}$/.test(id))return null;
+  let embed='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0';
+  if(list&&/^[A-Za-z0-9_-]{8,100}$/.test(list))embed+='&list='+encodeURIComponent(list);
+  return {embed,url:u.toString()};
+ }catch(e){return null}
+}
+function ambienceStatus(text){const el=$('ambienceStatus');if(el)el.textContent=text}
+function stopAmbience(){
+ const holder=$('ambienceFrameHolder');holder.replaceChildren();$('ambiencePlayback').hidden=true;
+ if(ambienceExternalWindow&&!ambienceExternalWindow.closed){try{ambienceExternalWindow.close()}catch(e){}}
+ ambienceExternalWindow=null;activeAmbienceId=null;ambienceStatus('Aucun son en lecture');renderAmbienceButtons();
+}
+function playAmbience(ambience){
+ const info=youtubeEmbedInfo(ambience.url||'');
+ if(!info){ambienceStatus('Ajoute une URL YouTube valide au bouton « '+ambience.name+' ».');$('ambienceEditor').open=true;editAmbience(ambience);return}
+ // Navigate a previously opened external window instead of leaving two ambiences playing.
+ if(ambienceExternalWindow&&!ambienceExternalWindow.closed){try{ambienceExternalWindow.close()}catch(e){}}
+ ambienceExternalWindow=null;
+ const iframe=document.createElement('iframe');iframe.title='Lecteur YouTube — '+ambience.name;iframe.src=info.embed;
+ iframe.allow='autoplay; encrypted-media; picture-in-picture';iframe.allowFullscreen=true;
+ iframe.referrerPolicy='strict-origin-when-cross-origin';
+ $('ambienceFrameHolder').replaceChildren(iframe);$('ambiencePlayback').hidden=false;
+ $('ambienceCurrentTitle').textContent=ambience.name;$('ambienceExternal').href=info.url;
+ activeAmbienceId=ambience.id;ambienceStatus('Ambiance sélectionnée : '+ambience.name);
+ renderAmbienceButtons();
+}
+function editAmbience(ambience){
+ editingAmbienceId=ambience.id;$('ambienceName').value=ambience.name;$('ambienceUrl').value=ambience.url||'';
+ $('ambienceEditor').open=true;$('ambienceName').focus();
+}
+function renderAmbienceButtons(){
+ if(playerMode)return;
+ const bar=$('ambienceButtons');bar.replaceChildren();
+ for(const ambience of data.ambiences){
+  const play=document.createElement('button');play.type='button';play.textContent=ambience.name;
+  play.className=ambience.id===activeAmbienceId?'playing':'';
+  play.setAttribute('aria-pressed',String(ambience.id===activeAmbienceId));
+  play.title='Lancer cette ambiance, arrêter la précédente';
+  play.onclick=()=>playAmbience(ambience);bar.append(play);
+  const edit=document.createElement('button');edit.type='button';edit.textContent='Modifier';edit.title='Modifier le lien de '+ambience.name;
+  edit.setAttribute('aria-label','Modifier '+ambience.name);edit.onclick=()=>editAmbience(ambience);
+  bar.append(edit);
+ }
+ const add=document.createElement('button');add.type='button';add.textContent='＋ Ajouter';
+ add.onclick=()=>{editingAmbienceId=null;$('ambienceName').value='';$('ambienceUrl').value='';$('ambienceEditor').open=true;$('ambienceName').focus()};
+ bar.append(add);
+ const stop=document.createElement('button');stop.type='button';stop.className='ambience-stop';stop.textContent='■ Arrêter';
+ stop.onclick=stopAmbience;bar.append(stop);
+}
+$('ambienceSave').onclick=()=>{
+ const name=$('ambienceName').value.trim(),url=$('ambienceUrl').value.trim();
+ if(!name){ambienceStatus('Donne un nom au bouton.');return}
+ if(url&&!youtubeEmbedInfo(url)){ambienceStatus('URL non reconnue : copie un lien YouTube vidéo ou playlist en HTTPS.');return}
+ if(editingAmbienceId){const previous=data.ambiences.find(x=>x.id===editingAmbienceId);if(previous){previous.name=name;previous.url=url;}}
+ else{if(data.ambiences.length>=35){ambienceStatus('Maximum 35 ambiances.');return}
+  editingAmbienceId='amb-'+Math.random().toString(36).slice(2,11);data.ambiences.push({id:editingAmbienceId,name,url});}
+ store();renderAmbienceButtons();$('ambienceEditor').open=false;
+ ambienceStatus('Bouton « '+name+' » enregistré dans L’Atelier.');
+};
+$('ambienceDelete').onclick=()=>{
+ if(!editingAmbienceId){ambienceStatus('Choisis d’abord un bouton à modifier.');return}
+ const i=data.ambiences.findIndex(x=>x.id===editingAmbienceId);
+ if(i<0)return;
+ if(activeAmbienceId===editingAmbienceId)stopAmbience();
+ const name=data.ambiences[i].name;data.ambiences.splice(i,1);
+ editingAmbienceId=null;store();renderAmbienceButtons();$('ambienceName').value='';$('ambienceUrl').value='';$('ambienceEditor').open=false;
+ ambienceStatus('Bouton « '+name+' » supprimé.');
+};
+$('ambienceExternal').addEventListener('click',event=>{
+ if(!activeAmbienceId)return;
+ const a=data.ambiences.find(x=>x.id===activeAmbienceId),info=a&&youtubeEmbedInfo(a.url);
+ if(!info)return;
+ event.preventDefault(); // Named external window remains controllable for switching.
+ $('ambienceFrameHolder').replaceChildren();$('ambiencePlayback').hidden=true;
+ ambienceExternalWindow=window.open(info.url,'AtelierAmbianceYouTube','width=1060,height=760');
+ ambienceStatus(ambienceExternalWindow?'Ambiance externe : '+a.name:'Fenêtre YouTube bloquée : autorise les popups.');
+});
 $('playerFullscreen').onclick=()=>{
  const stage=$('playerStage');
  if(document.fullscreenElement){document.exitFullscreen().catch(()=>{})}
@@ -407,7 +546,7 @@ $('launchMjConsole').onclick=async()=>{
  const popup=window.open('/jdr-manoir.html?mode=mj','AtelierManoirMJ','width=1350,height=920');
  $('playerModeStatus').textContent=popup?'Console MJ ouverte : ne partage pas cette fenêtre.':'Fenêtre bloquée : utilise « Console MJ dans Brave ».';
 };
-load();normaliseData();refresh();openTab('map');renderShoulkar();setupServerState();
+load();normaliseData();refresh();openTab('map');renderShoulkar();renderAmbienceButtons();setupServerState();
 })();
 </script>
 </body></html>
