@@ -79,7 +79,8 @@ async function main(){
   await page.locator('#sheetContent input').first().press('Tab');
   const imported={name:'Rôdeur',level:3,hp:18,armorClass:15,speed:9};
   await page.locator('#sheetFiles').setInputFiles({name:'rodeur.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(imported))});
-  await page.waitForFunction(()=>document.querySelectorAll('#sheetTabs button').length>=2);
+  // The three saved player sheets can already exist: wait for THIS new import, not just a tab count.
+  await page.waitForFunction(()=>[...document.querySelectorAll('#sheetTabs button')].some(b=>b.textContent.includes('Rôdeur')),null,{timeout:12000});
   assert.ok((await page.locator('#sheetTabs').innerText()).includes('Rôdeur'));
   // A roster bundle is imported without publishing player data to the public repo.
   const roster={format:'atelier-manoir-roster-v1',characters:[
