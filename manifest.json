@@ -13,7 +13,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "056aec4f4c5f40959e39c008c305a5f52aee9dc854401fbd23f599da9b6f2592"
+      "sha256": "4c7b05be8826b10da79e86906a38c689499bd712255f1c87b5cd37d79ac03313"
     },
     {
       "path": "app_part3.py",
@@ -105,7 +105,7 @@
     },
     {
       "path": "public/jdr-manoir.html",
-      "sha256": "69602ff2ebfcf781972f4a5124f159e1c21229945e686bba7b11e9fab4c65448"
+      "sha256": "17a2b15c10344fa40ce6cc81d57270fe70f2112b114818e173f7323267744bba"
     },
     {
       "path": "public/jdr-mj.html",
@@ -113,7 +113,7 @@
     },
     {
       "path": "public/jdr-roster-manoir.json",
-      "sha256": "a43cd5cd66c9d22a067545428405e859f88f98675d1835ac4bf553c4a8963c70"
+      "sha256": "8df7e3e783ef7e7edf7845ded3f6f4eac66b76fd73952ba255684e9eebbf1f03"
     },
     {
       "path": "public/jdr.html",
