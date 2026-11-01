@@ -15,7 +15,9 @@ class UnifiedJdrEntrypointTest(unittest.TestCase):
 
     def test_old_table_url_opens_manoir_by_default(self):
         landing=(PUBLIC/"jdr.html").read_text(encoding="utf-8")
-        self.assertIn("location.replace('/jdr-manoir.html')",landing)
+        self.assertIn("location.replace('/jdr-manoir.html?mode=players')",landing)
+        self.assertIn('playerStageCanvas', (PUBLIC/"jdr-manoir.html").read_text(encoding="utf-8"))
+        self.assertIn('launchMjConsole', (PUBLIC/"jdr-manoir.html").read_text(encoding="utf-8"))
         self.assertNotIn("Nouvelle carte (Combat)",landing)
         manor=(PUBLIC/"jdr-manoir.html").read_text(encoding="utf-8")
         for text in ["Shoulkar","Faire apparaître les 3 PJ","miniBoard","roomSelect"]:
