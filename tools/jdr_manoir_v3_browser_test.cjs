@@ -28,7 +28,8 @@ async function main(){
   const game=await browser.newPage({viewport:{width:1440,height:900}});
   await game.goto(BASE+'/jdr-manoir.html',{waitUntil:'domcontentloaded'});
   assert.ok(await game.locator('#playerStageCanvas').isVisible());
-  assert.ok(await game.locator('#launchMjConsole').isVisible());
+  assert.ok(await game.locator('#playerStage .player-return').isVisible());
+  assert.equal(await game.locator('#launchMjConsole').isVisible(),false,'MJ preparation menu must be closed for players');
   assert.ok(!(await game.locator('.jdr-top').isVisible()),'MJ secrets must be hidden in the default game window');
   await game.close();
   assert.equal(await page.locator('.tabstrip button').count(),4);
