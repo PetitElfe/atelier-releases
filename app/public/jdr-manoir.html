@@ -53,22 +53,41 @@ body.player-mode #playerStage{display:flex;position:fixed;inset:0;z-index:120;ba
 #playerStage canvas{display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;border:1px solid #617d66;border-radius:8px;background:#101811;touch-action:none;cursor:grab}
 #playerStage:fullscreen{background:#101811}
 #playerStage .player-status{color:#cdddc8;font-size:12px}
+#playerStage .player-return,.mj-return{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #98b296;border-radius:8px;padding:9px 13px;color:#f3efde;text-decoration:none;background:#2d4933;font-weight:650;white-space:nowrap}
+#playerStage .player-return:hover,.mj-return:hover{background:#46694a;color:#fff}
+#playerStage .host-tools{position:relative;color:#d5eabe;font-size:13px}
+#playerStage .host-tools summary{cursor:pointer;padding:9px 12px;border:1px solid #617e64;border-radius:8px;list-style:none}
+#playerStage .host-tools[open]{background:#23392a;border-radius:9px;padding:0 8px 8px}
+#playerStage .host-tools .host-options{display:flex;gap:8px;align-items:center;padding-top:8px}
+#playerStage .host-tools a{color:#d5eabe}
+#playerStage .player-help{font-size:12px;color:#d0decd}
+#playerStage:fullscreen .player-bar{display:none!important}
+#playerStage:fullscreen .player-map-viewport{padding:0}
+#playerStage:fullscreen canvas{border:0;border-radius:0}
+body.player-mode #playerStage .player-only-status{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+
 </style></head>
 <body>
 <main id="playerStage" aria-label="Carte plein écran des joueurs">
  <div class="player-bar">
   <h1>Le Manoir du Cirque · Carte joueurs</h1>
   <div class="player-controls">
+   <a class="player-return" href="/" title="Revenir à l'accueil de L'Atelier">← L’Atelier</a>
    <button id="playerFullscreen" type="button" class="primary">Plein écran</button>
-   <button id="launchMjConsole" type="button" class="primary">Ouvrir la console MJ</button>
-   <a href="/jdr-manoir.html?mode=mj" target="_blank" rel="noopener" style="color:#d5eabe">Console MJ dans Brave</a>
+   <details class="host-tools">
+    <summary title="À utiliser uniquement avant de partager la carte">Préparation MJ</summary>
+    <div class="host-options">
+     <button id="launchMjConsole" type="button">Ouvrir la console MJ</button>
+     <a href="/jdr-manoir.html?mode=mj" target="_blank" rel="noopener">Ouvrir dans Brave</a>
+    </div>
+   </details>
   </div>
  </div>
  <div class="player-map-viewport"><canvas id="playerStageCanvas" width="1120" height="770" aria-label="Plan des joueurs, sans informations du MJ"></canvas></div>
- <div class="player-bar" style="min-height:36px"><small>Seules les pièces révélées sont visibles · Glisse les pions pour les déplacer</small><span id="playerModeStatus" class="player-status" role="status">Connexion à L’Atelier…</span></div>
+ <span id="playerModeStatus" class="player-only-status" role="status" aria-live="polite">Carte des joueurs prête.</span>
 </main>
 <header class="jdr-top">
-  <div class="jdr-brand"><h1>Le Manoir du Cirque</h1><small>Console MJ · carte toujours visible · intégré à L'Atelier TEST</small><small id="syncStatus">Sauvegarde locale active</small></div>
+  <div class="jdr-brand"><a class="mj-return" href="/" title="Revenir à l'accueil de L'Atelier">← Retour à L’Atelier</a><h1 style="margin-top:8px">Le Manoir du Cirque</h1><small>Console MJ privée · mini-carte permanente</small><small id="syncStatus">Sauvegarde locale active</small></div>
   <div class="mini-map" title="Clique sur une pièce pour la sélectionner ou la dévoiler"><canvas id="miniBoard" width="1120" height="770" aria-label="Mini-carte du manoir, toujours visible"></canvas></div>
   <div class="jdr-head-actions">
     <label>Pièce à explorer<select id="roomSelect"></select></label>
