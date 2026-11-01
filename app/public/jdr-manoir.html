@@ -33,6 +33,13 @@ textarea{font:inherit;color:var(--ink);background:#16271c;border:1px solid #7894
 #syncStatus{font-size:11px;color:#bdd3b8;align-self:center}
 @media(max-width:1200px){header.jdr-top{position:relative}.tabstrip{position:static}.mini-map{width:180px;flex-basis:180px}.map-layout{grid-template-columns:250px minmax(420px,1fr)}}
 @media(max-width:760px){.jdr-head-actions{display:flex;flex-wrap:wrap}.jdr-head-actions>*{flex:1 1 140px}.mini-map{width:100%;flex:1 1 300px;max-width:400px}.sheet-grid,.shoulkar-grid,.story-columns{grid-template-columns:1fr 1fr}.sheet-grid .wide{grid-column:1/-1}.map-layout{display:block}}
+.pj-combat{background:#243b2b;border:1px solid #76967a;border-radius:12px;margin:14px 0;padding:14px}
+.pj-combat h3{color:#eddaa7;margin:6px 0 10px}
+.pj-combat .row{margin:8px 0;align-items:center}
+.pj-combat details{padding:9px;border:1px solid #56745b;border-radius:9px;margin:6px 0}
+.pj-combat summary{cursor:pointer;font-weight:bold}
+.pj-combat input[type=number]{width:100px}
+.pj-combat li{margin:7px 0}
 </style></head>
 <body>
 <header class="jdr-top">
@@ -225,6 +232,13 @@ for(const [id,delta] of [['shDmg5',-5],['shDmg10',-10],['shHeal5',5]])$(id).oncl
 $('shReset').onclick=()=>{data.shoulkar.hp=data.shoulkar.maxHp;store();renderShoulkar()};
 $('shPlace').onclick=()=>{const t=data.tokens.find(x=>x.id==='parasite');if(!t)return;openTab('map');$('activeToken').value=t.id;$('tool').value='move';message('Shoulkar sélectionné. Clique sur la carte MJ pour le placer.')};
 function makeSheet(name){return {id:'f'+Math.random().toString(36).slice(2,10),tokenId:null,name:name||'Nouvelle fiche',characterClass:'',race:'',level:3,hp:20,maxHp:20,ac:12,initiative:0,speed:9,str:'',dex:'',con:'',int:'',wis:'',cha:'',notes:'',filename:'',filetype:''}}
+function normalizeSheet(s){
+ s.maxHp=Math.max(1,Number(s.maxHp)||20);s.hp=Math.max(0,Math.min(s.maxHp,Number(s.hp??s.maxHp)||0));s.tempHp=Math.max(0,Number(s.tempHp)||0);
+ s.turn=s.turn&&typeof s.turn==='object'?s.turn:{action:1,bonus:1,reaction:1,movementLeft:Number(s.speed)||9};
+ for(const name of ['resources','actions','attacks','features','equipment','checks'])if(!Array.isArray(s[name]))s[name]=[];
+ if(typeof s.sessionNotes!=='string')s.sessionNotes='';
+ return s;
+}
 function simplifyJson(o,filename){const sheet=makeSheet(o?.name||o?.character?.name||o?.characterName||filename.replace(/\.json$/i,''));const c=o?.character||o||{};sheet.characterClass=c.class||c.characterClass||c.classes?.[0]?.name||'';sheet.race=c.race?.fullName||c.race?.name||c.race||'';sheet.level=Number(c.level||c.levels||3)||3;sheet.hp=Number(c.hp??c.hitPoints?.current??c.hitPoints??20)||20;sheet.maxHp=Number(c.maxHp??c.hitPoints?.max??sheet.hp)||sheet.hp;sheet.ac=Number(c.ac??c.armorClass??c.defenses?.ac??12)||12;sheet.speed=Number(c.speed??c.walkingSpeed??9)||9;sheet.notes=typeof c.notes==='string'?c.notes:'';return sheet;}
 let imageURLs=new Map();
 function openSheetDB(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('Stockage de pièces jointes indisponible'));return}const req=indexedDB.open('atelier-jdr-manoir-v3-files',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('files'))req.result.createObjectStore('files')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
@@ -234,13 +248,49 @@ async function deleteAttachment(id){try{const db=await openSheetDB();const tx=db
 function renderSheets(){const tabs=$('sheetTabs'),body=$('sheetContent');tabs.replaceChildren();body.replaceChildren();for(const sheet of data.sheets){const b=document.createElement('button');b.className=sheet.id===selectedSheetId?'active':'';b.textContent=sheet.name;b.onclick=()=>{selectedSheetId=sheet.id;renderSheets()};tabs.append(b)}if(!data.sheets.length){body.textContent='Aucune fiche importée. Clique sur « Ajouter » ou « Importer » pour commencer.';return}let sheet=data.sheets.find(s=>s.id===selectedSheetId)||data.sheets[0];selectedSheetId=sheet.id;const title=document.createElement('h2');title.textContent=sheet.name;body.append(title);const grid=document.createElement('div');grid.className='sheet-grid';body.append(grid);
 const fields=[['Nom','name','text'],['Classe','characterClass','text'],['Race','race','text'],['Niveau','level','number'],['PV actuels','hp','number'],['PV max','maxHp','number'],['Classe d’armure','ac','number'],['Initiative','initiative','number'],['Vitesse (m)','speed','number']];for(const [label,key,type] of fields){const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.type=type;input.value=sheet[key]??'';input.onchange=()=>{sheet[key]=type==='number'?Number(input.value)||0:input.value;store();renderSheets()};wrap.append(input);grid.append(wrap)}
 const nLabel=document.createElement('label');nLabel.textContent='Notes MJ et capacités';nLabel.className='wide';const ta=document.createElement('textarea');ta.value=sheet.notes||'';ta.onchange=()=>{sheet.notes=ta.value;store()};nLabel.append(ta);grid.append(nLabel);
+normalizeSheet(sheet);
+const combat=document.createElement('section');combat.className='pj-combat';body.append(combat);
+const titleC=document.createElement('h3');titleC.textContent='Suivi de combat · '+sheet.name;combat.append(titleC);
+const hpText=document.createElement('p');hpText.textContent='PV '+sheet.hp+'/'+sheet.maxHp+' · temporaires '+sheet.tempHp;combat.append(hpText);
+const bar=document.createElement('div');bar.className='row';combat.append(bar);
+const amount=document.createElement('input');amount.type='number';amount.min='1';amount.value='1';amount.setAttribute('aria-label','Quantité de dégâts ou soins');bar.append(amount);
+const commit=()=>{store();renderSheets()};
+const applyHp=sign=>{const n=Math.floor(Number(amount.value));if(!Number.isFinite(n)||n<1||n>1000){message('Dégâts ou soins : nombre de 1 à 1000.');return}
+if(sign<0){const temp=Math.min(sheet.tempHp,n);sheet.tempHp-=temp;sheet.hp=Math.max(0,sheet.hp-(n-temp))}
+else sheet.hp=Math.min(sheet.maxHp,sheet.hp+n);
+commit()};
+for(const [label,action] of [['− Dégâts',()=>applyHp(-1)],['+ Soins',()=>applyHp(1)],['+ 5 PV temporaires',()=>{sheet.tempHp+=5;commit()}],['PV maximum',()=>{sheet.hp=sheet.maxHp;commit()}]]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=action;bar.append(btn)}
+const turnLabel=document.createElement('h3');turnLabel.textContent='Actions du tour';combat.append(turnLabel);
+const remaining=document.createElement('p');remaining.textContent='Action : '+sheet.turn.action+' · Bonus : '+sheet.turn.bonus+' · Réaction : '+sheet.turn.reaction+' · Mouvement : '+sheet.turn.movementLeft+' m';combat.append(remaining);
+const turns=document.createElement('div');turns.className='row';combat.append(turns);
+for(const [label,key,cost] of [['Action','action',1],['Bonus','bonus',1],['Réaction','reaction',1],['− 1,5 m','movementLeft',1.5]]){const btn=document.createElement('button');btn.textContent=label;btn.onclick=()=>{let left=Number(sheet.turn[key])||0;if(left<cost){message(label+' épuisé pour ce tour.');return}sheet.turn[key]=Math.round((left-cost)*10)/10;commit()};turns.append(btn)}
+const next=document.createElement('button');next.textContent='Nouveau tour';next.className='primary';next.onclick=()=>{sheet.turn={action:1,bonus:1,reaction:1,movementLeft:Number(sheet.speed)||9};commit()};turns.append(next);
+if(sheet.resources.length){const h=document.createElement('h3');h.textContent='Ressources';combat.append(h);
+for(const res of sheet.resources){const line=document.createElement('div');line.className='row';combat.append(line);const label=document.createElement('span');label.style.flex='1 1 210px';label.textContent=res.name+' : '+(Number(res.max)>0?Math.max(0,res.max-(res.used||0))+'/'+res.max+' restants':res.detail||'à préciser');line.append(label);
+for(const [text,delta] of [['Utiliser',1],['Rendre',-1]]){const btn=document.createElement('button');btn.textContent=text;btn.onclick=()=>{res.used=Math.max(0,Math.min(res.max||99,(Number(res.used)||0)+delta));commit()};line.append(btn)}}}
+for(const [label,key] of [['Attaques','attacks'],['Actions possibles','actions'],['Capacités','features'],['À vérifier','checks'],['Équipement','equipment']]){const arr=sheet[key];if(!arr.length)continue;const details=document.createElement('details');details.open=key==='attacks'||key==='actions';combat.append(details);const summary=document.createElement('summary');summary.textContent=label;details.append(summary);const ul=document.createElement('ul');details.append(ul);
+for(const item of arr){const li=document.createElement('li');li.textContent=typeof item==='string'?item:(item.name||item.type||'')+' : '+(item.bonus?item.bonus+' · ':'')+(item.damage?item.damage+' · ':'')+(item.detail||'');ul.append(li)}}
+if(sheet.spellbook&&Object.keys(sheet.spellbook).length){const details=document.createElement('details');combat.append(details);const sm=document.createElement('summary');sm.textContent='Sorts inscrits (préparation à vérifier)';details.append(sm);
+for(const [lvl,spells] of Object.entries(sheet.spellbook)){const p=document.createElement('p');p.textContent='Niveau '+lvl+' : '+spells.join(', ');details.append(p)}}
+const notesLabel=document.createElement('label');notesLabel.textContent='Notes de séance :';combat.append(notesLabel);const notesArea=document.createElement('textarea');notesArea.value=sheet.sessionNotes||'';notesArea.rows=4;notesArea.placeholder='Indices, objets trouvés, blessures, relations, rappels…';notesArea.onchange=()=>{sheet.sessionNotes=notesArea.value;store()};combat.append(notesArea);
 const actions=document.createElement('div');actions.className='row';actions.style.marginTop='12px';body.append(actions);const place=document.createElement('button');place.textContent='Placer cette fiche sur la carte';place.onclick=()=>{let token=data.tokens.find(t=>t.id===sheet.tokenId);if(!token){token={id:'char'+sheet.id,name:sheet.name,kind:'PJ',speed:Number(sheet.speed)||9,visible:true,x:null,y:null};data.tokens.push(token);sheet.tokenId=token.id;store()}token.name=sheet.name;openTab('map');$('activeToken').value=token.id;$('tool').value='move';message('Clique sur la carte pour placer '+sheet.name)};actions.append(place);
 const del=document.createElement('button');del.textContent='Supprimer la fiche';del.onclick=()=>{if(!confirm('Supprimer la fiche '+sheet.name+' ? (Le pion reste.)'))return;data.sheets=data.sheets.filter(s=>s.id!==sheet.id);deleteAttachment(sheet.id);selectedSheetId=data.sheets[0]?.id||null;store();renderSheets()};actions.append(del);
 if(sheet.filename){const fileInfo=document.createElement('p');fileInfo.textContent='Document importé : '+sheet.filename+' (stocké uniquement dans ce navigateur sur ce PC)';body.append(fileInfo);const open=document.createElement('button');open.textContent='Voir le document source';body.append(open);open.onclick=async()=>{try{const blob=await getAttachment(sheet.id);if(!blob)throw Error('Document absent : réimporte-le.');const prev=body.querySelector('.attachment-preview');if(prev)prev.remove();const url=URL.createObjectURL(blob);const frame=document.createElement(sheet.filetype.startsWith('image/')?'img':'iframe');frame.className='attachment-preview';frame.src=url;frame.alt='Document original';body.append(frame);setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){message(e.message)}}}
 }
 $('addSheet').onclick=()=>{const sheet=makeSheet('Nouvelle fiche');data.sheets.push(sheet);selectedSheetId=sheet.id;store();openTab('sheets',sheet.id)};
 $('importSheet').onclick=()=>$('sheetFiles').click();
-$('sheetFiles').addEventListener('change',async e=>{const files=[...e.target.files];for(const file of files){try{let sheet;if(file.name.toLowerCase().endsWith('.json')){const raw=JSON.parse(await file.text());sheet=simplifyJson(raw,file.name)}else if(file.type==='application/pdf'||file.type.startsWith('image/')){sheet=makeSheet(file.name.replace(/\.[^.]+$/,''));sheet.filename=file.name;sheet.filetype=file.type;await saveAttachment(sheet.id,file)}else{message('Format non accepté : '+file.name);continue}data.sheets.push(sheet);selectedSheetId=sheet.id;store()}catch(err){message('Impossible d’importer '+file.name+' : '+err.message)}}e.target.value='';openTab('sheets',selectedSheetId)});
+$('sheetFiles').addEventListener('change',async e=>{const files=[...e.target.files];for(const file of files){try{let sheet;if(file.name.toLowerCase().endsWith('.json')){const raw=JSON.parse(await file.text());
+ if(raw?.format==='atelier-manoir-roster-v1'&&Array.isArray(raw.characters)){
+  let added=0;for(const c of raw.characters){
+   if(!c||typeof c.name!=='string'||!c.name.trim())continue;
+   if(data.sheets.some(x=>x.id===c.id||x.name===c.name))continue;
+   const copy=normalizeSheet({...makeSheet(c.name),...c,id:c.id||('roster-'+added),filename:'',filetype:''});data.sheets.push(copy);selectedSheetId=copy.id;added++;
+   const generic=data.tokens.find(t=>t.kind==='PJ'&&/^PJ [123]$/.test(t.name)&&!data.sheets.some(x=>x!==copy&&x.tokenId===t.id));
+   if(generic){generic.name=c.name;generic.speed=Number(c.speed)||9;copy.tokenId=generic.id}
+  }
+  store();message(added+' fiches ajoutées, les fiches existantes ne sont pas écrasées.');continue;
+ }
+ sheet=simplifyJson(raw,file.name)}else if(file.type==='application/pdf'||file.type.startsWith('image/')){sheet=makeSheet(file.name.replace(/\.[^.]+$/,''));sheet.filename=file.name;sheet.filetype=file.type;await saveAttachment(sheet.id,file)}else{message('Format non accepté : '+file.name);continue}data.sheets.push(sheet);selectedSheetId=sheet.id;store()}catch(err){message('Impossible d’importer '+file.name+' : '+err.message)}}e.target.value='';openTab('sheets',selectedSheetId)});
 // Export/import stable even when the user switches from downloaded HTML to Atelier TEST.
 $('exportJdr').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='manoir-goblin-sauvegarde-v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)};
 $('importJdr').onclick=()=>$('importJdrFile').click();
