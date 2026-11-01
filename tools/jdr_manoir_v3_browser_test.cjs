@@ -50,6 +50,7 @@ async function main(){
   await page.locator('#openPlayers').click();
   const popup=await popupPromise; await popup.waitForLoadState();
   assert.equal(await popup.locator('#playerCanvas').count(),1);
+  assert.equal(await popup.locator('#backToAtelier').isVisible(),true,'The secondary player window must also provide Atelier navigation');
   assert.ok(!(await popup.locator('body').innerText()).includes('PV actuels'),'No secret MJ stats in stream');
 
   const first=pj[0],canvas=popup.locator('#playerCanvas');
