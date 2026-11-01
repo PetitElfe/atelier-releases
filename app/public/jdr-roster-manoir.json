@@ -83,7 +83,10 @@
         }
       ],
       "notes": "",
-      "checks": "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité."
+      "checks": [
+        "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité."
+      ],
+      "equipment": []
     },
     {
       "id": "roster-earendil",
@@ -154,7 +157,11 @@
           "detail": "Manteau d'inspiration · Magie envoûtante"
         }
       ],
-      "spells": {
+      "notes": "",
+      "checks": [
+        "Sur la feuille : plus de sorts que le nombre de sorts de classe normalement préparés au niveau 3. Vérifier l'origine de chaque sort (espèce, dons, règles maison) ; perception passive 10 selon SAG 11 et Perception non cochée."
+      ],
+      "spellbook": {
         "mineurs": [
           "Elementalism",
           "Message",
@@ -175,8 +182,7 @@
           "Mirror Image"
         ]
       },
-      "notes": "",
-      "checks": "Sur la feuille : plus de sorts que le nombre de sorts de classe normalement préparés au niveau 3. Vérifier l'origine de chaque sort (espèce, dons, règles maison) ; perception passive 10 selon SAG 11 et Perception non cochée."
+      "equipment": []
     },
     {
       "id": "roster-lyko",
@@ -239,7 +245,10 @@
         }
       ],
       "notes": "",
-      "checks": "Perception passive 11 validée par la MJ. Vérifier maîtrise des armes fouet/dague et application réelle de Slow et Nick."
+      "checks": [
+        "Perception passive 11 validée par la MJ. Vérifier maîtrise des armes fouet/dague et application réelle de Slow et Nick."
+      ],
+      "equipment": []
     }
   ]
 }
