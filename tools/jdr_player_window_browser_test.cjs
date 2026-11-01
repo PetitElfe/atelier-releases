@@ -64,7 +64,8 @@ async function main(){let browser;
     assert.equal(await player.locator('#playerStage .player-bar').first().isVisible(),false,'No host/MJ toolbar should be streamed in fullscreen');
     assert.equal(await player.locator('#playerStageCanvas').isVisible(),true);
     await player.keyboard.press('Escape');
-    await player.waitForFunction(()=>!document.fullscreenElement,{timeout:3500});
+    await player.evaluate(()=>{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})});
+    await player.waitForFunction(()=>!document.fullscreenElement,null,{timeout:3500});
   }else{
     // Chromium headless can refuse the Fullscreen API. Check the CSS fallback
     // explicitly rather than failing unrelated navigation tests.
