@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Le Manoir du Cirque — console JDR V4 (brouillard corrigé)</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;--bg:#131a16;--panel:#24352a;--green:#b8d9a6;--gold:#d4bd8e;--line:#59715d;--ink:#f6eedf;--muted:#cbd6c8}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);margin:0}header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;background:#233b2b;border-bottom:1px solid #68836c;padding:12px 18px}h1{font-size:20px;margin:0 0 3px}h2{font-size:17px;margin:0 0 12px}p{line-height:1.45}small,.muted{color:var(--muted);font-size:12px}button,select,input{font:inherit;background:#16271c;color:var(--ink);border:1px solid #78947c;border-radius:8px;padding:9px}button{cursor:pointer}button:hover{background:#375540}button.primary{background:#4a704f;font-weight:700;border-color:#abc79e}button.active{background:#5f7b52;border-color:#e1c78b}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #efce81;outline-offset:2px}label{display:block;margin:10px 0 5px;color:var(--muted);font-size:13px}input,select{width:100%}.row{display:flex;flex-wrap:wrap;gap:7px}.row button{flex:1 1 auto}.layout{display:grid;grid-template-columns:248px minmax(500px,1fr) 262px;gap:12px;padding:12px;align-items:start}.panel{border:1px solid var(--line);border-radius:12px;background:#223228;padding:13px;min-width:0;box-shadow:0 4px 20px #0002}.maphead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}.maphead h2{margin:0}.pill{background:#415a43;border-radius:99px;padding:5px 9px;font-size:12px;white-space:nowrap}.mapBox{margin-top:10px;background:#0e1510;border:1px solid #4f6854;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}.mapBox canvas{display:block;width:100%;height:auto;max-height:calc(100vh - 140px);object-fit:contain;cursor:crosshair}.infobox{background:#314333;border-left:3px solid #dec68b;padding:10px;margin:12px 0;font-size:13px;line-height:1.5}.minor{border-top:1px solid #536b57;padding-top:13px;margin-top:13px}.roomgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.roomgrid button{min-height:42px;padding:6px 5px;text-align:center;font-size:12px;line-height:1.2}.roomgrid button.revealed{background:#47714e;border-color:#bfd2a4}.roomgrid button.selected{outline:2px solid #dfc77e;outline-offset:-3px}.tokenItem{font-size:12px;border:1px solid #526756;border-radius:8px;padding:8px;margin-bottom:7px;background:#1c2c22}.tokenItem strong{font-size:13px}.tag{color:#ced9c9}.warn{color:#ffe1a5}.guide{white-space:pre-wrap;font-size:13px;line-height:1.5}.tight{font-size:12px;line-height:1.5}.taglist{display:flex;flex-wrap:wrap;gap:5px}.taglist span{background:#3b5140;padding:4px 7px;border-radius:8px;font-size:12px}
+@media(max-width:1100px){.layout{grid-template-columns:250px minmax(490px,1fr)}.right{grid-column:1/-1}}@media(max-width:760px){.layout{display:block;padding:8px}.panel{margin-bottom:9px}.mapBox{overflow:auto}.mapBox canvas{min-width:650px}header{padding:12px}}
+
+/* La carte miniature ne disparaît jamais quand on change d'onglet MJ. */
+header.jdr-top{position:sticky;top:0;z-index:20;padding:10px 15px;align-items:stretch;background:#1b2c21;box-shadow:0 4px 14px #0009}
+.jdr-brand{min-width:180px;align-self:center}.jdr-brand small{display:block;max-width:250px}
+.mini-map{width:235px;flex:0 0 235px;align-self:center;background:#101a13;border:1px solid #668266;border-radius:9px;padding:2px}
+.mini-map canvas{width:100%;display:block;height:auto;cursor:crosshair}
+.jdr-head-actions{flex:1 1 360px;display:grid;grid-template-columns:repeat(3,minmax(100px,1fr));gap:6px;align-content:center;max-width:750px}
+.jdr-head-actions label{grid-column:span 2;margin:0;font-size:11px}.jdr-head-actions select{padding:7px;font-size:13px}
+.jdr-head-actions button{min-height:38px;font-size:13px;padding:6px}
+.jdr-head-actions #spawnParty{grid-column:span 2}.jdr-head-actions #openPlayers{grid-column:span 1}
+.tabstrip{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px;background:#1b2820;border-bottom:1px solid #4f6954;position:sticky;top:164px;z-index:19}
+.tabstrip button{padding:9px 16px;font-weight:650;min-width:110px}.tabstrip button.active{background:#567753;color:#fff;border-color:#c5dbaa}
+[data-panel]{display:none}[data-panel].active-panel{display:block}
+.map-layout{grid-template-columns:246px minmax(430px,1fr) 252px}
+.panel.sheet-panel{max-width:1180px;margin:14px auto;padding:20px}
+.sheet-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.sheet-tabs button.active{background:#547e55;border-color:#c4d49d}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:9px;align-items:end}.sheet-grid label{margin:0}.sheet-grid input{width:100%}.sheet-grid .wide{grid-column:1/-1}
+textarea{font:inherit;color:var(--ink);background:#16271c;border:1px solid #78947c;border-radius:8px;padding:10px;width:100%;resize:vertical;min-height:110px;line-height:1.45}
+.attachment-preview{min-height:300px;width:100%;border:1px solid #65816d;border-radius:8px;background:#fff}
+.shoulkar-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.shoulkar-grid h3{color:#e1c789;margin:.4rem 0}.shoulkar-powers{padding:12px 16px;background:#2f3d30;border:1px solid #59735d;border-radius:9px;line-height:1.55}.shoulkar-powers p{margin:.5rem 0}
+.progress{padding:8px 12px;background:#243829;border:1px solid #68886a;border-radius:8px}.story-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.story-box{background:#293b2e;border:1px solid #536b56;border-radius:10px;padding:14px;line-height:1.55}
+#status{padding:8px;background:#203425;border-radius:7px;border:1px solid #4c6650}
+#syncStatus{font-size:11px;color:#bdd3b8;align-self:center}
+@media(max-width:1200px){header.jdr-top{position:relative}.tabstrip{position:static}.mini-map{width:180px;flex-basis:180px}.map-layout{grid-template-columns:250px minmax(420px,1fr)}}
+@media(max-width:760px){.jdr-head-actions{display:flex;flex-wrap:wrap}.jdr-head-actions>*{flex:1 1 140px}.mini-map{width:100%;flex:1 1 300px;max-width:400px}.sheet-grid,.shoulkar-grid,.story-columns{grid-template-columns:1fr 1fr}.sheet-grid .wide{grid-column:1/-1}.map-layout{display:block}}
+</style></head>
+<body>
+<header class="jdr-top">
+  <div class="jdr-brand"><h1>Le Manoir du Cirque</h1><small>Console MJ · carte toujours visible · intégré à L'Atelier TEST</small><small id="syncStatus">Sauvegarde locale active</small></div>
+  <div class="mini-map" title="Clique sur une pièce pour la sélectionner ou la dévoiler"><canvas id="miniBoard" width="1120" height="770" aria-label="Mini-carte du manoir, toujours visible"></canvas></div>
+  <div class="jdr-head-actions">
+    <label>Pièce à explorer<select id="roomSelect"></select></label>
+    <button id="revealRoom" class="primary">Dévoiler</button>
+    <button id="hideRoom">Masquer</button>
+    <button id="spawnParty" class="primary">Faire apparaître les 3 PJ</button>
+    <button id="openPlayers">Écran joueurs</button>
+  </div>
+</header>
+<nav class="tabstrip" aria-label="Onglets de la console MJ">
+  <button data-tab="map" class="active">Carte & pions</button>
+  <button data-tab="shoulkar">Shoulkar · fiche monstre</button>
+  <button data-tab="sheets">Fiches des personnages</button>
+  <button data-tab="story">Scénario</button>
+</nav>
+<section data-panel="map" class="active-panel">
+  <div class="layout map-layout">
+    <aside class="panel">
+      <h2>Table de jeu</h2><p id="roomDims" class="muted"></p>
+      <label>Outil sur la carte MJ</label>
+      <select id="tool"><option value="reveal">Dévoiler une pièce</option><option value="move">Déplacer un pion</option><option value="hide">Masquer une pièce</option></select>
+      <label>Pion sélectionné</label><select id="activeToken"></select>
+      <div class="row" style="margin-top:8px"><button id="toggleToken">Afficher / cacher</button><button id="removeToken">Retirer le pion</button></div>
+      <div class="minor"><h2>Ajouter un pion</h2><label>Nom</label><input id="tokenName" maxlength="60" placeholder="Un personnage..."><label>Type</label><select id="tokenKind"><option value="PJ">PJ</option><option value="PNJ">PNJ</option><option value="Monstre">Monstre</option></select><button id="addToken" class="primary" style="width:100%;margin-top:10px">Ajouter</button></div>
+      <div class="minor"><h2>Pièces (sélection rapide)</h2><div class="roomgrid" id="roomButtons"></div></div>
+    </aside>
+    <section class="panel" id="mapPanel">
+      <div class="maphead"><h2>Carte complète du MJ</h2><span class="pill">11 espaces · masquage individuel V4</span><span class="pill">1 case = 1,5 m</span></div>
+      <div class="mapBox"><canvas id="board" width="1120" height="770" aria-label="Plan complet MJ"></canvas></div>
+      <p id="status" aria-live="polite">Clique sur une pièce pour la révéler aux joueurs.</p>
+      <p class="tight muted">Côté MJ : carte entière visible. Côté joueurs : uniquement les pièces révélées. Sur la grande fenêtre, fais glisser chaque pion individuellement à la souris.</p>
+      <div class="row"><button id="revealAll">Tout révéler</button><button id="hideAll">Tout masquer</button><button id="exportJdr">Sauvegarder la partie JSON</button><button id="importJdr">Restaurer JSON</button><input id="importJdrFile" type="file" accept=".json,application/json" style="display:none"></div>
+    </section>
+    <aside class="panel right"><h2>Les pions</h2><div id="tokenList"></div><div class="minor"><h2>Échelle</h2><div class="taglist"><span>1 case = 1,5 m</span><span>6 cases = 9 m</span><span>1 case = 5 pieds</span></div><p class="tight">Le trajet entre pièces suit les portes ; pas de traversée des murs. La carte mesure 30 × 21 m.</p></div><div class="infobox">Sélectionne une pièce en haut puis « Faire apparaître les 3 PJ » : ils sont placés ensemble une seule fois, sans se superposer. Tu peux ensuite les déplacer librement, un par un, sur le plein écran joueurs.</div></aside>
+  </div>
+</section>
+<section data-panel="shoulkar"><div class="panel sheet-panel">
+  <h2>Shoulkar — aberration parasite (créature homebrew)</h2>
+  <p>Créature qui dévore la vitalité, les souvenirs et les émotions. Elle imite les identités prises, ne comprend pas initialement la douleur ni la mort, et cherche à quitter le manoir. Ses pouvoirs et statistiques sont des propositions pour trois PJ de niveau 3 : adapte-les selon tes joueurs.</p>
+  <div class="sheet-grid"><label>PV actuels<input type="number" min="0" id="shHp"></label><label>PV max<input type="number" min="1" id="shMaxHp"></label><label>Classe d’armure<input type="number" min="1" id="shAc"></label><label>DD de sauvegarde<input type="number" min="1" id="shSave"></label><label>Bonus attaque<input type="number" id="shAttack"></label><label>Vitesse (m)<input type="number" id="shSpeed"></label><label>TP restants<input type="number" min="0" id="shTp"></label><label>Initiative<input type="number" id="shInit"></label></div>
+  <div class="row" style="margin-top:10px"><button id="shDmg5">− 5 PV</button><button id="shDmg10">− 10 PV</button><button id="shHeal5">+ 5 PV</button><button id="shReset">Restaurer PV</button><button id="shPlace">Placer le Shoulkar sur la carte</button></div>
+  <div class="shoulkar-grid"><div class="shoulkar-powers"><h3>Actions</h3><p><b>Vol de vitalité :</b> attaque +4, 1d6+2 dégâts nécrotiques ; le Shoulkar regagne 3 PV s'il touche.</p><p><b>Murmure des souvenirs :</b> sauvegarde de Sagesse DD 12 ; 1d6 dégâts psychiques en cas d'échec.</p><p><b>Cauchemar imposé :</b> peur / trouble, SAG DD 12 (interprétation MJ).</p></div><div class="shoulkar-powers"><h3>Capacités</h3><p><b>Téléportation courte :</b> 9 m, deux utilisations proposées.</p><p><b>Ombres :</b> trois doubles défensifs inspirés d'Image miroir (pas de tours séparés).</p><p><b>Fuite :</b> si le Shoulkar quitte le manoir, il hante d'abord la forêt. « Dommage… j'aimais bien cet hôte. »</p></div></div>
+  <label>Notes secrètes sur le Shoulkar</label><textarea id="shNotes" rows="5" placeholder="Faiblesses, souvenirs, intentions, réactions aux PJ..."></textarea>
+</div></section>
+<section data-panel="sheets"><div class="panel sheet-panel">
+  <h2>Fiches des personnages</h2><p class="muted">Importe une fiche en JSON, PDF, PNG ou JPG. Les onglets restent ici, et la mini-carte reste visible tout en haut. Un PDF est conservé dans le stockage de ce navigateur ; les champs et notes dans L'Atelier TEST se sauvegardent dans la campagne.</p>
+  <div class="row"><button id="addSheet">＋ Créer une fiche</button><button id="importSheet">Importer des fiches</button><input id="sheetFiles" type="file" multiple accept=".json,.pdf,.png,.jpg,.jpeg,.webp,application/json,application/pdf,image/png,image/jpeg,image/webp" style="display:none"></div>
+  <div id="sheetTabs" class="sheet-tabs"></div><div id="sheetContent"></div>
+</div></section>
+<section data-panel="story"><div class="panel sheet-panel">
+  <h2>Scénario — Le Manoir du Cirque</h2><p>Six séquences pour une séance d'environ 4 h 15. Le guide est une aide à l'improvisation, pas un ordre imposé aux joueurs.</p>
+  <div class="story-columns">
+    <div class="story-box"><b>1. Le commanditaire hibou</b><p>Un riche Aarakocra vêtu de beige veut retrouver un bijou et le tireur de cartes du cirque. Le bijou appartient en réalité au tireur de cartes ; ne révèle pas encore tout.</p></div>
+    <div class="story-box"><b>2. La carriole détruite</b><p>Une tempête, une roue brisée, des affiches mouillées, et la piste du manoir. La chatte à trois yeux peut guider sans tout expliquer.</p></div>
+    <div class="story-box"><b>3. Le seuil</b><p>L'hôte humain semble triste et terrifié. Un seul autre membre de la troupe est visible à la fois. Il craint le sous-sol.</p></div>
+    <div class="story-box"><b>4. L'exploration</b><p>Les livres, tableaux, objets et statues changent. Utilise les cartes Dîner, Mort et Miroir comme indices. Chaque salle donne un morceau de la vérité.</p></div>
+    <div class="story-box"><b>5. La cave</b><p>Une porte matérielle difficile à ouvrir, une tentative unique de dissuasion, puis découverte de l'emprise du Shoulkar. Des choix permettent de sauver l'hôte.</p></div>
+    <div class="story-box"><b>6. La confrontation</b><p>Le Shoulkar peut se battre, négocier ou tenter de fuir dans la forêt. Son départ ne garantit pas sa défaite. Le manoir pourra devenir le QG après accord avec l'autorité compétente.</p></div>
+  </div>
+</div></section>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),board=$('board'),B=46,X=85,Y=76,W=20,H=14;
+const key='goblin-manoir-carte-unique-v3';let playerWin=null,selectedRoom='hall';
+// Toutes les coordonnées décrivent le plan APRÈS rotation de 180° : le hall est au sud.
+// Une case de 46 pixels représente exactement 1,5 m / 5 ft.
+const rooms=[
+{id:'cellar',name:'Escalier de la cave',x:1,y:1,w:5,h:3,color:'#777b72'},
+{id:'reserve',name:'Réserve',x:6,y:1,w:5,h:3,color:'#77735c'},
+{id:'office',name:'Bureau',x:11,y:1,w:5,h:3,color:'#6f795f'},
+{id:'cabinet',name:'Petit cabinet',x:16,y:1,w:3,h:3,color:'#697d74'},
+{id:'kitchen',name:'Cuisine',x:1,y:4,w:6,h:4,color:'#777960'},
+{id:'gallery',name:'Galerie',x:7,y:4,w:5,h:3,color:'#647966'},
+{id:'dining',name:'Salle à manger',x:12,y:4,w:7,h:4,color:'#827661'},
+{id:'corridor',name:'Couloir',x:7,y:7,w:5,h:3,color:'#687961'},
+{id:'library',name:'Bibliothèque',x:1,y:8,w:6,h:5,color:'#6b745d'},
+{id:'hall',name:"Hall d'entrée",x:7,y:10,w:5,h:3,color:'#7b8067'},
+{id:'salon',name:'Salon',x:12,y:8,w:7,h:5,color:'#74765e'}
+];
+// Passage entre deux cases de pièces adjacentes ; aucun passage implicite à travers un mur.
+const doorDefs=[
+['cellar','reserve',5,2,6,2],['reserve','office',10,2,11,2],['office','cabinet',15,2,16,2],
+['reserve','gallery',9,3,9,4],['office','gallery',11,3,11,4],
+['kitchen','gallery',6,5,7,5],['dining','gallery',12,5,11,5],
+['gallery','corridor',9,6,9,7],['kitchen','corridor',6,7,7,7],['dining','corridor',12,7,11,7],
+['library','corridor',6,9,7,9],['salon','corridor',12,9,11,9],
+['library','hall',6,11,7,11],['salon','hall',12,11,11,11],['corridor','hall',9,9,9,10]
+];
+const windows=[['library','left',3],['library','bottom',3],['salon','right',10],['salon','bottom',15],['office','top',13],['cabinet','right',2],['kitchen','left',5],['dining','right',6]];
+const inside=(x,y)=>x>=0&&x<W&&y>=0&&y<H,at=(x,y)=>rooms.find(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h),byId=id=>rooms.find(r=>r.id===id),edgeKey=(x,y,xx,yy)=>[[x,y],[xx,yy]].map(p=>p.join(',')).sort().join('|');
+const exits=new Set(doorDefs.map(d=>edgeKey(d[2],d[3],d[4],d[5])));
+function walkable(a,b){if(!inside(b.x,b.y)||!at(b.x,b.y))return false;const r1=at(a.x,a.y),r2=at(b.x,b.y);return !!r1&&!!r2&&(r1.id===r2.id||exits.has(edgeKey(a.x,a.y,b.x,b.y)))}
+const data={version:3,seen:{},sheets:[],shoulkar:{hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:''},tokens:[
+{id:'pj1',name:'PJ 1',kind:'PJ',speed:9,visible:true,x:null,y:null},
+{id:'pj2',name:'PJ 2',kind:'PJ',speed:9,visible:true,x:null,y:null},
+{id:'pj3',name:'PJ 3',kind:'PJ',speed:9,visible:true,x:null,y:null},
+{id:'host',name:'Tireur de cartes',kind:'PNJ',speed:9,visible:false,x:null,y:null},
+{id:'cat',name:'Chatte',kind:'PNJ',speed:12,visible:false,x:null,y:null},
+{id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null}
+]};rooms.forEach(r=>data.seen[r.id]=false);
+function load(){try{let v=JSON.parse(localStorage.getItem(key)||'null');if(v&&[2,3].includes(v.version)&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v2')||'null');if(v&&v.seen&&Array.isArray(v.tokens)){Object.assign(data,v);data.version=3;return}v=JSON.parse(localStorage.getItem('goblin_map_unique_v1')||'null');if(v&&v.revealed&&Array.isArray(v.tokens)){for(const r of rooms)if(Object.hasOwn(v.revealed,r.id))data.seen[r.id]=!!v.revealed[r.id];data.tokens=v.tokens.map(t=>({...t,speed:typeof t.speed==='number'?t.speed:9,x:t.x==null?null:W-1-t.x,y:t.y==null?null:H-1-t.y}));}}catch(e){}finally{normaliseData()}}
+function normaliseData(){data.version=3;data.sheets=Array.isArray(data.sheets)?data.sheets:[];data.shoulkar={hp:48,maxHp:48,ac:13,saveDC:12,attackBonus:4,speed:9,teleports:2,initiative:12,notes:'',...data.shoulkar};const p=data.tokens.find(t=>t.id==='parasite'||t.name==='Le Parasite');if(p){p.name='Shoulkar';p.id=p.id||'parasite';p.kind='Monstre';p.visible=!!p.visible;}else data.tokens.push({id:'parasite',name:'Shoulkar',kind:'Monstre',speed:9,visible:false,x:null,y:null});for(const r of rooms)if(!(r.id in data.seen))data.seen[r.id]=false;}
+function store(){try{localStorage.setItem(key,JSON.stringify(data))}catch(e){message('Stockage plein : exporte la sauvegarde JSON.')}refresh();scheduleServerSave()}
+function message(t){$('status').textContent=t}
+function tint(hex,delta){const n=parseInt(hex.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('')}
+function furniture(ctx,r){const x=X+r.x*B,y=Y+r.y*B,w=r.w*B,h=r.h*B;ctx.save();ctx.translate(x,y);const wood='#584837',line='#c6ad80',light='#a89370';
+function rect(xx,yy,ww,hh,color=wood){ctx.fillStyle=color;ctx.fillRect(xx,yy,ww,hh);ctx.strokeStyle=line;ctx.lineWidth=1.3;ctx.strokeRect(xx,yy,ww,hh)}
+function table(cx,cy,ww,hh){rect(cx-ww/2,cy-hh/2,ww,hh,'#735742');}
+function circle(cx,cy,rr,color=wood){ctx.beginPath();ctx.arc(cx,cy,rr,0,7);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=line;ctx.stroke()}
+if(r.id==='salon'){rect(w*.13,h*.16,w*.42,h*.17,'#586d5d');rect(w*.09,h*.17,w*.05,h*.2,'#45614c');rect(w*.51,h*.17,w*.06,h*.2,'#45614c');table(w*.39,h*.55,w*.27,h*.23);rect(w*.69,h*.20,w*.16,h*.22,'#6f6056');circle(w*.81,h*.76,12,light)}
+if(r.id==='library'){for(let i=0;i<4;i++)rect(w*.10+i*w*.205,h*.06,w*.14,h*.12,'#594e3e');for(let i=0;i<3;i++)rect(w*.10+i*w*.29,h*.83,w*.22,h*.11,'#594e3e');table(w*.50,h*.52,w*.38,h*.19)}
+if(r.id==='dining'){table(w*.53,h*.49,w*.57,h*.27);for(let j=0;j<3;j++){rect(w*(.31+j*.20),h*.20,20,10,'#88735b');rect(w*(.31+j*.20),h*.73,20,10,'#88735b')}}
+if(r.id==='kitchen'){rect(w*.06,h*.08,w*.28,h*.13);rect(w*.66,h*.08,w*.28,h*.13);rect(w*.06,h*.78,w*.88,h*.12);table(w*.50,h*.52,w*.32,h*.28)}
+if(r.id==='office'){rect(w*.17,h*.25,w*.57,h*.26);rect(w*.19,h*.58,w*.20,h*.19,'#636957');rect(w*.70,h*.60,w*.17,h*.22,'#69775b')}
+if(r.id==='cabinet'){rect(w*.19,h*.19,w*.56,h*.29,'#565d55');circle(w*.49,h*.72,11,light)}
+if(r.id==='reserve'){for(let i=0;i<3;i++)rect(w*(.12+i*.28),h*.20,w*.20,h*.28,'#735941');rect(w*.26,h*.63,w*.25,h*.19,'#74614c')}
+if(r.id==='cellar'){rect(w*.20,h*.12,w*.55,h*.22,'#504942');for(let i=0;i<5;i++){ctx.strokeStyle='#a39b87';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(w*.36,h*(.45+i*.085));ctx.lineTo(w*.72,h*(.45+i*.085));ctx.stroke()}}
+if(r.id==='hall'){rect(w*.25,h*.23,w*.5,h*.45,'#6f6246');circle(w*.50,h*.50,16,'#ad9872')}
+if(r.id==='gallery'){rect(w*.32,h*.23,w*.32,h*.47,'#70644d');circle(w*.5,h*.48,12,'#d5c59e')}
+if(r.id==='corridor'){rect(w*.34,h*.08,w*.32,h*.84,'#5e5846')}
+ctx.restore()}
+function drawRoom(ctx,r){const px=X+r.x*B,py=Y+r.y*B,w=r.w*B,h=r.h*B;ctx.fillStyle=r.color;ctx.fillRect(px,py,w,h);
+ctx.save();ctx.beginPath();ctx.rect(px,py,w,h);ctx.clip();for(let j=0;j<r.h;j++)for(let i=0;i<r.w;i++){const tx=px+i*B,ty=py+j*B;ctx.fillStyle=((i+j)%2===0)?'#ffffff08':'#00000009';ctx.fillRect(tx+1,ty+1,B-2,B-2);ctx.strokeStyle='#ded1ab15';ctx.strokeRect(tx,ty,B,B);}furniture(ctx,r);ctx.restore();
+ctx.fillStyle='#121b14aa';const nameWidth=Math.min(w-12,Math.max(60,r.name.length*7.2+18)),cx=px+w/2,cy=py+h/2;ctx.fillRect(cx-nameWidth/2,cy-13,nameWidth,25);
+ctx.font=(r.w<=3?'bold 10px':'bold 13px')+' system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f4eddb';ctx.fillText(r.name,cx,cy,Math.max(42,w-16));ctx.textBaseline='alphabetic';}
+function wallLine(ctx,x1,y1,x2,y2){ctx.lineWidth=8;ctx.strokeStyle='#252f28';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#a5b09b';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function edgeDoor(ctx,x,y,xx,yy){const dx=xx-x,dy=yy-y,mx=X+(x+.5+dx*.5)*B,my=Y+(y+.5+dy*.5)*B;ctx.save();ctx.translate(mx,my);ctx.rotate(dx?Math.PI/2:0);ctx.strokeStyle='#9b7e58';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-B*.35,0);ctx.lineTo(B*.35,0);ctx.stroke();ctx.strokeStyle='#d4ba87';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-B*.35,-5);ctx.lineTo(B*.35,-5);ctx.stroke();ctx.restore()}
+function drawWalls(ctx,visible){for(const r of rooms){if(!visible(r))continue;for(let j=0;j<r.h;j++)for(let i=0;i<r.w;i++){const x=r.x+i,y=r.y+j;
+for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const nx=x+dx,ny=y+dy,nroom=at(nx,ny);if(nroom&&nroom.id===r.id)continue;const dk=edgeKey(x,y,nx,ny);if(exits.has(dk)){if(!nroom||visible(nroom))edgeDoor(ctx,x,y,nx,ny);continue}
+const x1=X+(dx>0?x+1:dx<0?x:x)*B,y1=Y+(dy>0?y+1:dy<0?y:y)*B;
+if(dx)wallLine(ctx,x1,Y+y*B,x1,Y+(y+1)*B);else wallLine(ctx,X+x*B,y1,X+(x+1)*B,y1);
+}}}}
+function drawWindow(ctx,r,edge,pos){if(!r)return;ctx.save();ctx.strokeStyle='#b8dee0';ctx.lineWidth=6;let px,py,x2,y2;if(edge==='left'){px=X+r.x*B;py=Y+(pos+.17)*B;x2=px;y2=py+B*.65}else if(edge==='right'){px=X+(r.x+r.w)*B;py=Y+(pos+.17)*B;x2=px;y2=py+B*.65}else if(edge==='top'){px=X+(pos+.17)*B;py=Y+r.y*B;x2=px+B*.65;y2=py}else{px=X+(pos+.17)*B;py=Y+(r.y+r.h)*B;x2=px+B*.65;y2=py}ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function drawTokens(ctx,player){for(const t of data.tokens){if(t.x==null||t.y==null)continue;const room=at(t.x,t.y);if(player&&(!t.visible||!room||!data.seen[room.id]))continue;const px=X+(t.x+.5)*B,py=Y+(t.y+.5)*B;ctx.beginPath();ctx.arc(px,py,15,0,Math.PI*2);ctx.fillStyle=t.kind==='PJ'?'#eddaa0':t.kind==='Monstre'?'#de9aa2':'#b2cde4';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#162117';ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#162117';ctx.font='bold 12px system-ui';ctx.fillText(t.name.slice(0,2).toUpperCase(),px,py+1);ctx.textBaseline='alphabetic';}}
+function paint(canvas,player){const ctx=canvas.getContext('2d');ctx.fillStyle='#101710';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#203128';ctx.fillRect(X-20,Y-22,W*B+40,H*B+44);ctx.strokeStyle='#657d64';ctx.lineWidth=2;ctx.strokeRect(X-20,Y-22,W*B+40,H*B+44);
+ctx.fillStyle='#f1e8d2';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('LE MANOIR DU CIRQUE — REZ-DE-CHAUSSÉE',canvas.width/2,35);
+const visible=r=>!player||data.seen[r.id];for(const r of rooms)if(visible(r))drawRoom(ctx,r);
+drawWalls(ctx,visible);for(const [id,edge,pos] of windows){const r=byId(id);if(visible(r))drawWindow(ctx,r,edge,pos)}
+// Seul le sud indique l'entrée. La pièce Hall se trouve toujours en bas du plan.
+const hall=byId('hall');if(visible(hall)){ctx.strokeStyle='#d5be83';ctx.lineWidth=5;const cx=X+(hall.x+hall.w/2)*B,by=Y+(hall.y+hall.h)*B;ctx.beginPath();ctx.moveTo(cx-25,by);ctx.lineTo(cx+25,by);ctx.stroke();ctx.fillStyle='#e9dbb3';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('ENTRÉE',cx,by+18)}
+if(!player){const r=byId(selectedRoom);if(r){ctx.strokeStyle='#fbe0a1';ctx.lineWidth=4;ctx.setLineDash([9,5]);ctx.strokeRect(X+r.x*B+5,Y+r.y*B+5,r.w*B-10,r.h*B-10);ctx.setLineDash([])}}
+drawTokens(ctx,player);
+ctx.fillStyle='#d2d9c8';ctx.font='13px system-ui';ctx.textAlign='right';ctx.fillText('Chaque case = 1,5 m (5 ft) · largeur totale 30 m',X+W*B,Y+H*B+36);
+}
+function syncPlayers(){if(playerWin&&!playerWin.closed){try{const c=playerWin.document.getElementById('playerCanvas');if(c)paint(c,true)}catch(e){message('Fenêtre joueurs inaccessible : '+e.message)}}}
+function roomButtons(){const area=$('roomButtons');area.replaceChildren();for(const r of rooms){const b=document.createElement('button');b.type='button';b.className=(data.seen[r.id]?'revealed ':'')+(selectedRoom===r.id?'selected':'');b.textContent=(data.seen[r.id]?'✓ ':'○ ')+r.name;b.title='Cliquer pour '+(data.seen[r.id]?'masquer ':'dévoiler ')+r.name;b.onclick=()=>{selectedRoom=r.id;data.seen[r.id]=!data.seen[r.id];store();message(r.name+(data.seen[r.id]?' dévoilée':' masquée')+' depuis la liste des pièces.')};area.append(b)}}
+function tokenControls(){const sel=$('activeToken'),keep=sel.value;sel.replaceChildren();const list=$('tokenList');list.replaceChildren();for(const t of data.tokens){const opt=new Option(t.name+' ('+t.kind+')',t.id);sel.append(opt);const div=document.createElement('div');div.className='tokenItem';const strong=document.createElement('strong');strong.textContent=t.name;div.append(strong);const line=document.createElement('div');line.className='tag';line.textContent=(t.visible?'Visible':'Caché')+' · '+(t.x==null?'non placé':'case '+(t.x+1)+', '+(t.y+1))+' · vitesse '+(Number(t.speed)||9)+' m';div.append(line);const fiche=document.createElement('button');fiche.type='button';fiche.style.marginTop='4px';fiche.textContent=t.kind==='Monstre'?'Fiche Shoulkar':'Ouvrir fiche';fiche.onclick=()=>{if(t.kind==='Monstre'){openTab('shoulkar')}else{let sh=data.sheets.find(s=>s.tokenId===t.id);if(!sh){sh=makeSheet(t.name);sh.tokenId=t.id;data.sheets.push(sh);store()}openTab('sheets',sh.id)}};div.append(fiche);list.append(div)}if(data.tokens.some(t=>t.id===keep))sel.value=keep}
+function refresh(){paint(board,false);paint($('miniBoard'),false);$('roomSelect').value=selectedRoom;const r=byId(selectedRoom);$('roomDims').textContent=r?`${r.w} × ${r.h} cases · ${(r.w*1.5).toLocaleString('fr-FR')} × ${(r.h*1.5).toLocaleString('fr-FR')} m`:'';roomButtons();tokenControls();syncPlayers()}
+
+function pathLength(a,b){if(a.x==null||a.y==null)return null;const q=[{x:a.x,y:a.y,n:0}],seen=new Set([a.x+','+a.y]);for(let i=0;i<q.length;i++){const c=q[i];if(c.x===b.x&&c.y===b.y)return c.n;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const v={x:c.x+dx,y:c.y+dy},k=v.x+','+v.y;if(seen.has(k))continue;if(dx&&dy){const sideA={x:c.x+dx,y:c.y},sideB={x:c.x,y:c.y+dy};if(!walkable(c,sideA)||!walkable(c,sideB)||at(c.x,c.y)?.id!==at(v.x,v.y)?.id)continue}else if(!walkable(c,v))continue;seen.add(k);q.push({x:v.x,y:v.y,n:c.n+1})}}return Infinity}
+function moveToken(x,y,r){const t=data.tokens.find(t=>t.id===$('activeToken').value);if(!t){message('Sélectionne un pion.');return}const n=pathLength(t,{x,y});if(n===Infinity){message('Trajet impossible : mur entre les salles. Utilise une porte.');return}t.x=x;t.y=y;t.visible=true;store();const distance=n==null?'':` · ${n} cases = ${(n*1.5).toLocaleString('fr-FR')} m`+(n*1.5>Number(t.speed||9)?' ⚠️ au-delà de sa vitesse habituelle':'');message(t.name+' → '+r.name+distance)}
+function canvasPoint(event,target){const rect=target.getBoundingClientRect(),scale=Math.min(rect.width/target.width,rect.height/target.height),sx=(rect.width-target.width*scale)/2,sy=(rect.height-target.height*scale)/2;return {x:(event.clientX-rect.left-sx)/scale,y:(event.clientY-rect.top-sy)/scale}}
+function applyClick(event,target){const {x,y}=canvasPoint(event,target),cx=Math.floor((x-X)/B),cy=Math.floor((y-Y)/B),r=at(cx,cy);if(!r)return;selectedRoom=r.id;$('roomSelect').value=r.id;const mode=$('tool').value;if(mode==='move'){moveToken(cx,cy,r);return}data.seen[r.id]=mode==='reveal';store();message(r.name+(data.seen[r.id]?' dévoilée':' masquée')+' depuis la carte '+(target===board?'MJ':'joueurs'))}
+function openPlayers(){if(playerWin&&!playerWin.closed){playerWin.focus();syncPlayers();return}playerWin=window.open('','ManoirJoueursV2','width=1300,height=1000');if(!playerWin){message('Autorise les fenêtres contextuelles dans Brave.');return}playerWin.document.open();playerWin.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Carte joueurs — Le Manoir du Cirque</title><style>html,body{margin:0;background:#111811;color:#f7f0db;font-family:system-ui}main{padding:9px;display:flex;flex-direction:column;align-items:center;gap:6px}header{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px}button{font:inherit;cursor:pointer;border-radius:8px;padding:6px 10px;background:#37583b;color:#fff;border:1px solid #a4b998}canvas{width:min(98vw,1280px);max-height:calc(100vh - 70px);object-fit:contain;cursor:crosshair;display:block;background:#101710;border:1px solid #657e66;border-radius:8px}small{color:#b9cbb8}@media(max-width:640px){header{flex-wrap:wrap}} </style></head><body><main><header><b>LE MANOIR DU CIRQUE</b><small>Carte joueurs · glissez les pions pour les déplacer</small><button id="playerFull">Plein écran</button></header><canvas id="playerCanvas" width="1120" height="770" title="Faites glisser un pion déjà visible pour le déplacer"></canvas></main></body></html>`);playerWin.document.close();const c=playerWin.document.getElementById('playerCanvas');bindPlayerDrag(c);playerWin.document.getElementById('playerFull').onclick=()=>{const d=playerWin.document;if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen().catch(()=>{})};syncPlayers();message('Grande carte ouverte : les clics fonctionnent aussi sur cette fenêtre. Ne partage que cette fenêtre sur Discord.')}
+$('board').addEventListener('click',e=>applyClick(e,board));$('miniBoard').addEventListener('click',e=>applyClick(e,$('miniBoard')));$('openPlayers').onclick=openPlayers;
+$('roomSelect').addEventListener('change',e=>{selectedRoom=e.target.value;refresh();message(byId(selectedRoom).name+' sélectionnée dans la console MJ.')});
+$('revealRoom').onclick=()=>{data.seen[selectedRoom]=true;store();message(byId(selectedRoom).name+' dévoilée depuis la console MJ.')};
+$('hideRoom').onclick=()=>{data.seen[selectedRoom]=false;store();message(byId(selectedRoom).name+' masquée depuis la console MJ.')};
+$('revealAll').onclick=()=>{rooms.forEach(r=>data.seen[r.id]=true);store();message('Toutes les pièces sont visibles.')};
+$('hideAll').onclick=()=>{rooms.forEach(r=>data.seen[r.id]=false);store();message('Toutes les pièces sont masquées.')};
+$('toggleToken').onclick=()=>{const t=data.tokens.find(t=>t.id===$('activeToken').value);if(!t)return;t.visible=!t.visible;store();message(t.name+(t.visible?' visible':' caché'))};
+$('removeToken').onclick=()=>{const t=data.tokens.find(t=>t.id===$('activeToken').value);if(!t)return;t.x=null;t.y=null;store();message(t.name+' retiré du plan, fiche conservée.')};
+$('addToken').onclick=()=>{const name=$('tokenName').value.trim();if(!name){message('Écris un nom.');return}const t={id:'token'+Math.random().toString(36).slice(2,10),name,kind:$('tokenKind').value,speed:9,visible:true,x:null,y:null};data.tokens.push(t);$('tokenName').value='';store();$('activeToken').value=t.id;message(name+' ajouté ; utilise « Placer / déplacer un pion ».')};
+for(const r of rooms)$('roomSelect').add(new Option(r.name,r.id));
+
+// Show the same map in every MJ tab via sticky miniBoard.
+let activeTab='map',selectedSheetId=null,serverConnected=false,serverRev=0,serverSaving=false,serverQueued=false,serverSaveTimer=null,serverLoadDone=false;
+function openTab(tab,sheetId){activeTab=tab;if(sheetId)selectedSheetId=sheetId;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active-panel',p.dataset.panel===tab));if(tab==='sheets')renderSheets();if(tab==='shoulkar')renderShoulkar();refresh()}
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>openTab(b.dataset.tab)));
+function spawnParty(){const room=byId(selectedRoom);if(!room)return;const members=data.tokens.filter(t=>t.kind==='PJ');if(!members.length){message('Ajoute un pion de type PJ avant de faire apparaître le groupe.');return}let count=0;const spots=[];for(let yy=room.y+1;yy<room.y+room.h;yy++)for(let xx=room.x+1;xx<room.x+room.w;xx++)spots.push([xx,yy]);for(let yy=room.y;yy<room.y+room.h;yy++)for(let xx=room.x;xx<room.x+room.w;xx++)if(!spots.some(s=>s[0]===xx&&s[1]===yy))spots.push([xx,yy]);for(const t of members){const [x,y]=spots[count%spots.length];t.x=x;t.y=y;t.visible=true;count++}data.seen[room.id]=true;store();message(count+' PJ apparaissent ensemble dans '+room.name+'. Tu peux maintenant les déplacer individuellement dans le grand écran.');}
+$('spawnParty').onclick=spawnParty;
+// Drag a visible token on the full-size player window. Exploration remains GM-controlled.
+function bindPlayerDrag(c){let drag=null;
+  const locate=e=>{const pt=canvasPoint(e,c);return {x:Math.floor((pt.x-X)/B),y:Math.floor((pt.y-Y)/B)}};
+  c.style.touchAction='none';
+  c.addEventListener('pointerdown',e=>{if(e.button!==0)return;const p=locate(e);const t=[...data.tokens].reverse().find(t=>t.x===p.x&&t.y===p.y&&t.visible&&at(t.x,t.y)&&data.seen[at(t.x,t.y).id]);if(!t)return;drag={id:t.id,start:{x:e.clientX,y:e.clientY}};c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';e.preventDefault()});
+  c.addEventListener('pointermove',e=>{if(!drag)return;c.style.cursor='grabbing';});
+  c.addEventListener('pointercancel',()=>{drag=null;c.style.cursor='crosshair'});
+  c.addEventListener('pointerup',e=>{if(!drag)return;const t=data.tokens.find(t=>t.id===drag.id);drag=null;c.style.cursor='crosshair';if(!t)return;const p=locate(e),room=at(p.x,p.y);if(!room||!data.seen[room.id]){message('Déplacement annulé : cette pièce n’est pas encore révélée.');return}if(p.x===t.x&&p.y===t.y)return;$('activeToken').value=t.id;moveToken(p.x,p.y,room);});
+}
+function renderShoulkar(){const s=data.shoulkar;for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(s[key]??0)}if(document.activeElement!==$('shNotes'))$('shNotes').value=s.notes||'';}
+for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){$(id).addEventListener('change',e=>{data.shoulkar[key]=Number(e.target.value)||0;if(key==='maxHp')data.shoulkar.hp=Math.min(data.shoulkar.hp,data.shoulkar.maxHp);const t=data.tokens.find(x=>x.id==='parasite');if(t&&key==='speed')t.speed=data.shoulkar.speed;store();renderShoulkar()})}
+$('shNotes').addEventListener('change',e=>{data.shoulkar.notes=e.target.value;store()});
+for(const [id,delta] of [['shDmg5',-5],['shDmg10',-10],['shHeal5',5]])$(id).onclick=()=>{data.shoulkar.hp=Math.max(0,Math.min(data.shoulkar.maxHp,data.shoulkar.hp+delta));store();renderShoulkar()};
+$('shReset').onclick=()=>{data.shoulkar.hp=data.shoulkar.maxHp;store();renderShoulkar()};
+$('shPlace').onclick=()=>{const t=data.tokens.find(x=>x.id==='parasite');if(!t)return;openTab('map');$('activeToken').value=t.id;$('tool').value='move';message('Shoulkar sélectionné. Clique sur la carte MJ pour le placer.')};
+function makeSheet(name){return {id:'f'+Math.random().toString(36).slice(2,10),tokenId:null,name:name||'Nouvelle fiche',characterClass:'',race:'',level:3,hp:20,maxHp:20,ac:12,initiative:0,speed:9,str:'',dex:'',con:'',int:'',wis:'',cha:'',notes:'',filename:'',filetype:''}}
+function simplifyJson(o,filename){const sheet=makeSheet(o?.name||o?.character?.name||o?.characterName||filename.replace(/\.json$/i,''));const c=o?.character||o||{};sheet.characterClass=c.class||c.characterClass||c.classes?.[0]?.name||'';sheet.race=c.race?.fullName||c.race?.name||c.race||'';sheet.level=Number(c.level||c.levels||3)||3;sheet.hp=Number(c.hp??c.hitPoints?.current??c.hitPoints??20)||20;sheet.maxHp=Number(c.maxHp??c.hitPoints?.max??sheet.hp)||sheet.hp;sheet.ac=Number(c.ac??c.armorClass??c.defenses?.ac??12)||12;sheet.speed=Number(c.speed??c.walkingSpeed??9)||9;sheet.notes=typeof c.notes==='string'?c.notes:'';return sheet;}
+let imageURLs=new Map();
+function openSheetDB(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('Stockage de pièces jointes indisponible'));return}const req=indexedDB.open('atelier-jdr-manoir-v3-files',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('files'))req.result.createObjectStore('files')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+async function saveAttachment(id,file){const db=await openSheetDB();return new Promise((resolve,reject)=>{const tx=db.transaction('files','readwrite');tx.objectStore('files').put(file,id);tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+async function getAttachment(id){const db=await openSheetDB();return new Promise((resolve,reject)=>{const tx=db.transaction('files','readonly'),req=tx.objectStore('files').get(id);req.onsuccess=()=>{db.close();resolve(req.result)};req.onerror=()=>{db.close();reject(req.error)}})}
+async function deleteAttachment(id){try{const db=await openSheetDB();const tx=db.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=()=>db.close()}catch(e){}}
+function renderSheets(){const tabs=$('sheetTabs'),body=$('sheetContent');tabs.replaceChildren();body.replaceChildren();for(const sheet of data.sheets){const b=document.createElement('button');b.className=sheet.id===selectedSheetId?'active':'';b.textContent=sheet.name;b.onclick=()=>{selectedSheetId=sheet.id;renderSheets()};tabs.append(b)}if(!data.sheets.length){body.textContent='Aucune fiche importée. Clique sur « Ajouter » ou « Importer » pour commencer.';return}let sheet=data.sheets.find(s=>s.id===selectedSheetId)||data.sheets[0];selectedSheetId=sheet.id;const title=document.createElement('h2');title.textContent=sheet.name;body.append(title);const grid=document.createElement('div');grid.className='sheet-grid';body.append(grid);
+const fields=[['Nom','name','text'],['Classe','characterClass','text'],['Race','race','text'],['Niveau','level','number'],['PV actuels','hp','number'],['PV max','maxHp','number'],['Classe d’armure','ac','number'],['Initiative','initiative','number'],['Vitesse (m)','speed','number']];for(const [label,key,type] of fields){const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.type=type;input.value=sheet[key]??'';input.onchange=()=>{sheet[key]=type==='number'?Number(input.value)||0:input.value;store();renderSheets()};wrap.append(input);grid.append(wrap)}
+const nLabel=document.createElement('label');nLabel.textContent='Notes MJ et capacités';nLabel.className='wide';const ta=document.createElement('textarea');ta.value=sheet.notes||'';ta.onchange=()=>{sheet.notes=ta.value;store()};nLabel.append(ta);grid.append(nLabel);
+const actions=document.createElement('div');actions.className='row';actions.style.marginTop='12px';body.append(actions);const place=document.createElement('button');place.textContent='Placer cette fiche sur la carte';place.onclick=()=>{let token=data.tokens.find(t=>t.id===sheet.tokenId);if(!token){token={id:'char'+sheet.id,name:sheet.name,kind:'PJ',speed:Number(sheet.speed)||9,visible:true,x:null,y:null};data.tokens.push(token);sheet.tokenId=token.id;store()}token.name=sheet.name;openTab('map');$('activeToken').value=token.id;$('tool').value='move';message('Clique sur la carte pour placer '+sheet.name)};actions.append(place);
+const del=document.createElement('button');del.textContent='Supprimer la fiche';del.onclick=()=>{if(!confirm('Supprimer la fiche '+sheet.name+' ? (Le pion reste.)'))return;data.sheets=data.sheets.filter(s=>s.id!==sheet.id);deleteAttachment(sheet.id);selectedSheetId=data.sheets[0]?.id||null;store();renderSheets()};actions.append(del);
+if(sheet.filename){const fileInfo=document.createElement('p');fileInfo.textContent='Document importé : '+sheet.filename+' (stocké uniquement dans ce navigateur sur ce PC)';body.append(fileInfo);const open=document.createElement('button');open.textContent='Voir le document source';body.append(open);open.onclick=async()=>{try{const blob=await getAttachment(sheet.id);if(!blob)throw Error('Document absent : réimporte-le.');const prev=body.querySelector('.attachment-preview');if(prev)prev.remove();const url=URL.createObjectURL(blob);const frame=document.createElement(sheet.filetype.startsWith('image/')?'img':'iframe');frame.className='attachment-preview';frame.src=url;frame.alt='Document original';body.append(frame);setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){message(e.message)}}}
+}
+$('addSheet').onclick=()=>{const sheet=makeSheet('Nouvelle fiche');data.sheets.push(sheet);selectedSheetId=sheet.id;store();openTab('sheets',sheet.id)};
+$('importSheet').onclick=()=>$('sheetFiles').click();
+$('sheetFiles').addEventListener('change',async e=>{const files=[...e.target.files];for(const file of files){try{let sheet;if(file.name.toLowerCase().endsWith('.json')){const raw=JSON.parse(await file.text());sheet=simplifyJson(raw,file.name)}else if(file.type==='application/pdf'||file.type.startsWith('image/')){sheet=makeSheet(file.name.replace(/\.[^.]+$/,''));sheet.filename=file.name;sheet.filetype=file.type;await saveAttachment(sheet.id,file)}else{message('Format non accepté : '+file.name);continue}data.sheets.push(sheet);selectedSheetId=sheet.id;store()}catch(err){message('Impossible d’importer '+file.name+' : '+err.message)}}e.target.value='';openTab('sheets',selectedSheetId)});
+// Export/import stable even when the user switches from downloaded HTML to Atelier TEST.
+$('exportJdr').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='manoir-goblin-sauvegarde-v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)};
+$('importJdr').onclick=()=>$('importJdrFile').click();
+$('importJdrFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const d=JSON.parse(await file.text());if(!d||![2,3].includes(d.version)||!d.seen||!Array.isArray(d.tokens))throw Error('Format non reconnu');if(!confirm('Remplacer la partie actuelle par ce fichier ?'))return;Object.assign(data,d);normaliseData();store();message('Sauvegarde importée.')}catch(err){message(err.message)}e.target.value=''});
+// Same-origin private API: no data sent to third-party services.
+function syncLabel(msg){const x=$('syncStatus');if(x)x.textContent=msg}
+function scheduleServerSave(){if(!serverLoadDone)return;serverQueued=true;if(serverSaveTimer)clearTimeout(serverSaveTimer);serverSaveTimer=setTimeout(flushServer,230)}
+async function flushServer(){if(!serverConnected||serverSaving||!serverQueued)return;serverSaving=true;serverQueued=false;const snapshot=JSON.parse(JSON.stringify(data));try{const response=await fetch('/api/jdr/manoir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rev:serverRev,state:snapshot})});const body=await response.json();if(response.status===409){serverConnected=false;syncLabel('Conflit avec une autre fenêtre : exporte puis recharge la partie.');message('Une autre console MJ a modifié la partie : les données locales sont conservées, pas écrasées.');return}if(!response.ok)throw Error(body.error||'Échec serveur');serverRev=body.rev;syncLabel('Relié à L’Atelier · sauvegarde réussie')}catch(e){syncLabel('Mode local : sauvegarde Atelier indisponible')}finally{serverSaving=false;if(serverQueued)flushServer()}}
+async function setupServerState(){// file:// offline standalone remains fully usable.
+  if(location.protocol==='file:'){serverLoadDone=true;syncLabel('Mode autonome · copie locale (export JSON conseillé)');return}
+  try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)throw Error('API manoir absente');const result=await r.json();serverRev=Number(result.rev)||0;if(result.state&&Array.isArray(result.state.tokens)&&result.state.seen){Object.assign(data,result.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderSheets();}serverConnected=true;serverLoadDone=true;syncLabel('Relié à L’Atelier · sauvegarde partagée');if(!result.state){serverQueued=true;flushServer()}}
+  catch(e){serverConnected=false;serverLoadDone=true;syncLabel('Mode local (API non disponible) · JSON exportable')}
+  setInterval(async()=>{if(!serverConnected||serverSaving||serverQueued||document.hidden)return;try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote.rev>serverRev&&remote.state){serverRev=remote.rev;Object.assign(data,remote.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();if(activeTab==='sheets')renderSheets();syncLabel('L’Atelier synchronisé · révision '+serverRev)}}catch(e){}},1500);
+}
+
+load();normaliseData();refresh();openTab('map');renderShoulkar();setupServerState();
+})();
+</script>
+</body></html>
