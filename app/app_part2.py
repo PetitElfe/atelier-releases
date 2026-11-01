@@ -235,6 +235,17 @@ class Handler(BaseHTTPRequestHandler):
                 except (OSError,ValueError):
                     notes=[]
             return self._json(notes)
+        if p == '/api/jdr/manoir':
+            # V3 manor is independent from the legacy /api/jdr/state tabletop.
+            # A separate save prevents the old JDR table from erasing the new map.
+            path = DATA / 'jdr-manoir-v3.json'
+            with _jdr_lock:
+                try:
+                    obj = json.loads(path.read_text(encoding='utf-8'))
+                    if not isinstance(obj,dict): obj = {'rev':0,'state':None}
+                except (OSError,ValueError):
+                    obj = {'rev':0,'state':None}
+            return self._json(obj)
         if p == '/api/jdr/state':
             path = DATA / 'jdr-session.json'
             with _jdr_lock:
@@ -562,6 +573,41 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p == '/api/jdr/manoir':
+            # Same-origin JSON writes only; reject cross-site requests to the MJ state.
+            origin = self.headers.get('Origin', '')
+            if origin and origin != f'http://{HOST}:{PORT}':
+                return self._json({'error':'Origine refusée'},403)
+            try:
+                n = int(self.headers.get('Content-Length','0'))
+            except ValueError:
+                return self._json({'error':'Taille invalide'},400)
+            if n < 2 or n > 2000000:
+                return self._json({'error':'Sauvegarde du manoir limitée à 2 Mo'},413)
+            body = self._body()
+            state = body.get('state') if isinstance(body,dict) else None
+            if (not isinstance(state,dict) or state.get('version') != 3 or
+                not isinstance(state.get('seen'),dict) or not isinstance(state.get('tokens'),list) or
+                not isinstance(state.get('sheets',[]),list)):
+                return self._json({'error':'État du manoir V3 invalide'},400)
+            path = DATA / 'jdr-manoir-v3.json'
+            with _jdr_lock:
+                try:
+                    previous=json.loads(path.read_text(encoding='utf-8'))
+                    rev=int(previous.get('rev',0))
+                except (OSError,ValueError,TypeError):
+                    rev=0
+                try:
+                    proposed=int(body.get('rev',0))
+                except (ValueError,TypeError):
+                    return self._json({'error':'Révision invalide'},400)
+                if proposed != rev:
+                    return self._json({'error':'Conflit : une autre console a changé la carte','rev':rev},409)
+                result={'rev':rev+1,'state':state}
+                tmp=path.with_suffix('.tmp')
+                tmp.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
+                os.replace(tmp,path)
+            return self._json({'ok':True,'rev':rev+1})
         if p == '/api/mobile/notes':
             origin=self.headers.get('Origin','')
             host=self.headers.get('Host','').lower().strip()
