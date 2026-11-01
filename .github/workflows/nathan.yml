@@ -94,7 +94,7 @@ jobs:
               throw "Nathan frozen Python server did not start"
             }
             if(-not(Test-Path (Join-Path $userRoot 'data\atelier.db'))){throw 'Fresh Nathan SQLite missing'}
-            foreach($blocked in @('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/api/jdr/manoir','/api/jdr/state')) {
+            foreach($blocked in @('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/jdr-legacy.html','/api/jdr/manoir','/api/jdr/state')) {
               try { Invoke-WebRequest -UseBasicParsing -Uri ('http://127.0.0.1:8877'+$blocked) -TimeoutSec 4 | Out-Null; throw ('Nathan leaked JDR: '+$blocked) }
               catch { if(-not $_.Exception.Response -or [int]$_.Exception.Response.StatusCode -ne 404){ throw } }
             }
