@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "2c37fe895479d90b8fafcc052e0fddb65512b0a1fa74a277aaa8f6f722394d5d"
+      "sha256": "9a1202a07ff8f025fb771d48e4322bb3ab7d28277fdf00632fd1e0673ac6875e"
     },
     {
       "path": "public/interface_reference.css",
@@ -100,16 +100,20 @@
       "sha256": "802d9537144f33c3e67df222f4a24baf197d6bc9af0598ff720ee718a48d984a"
     },
     {
+      "path": "public/jdr-legacy.html",
+      "sha256": "09342a53c37913a8306571dc1024f684c34ee78f25d99ff074b368d9ec49fc23"
+    },
+    {
       "path": "public/jdr-manoir.html",
       "sha256": "2e712c1803f1ccf60eb0938be20ffa730f389de50586f5442498a7511c7f1414"
     },
     {
       "path": "public/jdr-mj.html",
-      "sha256": "e2edcdf79eb6cd8e18a0964dcab9e75bc585bf4362a6473e012da345503674bc"
+      "sha256": "d34bead44a3af489a06a04b86d536bfed9c28884639c1095d4b6145f9b85471a"
     },
     {
       "path": "public/jdr.html",
-      "sha256": "09342a53c37913a8306571dc1024f684c34ee78f25d99ff074b368d9ec49fc23"
+      "sha256": "b33069143a423a767ef9ae3de6aca1a4a64d8f9e8694f49010adfc1f09f1ff9a"
     },
     {
       "path": "public/life_tools.css",
