@@ -31,6 +31,8 @@ async function main(){
    return state&&state.seen.hall&&state.tokens.filter(x=>x.kind==='PJ').every(x=>x.x!==null);
   },{timeout:15000});
   let state=await getState();
+  const local=await page.evaluate(()=>JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v3')));
+  console.log('DEBUG JDR group local/server:',JSON.stringify(local?.tokens?.filter(x=>x.kind==='PJ')),JSON.stringify(state?.tokens?.filter(x=>x.kind==='PJ')));
   const pj=state.tokens.filter(x=>x.kind==='PJ');
   assert.equal(pj.length,3);
   assert.equal(new Set(pj.map(t=>t.x+','+t.y)).size,3,'Group is not stacked: '+JSON.stringify(pj));
