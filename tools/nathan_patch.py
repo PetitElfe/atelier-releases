@@ -72,24 +72,22 @@ def patch_stage(stage):
     # Apply this to first installs AND update staging, keeping original TEST intact.
     index_path=stage/'app'/'public'/'index.html'
     index=index_path.read_text(encoding='utf-8')
-    for button in (
-        '<button type="button" id="openJdrWorkspace" onclick="window.location.href=\'/jdr-manoir.html\'">Table JDR — Manoir</button>',
-        '<button type="button" id="openLegacyJdrWorkspace" onclick="window.location.href=\'/jdr.html\'">Ancienne table JDR</button>',
-    ):
-        index=replace_one(index,button,'')
+    index=replace_one(index,
+        '<button type="button" id="openJdrWorkspace" onclick="window.location.href=\'/jdr.html\'">Table JDR</button>',
+        '')
     index_path.write_text(index,encoding='utf-8')
     entry=next((f for f in manifest['files'] if f['path']=='public/index.html'),None)
     if entry is None:
         raise RuntimeError('Page index.html manquante dans le paquet Nathan')
     entry['sha256']=hashlib.sha256(index_path.read_bytes()).hexdigest()
-    forbidden=('public/jdr.html','public/jdr-mj.html','public/jdr-manoir.html')
+    forbidden=('public/jdr.html','public/jdr-mj.html','public/jdr-manoir.html','public/jdr-legacy.html')
     for filename in forbidden:
         (stage/'app'/filename).unlink(missing_ok=True)
     manifest['files']=[f for f in manifest['files'] if f['path'] not in forbidden]
     # Hide private JDR API routes in Nathan's server as well, not only its UI.
     server_path=stage/'app'/'app_part2.py'
     server=server_path.read_text(encoding='utf-8')
-    guard="        if p.startswith('/api/jdr/') or p in ('/jdr.html','/jdr-mj.html','/jdr-manoir.html'):\n            return self._json({'error':'not found'},404)\n"
+    guard="        if p.startswith('/api/jdr/') or p in ('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/jdr-legacy.html'):\n            return self._json({'error':'not found'},404)\n"
     server=replace_one(server,
         "    def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)\n",
         "    def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)\n"+guard)
