@@ -134,7 +134,8 @@ body.player-mode #playerStage{display:flex;position:fixed;inset:0;z-index:120;ba
 (()=>{'use strict';
 const $=id=>document.getElementById(id),board=$('board'),B=46,X=85,Y=76,W=20,H=14;
 const key='goblin-manoir-carte-unique-v3';let playerWin=null,selectedRoom='hall';
-const playerMode=new URLSearchParams(location.search).get('mode')==='players';
+// The main Atelier JDR entry is the players' full-size game board. GM controls stay in their own window.
+const playerMode=new URLSearchParams(location.search).get('mode')!=='mj';
 if(playerMode)document.body.classList.add('player-mode');
 // Toutes les coordonnées décrivent le plan APRÈS rotation de 180° : le hall est au sud.
 // Une case de 46 pixels représente exactement 1,5 m / 5 ft.
