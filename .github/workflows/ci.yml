@@ -68,6 +68,8 @@ jobs:
           npx playwright install --only-shell chromium
       - name: Verify Manor V3 player window, reveal, group movement and sheets
         run: node tools/jdr_manoir_v3_browser_test.cjs
+      - name: Verify Atelier full-size player map and separated MJ console
+        run: node tools/jdr_player_window_browser_test.cjs
       - name: Verify calendar creation and weekly appointment contrast
         run: node tools/calendar_priority_browser_test.cjs
       - name: Verify expanded upcoming appointments above the journal
