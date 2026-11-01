@@ -30,6 +30,8 @@ async function main(){
   assert.deepEqual(atlas,{width:1120,height:770});
   await page.locator('#roomSelect').selectOption('hall');
   await page.locator('#spawnParty').click();
+  await page.waitForTimeout(700);
+  console.log('DEBUG after summon:',await page.locator('#syncStatus').innerText(),'status:',await page.locator('#status').innerText(),'errors:',JSON.stringify(errors));
   let state=await waitForState(s=>s&&s.seen.hall&&s.tokens.filter(x=>x.kind==='PJ').every(x=>x.x!=null),'group spawn');
   const local=await page.evaluate(()=>JSON.parse(localStorage.getItem('goblin-manoir-carte-unique-v3')));
   const pj=state.tokens.filter(x=>x.kind==='PJ');
