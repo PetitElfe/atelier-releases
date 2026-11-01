@@ -72,6 +72,27 @@ async function main(){
   await page.locator('#sheetFiles').setInputFiles({name:'rodeur.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(imported))});
   await page.waitForFunction(()=>document.querySelectorAll('#sheetTabs button').length>=2);
   assert.ok((await page.locator('#sheetTabs').innerText()).includes('Rôdeur'));
+  // A roster bundle is imported without publishing player data to the public repo.
+  const roster={format:'atelier-manoir-roster-v1',characters:[
+    {id:'test-pj-a',name:'Personnage A',level:3,hp:26,maxHp:26,tempHp:3,ac:18,speed:9,
+     actions:[{type:'Action',detail:'Attaquer'}],attacks:[{name:'Épée',bonus:'+3',damage:'1d8+3'}],
+     resources:[{name:'Inspiration',max:2,used:0,detail:'2 charges'}],sessionNotes:'Souvenir test'},
+    {id:'test-pj-b',name:'Personnage B',level:3,hp:21,maxHp:21,ac:11,speed:9},
+    {id:'test-pj-c',name:'Personnage C',level:3,hp:25,maxHp:25,ac:15,speed:9}
+  ]};
+  await page.locator('#sheetFiles').setInputFiles({name:'roster-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(roster))});
+  await page.waitForFunction(()=>document.querySelectorAll('#sheetTabs button').length>=5);
+  await page.locator('#sheetTabs button').filter({hasText:'Personnage A'}).click();
+  const hpHeading=page.locator('.pj-combat p').first();
+  assert.ok((await hpHeading.innerText()).includes('PV 26/26'));
+  await page.locator('.pj-combat input[type=number]').first().fill('5');
+  await page.locator('.pj-combat button').filter({hasText:'− Dégâts'}).click();
+  assert.ok((await page.locator('.pj-combat p').first().innerText()).includes('PV 24/26'), 'Temporary HP must absorb 3 of 5 damage');
+  await page.locator('.pj-combat button').filter({hasText:'Bonus'}).click();
+  await page.locator('.pj-combat button').filter({hasText:'Utiliser'}).first().click();
+  await page.locator('.pj-combat textarea').fill('Indice trouvé sous la bibliothèque');
+  await page.locator('.pj-combat textarea').press('Tab');
+  await waitForState(s=>s?.sheets?.some(x=>x.id==='test-pj-a'&&x.hp===24&&x.turn.bonus===0&&x.resources[0].used===1&&x.sessionNotes.includes('bibliothèque')),'3-player roster, temp HP, actions, resources and notes persistence');
   await waitForState(s=>s?.shoulkar?.hp===43&&s?.sheets?.some(x=>x.name==='Rôdeur')&&s?.sheets?.some(x=>x.name==='Sorcière du groupe'),'sheet persistence');
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.getElementById('syncStatus').textContent.includes('Relié à L’Atelier'));
