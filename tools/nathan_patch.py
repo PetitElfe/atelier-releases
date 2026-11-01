@@ -80,14 +80,14 @@ def patch_stage(stage):
     if entry is None:
         raise RuntimeError('Page index.html manquante dans le paquet Nathan')
     entry['sha256']=hashlib.sha256(index_path.read_bytes()).hexdigest()
-    forbidden=('public/jdr.html','public/jdr-mj.html','public/jdr-manoir.html','public/jdr-legacy.html')
+    forbidden=('public/jdr.html','public/jdr-mj.html','public/jdr-manoir.html','public/jdr-legacy.html','public/jdr-roster-manoir.json')
     for filename in forbidden:
         (stage/'app'/filename).unlink(missing_ok=True)
     manifest['files']=[f for f in manifest['files'] if f['path'] not in forbidden]
     # Hide private JDR API routes in Nathan's server as well, not only its UI.
     server_path=stage/'app'/'app_part2.py'
     server=server_path.read_text(encoding='utf-8')
-    guard="        if p.startswith('/api/jdr/') or p in ('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/jdr-legacy.html'):\n            return self._json({'error':'not found'},404)\n"
+    guard="        if p.startswith('/api/jdr/') or p in ('/jdr.html','/jdr-mj.html','/jdr-manoir.html','/jdr-legacy.html','/jdr-roster-manoir.json'):\n            return self._json({'error':'not found'},404)\n"
     server=replace_one(server,
         "    def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)\n",
         "    def do_GET(self):\n        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)\n"+guard)
