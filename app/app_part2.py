@@ -647,11 +647,11 @@ class Handler(BaseHTTPRequestHandler):
                 tmp.write_text(json.dumps(cleaned,ensure_ascii=False),encoding='utf-8')
                 os.replace(tmp,path)
             return self._json({'ok':True,'count':len(cleaned)})
-        if p in ('/api/jdr/state','/api/jdr/open-mj'):
+        if p in ('/api/jdr/state','/api/jdr/open-mj','/api/jdr/open-manoir-mj'):
             origin = self.headers.get('Origin', '')
             if origin and origin not in (f'http://{HOST}:{PORT}',):
                 return self._json({'error':'Origine refusée'},403)
-            if p == '/api/jdr/open-mj':
+            if p in ('/api/jdr/open-mj','/api/jdr/open-manoir-mj'):
                 if os.name != 'nt':
                     return self._json({'error':'La fenêtre autonome nécessite Windows.'},409)
                 import subprocess
@@ -664,7 +664,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not edge:
                     return self._json({'error':'Microsoft Edge introuvable : impossible d’ouvrir la fenêtre indépendante.'},409)
                 try:
-                    subprocess.Popen([edge,'--app='+f'http://{HOST}:{PORT}/jdr-mj.html',
+                    subprocess.Popen([edge,'--app='+f'http://{HOST}:{PORT}'+('/jdr-manoir.html?mode=mj' if p == '/api/jdr/open-manoir-mj' else '/jdr-mj.html'),
                         '--window-size=1200,850'], stdin=subprocess.DEVNULL,
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                         creationflags=getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0))
