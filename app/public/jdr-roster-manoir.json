@@ -52,7 +52,19 @@
         },
         {
           "type": "Réaction",
-          "detail": "Attaque d'opportunité ou manœuvre appropriée."
+          "detail": "Attaque d'opportunité si disponible ; les trois manœuvres choisies ne nécessitent pas de réaction."
+        },
+        {
+          "type": "Attaque de poussée",
+          "detail": "Sur un coup réussi, +1d8 dégâts et sauvegarde de Force DD 12 pour repousser jusqu'à 4,5 m. Consomme 1 dé de supériorité."
+        },
+        {
+          "type": "Provocation",
+          "detail": "Sur un coup réussi, +1d8 dégâts et sauvegarde Sagesse DD 12 ; désavantage contre les autres cibles jusqu'à fin prochain tour. Consomme 1 dé."
+        },
+        {
+          "type": "Ralliement (bonus)",
+          "detail": "Donne 1d8+1 PV temporaires à un allié dans les 9 m. Consomme une action bonus et 1 dé."
         }
       ],
       "resources": [
@@ -74,17 +86,66 @@
       ],
       "features": [
         {
-          "name": "Maître de guerre",
-          "detail": "Trois manœuvres à noter (pas choisies sur la feuille)."
+          "name": "Maître de guerre (3 manœuvres choisies)",
+          "detail": "Attaque de poussée, Provocation, Ralliement. DD 12 avec la Dextérité (+2). 4 dés de supériorité d8 par repos court ou long."
+        },
+        {
+          "name": "Attaque de poussée",
+          "detail": "Sur une attaque qui touche — Dépense 1 dé de supériorité (d8), ajoute le résultat aux dégâts. Si la cible est de taille G ou inférieure, elle doit réussir un jet de Force DD 12 ou être repoussée de 4,5 m maximum."
+        },
+        {
+          "name": "Provocation",
+          "detail": "Sur une attaque qui touche — Dépense 1 dé de supériorité (d8), ajoute le résultat aux dégâts. La cible fait une sauvegarde de Sagesse DD 12 ou subit un désavantage aux attaques contre tes alliés jusqu’à la fin de ton prochain tour."
+        },
+        {
+          "name": "Ralliement",
+          "detail": "Action bonus — Dépense 1 dé de supériorité (d8) ; un allié à 9 m qui peut te voir ou t'entendre gagne 1d8+1 PV temporaires (règles 2024, niveau 3)."
         }
       ],
       "notes": "",
       "checks": [
         "La personnalité ci-dessus est une proposition de la MJ, à adapter librement avec Nathan.",
-        "La fiche d'Earendil servait de modèle : ne pas importer ses aptitudes de barde, ses sorts, sa flûte ni sa personnalité dans la fiche de Ponga. Son armure, sa monnaie, ses manœuvres et ses choix personnels restent à confirmer."
+        "Manœuvres définitivement choisies par Nathan : Attaque de poussée, Provocation, Ralliement. Équipement parmi A/B/C à choisir : aucun ensemble n'est attribué avant sa réponse."
       ],
       "equipment": [],
-      "biography": "Ponga a fui un cirque où l'on le forçait à jouer le bouffon. Un kobold a fui avec lui : son premier véritable ami. Il l'aide même lorsqu'il a peur. Loyal et ingénieux, il guette toujours les sorties et redoute la trahison. Il pense que personne ne doit être exposé comme une bête de foire. Son but est de trouver un foyer où ils seront libres tous les deux. Proposition de personnalité à confirmer avec Nathan."
+      "biography": "Ponga a fui un cirque où l'on le forçait à jouer le bouffon. Un kobold a fui avec lui : son premier véritable ami. Il l'aide même lorsqu'il a peur. Loyal et ingénieux, il guette toujours les sorties et redoute la trahison. Il pense que personne ne doit être exposé comme une bête de foire. Son but est de trouver un foyer où ils seront libres tous les deux. Proposition de personnalité à confirmer avec Nathan.",
+      "maneuvers": [
+        {
+          "name": "Attaque de poussée",
+          "type": "Sur une attaque qui touche",
+          "detail": "Dépense 1 dé de supériorité (d8), ajoute le résultat aux dégâts. Si la cible est de taille G ou inférieure, elle doit réussir un jet de Force DD 12 ou être repoussée de 4,5 m maximum."
+        },
+        {
+          "name": "Provocation",
+          "type": "Sur une attaque qui touche",
+          "detail": "Dépense 1 dé de supériorité (d8), ajoute le résultat aux dégâts. La cible fait une sauvegarde de Sagesse DD 12 ou subit un désavantage aux attaques contre tes alliés jusqu’à la fin de ton prochain tour."
+        },
+        {
+          "name": "Ralliement",
+          "type": "Action bonus",
+          "detail": "Dépense 1 dé de supériorité (d8) ; un allié à 9 m qui peut te voir ou t'entendre gagne 1d8+1 PV temporaires (règles 2024, niveau 3)."
+        }
+      ],
+      "maneuverSaveDC": 12,
+      "equipmentOptions": [
+        {
+          "id": "scale",
+          "name": "A — Ponga protecteur (recommandé)",
+          "detail": "Armure d'écailles (14 + DEX max. 2), bouclier (+2) = CA 18, épée longue, hache d'armes, espadon rangé, sac d'exploration. Désavantage en Discrétion avec les écailles. Ce paquet est une proposition de MJ, pas le paquet de départ 2024."
+        },
+        {
+          "id": "breastplate",
+          "name": "B — Ponga discret",
+          "detail": "Cuirasse (14 + DEX max. 2), bouclier (+2) = CA 18, même arsenal ; pas de désavantage en Discrétion. Cuirasse coûteuse : uniquement si la MJ autorise qu'il en possède une."
+        },
+        {
+          "id": "chain",
+          "name": "C — Ponga chevalier d'acier",
+          "detail": "Cotte de mailles (CA 16), bouclier (+2) = CA 18, épée longue et hache d'armes. Attention : Force 12 inférieure au prérequis 13 de la cotte, donc vitesse réduite de 3 m (9 → 6 m) en règles 2024."
+        }
+      ],
+      "equipmentChoice": "",
+      "equipmentConfirmed": false
     },
     {
       "id": "roster-earendil",
