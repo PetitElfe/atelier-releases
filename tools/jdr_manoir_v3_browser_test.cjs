@@ -32,7 +32,7 @@ async function main(){
   let state=await getState();
   const pj=state.tokens.filter(x=>x.kind==='PJ');
   assert.equal(pj.length,3);
-  assert.equal(new Set(pj.map(t=>t.x+','+t.y)).size,3,'Group is not stacked');
+  assert.equal(new Set(pj.map(t=>t.x+','+t.y)).size,3,'Group is not stacked: '+JSON.stringify(pj));
   assert.ok(pj.every(t=>t.y>=10&&t.y<=12),'Spawned in south hall');
   const popupPromise=page.waitForEvent('popup');
   await page.locator('#openPlayers').click();
