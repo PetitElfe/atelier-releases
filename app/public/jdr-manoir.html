@@ -272,6 +272,32 @@ function normalizeSheet(s){
  if(typeof s.sessionNotes!=='string')s.sessionNotes='';
  return s;
 }
+// These are GM combat records transcribed from the original player sheets.
+ // The import is additive: it never replaces a character already edited in the campaign.
+async function ensureManorRoster(){
+ if(playerMode)return;
+ try{
+   const response=await fetch('/jdr-roster-manoir.json',{cache:'no-store'});
+   if(!response.ok)return;
+   const pack=await response.json();
+   if(!Array.isArray(pack.characters))return;
+   let added=false;
+   for(const character of pack.characters){
+     if(!character||!character.id||!character.name)continue;
+     if(data.sheets.some(x=>x.id===character.id||x.name.toLocaleLowerCase('fr')===character.name.toLocaleLowerCase('fr')))continue;
+     const base=makeSheet(character.name);
+     data.sheets.push({...base,...character,notes:'',sessionNotes:''});
+     const pawn=data.tokens.find(x=>x.id===character.tokenId);
+     if(pawn&&/^PJ [123]$/.test(pawn.name)){pawn.name=character.name;pawn.speed=Number(character.speed)||9}
+     added=true;
+   }
+   if(added){
+     store();
+     if(activeTab==='sheets')renderSheets();
+     message('Trois fiches personnages importées dans la console MJ ; sauvegarde en cours.');
+   }
+ }catch(e){console.warn('[Manoir] Préchargement des fiches non disponible',e)}
+}
 function simplifyJson(o,filename){const sheet=makeSheet(o?.name||o?.character?.name||o?.characterName||filename.replace(/\.json$/i,''));const c=o?.character||o||{};sheet.characterClass=c.class||c.characterClass||c.classes?.[0]?.name||'';sheet.race=c.race?.fullName||c.race?.name||c.race||'';sheet.level=Number(c.level||c.levels||3)||3;sheet.hp=Number(c.hp??c.hitPoints?.current??c.hitPoints??20)||20;sheet.maxHp=Number(c.maxHp??c.hitPoints?.max??sheet.hp)||sheet.hp;sheet.ac=Number(c.ac??c.armorClass??c.defenses?.ac??12)||12;sheet.speed=Number(c.speed??c.walkingSpeed??9)||9;sheet.notes=typeof c.notes==='string'?c.notes:'';return sheet;}
 let imageURLs=new Map();
 function openSheetDB(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('Stockage de pièces jointes indisponible'));return}const req=indexedDB.open('atelier-jdr-manoir-v3-files',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('files'))req.result.createObjectStore('files')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
@@ -280,6 +306,46 @@ async function getAttachment(id){const db=await openSheetDB();return new Promise
 async function deleteAttachment(id){try{const db=await openSheetDB();const tx=db.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=()=>db.close()}catch(e){}}
 function renderSheets(){const tabs=$('sheetTabs'),body=$('sheetContent');tabs.replaceChildren();body.replaceChildren();for(const sheet of data.sheets){const b=document.createElement('button');b.className=sheet.id===selectedSheetId?'active':'';b.textContent=sheet.name;b.onclick=()=>{selectedSheetId=sheet.id;renderSheets()};tabs.append(b)}if(!data.sheets.length){body.textContent='Aucune fiche importée. Clique sur « Ajouter » ou « Importer » pour commencer.';return}let sheet=data.sheets.find(s=>s.id===selectedSheetId)||data.sheets[0];selectedSheetId=sheet.id;const title=document.createElement('h2');title.textContent=sheet.name;body.append(title);const grid=document.createElement('div');grid.className='sheet-grid';body.append(grid);
 const fields=[['Nom','name','text'],['Classe','characterClass','text'],['Race','race','text'],['Niveau','level','number'],['PV actuels','hp','number'],['PV max','maxHp','number'],['Classe d’armure','ac','number'],['Initiative','initiative','number'],['Vitesse (m)','speed','number']];for(const [label,key,type] of fields){const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.type=type;input.value=sheet[key]??'';input.onchange=()=>{sheet[key]=type==='number'?Number(input.value)||0:input.value;store();renderSheets()};wrap.append(input);grid.append(wrap)}
+
+ // Combat tracker: values persist to Atelier independently for each character.
+ const combat=document.createElement('div');combat.className='pj-combat';body.append(combat);
+ const heading=document.createElement('h3');heading.textContent='Suivi du combat · '+sheet.name;combat.append(heading);
+ const stat=document.createElement('p');stat.textContent='PV '+(Number(sheet.hp)||0)+' / '+(Number(sheet.maxHp)||0)+' · PV temporaires '+(Number(sheet.tempHp)||0)+' · CA '+sheet.ac+' · initiative '+(sheet.initiative??0)+' · vitesse '+sheet.speed+' m';combat.append(stat);
+ function combatButton(text,callback){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=()=>{callback();store();renderSheets()};return b}
+ const hpBar=document.createElement('div');hpBar.className='row';combat.append(hpBar);
+ for(const [label,change] of [['−1 PV',-1],['−5 PV',-5],['+1 PV',1],['+5 PV',5]])hpBar.append(combatButton(label,()=>{
+  if(change<0){
+   const temp=Math.max(0,Number(sheet.tempHp)||0),absorbed=Math.min(temp,-change);
+   sheet.tempHp=temp-absorbed;sheet.hp=Math.max(0,(Number(sheet.hp)||0)+change+absorbed);
+  }else sheet.hp=Math.min(Number(sheet.maxHp)||1,(Number(sheet.hp)||0)+change);
+ }));
+ const damage=document.createElement('button');damage.textContent='Appliquer des dégâts…';damage.onclick=()=>{
+  const input=prompt('Dégâts subis par '+sheet.name+' (nombre positif) :','0');
+  if(input===null)return;
+  const n=Number(input);if(!Number.isFinite(n)||n<0)return;
+  const temp=Math.max(0,Number(sheet.tempHp)||0),used=Math.min(temp,n);
+  sheet.tempHp=temp-used;sheet.hp=Math.max(0,(Number(sheet.hp)||0)-(n-used));
+  store();renderSheets();
+ };hpBar.append(damage);
+ const tempWrap=document.createElement('label');tempWrap.textContent='PV temporaires';const tempInput=document.createElement('input');tempInput.type='number';tempInput.min='0';tempInput.value=String(sheet.tempHp||0);tempInput.onchange=()=>{sheet.tempHp=Math.max(0,Number(tempInput.value)||0);store();renderSheets()};tempWrap.append(tempInput);combat.append(tempWrap);
+ const turn=sheet.turn&&typeof sheet.turn==='object'?sheet.turn:(sheet.turn={action:1,bonus:1,reaction:1,movementLeft:Number(sheet.speed)||9});
+ const turnBar=document.createElement('div');turnBar.className='row';combat.append(turnBar);
+ turnBar.append(combatButton('Nouveau tour',()=>{sheet.turn={action:1,bonus:1,reaction:1,movementLeft:Number(sheet.speed)||9}}));
+ for(const [key,label] of [['action','Action'],['bonus','Action bonus'],['reaction','Réaction']])turnBar.append(combatButton(label+' : '+(turn[key]?'disponible':'utilisée'),()=>{sheet.turn[key]=sheet.turn[key]?0:1}));
+ const move=document.createElement('p');move.textContent='Déplacement disponible : '+(turn.movementLeft??sheet.speed)+' m';combat.append(move);
+ if(sheet.attacks?.length){const list=document.createElement('details');list.open=true;const summary=document.createElement('summary');summary.textContent='Attaques et maîtrises';list.append(summary);for(const attack of sheet.attacks){const p=document.createElement('p');p.textContent=attack.name+' · toucher '+attack.bonus+' · '+attack.damage+' — '+attack.detail;list.append(p)}combat.append(list)}
+ if(sheet.actions?.length){const list=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Actions autorisées / capacités';list.append(summary);for(const act of sheet.actions){const p=document.createElement('p');p.textContent=act.type+' : '+act.detail;list.append(p)}combat.append(list)}
+ if(sheet.resources?.length){const list=document.createElement('details');list.open=true;const summary=document.createElement('summary');summary.textContent='Ressources dépensées';list.append(summary);for(const res of sheet.resources){
+   const row=document.createElement('div');row.className='row';const tag=document.createElement('span');tag.textContent=res.name+' : '+(res.used||0)+' / '+(res.max||0);row.append(tag);
+   row.append(combatButton('−',()=>{res.used=Math.max(0,(Number(res.used)||0)-1)}));
+   row.append(combatButton('+',()=>{res.used=Math.min(Number(res.max)||0,(Number(res.used)||0)+1)}));
+   list.append(row);
+ }combat.append(list)}
+ if(sheet.spells&&Object.keys(sheet.spells).length){const list=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Sorts notés sur la fiche (origine à vérifier)';list.append(summary);for(const [lvl,spells] of Object.entries(sheet.spells)){const p=document.createElement('p');p.textContent=lvl+' : '+spells.join(', ');list.append(p)}combat.append(list)}
+ if(sheet.abilities){const p=document.createElement('p');p.textContent='Caractéristiques : '+sheet.abilities;combat.append(p)}
+ if(sheet.passivePerception!=null){const p=document.createElement('p');p.textContent='Perception passive : '+sheet.passivePerception;combat.append(p)}
+ if(sheet.checks){const p=document.createElement('p');p.textContent='À confirmer : '+sheet.checks;combat.append(p)}
+ const session=document.createElement('label');session.textContent='Notes de séance (seulement pour le MJ)';const sessionTa=document.createElement('textarea');sessionTa.value=sheet.sessionNotes||'';sessionTa.onchange=()=>{sheet.sessionNotes=sessionTa.value;store()};session.append(sessionTa);combat.append(session);
 const nLabel=document.createElement('label');nLabel.textContent='Notes MJ et capacités';nLabel.className='wide';const ta=document.createElement('textarea');ta.value=sheet.notes||'';ta.onchange=()=>{sheet.notes=ta.value;store()};nLabel.append(ta);grid.append(nLabel);
 normalizeSheet(sheet);
 const combat=document.createElement('section');combat.className='pj-combat';body.append(combat);
@@ -334,7 +400,7 @@ function scheduleServerSave(){if(!serverLoadDone)return;serverQueued=true;if(ser
 async function flushServer(){if(!serverConnected||serverSaving||!serverQueued)return;serverSaving=true;serverQueued=false;const snapshot=JSON.parse(JSON.stringify(data));try{const response=await fetch('/api/jdr/manoir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rev:serverRev,state:snapshot})});const body=await response.json();if(response.status===409){serverConnected=false;syncLabel('Conflit avec une autre fenêtre : exporte puis recharge la partie.');message('Une autre console MJ a modifié la partie : les données locales sont conservées, pas écrasées.');return}if(!response.ok)throw Error(body.error||'Échec serveur');serverRev=body.rev;syncLabel('Relié à L’Atelier · sauvegarde réussie')}catch(e){syncLabel('Mode local : sauvegarde Atelier indisponible')}finally{serverSaving=false;if(serverQueued)flushServer()}}
 async function setupServerState(){// file:// offline standalone remains fully usable.
   if(location.protocol==='file:'){serverLoadDone=true;syncLabel('Mode autonome · copie locale (export JSON conseillé)');return}
-  try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)throw Error('API manoir absente');const result=await r.json();serverRev=Number(result.rev)||0;if(result.state&&Array.isArray(result.state.tokens)&&result.state.seen){Object.assign(data,result.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderSheets();}serverConnected=true;serverLoadDone=true;syncLabel('Relié à L’Atelier · sauvegarde partagée');if(!result.state){serverQueued=true;flushServer()}}
+  try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)throw Error('API manoir absente');const result=await r.json();serverRev=Number(result.rev)||0;if(result.state&&Array.isArray(result.state.tokens)&&result.state.seen){Object.assign(data,result.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();renderSheets();}serverConnected=true;serverLoadDone=true;syncLabel('Relié à L’Atelier · sauvegarde partagée');if(!result.state){serverQueued=true;flushServer()}await ensureManorRoster()}
   catch(e){serverConnected=false;serverLoadDone=true;syncLabel('Mode local (API non disponible) · JSON exportable')}
   setInterval(async()=>{if(!serverConnected||serverSaving||serverQueued||(document.hidden&&!playerMode))return;try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote.rev>serverRev&&remote.state){serverRev=remote.rev;Object.assign(data,remote.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();if(activeTab==='sheets')renderSheets();syncLabel('L’Atelier synchronisé · révision '+serverRev)}}catch(e){}},1500);
 }
