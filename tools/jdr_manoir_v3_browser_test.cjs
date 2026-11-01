@@ -21,9 +21,16 @@ async function main(){
   browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport:{width:1600,height:1000}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(BASE+'/jdr-manoir.html',{waitUntil:'domcontentloaded'});
+  await page.goto(BASE+'/jdr-manoir.html?mode=mj',{waitUntil:'domcontentloaded'});
   // Ensure initial empty-state write is finished before testing a new action.
   await page.waitForFunction(()=>document.getElementById('syncStatus').textContent.includes('sauvegarde réussie'),null,{timeout:15000});
+  // Opening the normal JDR entry must show ONLY the full-screen player map.
+  const game=await browser.newPage({viewport:{width:1440,height:900}});
+  await game.goto(BASE+'/jdr-manoir.html',{waitUntil:'domcontentloaded'});
+  assert.ok(await game.locator('#playerStageCanvas').isVisible());
+  assert.ok(await game.locator('#launchMjConsole').isVisible());
+  assert.ok(!(await game.locator('.jdr-top').isVisible()),'MJ secrets must be hidden in the default game window');
+  await game.close();
   assert.equal(await page.locator('.tabstrip button').count(),4);
   assert.ok(await page.locator('#miniBoard').isVisible());
   const atlas=await page.locator('#board').evaluate(el=>({width:el.width,height:el.height}));
