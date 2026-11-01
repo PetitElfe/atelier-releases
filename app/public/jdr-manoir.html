@@ -53,6 +53,7 @@ body.player-mode #playerStage{display:flex;position:fixed;inset:0;z-index:120;ba
 #playerStage canvas{display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;border:1px solid #617d66;border-radius:8px;background:#101811;touch-action:none;cursor:grab}
 #playerStage:fullscreen{background:#101811}
 
+.tabstrip{position:relative;top:auto} /* Header height grows when ambiences are configured. */
 /* Ambiance buttons are MJ-only; the official visible YouTube player stays outside tab panels. */
 .ambience-panel{display:flex;flex-direction:column;gap:8px;flex:1 1 100%;min-width:0;border-top:1px solid #5a745b;padding-top:8px}
 .ambience-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -528,10 +529,13 @@ $('ambienceExternal').addEventListener('click',event=>{
  if(!activeAmbienceId)return;
  const a=data.ambiences.find(x=>x.id===activeAmbienceId),info=a&&youtubeEmbedInfo(a.url);
  if(!info)return;
- event.preventDefault(); // Named external window remains controllable for switching.
+ // Keep the link working even when popup creation is restricted by the browser.
+ const external=window.open(info.url,'AtelierAmbianceYouTube','width=1060,height=760');
+ if(!external){ambienceStatus('Fenêtre YouTube bloquée : autorise les popups ou utilise le lien.');return}
+ event.preventDefault();
  $('ambienceFrameHolder').replaceChildren();$('ambiencePlayback').hidden=true;
- ambienceExternalWindow=window.open(info.url,'AtelierAmbianceYouTube','width=1060,height=760');
- ambienceStatus(ambienceExternalWindow?'Ambiance externe : '+a.name:'Fenêtre YouTube bloquée : autorise les popups.');
+ ambienceExternalWindow=external;
+ ambienceStatus('Ambiance externe : '+a.name);
 });
 $('playerFullscreen').onclick=()=>{
  const stage=$('playerStage');
