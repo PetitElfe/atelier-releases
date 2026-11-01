@@ -105,7 +105,7 @@
     },
     {
       "path": "public/jdr-manoir.html",
-      "sha256": "59ab5ef82d07436838048d69fa5b020590ee59b7c6e258573a57e478f81b4e8f"
+      "sha256": "75f503f9f2aa08a3fb1cf8e711235a8eebc27109f34c04291203013606afe79e"
     },
     {
       "path": "public/jdr-mj.html",
@@ -113,7 +113,7 @@
     },
     {
       "path": "public/jdr-roster-manoir.json",
-      "sha256": "c2ce8e9ddc0a66666a007dde05ce9abd84117214fa09268a0e39d9afc88849ea"
+      "sha256": "e14016a9126b71e22e4f8d5d737c3694e6708ecfaf13a24b6452d128f28d70a0"
     },
     {
       "path": "public/jdr.html",
