@@ -110,7 +110,7 @@ body.player-mode #playerStage .player-only-status{display:none!important}
  <span id="playerModeStatus" class="player-only-status" role="status" aria-live="polite">Carte des joueurs prête.</span>
 </main>
 <header class="jdr-top">
-  <div class="jdr-brand"><a class="mj-return" href="/" title="Revenir à l'accueil de L'Atelier">← Retour à L’Atelier</a><h1 style="margin-top:8px">Le Manoir du Cirque</h1><small>Console MJ privée · mini-carte permanente</small><small id="syncStatus">Sauvegarde locale active</small></div>
+  <div class="jdr-brand"><a class="mj-return" href="/" title="Revenir à l'accueil de L'Atelier">← Retour à L’Atelier</a><h1 style="margin-top:8px">Le Manoir du Cirque</h1><small>Console MJ privée · mini-carte permanente</small><small id="syncStatus">Sauvegarde locale active</small><small id="jdrHotStatus" aria-live="polite">Mises à jour JDR discrètes</small></div>
   <div class="mini-map" title="Clique sur une pièce pour la sélectionner ou la dévoiler"><canvas id="miniBoard" width="1120" height="770" aria-label="Mini-carte du manoir, toujours visible"></canvas></div>
   <div class="jdr-head-actions">
     <label>Niveau du manoir<select id="floorSelect"><option value="ground">Rez-de-chaussée</option><option value="upper">Premier étage</option><option value="basement">Sous-sol</option></select></label><label>Pièce à explorer<select id="roomSelect"></select></label>
@@ -647,6 +647,25 @@ $('launchMjConsole').onclick=async()=>{
  const popup=window.open('/jdr-manoir.html?mode=mj','AtelierManoirMJ','width=1350,height=920');
  $('playerModeStatus').textContent=popup?'Console MJ ouverte : ne partage pas cette fenêtre.':'Fenêtre bloquée : utilise « Console MJ dans Brave ».';
 };
+
+async function checkJdrHotUpdate(){
+  // Never reload a running game or touch its save state.
+  if(playerMode||location.protocol==='file:'||!serverLoadDone||!serverConnected||serverSaving||serverQueued)return;
+  const label=$('jdrHotStatus');
+  try{
+    const response=await fetch('/api/jdr/hot-update',{cache:'no-store'});
+    if(!response.ok)return; // Older installation: leave the game unchanged.
+    const result=await response.json();
+    if(result.ok&&result.changed&&label){
+      label.textContent='Nouvelle console JDR prête · partie en cours conservée';
+      label.title='Sans redémarrage. La nouvelle version apparaît à la prochaine ouverture de la console JDR.';
+    }else if(result.ok&&label&&label.textContent==='Mises à jour JDR discrètes'){
+      label.textContent='Console JDR à jour · aucun redémarrage';
+    }
+  }catch(e){/* A network outage must never interrupt a live session. */}
+}
+setTimeout(checkJdrHotUpdate,12000);
+setInterval(checkJdrHotUpdate,180000);
 load();normaliseData();refresh();openTab('map');renderShoulkar();renderAmbienceButtons();setupServerState();
 })();
 </script>
