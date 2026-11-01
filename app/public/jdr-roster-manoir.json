@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "source": "Feuilles originales des trois joueurs, relues le 1 novembre 2026",
+  "characters": [
+    {
+      "id": "roster-ponga",
+      "tokenId": "pj1",
+      "name": "Ponga",
+      "characterClass": "Guerrier · Maître de guerre",
+      "race": "Gobelin",
+      "level": 3,
+      "hp": 26,
+      "maxHp": 26,
+      "tempHp": 0,
+      "ac": 18,
+      "initiative": 4,
+      "speed": 9,
+      "passivePerception": 13,
+      "abilities": "FOR 12 (+1) · DEX 15 (+2) · CON 16 (+3) · INT 10 (+0) · SAG 13 (+1) · CHA 12 (+1)",
+      "attacks": [
+        {
+          "name": "Épée longue",
+          "bonus": "+3",
+          "damage": "1d8+3 tranchants",
+          "detail": "Sap · 1 main avec bouclier, style Duel"
+        },
+        {
+          "name": "Hache d'armes",
+          "bonus": "+3",
+          "damage": "1d8+3 tranchants",
+          "detail": "Topple · 1 main avec bouclier, style Duel"
+        },
+        {
+          "name": "Espadon",
+          "bonus": "+3",
+          "damage": "2d6+1 tranchants",
+          "detail": "Graze · deux mains, sans bouclier"
+        }
+      ],
+      "actions": [
+        {
+          "type": "Action",
+          "detail": "Attaquer une fois (niv. 3) ou autre action."
+        },
+        {
+          "type": "Action bonus",
+          "detail": "Second souffle (1d10+3 PV), ou Évasion agile : se désengager / se cacher."
+        },
+        {
+          "type": "Action supplémentaire",
+          "detail": "Sursaut d'activité, 1/repos court."
+        },
+        {
+          "type": "Réaction",
+          "detail": "Attaque d'opportunité ou manœuvre appropriée."
+        }
+      ],
+      "resources": [
+        {
+          "name": "Second souffle",
+          "max": 2,
+          "used": 0
+        },
+        {
+          "name": "Sursaut d'activité",
+          "max": 1,
+          "used": 0
+        },
+        {
+          "name": "Dés de supériorité (d8)",
+          "max": 4,
+          "used": 0
+        }
+      ],
+      "features": [
+        {
+          "name": "Maître de guerre",
+          "detail": "Trois manœuvres à noter (pas choisies sur la feuille)."
+        },
+        {
+          "name": "Fée florale",
+          "detail": "Capacité de campagne à confirmer."
+        }
+      ],
+      "notes": "",
+      "checks": "Confirmer les trois manœuvres et l'origine de la CA 18. Ne pas inventer de personnalité."
+    },
+    {
+      "id": "roster-earendil",
+      "tokenId": "pj2",
+      "name": "Lo’endil Earendil",
+      "characterClass": "Barde · Collège du Glamour",
+      "race": "Firbolg",
+      "level": 3,
+      "hp": 21,
+      "maxHp": 21,
+      "tempHp": 0,
+      "ac": 11,
+      "initiative": 0,
+      "speed": 9,
+      "passivePerception": 10,
+      "abilities": "FOR 12 (+1) · DEX 11 (+0) · CON 12 (+1) · INT 14 (+2) · SAG 11 (+0) · CHA 16 (+3)",
+      "attacks": [
+        {
+          "name": "Dague",
+          "bonus": "+3",
+          "damage": "1d4+1 perforants",
+          "detail": "Finesse · légère · lancer 6/18 m"
+        }
+      ],
+      "actions": [
+        {
+          "type": "Action",
+          "detail": "Lancer un sort d'action, attaquer ou autre action."
+        },
+        {
+          "type": "Action bonus",
+          "detail": "Inspiration bardique (d6), Manteau d'inspiration si disponible."
+        },
+        {
+          "type": "Réaction",
+          "detail": "Selon sorts et effets autorisés."
+        }
+      ],
+      "resources": [
+        {
+          "name": "Inspiration bardique (d6)",
+          "max": 3,
+          "used": 0
+        },
+        {
+          "name": "Emplacements niv. 1",
+          "max": 4,
+          "used": 0
+        },
+        {
+          "name": "Emplacements niv. 2",
+          "max": 2,
+          "used": 0
+        },
+        {
+          "name": "Murmure floral (maison)",
+          "max": 1,
+          "used": 0
+        }
+      ],
+      "features": [
+        {
+          "name": "DD sorts",
+          "detail": "13 · attaque magique +5"
+        },
+        {
+          "name": "Glamour",
+          "detail": "Manteau d'inspiration · Magie envoûtante"
+        }
+      ],
+      "spells": {
+        "mineurs": [
+          "Elementalism",
+          "Message",
+          "Blade Ward",
+          "Friends"
+        ],
+        "niveau1": [
+          "Goodberry",
+          "Charm Person",
+          "Comprehend Languages",
+          "Cure Wounds",
+          "Speak with Animals",
+          "Thunderwave"
+        ],
+        "niveau2": [
+          "Enthrall",
+          "Knock",
+          "Mirror Image"
+        ]
+      },
+      "notes": "",
+      "checks": "Sur la feuille : plus de sorts que le nombre de sorts de classe normalement préparés au niveau 3. Vérifier l'origine de chaque sort (espèce, dons, règles maison) ; perception passive 10 selon SAG 11 et Perception non cochée."
+    },
+    {
+      "id": "roster-lyko",
+      "tokenId": "pj3",
+      "name": "Lyko",
+      "characterClass": "Roublard · Assassin",
+      "race": "Kobold",
+      "level": 3,
+      "hp": 25,
+      "maxHp": 25,
+      "tempHp": 0,
+      "ac": 15,
+      "initiative": 4,
+      "speed": 9,
+      "passivePerception": 11,
+      "abilities": "FOR 9 (-1) · DEX 18 (+4) · CON 16 (+3) · INT 12 (+1) · SAG 8 (-1) · CHA 10 (+0)",
+      "attacks": [
+        {
+          "name": "Fouet",
+          "bonus": "+6",
+          "damage": "1d4+4 tranchants",
+          "detail": "Finesse · allonge · Slow si maîtrise débloquée"
+        },
+        {
+          "name": "Dague",
+          "bonus": "+6",
+          "damage": "1d4+4 perforants",
+          "detail": "Finesse · légère · lancer 6/18 m · Nick si maîtrise débloquée"
+        },
+        {
+          "name": "Attaque sournoise",
+          "bonus": "Condition",
+          "damage": "+2d6",
+          "detail": "Une fois par tour, si condition Sneak Attack remplie"
+        }
+      ],
+      "actions": [
+        {
+          "type": "Action",
+          "detail": "Attaquer (une fois) ; attaque sournoise possible si conditions."
+        },
+        {
+          "type": "Action bonus",
+          "detail": "Action rusée : Foncer, Désengagement ou Se cacher."
+        },
+        {
+          "type": "Réaction",
+          "detail": "Attaque d'opportunité si disponible."
+        }
+      ],
+      "resources": [],
+      "features": [
+        {
+          "name": "Assassin",
+          "detail": "Avantage d'initiative, effets d'assassinat selon les règles choisies."
+        },
+        {
+          "name": "Outils",
+          "detail": "Outils de voleur · nécessaire de déguisement · nécessaire d'empoisonneur"
+        }
+      ],
+      "notes": "",
+      "checks": "Perception passive 11 validée par la MJ. Vérifier maîtrise des armes fouet/dague et application réelle de Slow et Nick."
+    }
+  ]
+}
