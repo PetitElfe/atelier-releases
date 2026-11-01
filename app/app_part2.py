@@ -185,6 +185,62 @@ def budget_snapshot(c,month,ts):
 
 _jdr_lock = threading.RLock()
 
+# JDR-only hot updates: no process shutdown, database migration or change to other modules.
+# The manifest and artifact must match SHA-256 before replacing the static HTML file.
+_jdr_hot_lock = threading.RLock()
+_jdr_hot_source = 'https://raw.githubusercontent.com/PetitElfe/atelier-releases/feature/0180-progression-foundations'
+_jdr_hot_last_check = {'time':0.0,'result':None}
+
+def jdr_hot_update():
+    import hashlib
+    import time
+    import urllib.request
+    with _jdr_hot_lock:
+        now=time.monotonic()
+        if _jdr_hot_last_check['result'] is not None and now-_jdr_hot_last_check['time'] < 180:
+            return dict(_jdr_hot_last_check['result'])
+        target=(PUBLIC/'jdr-manoir.html').resolve()
+        if target.parent!=PUBLIC.resolve() or not target.is_file():
+            raise RuntimeError('Console JDR absente ; aucune modification effectuée')
+        req=urllib.request.Request(_jdr_hot_source+'/manifest.json',headers={'User-Agent':'Atelier-JDR-HotUpdate/1','Accept':'application/json'})
+        with urllib.request.urlopen(req,timeout=7) as response:
+            manifest_bytes=response.read(150000)
+        if len(manifest_bytes)>=150000: raise RuntimeError('Manifeste trop volumineux')
+        manifest=json.loads(manifest_bytes.decode('utf-8'))
+        entry=next((f for f in manifest.get('files',[]) if f.get('path')=='public/jdr-manoir.html'),None)
+        expected=entry.get('sha256','') if isinstance(entry,dict) else ''
+        if not isinstance(expected,str) or len(expected)!=64 or any(c not in '0123456789abcdef' for c in expected):
+            raise RuntimeError('Empreinte de la console absente ou incorrecte')
+        current=target.read_bytes()
+        current_hash=hashlib.sha256(current).hexdigest()
+        if current_hash==expected:
+            result={'ok':True,'changed':False,'sha256':expected,'requires_restart':False}
+        else:
+            req=urllib.request.Request(_jdr_hot_source+'/app/public/jdr-manoir.html',headers={'User-Agent':'Atelier-JDR-HotUpdate/1'})
+            with urllib.request.urlopen(req,timeout=10) as response:
+                updated=response.read(300001)
+            if len(updated)>300000 or not updated.startswith(b'<!doctype html>'):
+                raise RuntimeError('Fichier de console JDR inattendu')
+            if hashlib.sha256(updated).hexdigest()!=expected:
+                raise RuntimeError('Échec de vérification SHA-256 du nouveau fichier')
+            backup=target.with_name('jdr-manoir.hot-backup.html')
+            tmp=target.with_name('jdr-manoir.hot-pending.html')
+            # Keep a recovery copy, but do not modify the current game state.
+            backup.write_bytes(current)
+            try:
+                tmp.write_bytes(updated)
+                if hashlib.sha256(tmp.read_bytes()).hexdigest()!=expected:
+                    raise RuntimeError('La copie temporaire de la console est corrompue')
+                os.replace(tmp,target)
+            finally:
+                try: tmp.unlink(missing_ok=True)
+                except OSError: pass
+            result={'ok':True,'changed':True,'sha256':expected,'requires_restart':False,
+                    'detail':'Console mise à jour sur disque ; onglets JDR ouverts conservés'}
+        _jdr_hot_last_check.update(time=now,result=result)
+        return dict(result)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = 'AtelierLocal/' + atelier_version()
 
@@ -235,6 +291,15 @@ class Handler(BaseHTTPRequestHandler):
                 except (OSError,ValueError):
                     notes=[]
             return self._json(notes)
+        if p == '/api/jdr/hot-update':
+            # Local-only. The browser checks every few minutes without disturbing its current map.
+            origin=self.headers.get('Origin','')
+            if origin and origin != f'http://{HOST}:{PORT}':
+                return self._json({'error':'Origine refusée'},403)
+            try:
+                return self._json(jdr_hot_update())
+            except Exception as exc:
+                return self._json({'error':'Mise à jour JDR indisponible : '+str(exc)},502)
         if p == '/api/jdr/manoir':
             # V3 manor is independent from the legacy /api/jdr/state tabletop.
             # A separate save prevents the old JDR table from erasing the new map.
