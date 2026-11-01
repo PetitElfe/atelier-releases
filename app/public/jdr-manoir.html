@@ -282,6 +282,15 @@ async function ensureManorRoster(){
    const pack=await response.json();
    if(!Array.isArray(pack.characters))return;
    let added=false;
+   // Repair pre-existing Ponga sheets as well as future imports. Do not reset
+   // HP, notes or any edited information; remove ONLY the copied bard feature.
+   for(const existing of data.sheets){
+     if(existing?.id!=='roster-ponga'&&String(existing?.name||'').trim().toLowerCase()!=='ponga')continue;
+     if(!Array.isArray(existing.features))continue;
+     const oldSize=existing.features.length;
+     existing.features=existing.features.filter(f=>!/^f[eé]e florale$/i.test(String(f?.name||'').trim()));
+     if(existing.features.length!==oldSize)added=true;
+   }
    for(const character of pack.characters){
      if(!character||!character.id||!character.name)continue;
      if(data.sheets.some(x=>x.id===character.id||x.name.toLocaleLowerCase('fr')===character.name.toLocaleLowerCase('fr')))continue;
