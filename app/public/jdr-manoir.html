@@ -40,8 +40,33 @@ textarea{font:inherit;color:var(--ink);background:#16271c;border:1px solid #7894
 .pj-combat summary{cursor:pointer;font-weight:bold}
 .pj-combat input[type=number]{width:100px}
 .pj-combat li{margin:7px 0}
+
+/* Atelier game window: a full-size player-only view, with separate MJ controls. */
+body.player-mode{height:100vh;overflow:hidden}
+body.player-mode .jdr-top,body.player-mode .tabstrip,body.player-mode section[data-panel]{display:none!important}
+#playerStage{display:none}
+body.player-mode #playerStage{display:flex;position:fixed;inset:0;z-index:120;background:#101811;flex-direction:column}
+#playerStage .player-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:6px 12px;background:#203429;border-bottom:1px solid #71866d;min-height:52px}
+#playerStage .player-bar h1{margin:0;font-size:17px}
+#playerStage .player-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#playerStage .player-map-viewport{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+#playerStage canvas{display:block;width:100%;height:100%;object-fit:contain;max-width:none;max-height:none;border:1px solid #617d66;border-radius:8px;background:#101811;touch-action:none;cursor:grab}
+#playerStage:fullscreen{background:#101811}
+#playerStage .player-status{color:#cdddc8;font-size:12px}
 </style></head>
 <body>
+<main id="playerStage" aria-label="Carte plein écran des joueurs">
+ <div class="player-bar">
+  <h1>Le Manoir du Cirque · Carte joueurs</h1>
+  <div class="player-controls">
+   <button id="playerFullscreen" type="button" class="primary">Plein écran</button>
+   <button id="launchMjConsole" type="button" class="primary">Ouvrir la console MJ</button>
+   <a href="/jdr-manoir.html?mode=mj" target="_blank" rel="noopener" style="color:#d5eabe">Console MJ dans Brave</a>
+  </div>
+ </div>
+ <div class="player-map-viewport"><canvas id="playerStageCanvas" width="1120" height="770" aria-label="Plan des joueurs, sans informations du MJ"></canvas></div>
+ <div class="player-bar" style="min-height:36px"><small>Seules les pièces révélées sont visibles · Glisse les pions pour les déplacer</small><span id="playerModeStatus" class="player-status" role="status">Connexion à L’Atelier…</span></div>
+</main>
 <header class="jdr-top">
   <div class="jdr-brand"><h1>Le Manoir du Cirque</h1><small>Console MJ · carte toujours visible · intégré à L'Atelier TEST</small><small id="syncStatus">Sauvegarde locale active</small></div>
   <div class="mini-map" title="Clique sur une pièce pour la sélectionner ou la dévoiler"><canvas id="miniBoard" width="1120" height="770" aria-label="Mini-carte du manoir, toujours visible"></canvas></div>
@@ -109,6 +134,8 @@ textarea{font:inherit;color:var(--ink);background:#16271c;border:1px solid #7894
 (()=>{'use strict';
 const $=id=>document.getElementById(id),board=$('board'),B=46,X=85,Y=76,W=20,H=14;
 const key='goblin-manoir-carte-unique-v3';let playerWin=null,selectedRoom='hall';
+const playerMode=new URLSearchParams(location.search).get('mode')==='players';
+if(playerMode)document.body.classList.add('player-mode');
 // Toutes les coordonnées décrivent le plan APRÈS rotation de 180° : le hall est au sud.
 // Une case de 46 pixels représente exactement 1,5 m / 5 ft.
 const rooms=[
@@ -189,7 +216,10 @@ if(!player){const r=byId(selectedRoom);if(r){ctx.strokeStyle='#fbe0a1';ctx.lineW
 drawTokens(ctx,player);
 ctx.fillStyle='#d2d9c8';ctx.font='13px system-ui';ctx.textAlign='right';ctx.fillText('Chaque case = 1,5 m (5 ft) · largeur totale 30 m',X+W*B,Y+H*B+36);
 }
-function syncPlayers(){if(playerWin&&!playerWin.closed){try{const c=playerWin.document.getElementById('playerCanvas');if(c)paint(c,true)}catch(e){message('Fenêtre joueurs inaccessible : '+e.message)}}}
+function syncPlayers(){
+ if(playerMode){const c=$('playerStageCanvas');if(c)paint(c,true)}
+ if(playerWin&&!playerWin.closed){try{const c=playerWin.document.getElementById('playerCanvas');if(c)paint(c,true)}catch(e){message('Fenêtre joueurs inaccessible : '+e.message)}}
+}
 function roomButtons(){const area=$('roomButtons');area.replaceChildren();for(const r of rooms){const b=document.createElement('button');b.type='button';b.className=(data.seen[r.id]?'revealed ':'')+(selectedRoom===r.id?'selected':'');b.textContent=(data.seen[r.id]?'✓ ':'○ ')+r.name;b.title='Sélectionner '+r.name+' ; clic suivant = révéler/masquer';b.onclick=()=>{selectedRoom=r.id;$('roomSelect').value=r.id;store(false);message(r.name+' sélectionnée (utilise « Dévoiler » pour la montrer aux joueurs).')};area.append(b)}}
 function tokenControls(){const sel=$('activeToken'),keep=sel.value;sel.replaceChildren();const list=$('tokenList');list.replaceChildren();for(const t of data.tokens){const opt=new Option(t.name+' ('+t.kind+')',t.id);sel.append(opt);const div=document.createElement('div');div.className='tokenItem';const strong=document.createElement('strong');strong.textContent=t.name;div.append(strong);const line=document.createElement('div');line.className='tag';line.textContent=(t.visible?'Visible':'Caché')+' · '+(t.x==null?'non placé':'case '+(t.x+1)+', '+(t.y+1))+' · vitesse '+(Number(t.speed)||9)+' m';div.append(line);const fiche=document.createElement('button');fiche.type='button';fiche.style.marginTop='4px';fiche.textContent=t.kind==='Monstre'?'Fiche Shoulkar':'Ouvrir fiche';fiche.onclick=()=>{if(t.kind==='Monstre'){openTab('shoulkar')}else{let sh=data.sheets.find(s=>s.tokenId===t.id);if(!sh){sh=makeSheet(t.name);sh.tokenId=t.id;data.sheets.push(sh);store()}openTab('sheets',sh.id)}};div.append(fiche);list.append(div)}if(data.tokens.some(t=>t.id===keep))sel.value=keep}
 function refresh(){paint(board,false);paint($('miniBoard'),false);$('roomSelect').value=selectedRoom;const r=byId(selectedRoom);$('roomDims').textContent=r?`${r.w} × ${r.h} cases · ${(r.w*1.5).toLocaleString('fr-FR')} × ${(r.h*1.5).toLocaleString('fr-FR')} m`:'';roomButtons();tokenControls();syncPlayers()}
@@ -225,6 +255,8 @@ function bindPlayerDrag(c){let drag=null;
   c.addEventListener('pointercancel',()=>{drag=null;c.style.cursor='crosshair'});
   c.addEventListener('pointerup',e=>{if(!drag)return;const t=data.tokens.find(t=>t.id===drag.id);drag=null;c.style.cursor='crosshair';if(!t)return;const p=locate(e),room=at(p.x,p.y);if(!room||!data.seen[room.id]){message('Déplacement annulé : cette pièce n’est pas encore révélée.');return}if(p.x===t.x&&p.y===t.y)return;$('activeToken').value=t.id;moveToken(p.x,p.y,room);});
 }
+// The main Atelier screen supports dragging one pawn at a time.
+bindPlayerDrag($('playerStageCanvas'));
 function renderShoulkar(){const s=data.shoulkar;for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){const el=$(id);if(el&&document.activeElement!==el)el.value=String(s[key]??0)}if(document.activeElement!==$('shNotes'))$('shNotes').value=s.notes||'';}
 for(const [id,key] of [['shHp','hp'],['shMaxHp','maxHp'],['shAc','ac'],['shSave','saveDC'],['shAttack','attackBonus'],['shSpeed','speed'],['shTp','teleports'],['shInit','initiative']]){$(id).addEventListener('change',e=>{data.shoulkar[key]=Number(e.target.value)||0;if(key==='maxHp')data.shoulkar.hp=Math.min(data.shoulkar.hp,data.shoulkar.maxHp);const t=data.tokens.find(x=>x.id==='parasite');if(t&&key==='speed')t.speed=data.shoulkar.speed;store();renderShoulkar()})}
 $('shNotes').addEventListener('change',e=>{data.shoulkar.notes=e.target.value;store()});
@@ -306,6 +338,19 @@ async function setupServerState(){// file:// offline standalone remains fully us
   setInterval(async()=>{if(!serverConnected||serverSaving||serverQueued||document.hidden)return;try{const r=await fetch('/api/jdr/manoir',{cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote.rev>serverRev&&remote.state){serverRev=remote.rev;Object.assign(data,remote.state);normaliseData();localStorage.setItem(key,JSON.stringify(data));refresh();renderShoulkar();if(activeTab==='sheets')renderSheets();syncLabel('L’Atelier synchronisé · révision '+serverRev)}}catch(e){}},1500);
 }
 
+$('playerFullscreen').onclick=()=>{
+ const stage=$('playerStage');
+ if(document.fullscreenElement){document.exitFullscreen().catch(()=>{})}
+ else if(stage.requestFullscreen){stage.requestFullscreen().catch(()=>{$('playerModeStatus').textContent='Carte déjà maximisée dans la fenêtre.'})}
+ else $('playerModeStatus').textContent='Carte déjà maximisée dans la fenêtre.';
+};
+$('launchMjConsole').onclick=async()=>{
+ if(location.protocol!=='file:'){
+  try{const response=await fetch('/api/jdr/open-manoir-mj',{method:'POST'});if(response.ok){$('playerModeStatus').textContent='Console MJ ouverte dans une fenêtre séparée.';return}}catch(e){}
+ }
+ const popup=window.open('/jdr-manoir.html?mode=mj','AtelierManoirMJ','width=1350,height=920');
+ $('playerModeStatus').textContent=popup?'Console MJ ouverte : ne partage pas cette fenêtre.':'Fenêtre bloquée : utilise « Console MJ dans Brave ».';
+};
 load();normaliseData();refresh();openTab('map');renderShoulkar();setupServerState();
 })();
 </script>
