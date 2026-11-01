@@ -33,6 +33,7 @@ jobs:
           node --check app/public/standalone_preparations.js
           node --check app/public/life_tools.js
           node --check app/public/tracker_ritual_ui.js
+          node -e "const fs=require('fs');const s=fs.readFileSync('app/public/jdr-manoir.html','utf8');const m=s.match(/<script>([\\s\\S]*?)<\\/script>/);if(!m)throw Error('JDR V3 JavaScript absent');new Function(m[1]);"
 
       - name: Vérifier les tests des nouveaux modules
         run: python -m unittest discover -s tests -p 'test_*.py'
@@ -65,6 +66,8 @@ jobs:
           # Les bibliothèques graphiques de l'agent Ubuntu suffisent pour l'exécution headless.
           # Éviter apt-get --with-deps (très lent, timeout de 10 min avant les tests).
           npx playwright install --only-shell chromium
+      - name: Verify Manor V3 player window, reveal, group movement and sheets
+        run: node tools/jdr_manoir_v3_browser_test.cjs
       - name: Verify calendar creation and weekly appointment contrast
         run: node tools/calendar_priority_browser_test.cjs
       - name: Verify expanded upcoming appointments above the journal
