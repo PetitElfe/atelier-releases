@@ -68,6 +68,26 @@ def patch_stage(stage):
         if entry is None:
             raise RuntimeError('Manifeste incomplet : '+name)
         entry['sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+    # Nathan must receive the common Atelier features but NO JDR content.
+    # Apply this to first installs AND update staging, keeping original TEST intact.
+    index_path=stage/'app'/'public'/'index.html'
+    index=index_path.read_text(encoding='utf-8')
+    for button in (
+        '<button type="button" id="openJdrWorkspace" onclick="window.location.href=\'/jdr-manoir.html\'">Table JDR — Manoir</button>',
+        '<button type="button" id="openLegacyJdrWorkspace" onclick="window.location.href=\'/jdr.html\'">Ancienne table JDR</button>',
+    ):
+        index=replace_one(index,button,'')
+    index_path.write_text(index,encoding='utf-8')
+    entry=next((f for f in manifest['files'] if f['path']=='public/index.html'),None)
+    if entry is None:
+        raise RuntimeError('Page index.html manquante dans le paquet Nathan')
+    entry['sha256']=hashlib.sha256(index_path.read_bytes()).hexdigest()
+    forbidden=('public/jdr.html','public/jdr-mj.html','public/jdr-manoir.html')
+    for filename in forbidden:
+        (stage/'app'/filename).unlink(missing_ok=True)
+    manifest['files']=[f for f in manifest['files'] if f['path'] not in forbidden]
+    if any(name in index for name in ('/jdr.html','/jdr-mj.html','/jdr-manoir.html')):
+        raise RuntimeError('Une référence JDR reste dans le menu Nathan')
     manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     return stage
 
