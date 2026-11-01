@@ -395,6 +395,26 @@ async function ensureManorRoster(){
    for(const existing of data.sheets){
      if(existing?.id!=='roster-ponga'&&String(existing?.name||'').trim().toLowerCase()!=='ponga')continue;
      if(pongaModel?.biography&&!existing.biography){existing.biography=pongaModel.biography;added=true}
+     if(pongaModel?.maneuvers?.length && !existing.maneuvers?.some(m=>m.name==='Attaque de poussée')){
+       existing.maneuvers=JSON.parse(JSON.stringify(pongaModel.maneuvers));
+       existing.maneuverSaveDC=pongaModel.maneuverSaveDC;
+       // Only replace the generic placeholder, preserve all other personal abilities.
+       existing.features=(Array.isArray(existing.features)?existing.features:[])
+         .filter(f=>!/^Maître de guerre/i.test(f.name||''))
+         .concat(JSON.parse(JSON.stringify(pongaModel.features)));
+       existing.actions=(Array.isArray(existing.actions)?existing.actions:[])
+         .filter(a=>!['Attaque de poussée','Provocation','Ralliement (bonus)'].includes(a.type))
+         .concat(pongaModel.actions.filter(a=>['Attaque de poussée','Provocation','Ralliement (bonus)'].includes(a.type)));
+       existing.checks=(Array.isArray(existing.checks)?existing.checks:[])
+         .filter(t=>!(typeof t==='string'&&/trois manœuvres|3 manœuvres|manœuvres à choisir/i.test(t)));
+       added=true;
+     }
+     if(pongaModel?.equipmentOptions?.length && !Array.isArray(existing.equipmentOptions)){
+       existing.equipmentOptions=JSON.parse(JSON.stringify(pongaModel.equipmentOptions));
+       if(!existing.equipmentChoice)existing.equipmentChoice='';
+       if(typeof existing.equipmentConfirmed!=='boolean')existing.equipmentConfirmed=false;
+       added=true;
+     }
      if(!Array.isArray(existing.features))continue;
      const oldSize=existing.features.length;
      existing.features=existing.features.filter(f=>!/^f[eé]e florale$/i.test(String(f?.name||'').trim()));
@@ -426,6 +446,30 @@ function renderSheets(){const tabs=$('sheetTabs'),body=$('sheetContent');tabs.re
 const fields=[['Nom','name','text'],['Classe','characterClass','text'],['Race','race','text'],['Niveau','level','number'],['PV actuels','hp','number'],['PV max','maxHp','number'],['Classe d’armure','ac','number'],['Initiative','initiative','number'],['Vitesse (m)','speed','number']];for(const [label,key,type] of fields){const wrap=document.createElement('label');wrap.textContent=label;const input=document.createElement('input');input.type=type;input.value=sheet[key]??'';input.onchange=()=>{sheet[key]=type==='number'?Number(input.value)||0:input.value;store();renderSheets()};wrap.append(input);grid.append(wrap)}
 
 const bioLabel=document.createElement('label');bioLabel.textContent='Passé et personnalité (modifiable par la MJ)';bioLabel.className='wide';const bioTa=document.createElement('textarea');bioTa.rows=4;bioTa.value=sheet.biography||'';bioTa.onchange=()=>{sheet.biography=bioTa.value;store()};bioLabel.append(bioTa);grid.append(bioLabel);
+if(sheet.id==='roster-ponga'||String(sheet.name||'').trim().toLowerCase()==='ponga'){
+ const gear=document.createElement('section');gear.className='pj-combat';body.append(gear);
+ const head=document.createElement('h3');head.textContent='Équipement de Ponga — choisir avec Nathan';gear.append(head);
+ const warn=document.createElement('p');warn.textContent='Les armes figurent sur sa feuille, mais son armure et son sac sont à confirmer. Aucun kit n’est attribué sans validation.';gear.append(warn);
+ const opts=Array.isArray(sheet.equipmentOptions)?sheet.equipmentOptions:[];
+ const choose=document.createElement('select');choose.id='pongaEquipmentOption';
+ const first=new Option('— Aucun kit confirmé —','');choose.add(first);
+ for(const item of opts){const op=new Option(item.name,item.id);choose.add(op)}
+ choose.value=sheet.equipmentChoice||'';gear.append(choose);
+ const detail=document.createElement('p');detail.id='pongaEquipmentDetail';gear.append(detail);
+ const show=()=>{const opt=opts.find(x=>x.id===choose.value);detail.textContent=opt?opt.detail:'Sélectionne une option pour afficher ses conséquences (CA, Discrétion, vitesse).'};
+ choose.addEventListener('change',()=>{sheet.equipmentChoice=choose.value;sheet.equipmentConfirmed=false;store();show()});show();
+ const confirm=document.createElement('button');confirm.type='button';confirm.id='pongaEquipmentConfirm';confirm.textContent='Confirmer le kit choisi';confirm.onclick=()=>{
+   const selected=opts.find(x=>x.id===choose.value);if(!selected){message('Sélectionne A, B ou C avec Nathan.');return}
+   sheet.equipmentChoice=selected.id;sheet.equipmentConfirmed=true;
+   const armor={'scale':"Armure d'écailles",'breastplate':'Cuirasse','chain':'Cotte de mailles'}[selected.id];
+   // Only the explicitly confirmed kit is recorded as the character equipment.
+   sheet.equipment=[armor,'Bouclier','Épée longue',"Hache d'armes",'Espadon','Sac d’exploration'];
+   sheet.ac=18;sheet.speed=selected.id==='chain'?6:9;
+   const token=data.tokens.find(t=>t.id===sheet.tokenId);if(token)token.speed=sheet.speed;
+   store();renderSheets();message('Kit '+selected.name+' confirmé. CA 18 ; vitesse '+sheet.speed+' m.');
+ };gear.append(confirm);
+ const state=document.createElement('p');state.id='pongaEquipmentStatus';state.textContent=sheet.equipmentConfirmed?'Kit '+(sheet.equipmentChoice||'')+' confirmé.':'En attente de validation avec Nathan.';gear.append(state);
+}
 const nLabel=document.createElement('label');nLabel.textContent='Notes MJ et capacités';nLabel.className='wide';const ta=document.createElement('textarea');ta.value=sheet.notes||'';ta.onchange=()=>{sheet.notes=ta.value;store()};nLabel.append(ta);grid.append(nLabel);
 normalizeSheet(sheet);
 const combat=document.createElement('section');combat.className='pj-combat';body.append(combat);
