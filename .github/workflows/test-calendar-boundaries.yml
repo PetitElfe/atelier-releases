@@ -1,0 +1,27 @@
+name: TEST calendar month boundaries
+on:
+  push:
+    branches: [test/calendar-month-boundary-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calendar:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        date: ['2026-11-02', '2026-10-30', '2026-12-31']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps --only-shell chromium
+      - run: node tools/week_clarity_forecast_browser_test.cjs
+        env:
+          ATELIER_TEST_DATE: ${{ matrix.date }}
