@@ -39,7 +39,7 @@ jobs:
       - name: Build signed upgrade without publishing
         working-directory: mobile/android
         env:
-          RELEASE_VERSION: '0.1.6'
+          RELEASE_VERSION: '0.1.7'
           ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
           ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
           ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
@@ -91,7 +91,7 @@ jobs:
           else
             echo "::warning::No KVM device; emulator may be slow"
           fi
-      - name: Upgrade existing signed 0.1.5 to newly signed 0.1.6 on emulator
+      - name: Upgrade existing signed 0.1.5 to newly signed 0.1.7 on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
