@@ -50,6 +50,12 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  const cell=page.locator('#monthGrid [data-date="2026-11-03"]');
  assert.equal(await cell.locator('img').evaluate(el=>el.style.opacity),'0.62');
  assert.equal(await cell.locator('.day-number').evaluate(el=>el.style.color),'rgb(255, 204, 136)');
+ await page.evaluate(()=>openCalendarDecoration('2026-11-03'));
+ await dlg.locator('[name=opacity]').fill('0');await dlg.locator('[name=opacity]').dispatchEvent('input');
+ await dlg.locator('[name=color]').evaluate(el=>{el.value='#88aaff';el.dispatchEvent(new Event('input',{bubbles:true}))});await dlg.locator('[data-decor=save]').click();
+ assert.equal(await cell.locator('img').evaluate(el=>el.style.opacity),'0');
+ assert.equal(await cell.locator('.day-number').evaluate(el=>el.style.color),'rgb(136, 170, 255)');
+ assert.equal(await page.locator('[data-date="2026-11-04"] img').evaluate(el=>el.style.opacity),'0.62');
  await page.evaluate(()=>openCalendarDecoration('2026-11-03'));await dlg.locator('[data-decor=remove]').click();await dlg.locator('[data-decor=save]').click();
  assert.equal(await cell.locator('img').count(),0);assert.equal(await page.locator('[data-date="2026-11-04"] img').count(),1);
  await page.evaluate(()=>openCalendarDecoration('2026-11-03'));await dlg.locator('[data-decor=inherit]').click();await dlg.locator('[data-decor=save]').click();assert.equal(await cell.locator('img').count(),1);

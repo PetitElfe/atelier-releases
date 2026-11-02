@@ -653,8 +653,9 @@ async function api(path,method='GET',body){
   assert.equal(await page.locator('#miniMonth').count(),0,'Le mini-calendrier redondant a été supprimé');
   await api('/api/cycle-periods','POST',{start_date:'2026-08-29',end_date:null});
   await page.evaluate(()=>refreshOrganisation());
-  await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('Règles estimées'));
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon/);
+  await page.waitForFunction(()=>document.querySelector('#calendarCycleSummary')?.textContent.includes('avant les règles estimées'));
+  assert.equal(await page.locator('#calendarCycleSummary .calendar-cycle-chip').count(),1);
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Goblin grognon · J−[0-9]+ avant les règles estimées/);
   assert.equal(await page.locator('#calendarCycleHint').count(),0);
   assert.equal(await page.locator('.cycle-module').count(),0);
   // ALPHA 0.15.0 — Budget : récurrences, confirmations, solde, dettes et historique.
