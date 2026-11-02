@@ -2,7 +2,7 @@ name: Android verify existing APK upgrade signature
 on:
   workflow_dispatch:
   push:
-    branches: [feature/mobile-journal-navigation-20261027]
+    branches: [feature/mobile-journal-navigation-20261027, test/mental-sync-preserve-edits-20261102]
     paths:
       - 'mobile/**'
       - '.github/workflows/android-mobile-signature-verify.yml'
@@ -20,6 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Test edits made during notebook synchronization
+        run: node --test tests/mental_sync_race.test.cjs
       - name: Check permanent signing secrets
         env:
           KEYSTORE_B64: ${{ secrets.ATELIER_ANDROID_KEYSTORE_B64 }}
