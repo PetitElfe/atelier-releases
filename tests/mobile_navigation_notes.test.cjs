@@ -87,6 +87,14 @@ test('long touch highlight hidden only on mobile navigation buttons',()=>{
  assert.ok(html.includes('touch-action:manipulation'));
 });
 
+test('one-tap TEST updater is visible and keeps the explicit channel switch',()=>{
+ assert.match(html,/Chercher une nouvelle version TEST en 1 clic/);
+ assert.match(html,/channel\.value='test'/);
+ assert.match(html,/channel\.onchange\(\)/);
+ assert.match(html,/window\.AtelierUpdates\.checkUpdates/);
+ assert.match(html,/goblinSnapshot\('pre-update'\)/);
+});
+
 test('mobile application inline script compiles',()=>{
  const js=html.match(/<script>([\s\S]*?)<\/script>/);
  assert.ok(js);
