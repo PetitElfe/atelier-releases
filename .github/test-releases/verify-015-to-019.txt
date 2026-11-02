@@ -1,0 +1,1 @@
+Verify direct signed APK update from the user's visible 0.1.5 to TEST 0.1.9, using a CI emulator only. Do not install on any user's physical Android device or touch main.
