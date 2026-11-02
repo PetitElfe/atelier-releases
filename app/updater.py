@@ -12,6 +12,7 @@ DATA = BASE / 'data'
 PORT = 8876
 REPO = 'PetitElfe/atelier-releases'
 BRANCH = 'feature/0180-progression-foundations'
+CANDIDATE_BRANCH = 'test/windows-library-calendar-20261103'
 STATUS = DATA / 'updater-state.json'
 LOCK = DATA / 'updater.lock'
 LOG = DATA / 'updater-worker.log'
@@ -19,16 +20,16 @@ LOG = DATA / 'updater-worker.log'
 def _sha(data):
     return hashlib.sha256(data).hexdigest()
 
-def guard():
+def guard(*, external_runner=False):
     if os.name != 'nt':
         raise RuntimeError('Mise à jour en un clic disponible uniquement dans Windows TEST.')
-    if (Path(__file__).resolve().parent != (CODE / 'app').resolve()
+    if ((not external_runner and Path(__file__).resolve().parent != (CODE / 'app').resolve())
             or Path(os.environ.get('ATELIER_DATA_DIR', '')).resolve() != DATA.resolve()
             or os.environ.get('ATELIER_PORT') != str(PORT)):
         raise RuntimeError('Opération interdite hors de L’Atelier TEST (port 8876).')
     if not (DATA / 'atelier.db').is_file() or not (CODE / 'manifest.json').is_file():
         raise RuntimeError('Dossier de test ou base de données introuvable.')
-    for base in (CODE, DATA):
+    for base in (BASE, CODE, CODE / 'app', DATA):
         if base.is_symlink() or getattr(base, 'is_junction', lambda: False)():
             raise RuntimeError('Dossier de test redirigé : mise à jour refusée.')
 
@@ -70,12 +71,31 @@ def _manifest(data):
         raise RuntimeError('Fichier critique manquant.')
     return manifest
 
+def _selected_branch():
+    # Per-installation opt-in; Nathan's separate updater/channel is unaffected.
+    config = DATA / 'windows-test-channel.json'
+    if not config.exists():
+        return BRANCH
+    if config.is_symlink() or getattr(config, 'is_junction', lambda: False)():
+        raise RuntimeError('Configuration TEST redirigée : arrêt.')
+    raw = config.read_bytes()
+    if len(raw) > 4096:
+        raise RuntimeError('Configuration du canal TEST invalide.')
+    try:
+        branch = json.loads(raw).get('branch')
+    except (ValueError, AttributeError):
+        raise RuntimeError('Configuration du canal TEST invalide.')
+    if branch not in (BRANCH, CANDIDATE_BRANCH):
+        raise RuntimeError('Canal Windows TEST non autorisé.')
+    return branch
+
 def _latest_revision():
     """Resolve an immutable SHA without depending on GitHub's shared API quota."""
     import xml.etree.ElementTree as ET
+    branch=_selected_branch()
     reasons=[]
     try:
-        feed=_get('https://github.com/'+REPO+'/commits/'+BRANCH+'.atom',400000)
+        feed=_get('https://github.com/'+REPO+'/commits/'+branch+'.atom',400000)
         root=ET.fromstring(feed)
         entry=root.find('{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}id')
         match=re.search(r'([a-f0-9]{40})$',entry.text if entry is not None else '')
@@ -83,7 +103,7 @@ def _latest_revision():
         reasons.append('flux de commits vide')
     except Exception as exc:reasons.append('flux Atom : '+str(exc))
     try:
-        ref='https://api.github.com/repos/'+REPO+'/commits/'+quote(BRANCH,safe='')
+        ref='https://api.github.com/repos/'+REPO+'/commits/'+quote(branch,safe='')
         revision=json.loads(_get(ref,200000)).get('sha','')
         if re.fullmatch(r'[a-f0-9]{40}',revision):return revision
         reasons.append('réponse API invalide')
@@ -91,7 +111,7 @@ def _latest_revision():
     if shutil.which('git'):
         try:
             out=subprocess.check_output(['git','ls-remote','https://github.com/'+REPO+'.git',
-                                         'refs/heads/'+BRANCH],
+                                         'refs/heads/'+branch],
                                          timeout=20,text=True,stderr=subprocess.DEVNULL).strip()
             revision=out.split()[0] if out else ''
             if re.fullmatch(r'[a-f0-9]{40}',revision):return revision
@@ -109,7 +129,7 @@ def check():
     new={x['path']:x['sha256'] for x in remote['files']}
     return {'version':'0.18.0','channel':'TEST','revision':revision,
             'available':old!=new,'installed_version':installed['version'],
-            'installed_build':installed_build}
+            'installed_build':installed_build,'source_branch':_selected_branch()}
 
 def _stage(revision):
     raw=_get('https://codeload.github.com/'+REPO+'/zip/'+revision)
@@ -293,11 +313,14 @@ def _rollback_code(backup, applied):
         raise RuntimeError('Le manifeste de l’ancienne version n’a pas été restauré.')
 
 
-def worker(revision):
+def worker(revision, *, external_runner=False):
     lock=None;stage=None;backup=None;stopped=False;started_new=False
     applied=[]
     try:
-        guard()
+        if external_runner:
+            guard(external_runner=True)
+        else:
+            guard()
         if not re.fullmatch(r'[a-f0-9]{40}',revision):raise RuntimeError('Révision incorrecte.')
         lock=os.open(LOCK,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
         os.write(lock,str(os.getpid()).encode('ascii'))
