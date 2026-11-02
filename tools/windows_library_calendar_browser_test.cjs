@@ -45,7 +45,7 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  await dlg.locator('[name=image]').setInputFiles({name:'fixture.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
  await page.waitForFunction(()=>document.querySelector('.calendar-decor-status').textContent.includes('Image prête'));
  await dlg.locator('[name=opacity]').fill('62');await dlg.locator('[name=opacity]').dispatchEvent('input');
- await dlg.locator('[name=color]').fill('#ffcc88');await dlg.locator('[name=color]').dispatchEvent('input');
+ await dlg.locator('[name=color]').evaluate(el=>{el.value='#ffcc88';el.dispatchEvent(new Event('input',{bubbles:true}))});
  await dlg.locator('[data-decor=save]').click();
  const cell=page.locator('#monthGrid [data-date="2026-11-03"]');
  assert.equal(await cell.locator('img').evaluate(el=>el.style.opacity),'0.62');

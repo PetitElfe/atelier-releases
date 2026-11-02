@@ -1757,6 +1757,7 @@ function renderLibraryPageEditor(notebook,page){
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
   </article>`;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);
   body.innerHTML='';body.appendChild(renderLibraryEditableText(page.notes||''));
   const reading=$('#libraryReadingView');reading.innerHTML='';reading.appendChild(renderLibraryRichText(page.notes||''));
   const backlinksRoot=$('#libraryBacklinks>div');
@@ -2770,6 +2771,9 @@ function libraryApplySavedData(page,data){
   if(!page||!data)return;
   page.title=data.title||'Sans titre';
   page.notes=data.notes||LIBRARY_RICH_PREFIX;
+  // libraryPageById returns a view copy; keep the notebook's source entry fresh too.
+  const stored=(libraryNotebookState.sections||[]).flatMap(section=>section.entries||[]).find(entry=>Number(entry.id)===Number(page.id));
+  if(stored){stored.title=page.title;stored.notes=page.notes}
   libraryConfirmedSnapshots.set(Number(page.id),JSON.stringify(data));
   libraryClearConfirmedDraft(page,data);
   if(Number(librarySelectedPageId)===Number(page.id)&&$('#libraryPageBody')){
@@ -2818,6 +2822,8 @@ function saveLibraryPageData(page,data,{silent=false}={}){
 }
 function scheduleLibraryAutosave(page,{immediate=false}={}){
   if(!page)return;
+  const owner=$('#libraryPageBody')?.dataset.pageId;
+  if(owner&&Number(owner)!==Number(page.id))return;
   clearTimeout(libraryAutosaveTimerV12);
   const data=libraryEditorData(page);
   // Protéger aussi les changements de page déclenchés avant la fin du délai.
@@ -2837,6 +2843,8 @@ function flushLibraryAutosave(page=null){
   clearTimeout(libraryAutosaveTimerV12);
   const current=page||libraryPageById(librarySelectedPageId);
   if(!current||!$('#libraryPageBody'))return libraryLastSavePromise;
+  const owner=$('#libraryPageBody').dataset.pageId;
+  if(owner&&Number(owner)!==Number(current.id))return librarySaveQueues.get(Number(current.id))||Promise.resolve(true);
   const data=libraryEditorData(current);
   const saved=libraryConfirmedSnapshots.get(Number(current.id))||librarySavedSnapshot;
   if(JSON.stringify(data)===saved)return librarySaveQueues.get(Number(current.id))||Promise.resolve(true);
@@ -3137,6 +3145,7 @@ function renderLibraryPageEditor(notebook,page){
   libraryWireFind();
   $('#libraryWriterFind').onclick=libraryShowFind;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);
   const serverData={title:page.title||'Sans titre',notes:page.notes||LIBRARY_RICH_PREFIX};
   const durableDraft=libraryReadDraft(page);
   if(durableDraft&&(durableDraft.title!==serverData.title||durableDraft.notes!==serverData.notes)){
@@ -3322,6 +3331,7 @@ let libraryReaderSpread=false;
 
 function libraryCaptureEditorState(){
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);
   if(!body||!title)return null;
   return {title:title.value,html:body.innerHTML};
 }
@@ -3348,7 +3358,8 @@ function scheduleLibraryHistory(){
 }
 function libraryApplyHistoryState(state,page){
   if(!state)return;
-  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');if(!body||!title)return;
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);if(!body||!title)return;
   libraryHistoryApplying=true;
   title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
   libraryHistoryApplying=false;
