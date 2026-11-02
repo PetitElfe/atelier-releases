@@ -61,5 +61,16 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  await page.evaluate(()=>openCalendarDecoration('2026-11-03'));await dlg.locator('[data-decor=inherit]').click();await dlg.locator('[data-decor=save]').click();assert.equal(await cell.locator('img').count(),1);
  await page.reload();await page.waitForFunction(()=>typeof state!=='undefined'&&state.events);
  await page.evaluate(()=>{showView('calendar');state.cursor=new Date(2026,10,3);renderMonth()});assert.equal(await cell.locator('img').count(),1);
+ // Forecast cells must not inherit the margins of the old standalone panel.
+ const shift=days=>{const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)};
+ await api('/api/cycle-periods','POST',{start_date:shift(-56),end_date:null});
+ await api('/api/cycle-periods','POST',{start_date:shift(-28),end_date:null});
+ await page.evaluate(async()=>{await refreshOrganisation();state.cursor=parseYMD(cycleEstimate().next);renderMonth()});
+ const predicted=page.locator('#monthGrid .day-cell.cycle-forecast').first();await predicted.waitFor();
+ const band=await predicted.evaluate(el=>{const c=el.getBoundingClientRect(),b=el.querySelector('.calendar-cycle-band').getBoundingClientRect(),style=getComputedStyle(el);return {margin:style.marginTop,width:c.width,band:b.width}});
+ assert.equal(band.margin,'0px');assert.ok(band.band>band.width-12);
+ const hoverCell=page.locator('#monthGrid .day-cell').nth(10);await hoverCell.hover();
+ const centring=await page.evaluate(()=>{const cell=document.querySelectorAll('#monthGrid .day-cell')[10].getBoundingClientRect(),tip=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return Math.abs((cell.left+cell.right-tip.left-tip.right)/2)});
+ assert.ok(centring<1,'Relative-day label centred on its actual text width');
  assert.deepEqual(errors,[]);console.log('PASS: shelf, remembered page, guarded saves, domain race, monthly image, opacity, colour, overrides and reload');
 }finally{if(browser)await browser.close();server.kill();rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});
