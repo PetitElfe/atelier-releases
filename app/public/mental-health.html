@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon carnet de santé mentale — L’Atelier du Goblin</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark;--bg:#15221b;--paper:#26382b;--soft:#344836;--line:#5c785f;--ink:#f4f0df;--muted:#c6d0c0;--accent:#c3d3a0}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);min-height:100vh}header{display:flex;align-items:center;justify-content:space-between;padding:15px 24px;background:#213627;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+a{color:var(--accent)}h1{font:700 26px Georgia,serif;margin:0}h2{font-size:20px;margin:0 0 12px}p{line-height:1.55}small,.sub{color:var(--muted)}
+main{max-width:1200px;margin:24px auto;padding:0 18px;display:grid;grid-template-columns:240px 1fr;gap:20px}
+aside,section.panel{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:18px}aside{align-self:start;position:sticky;top:15px}
+nav{display:grid;gap:7px}button,input,textarea,select{font:inherit}button{cursor:pointer;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+button:hover,button:focus-visible{outline:2px solid var(--accent)}button[aria-pressed=true],button.primary{background:#4a6c4d}button:disabled{opacity:.6;cursor:wait}
+label{display:block;margin:9px 0;font-size:14px}input,textarea,select{width:100%;background:#18291e;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px;margin-top:5px}
+textarea{min-height:115px;resize:vertical}article{background:#1d2b22;padding:15px;border:1px solid #526a54;border-radius:12px;margin:13px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.row button{flex:none}
+.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.book{display:flex;align-items:center;gap:12px;background:linear-gradient(110deg,#6b4e37,#a88c64);color:#fff4d9;padding:15px;border-radius:12px;font-weight:700;margin:0 0 18px}
+.book svg{height:54px;width:54px}
+#notice{min-height:32px;color:var(--accent)}#editForm{display:grid;gap:7px}
+@media(max-width:750px){main{grid-template-columns:1fr}aside{position:static}nav{display:grid;grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<header><div><a href="/">← L’Atelier du Goblin</a><h1>Mon carnet de santé mentale</h1><small>Un espace personnel, sans obligation de tout remplir.</small></div><div><button id="reload">Actualiser depuis le PC</button></div></header>
+<main>
+<aside><div class="book"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 12C21 5 11 8 5 12v38c10-5 19-4 27 3 8-7 18-8 27-3V12C50 8 40 7 32 12Z" fill="#f0dfb9" stroke="#493324" stroke-width="3"/><path d="M32 12v41M10 22c8-3 14-2 18 1M36 23c6-3 12-4 18-1" stroke="#806548" stroke-width="2" fill="none"/></svg><span>Mes mots<br>mes moments</span></div>
+<nav id="nav"></nav><p class="sub">Les notes apparaissent sur ce PC après une synchronisation volontaire depuis ton téléphone. L’accès à ce carnet dépend de l’accès à ce PC.</p></aside>
+<div><section class="panel"><h2 id="heading">Mon journal</h2><div id="notice" role="status"></div><div id="editor"></div><div id="entries"></div></section></div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const groups=[['journal','Journal libre'],['anxiety',"Crises d'angoisse"],['sadness','Tristesse'],['catastrophe','Pensées catastrophiques'],['stories','Petites histoires'],['self','Moment pour soi']];
+const prompts={
+anxiety:[['Mes points d’appui','Regarde autour de toi. Quelles sont trois choses stables ou rassurantes que tu peux voir ?'],['Revenir au présent','Quel contact sens-tu sous tes pieds ou tes mains ?'],['Une chose à la fois','Quel est le plus petit geste que tu peux faire pour être plus à l’aise ?']],
+sadness:[['Me parler avec douceur','Que dirais-tu à quelqu’un que tu aimes dans cette situation ?'],['Ce qui pèse','De quoi aurais-tu besoin aujourd’hui, même très modestement ?']],
+catastrophe:[['Le fait et l’inquiétude','Qu’est-ce que je sais vraiment ? Qu’est-ce que j’imagine ?'],['Une autre possibilité','Quelle explication moins inquiétante serait également possible ?'],['Mon prochain pas','Si ce problème devait arriver, quel soutien pourrais-je demander ?']],
+stories:[['La clé minuscule','Au pied d’un vieux chêne, une clé brillait dans une tasse oubliée…'],['Le courrier des étoiles','Un facteur trouva une lettre adressée à la Lune…'],['Le village des chats','Dans un village où les chats tenaient les boutiques, un colis mystérieux arriva…'],['La petite bibliothèque','Chaque nuit, un nouveau livre apparaissait sur l’étagère la plus haute…'],['Le jardin des nuages','Une graine bleue poussait dans un pot qui ne touchait jamais terre…']],
+self:[['Un peu de douceur','Quelle boisson, couverture ou musique douce me ferait plaisir maintenant ?'],['Mon endroit calme','Quel petit coin confortable pourrais-je aménager ?'],['Une pause sans performance','Quelle activité simple puis-je faire sans objectif ni obligation ?']]};
+let data={cards:[],answers:[],journal:[]},rev=0,category='journal',editing=null;
+function node(tag,txt='',cls=''){const e=document.createElement(tag);e.textContent=txt;if(cls)e.className=cls;return e}
+function button(txt,fn){const b=node('button',txt);b.type='button';b.onclick=fn;return b}
+function announce(text){$('notice').textContent=text}
+function id(){return 'pc'+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
+const stamp=()=>new Date().toISOString();
+async function pull(){try{const resp=await fetch('/api/mobile/mental',{cache:'no-store'});if(!resp.ok)throw Error('Lecture impossible');const obj=await resp.json();rev=obj.rev||0;const d=obj.data||{};for(const k of ['cards','answers','journal'])data[k]=Array.isArray(d[k])?d[k]:[];announce('Carnet chargé depuis ton ordinateur.');render()}catch(e){announce('Impossible d’ouvrir le carnet : '+e.message)}}
+async function write(){const resp=await fetch('/api/mobile/mental',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rev,data:{version:1,...data}})});if(resp.status===409){announce('Une autre session a modifié ce carnet. Actualise avant de continuer ; tes changements sont encore affichés ici.');return false}if(!resp.ok){announce('Sauvegarde PC impossible ; copie ton texte avant de quitter cette page.');return false}rev=(await resp.json()).rev;announce('Enregistré sur cet ordinateur.');return true}
+function textArea(value='',placeholder='Écrire ici…'){const t=node('textarea');t.value=value;t.placeholder=placeholder;return t}
+function editItem(kind,item){editing={kind,id:item.id};render();window.scrollTo(0,0)}
+function removeItem(kind,item){if(!confirm('Masquer cette entrée ? La suppression sera synchronisée vers le téléphone.'))return;item.deletedAt=stamp();item.updatedAt=item.deletedAt;write().then(ok=>{if(ok)render()})}
+function actionRow(kind,item){const row=node('div','','row');row.append(button('Modifier',()=>editItem(kind,item)),button('Supprimer',()=>removeItem(kind,item)));return row}
+function render(){const nav=$('nav');nav.replaceChildren();for(const [key,label] of groups){const b=button(label,()=>{category=key;editing=null;render()});b.setAttribute('aria-pressed',String(category===key));nav.append(b)}$('heading').textContent=groups.find(x=>x[0]===category)[1];const editor=$('editor'),entries=$('entries');editor.replaceChildren();entries.replaceChildren();
+ const journal=category==='journal';
+ if(journal){const title=node('input');title.placeholder='Titre de ma page';const ta=textArea('','Tout ce que tu souhaites écrire…');const chosen=editing?.kind==='journal'?data.journal.find(x=>x.id===editing.id):null;if(chosen){title.value=chosen.title||'';ta.value=chosen.text||''}const save=button(chosen?'Enregistrer les modifications':'Ajouter une page',async()=>{if(!ta.value.trim()){announce('Écris quelque chose avant de sauvegarder.');return}const item=chosen||{id:id(),createdAt:stamp()};item.title=title.value.trim();item.text=ta.value;item.updatedAt=stamp();if(!chosen)data.journal.unshift(item);if(await write()){editing=null;render()}});editor.append(title,ta,save);
+ for(const item of data.journal.filter(x=>!x.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){const box=node('article');box.append(node('h3',item.title||'Une pensée'),node('p',item.text),node('small',new Date(item.updatedAt).toLocaleString('fr-FR')),actionRow('journal',item));entries.append(box)}
+ }else{
+ const custom=data.cards.filter(c=>c.section===category&&!c.deletedAt);
+ for(const c of [...(prompts[category]||[]).map(([title,prompt],i)=>({id:category+'-'+i,title,prompt,builtin:true})),...custom]){
+ const box=node('article');box.append(node('h3',c.title),node('p',c.prompt));
+ const ta=textArea('','Ma réponse personnelle…'),add=button('Enregistrer cette réponse',async()=>{if(!ta.value.trim())return;data.answers.unshift({id:id(),section:category,cardId:c.id,text:ta.value,createdAt:stamp(),updatedAt:stamp()});if(await write())render()});box.append(ta,add);
+ if(!c.builtin)box.append(actionRow('cards',c));
+ for(const a of data.answers.filter(x=>x.cardId===c.id&&!x.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){const note=node('article');note.append(node('p',a.text),node('small',new Date(a.updatedAt).toLocaleString('fr-FR')));note.append(actionRow('answers',a));box.append(note)}
+ entries.append(box)
+ }
+ const newTitle=node('input');newTitle.placeholder='Titre de la carte';const newPrompt=textArea('','Une question douce ou un début d’histoire');let chosen=null;if(editing?.kind==='cards'){chosen=data.cards.find(x=>x.id===editing.id);if(chosen){newTitle.value=chosen.title;newPrompt.value=chosen.prompt}}
+ const saveCard=button(chosen?'Modifier la carte':'Ajouter une carte',async()=>{if(!newTitle.value.trim()||!newPrompt.value.trim())return;const c=chosen||{id:id(),section:category,createdAt:stamp()};c.title=newTitle.value.trim();c.prompt=newPrompt.value;c.updatedAt=stamp();if(!chosen)data.cards.push(c);if(await write()){editing=null;render()}});editor.append(newTitle,newPrompt,saveCard);
+ if(editing?.kind==='answers'){const note=data.answers.find(x=>x.id===editing.id);if(note){const taEdit=textArea(note.text,'Modifier ma réponse');editor.prepend(taEdit,button('Enregistrer la réponse modifiée',async()=>{note.text=taEdit.value;note.updatedAt=stamp();if(await write()){editing=null;render()}}))}}
+ }
+ if(!entries.children.length)entries.append(node('p','Ton carnet est encore vide.','empty'))
+}
+$('reload').onclick=()=>{if(confirm('Actualiser depuis le PC ? Les modifications non enregistrées dans les champs seront perdues.'))pull()};
+pull();
+</script></body></html>
