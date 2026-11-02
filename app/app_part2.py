@@ -289,7 +289,7 @@ class Handler(BaseHTTPRequestHandler):
                     item=json.loads(path.read_text(encoding='utf-8'))
                     if not isinstance(item,dict): raise ValueError()
                 except (OSError, ValueError):
-                    item={'rev':0,'data':{'version':1,'cards':[],'answers':[],'journal':[]}}
+                    item={'rev':0,'data':{'version':1,'cards':[],'answers':[],'journal':[],'phrases':[]}}
             return self._json(item)
         if p == '/api/mobile/notes':
             path = DATA / 'mobile-notes.json'
@@ -656,9 +656,9 @@ class Handler(BaseHTTPRequestHandler):
             if n<2 or n>2000000: return self._json({'error':'Carnet limité à 2 Mo'},413)
             request=self._body()
             value=request.get('data') if isinstance(request,dict) else None
-            if not isinstance(value,dict) or any(not isinstance(value.get(k),list) for k in ('cards','answers','journal')):
+            if not isinstance(value,dict) or any(not isinstance(value.get(k),list) for k in ('cards','answers','journal','phrases')):
                 return self._json({'error':'Format de carnet invalide'},400)
-            for kind in ('cards','answers','journal'):
+            for kind in ('cards','answers','journal','phrases'):
                 if len(value[kind])>4000: return self._json({'error':'Trop de notes'},413)
                 for item in value[kind]:
                     if (not isinstance(item,dict) or not isinstance(item.get('id'),str) or len(item['id'])>100
@@ -674,7 +674,7 @@ class Handler(BaseHTTPRequestHandler):
                 except (OSError, ValueError, TypeError): rev=0
                 if incoming!=rev: return self._json({'error':'Carnet modifié ailleurs. Synchronise à nouveau.','rev':rev},409)
                 result={'rev':rev+1,'data':{'version':1,
-                    'cards':value['cards'],'answers':value['answers'],'journal':value['journal']}}
+                    'cards':value['cards'],'answers':value['answers'],'journal':value['journal'],'phrases':value['phrases']}}
                 pending=path.with_suffix('.tmp')
                 pending.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
                 os.replace(pending,path)
