@@ -37,10 +37,10 @@ public final class TailnetBridge {
             if (!method.equals("GET") && !method.equals("POST") && !method.equals("PUT")) return false;
             if (path.contains("..") || path.contains("//") || path.contains("#")) return false;
             if (method.equals("GET")) return path.equals("/api/tasks") || path.equals("/api/shopping") ||
-                path.equals("/api/mobile/notes") || path.equals("/api/recipes") ||
+                path.equals("/api/mobile/notes") || path.equals("/api/mobile/mental") || path.equals("/api/recipes") ||
                 path.matches("^/api/events\\?start=[0-9]{4}-[0-9]{2}-[0-9]{2}&end=[0-9]{4}-[0-9]{2}-[0-9]{2}$");
             if (method.equals("POST")) return path.equals("/api/tasks") || path.equals("/api/shopping") ||
-                path.equals("/api/mobile/notes") || path.equals("/api/events");
+                path.equals("/api/mobile/notes") || path.equals("/api/mobile/mental") || path.equals("/api/events");
             return path.matches("^/api/(tasks|shopping)/[0-9]+$");
         } catch (Exception e) { return false; }
     }
