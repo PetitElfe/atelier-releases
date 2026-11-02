@@ -23,6 +23,28 @@ textarea,input[type=text],select,input[type=date],input[type=time]{background:va
 .mobile-tabs .tab-icon{font-size:23px;line-height:27px}
 .mobile-tabs .star-tab{background:#416748;color:#fff;width:60px;height:60px;border:4px solid var(--tab-bg);border-radius:50%;margin-top:-26px;min-width:60px;box-shadow:0 5px 16px #0007;justify-content:center}
 .mobile-tabs .star-tab .tab-icon{font-size:30px}
+.mobile-tabs .star-tab .tab-icon svg{animation:goblinStarRoll 17s ease-in-out infinite;transform-origin:center}
+@keyframes goblinStarRoll{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(25deg)}}
+@media(prefers-reduced-motion:reduce){.mobile-tabs .star-tab .tab-icon svg{animation:none}}
+.mental-book{display:flex;align-items:center;gap:12px;border-radius:13px;background:linear-gradient(120deg,#7a5940,#b49b70);color:#fff5df;padding:13px;border:1px solid #d3b894}
+.mental-book svg{width:48px;height:48px;flex:none}
+.mental-book span{font-weight:700}
+.mental-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.mental-section-grid button{border:1px solid var(--card-border);border-radius:12px;background:var(--card-bg);color:var(--ink);padding:13px 7px;min-height:70px;font:inherit;text-align:left}
+.mental-section-grid button[aria-pressed=true]{outline:2px solid var(--accent)}
+.mental-card{background:var(--field-bg);border:1px solid var(--card-border);border-radius:12px;padding:13px;margin:10px 0}
+.mental-card textarea{width:100%;min-height:90px;box-sizing:border-box;margin:8px 0;resize:vertical}
+.mental-card .action{margin:4px 5px 4px 0}
+.mental-breath-stage{display:flex;align-items:center;justify-content:center;height:280px;overflow:hidden}
+.mental-breath-orbit{width:178px;height:178px;border:3px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform 5s ease-in-out,opacity .3s;box-shadow:0 0 0 14px #8aa88319}
+.mental-breath-orbit[data-phase=out]{transform:translateY(38px) scale(.88)}
+.mental-breath-orbit[data-phase=in]{transform:translateY(-38px) scale(1.1)}
+.mental-breath-orbit span{font:700 21px Georgia,serif;color:var(--ink);text-align:center}
+.mental-muted{font-size:13px;color:var(--muted-ink)}
+.mental-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mental-actions button{min-height:42px}
+@media(prefers-reduced-motion:reduce){.mental-breath-orbit{transition:none}}
+
 .tool-card{background:var(--field-bg);padding:13px;border-radius:13px;border:1px solid var(--card-border);margin:11px 0}
 .tool-card h3{font-size:16px;margin:0 0 7px;color:var(--accent)}
 .tool-card p{line-height:1.5}
@@ -57,7 +79,7 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
 <button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3"/></svg></span>Calendrier</button>
 <button type="button" data-mobile-go="jdr"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Notes JDR</button>
-<button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.4-6 3.4 1-7-5-5 7-1L12 2Z"/></svg></span></button>
+<button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement. Glisser vers le haut pour respirer"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.4-6 3.4 1-7-5-5 7-1L12 2Z"/></svg></span></button>
 <button type="button" data-mobile-go="connected" data-mobile-section="shopping"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 10 4-7M19 10l-4-7M3 10h18l-2 10H5L3 10Z"/><path d="M9 13v4M15 13v4"/></svg></span>Courses</button>
 <button type="button" data-mobile-go="connected" data-mobile-section="tasks"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m8 13 3 3 5-6"/></svg></span>To-Do</button>
 </nav>
@@ -344,7 +366,7 @@ function backupSettings(root){
  const p=panel(root,'Sauvegarder mes données du téléphone');
  p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées, tes notes JDR et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
  const button=el('button',{class:'action'},'💾 Exporter mes données Android');
- button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||''};const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
+ button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||''};payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
  p.append(button);
 }
 function themeSettings(root){
@@ -652,7 +674,112 @@ function renderOrganizedSettings(){
   group.append(p);root.append(group);
  }
 }
-const existingRenderGoblin=render;
+/* Espace de soutien émotionnel : stockage séparé, conservé hors du journal quotidien. */
+const mentalKey='goblin-mobile-mental-v1';
+const mentalSections=[
+ ['anxiety',"Crises d'angoisse"],
+ ['sadness','Tristesse'],
+ ['catastrophe','Pensées catastrophiques'],
+ ['stories','Petites histoires'],
+ ['self','Moment pour soi']
+];
+const mentalDefault={
+ anxiety:[["Mes points d'appui","Regarde autour de toi. Quelles sont trois choses stables ou rassurantes que tu peux voir ?"],["Revenir au présent","Quel contact sens-tu sous tes pieds ou tes mains ?"],["Une chose à la fois","Quel est le plus petit geste que tu peux faire pour être plus à l'aise ?"]],
+ sadness:[["Me parler avec douceur","Que dirais-tu à quelqu'un que tu aimes dans cette situation ?"],["Ce qui pèse","De quoi aurais-tu besoin aujourd'hui, même très modestement ?"]],
+ catastrophe:[["Le fait et l'inquiétude","Qu'est-ce que je sais vraiment ? Qu'est-ce que j'imagine ?"],["Une autre possibilité","Quelle explication moins inquiétante serait également possible ?"],["Mon prochain pas","Si ce problème devait arriver, quel soutien pourrais-je demander ?"]],
+ stories:[["La clé minuscule","Au pied d'un vieux chêne, une clé brillait dans une tasse oubliée…"],["Le courrier des étoiles","Un facteur trouva une lettre adressée à la Lune…"],["Le village des chats","Dans un village où les chats tenaient les boutiques, un colis mystérieux arriva…"],["La petite bibliothèque","Chaque nuit, un nouveau livre apparaissait sur l'étagère la plus haute…"],["Le jardin des nuages","Une graine bleue poussait dans un pot qui ne touchait jamais terre…"]],
+ self:[["Un peu de douceur","Quelle boisson, couverture ou musique douce me ferait plaisir maintenant ?"],["Mon endroit calme","Quel petit coin confortable pourrais-je aménager ?"],["Une pause sans performance","Quelle activité simple puis-je faire sans objectif ni obligation ?"]]
+};
+const mentalPhrases=[
+ 'Un petit instant suffit.','Tu peux avancer à ton rythme.','Tu as le droit de faire une pause.',
+ 'Rien à réussir ici.','Un geste doux à la fois.','Le calme peut revenir petit à petit.',
+ 'Tu peux garder les yeux ouverts.','Ta respiration peut rester naturelle.','Tu peux choisir ce qui te convient.'
+];
+let mentalData;try{mentalData=JSON.parse(localStorage.getItem(mentalKey)||'null')}catch(e){}
+if(!mentalData||typeof mentalData!=='object')mentalData={cards:[],answers:[],journal:[]};
+for(const k of ['cards','answers','journal'])if(!Array.isArray(mentalData[k]))mentalData[k]=[];
+let mentalCategory='anxiety',mentalBreath=false,mentalRunning=false,mentalTimeout=null,mentalSound=true,mentalAudio=null;
+function mentalSave(){localStorage.setItem(mentalKey,JSON.stringify(mentalData))}
+function mentalId(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function mentalStamp(){return new Date().toISOString()}
+function mentalRefresh(){if(state.page==='mental')render()}
+function mentalGo(section='anxiety'){mentalStop();mentalBreath=false;mentalCategory=section;state.page='mental';save();render();window.scrollTo(0,0)}
+function mentalStop(){mentalRunning=false;if(mentalTimeout!==null)clearTimeout(mentalTimeout);mentalTimeout=null;if(mentalAudio){mentalAudio.close().catch(()=>{});mentalAudio=null}}
+function mentalDing(){if(!mentalSound)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!mentalAudio)mentalAudio=new A();if(mentalAudio.state==='suspended')mentalAudio.resume();const o=mentalAudio.createOscillator(),g=mentalAudio.createGain(),t=mentalAudio.currentTime;o.type='sine';o.frequency.value=540;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.018,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+.48);o.connect(g);g.connect(mentalAudio.destination);o.start(t);o.stop(t+.5)}catch(e){}}
+function mentalBreathing(root){
+ const p=panel(root,'Respirer à mon rythme');
+ p.append(el('p',{class:'mental-muted'},'Repère visuel facultatif : environ 5 secondes pour inspirer, 5 secondes pour expirer. Ne force pas, ne retiens pas ton souffle. Arrête si tu ressens un inconfort ou des vertiges.'));
+ const stage=el('div',{class:'mental-breath-stage'});
+ const orbit=el('div',{class:'mental-breath-orbit','data-phase':'rest'}),word=el('span',{},'À ton rythme');orbit.append(word);stage.append(orbit);p.append(stage);
+ const phrase=el('p',{class:'muted'},mentalPhrases[Math.floor(Math.random()*mentalPhrases.length)]);p.append(phrase);
+ const controls=el('div',{class:'mental-actions'}),start=el('button',{class:'action',type:'button'},'Commencer'),stop=el('button',{class:'action',type:'button'},'Arrêter'),sound=el('button',{class:'action',type:'button'},mentalSound?'Son doux : activé':'Son doux : coupé');
+ const cycle=phase=>{if(!mentalRunning||state.page!=='mental'||!mentalBreath){mentalStop();return}orbit.dataset.phase=phase;word.textContent=phase==='in'?'Inspire doucement':'Expire doucement';mentalDing();if(phase==='in')phrase.textContent=mentalPhrases[Math.floor(Math.random()*mentalPhrases.length)];mentalTimeout=setTimeout(()=>cycle(phase==='in'?'out':'in'),5000)};
+ start.onclick=()=>{if(mentalRunning)return;mentalRunning=true;start.disabled=true;cycle('in')};
+ stop.onclick=()=>{mentalStop();start.disabled=false;orbit.dataset.phase='rest';word.textContent='À ton rythme'};
+ sound.onclick=()=>{mentalSound=!mentalSound;sound.textContent=mentalSound?'Son doux : activé':'Son doux : coupé'};
+ controls.append(start,stop,sound);p.append(controls);
+ const leave=el('button',{class:'action',type:'button'},'Retour aux cartes');leave.onclick=()=>{mentalStop();mentalBreath=false;render()};p.append(leave)
+}
+function mentalTextArea(placeholder,value=''){const t=el('textarea',{placeholder});t.value=value;return t}
+function mentalBook(root){
+ const wrap=panel(root,'Mon carnet de santé mentale'),btn=el('button',{class:'mental-book',type:'button','aria-label':'Ouvrir mon journal personnel'});
+ btn.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 12C21 5 11 8 5 12v38c10-5 19-4 27 3 8-7 18-8 27-3V12C50 8 40 7 32 12Z" fill="#f0dfb9" stroke="#493324" stroke-width="3"/><path d="M32 12v41M10 18c8-3 14-2 18 1M36 19c6-3 12-4 18-1M10 25c8-2 14-1 18 1M36 27c6-2 12-3 18-1" stroke="#806548" stroke-width="2" fill="none"/></svg><span>Ouvrir mon carnet<br><small>Écrire librement, sans jugement</small></span>';
+ btn.onclick=()=>{mentalCategory='journal';render()};wrap.append(btn)
+}
+function mentalEntries(root,section){
+ const label=mentalSections.find(x=>x[0]===section)?.[1]||'Mon carnet';
+ const panelNode=panel(root,label);
+ if(section==='journal'){
+ const title=el('input',{type:'text',placeholder:'Titre facultatif'}),ta=mentalTextArea('Tout ce que tu veux déposer ici…');
+ const saveBtn=el('button',{class:'action'},'Enregistrer dans mon carnet');
+ saveBtn.onclick=()=>{if(!ta.value.trim())return;mentalData.journal.unshift({id:mentalId(),title:title.value.trim(),text:ta.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};panelNode.append(title,ta,saveBtn)
+ }else{
+ const existing=[...mentalDefault[section].map(([title,prompt],i)=>({id:section+'-'+i,title,prompt,default:true})),...mentalData.cards.filter(c=>c.section===section)];
+ for(const card of existing){
+ const block=el('div',{class:'mental-card'});block.append(el('h3',{},card.title),el('p',{},card.prompt));
+ const answers=mentalData.answers.filter(a=>a.cardId===card.id).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+ const input=mentalTextArea('Ma réponse, juste pour moi…');
+ const add=el('button',{class:'action'},'Garder ma réponse');
+ add.onclick=()=>{if(!input.value.trim())return;mentalData.answers.unshift({id:mentalId(),cardId:card.id,section,text:input.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};
+ block.append(input,add);
+ if(!card.default){const edit=el('button',{class:'action'},'Modifier la carte'),del=el('button',{class:'action'},'Supprimer la carte');edit.onclick=()=>{const name=prompt('Titre de la carte',card.title);if(name===null)return;const text=prompt('Question ou début d’histoire',card.prompt);if(text===null)return;card.title=name.trim().slice(0,100)||card.title;card.prompt=text.trim().slice(0,2000)||card.prompt;card.updatedAt=mentalStamp();mentalSave();mentalRefresh()};del.onclick=()=>{if(!confirm('Supprimer cette carte ? Les réponses restent dans le carnet.'))return;mentalData.cards=mentalData.cards.filter(c=>c.id!==card.id);mentalSave();mentalRefresh()};block.append(edit,del)}
+ for(const answer of answers){const saved=el('div',{class:'mental-card'});saved.append(el('p',{},answer.text),el('small',{class:'mental-muted'},new Date(answer.updatedAt).toLocaleString('fr-FR')));const edit=el('button',{class:'action'},'Modifier'),del=el('button',{class:'action'},'Supprimer');edit.onclick=()=>{const v=prompt('Modifier ta réponse',answer.text);if(v===null)return;answer.text=v;answer.updatedAt=mentalStamp();mentalSave();mentalRefresh()};del.onclick=()=>{if(!confirm('Supprimer cette réponse ?'))return;mentalData.answers=mentalData.answers.filter(a=>a.id!==answer.id);mentalSave();mentalRefresh()};saved.append(edit,del);block.append(saved)}
+ panelNode.append(block);
+ }
+ const addCard=el('button',{class:'action'},'Ajouter ma propre carte');
+ addCard.onclick=()=>{const title=prompt('Titre de la carte');if(!title?.trim())return;const promptText=prompt('Question, proposition ou début d’histoire');if(!promptText?.trim())return;mentalData.cards.push({id:mentalId(),section,title:title.trim().slice(0,100),prompt:promptText.trim().slice(0,2000),createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};panelNode.append(addCard)
+ }
+ if(section==='journal'){
+ for(const entry of mentalData.journal){const item=el('div',{class:'mental-card'});item.append(el('h3',{},entry.title||'Quelques pensées'),el('p',{},entry.text),el('small',{class:'mental-muted'},new Date(entry.updatedAt).toLocaleString('fr-FR')));const edit=el('button',{class:'action'},'Modifier'),del=el('button',{class:'action'},'Supprimer');edit.onclick=()=>{const v=prompt('Modifier le texte',entry.text);if(v===null)return;entry.text=v;entry.updatedAt=mentalStamp();mentalSave();mentalRefresh()};del.onclick=()=>{if(!confirm('Supprimer cette page ?'))return;mentalData.journal=mentalData.journal.filter(x=>x.id!==entry.id);mentalSave();mentalRefresh()};item.append(edit,del);panelNode.append(item)}
+ }
+}
+function mentalView(root){
+ if(mentalBreath){mentalBreathing(root);return}
+ mentalBook(root);
+ root.append(el('p',{class:'muted'},'Les réponses et histoires restent sur ton téléphone. Tu peux les modifier, les supprimer ou les exporter depuis Paramètres. Aucune synchronisation automatique de données sensibles.'));
+ const bar=el('div',{class:'mental-section-grid'});
+ for(const [id,label] of mentalSections){const b=el('button',{type:'button','aria-pressed':String(mentalCategory===id)},label);b.onclick=()=>{mentalCategory=id;render()};bar.append(b)}
+ const journal=el('button',{type:'button','aria-pressed':String(mentalCategory==='journal')},'Mon journal libre');journal.onclick=()=>{mentalCategory='journal';render()};bar.append(journal);root.append(bar);
+ const breath=el('button',{class:'action'},'Respiration douce');breath.onclick=()=>{mentalBreath=true;render()};root.append(breath);
+ mentalEntries(root,mentalCategory);
+ const back=el('button',{class:'action'},'Revenir à mes outils');back.onclick=()=>{mentalStop();state.page='tools';save();render()};root.append(back)
+}
+const previousMentalRender=render;
+render=function(){
+ if(state.page==='mental'){document.getElementById('title').textContent='Mes moments doux';document.getElementById('subtitle').textContent='Un endroit pour me retrouver, sans obligation.';const root=document.getElementById('content');root.replaceChildren();mentalView(root);updateNav();return}
+ previousMentalRender();
+ if(state.page==='tools'){
+   const root=document.getElementById('content');
+   const btn=el('button',{class:'action',type:'button'},'Ouvrir mes moments doux');
+   btn.onclick=()=>mentalGo('anxiety');root.prepend(btn);
+ }
+};
+const goblinStar=document.querySelector('.star-tab');
+let starTouchStart=null,starSwiped=false;
+goblinStar.addEventListener('touchstart',e=>{starTouchStart=e.touches[0]?.clientY??null;starSwiped=false},{passive:true});
+goblinStar.addEventListener('touchend',e=>{if(starTouchStart===null)return;const moved=starTouchStart-(e.changedTouches[0]?.clientY??starTouchStart);starTouchStart=null;if(moved>35){starSwiped=true;mentalGo('anxiety');mentalBreath=true;render();setTimeout(()=>starSwiped=false,400)}},{passive:true});
+goblinStar.addEventListener('click',e=>{if(!starSwiped)return;e.stopImmediatePropagation();e.preventDefault()},true);
+
 render=function(){
  if(state.page==='grimoire'){
   document.getElementById('title').textContent='Grimoire de recettes';
