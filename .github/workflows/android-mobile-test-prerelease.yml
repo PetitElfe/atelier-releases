@@ -97,12 +97,12 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/old-019"
           gh run download 41510109141 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_019_Signed_TEST --dir "$RUNNER_TEMP/old-019"
-          test -s "$RUNNER_TEMP/old-019/app-release.apk"
+          test -s "$RUNNER_TEMP/old-019/LAtelierDuGoblin-Mobile.apk"
       - name: Match Android identity, signer, and 0.1.9 to 0.1.10 upgrade
         shell: bash
         run: |
           set -euo pipefail
-          OLD="$RUNNER_TEMP/old-019/app-release.apk"
+          OLD="$RUNNER_TEMP/old-019/LAtelierDuGoblin-Mobile.apk"
           NEW=mobile/android/app/build/outputs/apk/release/app-release.apk
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
@@ -126,7 +126,7 @@ jobs:
           profile: pixel_4
           emulator-boot-timeout: 720
           script: |
-            adb install -r "$RUNNER_TEMP/old-019/app-release.apk"
+            adb install -r "$RUNNER_TEMP/old-019/LAtelierDuGoblin-Mobile.apk"
             adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
             adb shell am force-stop fr.atelierdugoblin.mobile
             adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk
