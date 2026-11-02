@@ -697,7 +697,7 @@ const mentalPhrases=[
 ];
 let mentalData;try{mentalData=JSON.parse(localStorage.getItem(mentalKey)||'null')}catch(e){}
 if(!mentalData||typeof mentalData!=='object')mentalData={cards:[],answers:[],journal:[]};
-for(const k of ['cards','answers','journal'])if(!Array.isArray(mentalData[k]))mentalData[k]=[];
+for(const k of ['cards','answers','journal','phrases'])if(!Array.isArray(mentalData[k]))mentalData[k]=[];
 let mentalCategory='anxiety',mentalBreath=false,mentalRunning=false,mentalTimeout=null,mentalSound=true,mentalAudio=null,mentalSyncBusy=false,mentalSyncMessage='';
 function mentalSave(){localStorage.setItem(mentalKey,JSON.stringify(mentalData))}
 function mentalId(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
@@ -711,9 +711,9 @@ function mentalBreathing(root){
  p.append(el('p',{class:'mental-muted'},'Repère visuel facultatif : environ 5 secondes pour inspirer, 5 secondes pour expirer. Ne force pas, ne retiens pas ton souffle. Arrête si tu ressens un inconfort ou des vertiges.'));
  const stage=el('div',{class:'mental-breath-stage'});
  const orbit=el('div',{class:'mental-breath-orbit','data-phase':'rest'}),word=el('span',{},'À ton rythme');orbit.append(word);stage.append(orbit);p.append(stage);
- const phrase=el('p',{class:'muted'},mentalPhrases[Math.floor(Math.random()*mentalPhrases.length)]);p.append(phrase);
+ const allMentalPhrases=[...mentalPhrases,...mentalData.phrases.filter(x=>!x.deletedAt).map(x=>x.text)];const phrase=el('p',{class:'muted'},allMentalPhrases[Math.floor(Math.random()*allMentalPhrases.length)]);p.append(phrase);
  const controls=el('div',{class:'mental-actions'}),start=el('button',{class:'action',type:'button'},'Commencer'),stop=el('button',{class:'action',type:'button'},'Arrêter'),sound=el('button',{class:'action',type:'button'},mentalSound?'Son doux : activé':'Son doux : coupé');
- const cycle=phase=>{if(!mentalRunning||state.page!=='mental'||!mentalBreath){mentalStop();return}orbit.dataset.phase=phase;word.textContent=phase==='in'?'Inspire doucement':'Expire doucement';mentalDing();if(phase==='in')phrase.textContent=mentalPhrases[Math.floor(Math.random()*mentalPhrases.length)];mentalTimeout=setTimeout(()=>cycle(phase==='in'?'out':'in'),5000)};
+ const cycle=phase=>{if(!mentalRunning||state.page!=='mental'||!mentalBreath){mentalStop();return}orbit.dataset.phase=phase;word.textContent=phase==='in'?'Inspire doucement':'Expire doucement';mentalDing();if(phase==='in')phrase.textContent=allMentalPhrases[Math.floor(Math.random()*allMentalPhrases.length)];mentalTimeout=setTimeout(()=>cycle(phase==='in'?'out':'in'),5000)};
  start.onclick=()=>{if(mentalRunning)return;mentalRunning=true;start.disabled=true;cycle('in')};
  stop.onclick=()=>{mentalStop();start.disabled=false;orbit.dataset.phase='rest';word.textContent='À ton rythme'};
  sound.onclick=()=>{mentalSound=!mentalSound;sound.textContent=mentalSound?'Son doux : activé':'Son doux : coupé'};
@@ -734,7 +734,10 @@ function mentalEntries(root,section){
  const saveBtn=el('button',{class:'action'},'Enregistrer dans mon carnet');
  saveBtn.onclick=()=>{if(!ta.value.trim())return;mentalData.journal.unshift({id:mentalId(),title:title.value.trim(),text:ta.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};panelNode.append(title,ta,saveBtn)
  }else{
- const existing=[...mentalDefault[section].map(([title,prompt],i)=>({id:section+'-'+i,title,prompt,default:true})),...mentalData.cards.filter(c=>c.section===section&&!c.deletedAt)];
+ const presets=mentalDefault[section].map(([title,prompt],i)=>({id:section+'-'+i,title,prompt,section,default:true}));
+ const custom=mentalData.cards.filter(c=>c.section===section);
+ const existing=[...presets.map(card=>custom.find(x=>x.id===card.id)||card).filter(c=>!c.deletedAt),
+ ...custom.filter(c=>!presets.some(d=>d.id===c.id)&&!c.deletedAt)];
  for(const card of existing){
  const block=el('div',{class:'mental-card'});block.append(el('h3',{},card.title),el('p',{},card.prompt));
  const answers=mentalData.answers.filter(a=>a.cardId===card.id&&!a.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
@@ -742,7 +745,10 @@ function mentalEntries(root,section){
  const add=el('button',{class:'action'},'Garder ma réponse');
  add.onclick=()=>{if(!input.value.trim())return;mentalData.answers.unshift({id:mentalId(),cardId:card.id,section,text:input.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};
  block.append(input,add);
- if(!card.default){const edit=el('button',{class:'action'},'Modifier la carte'),del=el('button',{class:'action'},'Supprimer la carte');edit.onclick=()=>{const name=prompt('Titre de la carte',card.title);if(name===null)return;const text=prompt('Question ou début d’histoire',card.prompt);if(text===null)return;card.title=name.trim().slice(0,100)||card.title;card.prompt=text.trim().slice(0,2000)||card.prompt;card.updatedAt=mentalStamp();mentalSave();mentalRefresh()};del.onclick=()=>{if(!confirm('Supprimer cette carte ? Les réponses restent dans le carnet.'))return;card.deletedAt=mentalStamp();card.updatedAt=card.deletedAt;mentalSave();mentalRefresh()};block.append(edit,del)}
+ {const edit=el('button',{class:'action'},'Modifier la carte'),del=el('button',{class:'action'},'Supprimer la carte');
+ const ensure=()=>{let entry=mentalData.cards.find(c=>c.id===card.id);if(!entry){entry={...card,default:false,createdAt:mentalStamp()};mentalData.cards.push(entry)}return entry};
+ edit.onclick=()=>{const name=prompt('Titre de la carte',card.title);if(name===null)return;const text=prompt('Question ou début d’histoire',card.prompt);if(text===null)return;const entry=ensure();entry.title=name.trim().slice(0,100)||card.title;entry.prompt=text.trim().slice(0,2000)||card.prompt;entry.updatedAt=mentalStamp();mentalSave();mentalRefresh()};
+ del.onclick=()=>{if(!confirm('Masquer cette carte ? Les réponses restent dans le carnet.'))return;const entry=ensure();entry.deletedAt=mentalStamp();entry.updatedAt=entry.deletedAt;mentalSave();mentalRefresh()};block.append(edit,del)}
  for(const answer of answers){const saved=el('div',{class:'mental-card'});saved.append(el('p',{},answer.text),el('small',{class:'mental-muted'},new Date(answer.updatedAt).toLocaleString('fr-FR')));const edit=el('button',{class:'action'},'Modifier'),del=el('button',{class:'action'},'Supprimer');edit.onclick=()=>{const v=prompt('Modifier ta réponse',answer.text);if(v===null)return;answer.text=v;answer.updatedAt=mentalStamp();mentalSave();mentalRefresh()};del.onclick=()=>{if(!confirm('Supprimer cette réponse ?'))return;answer.deletedAt=mentalStamp();answer.updatedAt=answer.deletedAt;mentalSave();mentalRefresh()};saved.append(edit,del);block.append(saved)}
  panelNode.append(block);
  }
@@ -757,7 +763,7 @@ function mentalEntries(root,section){
 /* Explicit two-way synchronization. Tombstones preserve intentional deletions. */
 function mentalMerge(local,remote){
  const result={cards:[],answers:[],journal:[]};
- for(const kind of ['cards','answers','journal']){
+ for(const kind of ['cards','answers','journal','phrases']){
   const byId=new Map();
   for(const source of [remote,local])for(const item of (Array.isArray(source?.[kind])?source[kind]:[])){
    if(!item||typeof item.id!=='string'||typeof item.updatedAt!=='string')continue;
@@ -797,6 +803,18 @@ function mentalView(root){
  const bar=el('div',{class:'mental-section-grid'});
  for(const [id,label] of mentalSections){const b=el('button',{type:'button','aria-pressed':String(mentalCategory===id)},label);b.onclick=()=>{mentalCategory=id;render()};bar.append(b)}
  const journal=el('button',{type:'button','aria-pressed':String(mentalCategory==='journal')},'Mon journal libre');journal.onclick=()=>{mentalCategory='journal';render()};bar.append(journal);root.append(bar);
+ const soft=panel(root,'Mes petites phrases à penser');
+ const phraseInput=el('input',{type:'text',placeholder:'Une petite phrase douce…'});
+ const phraseAdd=el('button',{type:'button',class:'action'},'Ajouter cette phrase');
+ phraseAdd.onclick=()=>{if(!phraseInput.value.trim())return;mentalData.phrases.push({id:mentalId(),text:phraseInput.value.trim().slice(0,250),createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};
+ soft.append(phraseInput,phraseAdd);
+ for(const line of mentalData.phrases.filter(x=>!x.deletedAt)){
+  const row=el('div',{class:'mental-card'});row.append(el('p',{},line.text));
+  const edit=el('button',{type:'button',class:'action'},'Modifier'),del=el('button',{type:'button',class:'action'},'Supprimer');
+  edit.onclick=()=>{const v=prompt('Ma phrase douce',line.text);if(v===null)return;line.text=v.trim().slice(0,250);line.updatedAt=mentalStamp();mentalSave();mentalRefresh()};
+  del.onclick=()=>{line.deletedAt=mentalStamp();line.updatedAt=line.deletedAt;mentalSave();mentalRefresh()};
+  row.append(edit,del);soft.append(row)
+ }
  const syncRow=panel(root,'Retrouver mon carnet sur PC');
  const syncButton=el('button',{type:'button',class:'action'},'Synchroniser maintenant avec mon PC');
  const syncStatus=el('p',{class:'mental-muted'},'Synchronisation volontaire uniquement. Les données personnelles ne partent pas sans ton action.');
