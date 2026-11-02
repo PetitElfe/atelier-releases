@@ -3331,7 +3331,6 @@ let libraryReaderSpread=false;
 
 function libraryCaptureEditorState(){
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
-  body.dataset.pageId=String(page.id);
   if(!body||!title)return null;
   return {title:title.value,html:body.innerHTML};
 }
@@ -3359,7 +3358,7 @@ function scheduleLibraryHistory(){
 function libraryApplyHistoryState(state,page){
   if(!state)return;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
-  body.dataset.pageId=String(page.id);if(!body||!title)return;
+  if(!body||!title)return;
   libraryHistoryApplying=true;
   title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
   libraryHistoryApplying=false;
