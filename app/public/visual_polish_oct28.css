@@ -1,0 +1,33 @@
+/* Lisibilité du calendrier et des tableaux : corrections ALPHA du 28 octobre. */
+.calendar-screenreader-title{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#calendarView .calendar-toolbar{align-items:center;margin-bottom:10px;min-height:38px}
+#monthPanel .calendar-month-head{position:relative;display:flex;justify-content:center;align-items:center;min-height:52px;margin:3px 0 9px}
+#monthPanel .calendar-month-pager{display:flex;align-items:center;justify-content:center;gap:15px;min-width:0}
+#monthPanel .calendar-month-pager h2{min-width:min(255px,48vw);text-align:center;font-size:clamp(21px,1.7vw,29px);line-height:1.15;margin:0;text-transform:capitalize}
+#monthPanel .calendar-month-pager button{min-width:40px;min-height:40px;font:600 26px/1 Georgia,serif;border-radius:9px;background:#29241f}
+#monthPanel #calendarToday{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+#monthPanel .weekday-row span{font-size:13px;font-weight:600;padding:8px}
+#monthPanel .day-cell{min-width:0;min-height:clamp(115px,15vh,176px)}
+@media(max-width:740px){#monthPanel .calendar-month-head{flex-wrap:wrap;gap:8px}#monthPanel #calendarToday{position:static;transform:none}#monthPanel .calendar-month-pager{gap:7px}#monthPanel .calendar-month-pager h2{min-width:150px}}
+#weekPanel .week-scroll{max-height:max(390px,calc(100dvh - 238px))!important;overflow-x:auto!important;overflow-y:auto!important;overscroll-behavior:contain}
+#weekPanel .week-grid{--week-hour-height:56px;--week-header-height:78px;grid-template-columns:62px repeat(7,minmax(152px,1fr))!important;min-width:1126px!important}
+#weekGrid .week-head{height:var(--week-header-height)!important;padding:8px 6px!important;font-size:13px!important;line-height:1.2!important;overflow:hidden}
+#weekGrid .week-head strong{font-size:15px;display:block;margin:0 0 5px}
+#weekGrid .week-today-label{position:absolute;top:3px;right:3px;font-size:8px!important;letter-spacing:0!important;padding:2px 3px!important;margin:0!important;opacity:.93;pointer-events:none}
+#weekGrid .week-slot,#weekGrid .time-label{height:var(--week-hour-height)!important;border-bottom:1px solid #77644e!important}
+#weekGrid .week-slot{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.35) 50%,transparent 51%)}
+#weekGrid .week-slot.week-current-day{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.40) 50%,transparent 51%),linear-gradient(90deg,rgba(207,171,92,.095),rgba(207,171,92,.045))}
+#weekGrid .week-timed-event{min-height:25px!important}
+#weekGrid .week-card-title{font-size:12px!important;line-height:1.28!important}
+#weekGrid .week-timed-event:focus-within{outline:2px solid #e3bc73}
+
+#trackerBoardCreateForm.hidden{display:none!important}
+#trackersView .tracker-heading{align-items:center;gap:15px;margin-bottom:13px}
+#trackersView .tracker-heading h2{font-size:24px}
+#trackersView .tracker-heading p{margin:4px 0 0;line-height:1.4;font-size:13px}
+#trackerBoardCreateForm{margin:5px 0 14px;padding:14px;border:1px solid #675744;border-radius:12px;background:#24201c}
+.tracker-board-period{gap:7px;align-items:center}
+.tracker-board-period .tracker-board-range{min-width:180px;max-width:100%;font-size:15px;text-align:center}
+.tracker-board-period .tracker-board-cadence:empty{display:none}
+.tracker-grid-line{grid-template-columns:205px repeat(var(--tracker-days),32px);min-height:39px}
+.tracker-row-label{padding:7px 10px;font-size:13px;line-height:1.25}

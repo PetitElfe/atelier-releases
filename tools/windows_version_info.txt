@@ -1,0 +1,30 @@
+# Version resource for the Windows executable, not a digital signature.
+# This fills Properties -> Details. SmartScreen publisher identity still
+# requires trusted Authenticode signing and cannot be spoofed by this file.
+VSVersionInfo(
+    ffi=FixedFileInfo(
+        filevers=(0, 18, 0, 0),
+        prodvers=(0, 18, 0, 0),
+        mask=0x3f,
+        flags=0x0,
+        OS=0x40004,
+        fileType=0x1,
+        subtype=0x0,
+        date=(0, 0)
+    ),
+    kids=[
+        StringFileInfo([
+            StringTable('040c04b0', [
+                StringStruct('CompanyName', 'Petit Goblin'),
+                StringStruct('FileDescription', "L'Atelier du Goblin — application Windows TEST"),
+                StringStruct('FileVersion', '0.18.0'),
+                StringStruct('InternalName', 'LAtelierDuGoblin_TEST'),
+                StringStruct('LegalCopyright', 'Copyright (c) 2026 Petit Goblin'),
+                StringStruct('OriginalFilename', 'LAtelierDuGoblin_TEST.exe'),
+                StringStruct('ProductName', "L'Atelier du Goblin"),
+                StringStruct('ProductVersion', '0.18.0'),
+            ]),
+        ]),
+        VarFileInfo([VarStruct('Translation', [1036, 1200])])
+    ]
+)

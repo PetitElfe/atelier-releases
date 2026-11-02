@@ -1,0 +1,262 @@
+/* Onglet 2 : présentation plus compacte, sans toucher aux données. */
+#trackersView .tracker-board-toolbar{display:none!important}
+#trackersView .tracker-add-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#trackersView .tracker-add-row input[name="title"]{flex:1 1 210px;min-width:140px}
+
+:root[data-atelier-theme="sage"]{--bg:#101d18;--panel:#203128;--line:#58705f;--gold:#d1dbb9;--muted:#acc1ae;--text:#f1f5e9}
+:root[data-atelier-theme="mauve"]{--bg:#191421;--panel:#2f2438;--line:#765e84;--gold:#ebc9e9;--muted:#c6b2c9;--text:#f9eef9}
+:root[data-atelier-theme="bleu"]{--bg:#101a28;--panel:#1c2b3e;--line:#577086;--gold:#b8d4ee;--muted:#aabed3;--text:#f2f8fe}
+:root[data-atelier-theme="miel"]{--bg:#24190e;--panel:#342619;--line:#916a45;--gold:#e7c583;--muted:#c9ae90;--text:#fbecda}
+.atelier-year-header{display:flex;align-items:center;justify-content:center;gap:9px;margin:10px 0 18px}
+.atelier-year-header h2{margin:0 12px;min-width:120px;text-align:center}
+.atelier-year-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-bottom:25px}
+.atelier-year-month{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:10px}
+.atelier-year-month-title{display:block;width:100%;text-align:left;text-transform:capitalize;border:0;background:transparent;color:var(--gold);font-weight:700;padding:3px 0 8px}
+.atelier-year-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.atelier-year-day{min-width:0;padding:5px 0;font-size:10px;border:1px solid transparent;border-radius:4px;background:transparent}
+.atelier-year-day.has-event{background:#7d9d8544;border-color:var(--gold)}
+.atelier-year-events{max-height:110px;overflow:auto;margin-top:8px;color:var(--muted);font-size:10px}
+.atelier-year-events>div{border-top:1px solid var(--line);padding:3px 0;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+@media(max-width:1080px){.atelier-year-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.atelier-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:450px){.atelier-year-grid{grid-template-columns:1fr}}
+
+
+.atelier-tracker-tasks{margin:10px 0;padding:12px;max-width:900px}
+.atelier-tracker-task-items{display:flex;flex-direction:column;gap:4px}
+.atelier-tracker-task-line{display:flex;align-items:center;gap:9px;min-height:30px;border-bottom:1px solid var(--line,#564c41);font-size:13px;padding:3px}
+.atelier-tracker-task-line span{flex:1;min-width:0;overflow-wrap:anywhere}
+.atelier-tracker-task-line button{border:0;background:transparent;padding:3px 7px}
+.atelier-task-done{text-decoration:line-through;opacity:.55}
+#atelierSettingsReminders{max-height:240px;overflow:auto}
+#atelierSettingsReminders p{margin:4px 0;border-bottom:1px solid var(--line,#564c41);padding:5px}
+
+/* Paramètres : navigation de type Discord, intégrée dans la page et sans modal. */
+#settingsView .atelier-settings-split{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;align-items:start;margin-top:18px;min-width:0}
+#settingsView .atelier-settings-nav{display:flex;flex-direction:column;gap:5px;position:sticky;top:18px;max-height:calc(100vh - 70px);overflow:auto;padding:6px 8px 6px 0;border-right:1px solid var(--line,#645844)}
+#settingsView .atelier-settings-nav button{display:block;border:0;background:transparent;border-radius:8px;text-align:left;padding:11px 12px;width:100%;font-size:14px;color:var(--text,#eee5d0);cursor:pointer}
+#settingsView .atelier-settings-nav button:hover{background:rgba(155,142,115,.12)}
+#settingsView .atelier-settings-nav button.active{background:rgba(169,152,113,.22);font-weight:700;color:var(--gold,#dfc58c)}
+#settingsView .atelier-settings-content{min-width:0;max-width:900px}
+#settingsView .atelier-settings-content .settings-grid{display:block!important;min-width:0}
+#settingsView .atelier-settings-content .settings-grid>.settings-card{width:100%;max-width:none;box-sizing:border-box}
+#settingsView .atelier-settings-content .settings-grid>.settings-card[hidden]{display:none!important}
+#settingsView .atelier-settings-content #atelierSettingsReminders{max-height:none;min-height:0}
+#settingsView #atelierSettingsReminders p{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+/* Module Tâches compact, déplaçable horizontalement et redimensionnable. */
+#trackersView .atelier-tracker-tasks{box-sizing:border-box;max-width:100%;padding:12px 14px!important;border:1px solid var(--line,#665744);border-radius:12px;background:var(--panel,#231e19)}
+#trackersView .atelier-tracker-tasks .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 9px}
+#trackersView .atelier-tracker-tasks .tracker-board-head h3{margin:0;flex:1;font-size:18px}
+#trackersView .atelier-tracker-tasks .tracker-board-head button{font-size:12px;padding:5px 8px}
+#trackersView .atelier-tracker-tasks .atelier-tracker-move{cursor:grab;touch-action:none}
+#trackersView .atelier-tracker-tasks .atelier-tracker-move:active{cursor:grabbing}
+#trackersView .atelier-tracker-tasks .atelier-tracker-resize{cursor:ew-resize;touch-action:none}
+#trackersView .atelier-tracker-task-items{display:flex;flex-direction:column;gap:0}
+#trackersView .atelier-tracker-task-line{min-height:26px!important;padding:3px 1px!important;gap:7px;font-size:12px}
+#trackersView .atelier-tracker-task-line input[type=checkbox]{width:15px;height:15px;flex-shrink:0}
+#trackersView .atelier-tracker-task-line button{padding:1px 4px}
+@media(max-width:860px){#settingsView .atelier-settings-split{grid-template-columns:150px minmax(0,1fr);gap:12px}}
+@media(max-width:560px){#settingsView .atelier-settings-split{grid-template-columns:1fr}#settingsView .atelier-settings-nav{position:static;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line,#645844)}#settingsView .atelier-settings-nav button{white-space:nowrap;width:auto}}
+
+
+#trackersView #atelierTrackerEditLayout{margin:8px 0 12px 10px}
+#trackersView .tracker-board[data-atelier-board-id]{box-sizing:border-box;max-width:100%;transition:margin .08s}
+#trackersView .tracker-board .atelier-tracker-layout-handle{display:none;cursor:grab;touch-action:none;font-size:12px;padding:4px 8px}
+#trackersView .tracker-board.atelier-module-editing{outline:1px dashed var(--gold,#dcc397);outline-offset:2px}
+#trackersView .tracker-board.atelier-module-editing .atelier-tracker-layout-handle{display:inline-block}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+#trackersView .tracker-board.atelier-module-editing .tracker-board-head h3{flex:1}
+
+/* Le crayon global est la seule commande du mode Modifier. */
+#trackersView #atelierTrackerEditLayout,
+#trackersView .atelier-tracker-move,
+#trackersView .atelier-tracker-resize,
+#trackersView .atelier-tracker-layout-handle{display:none!important}
+#sideNav button[data-view][hidden]{display:none!important}
+#trackersView .atelier-layout-capable{position:relative;box-sizing:border-box}
+#trackersView .atelier-layout-grip,
+#trackersView .atelier-layout-corner{display:none;user-select:none;touch-action:none}
+#trackersView .atelier-layout-capable.atelier-module-editing{outline:1px dashed #bda678;outline-offset:2px}
+#trackersView .atelier-module-editing .atelier-layout-grip{display:inline-flex;align-items:center;justify-content:center;min-width:23px;cursor:grab;color:#d6c29b;font-weight:700}
+#trackersView .atelier-module-editing .atelier-layout-grip:active{cursor:grabbing}
+#trackersView .atelier-module-editing .atelier-layout-corner{display:block;position:absolute;right:3px;bottom:3px;width:17px;height:17px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 55%,#bda678 56% 62%,transparent 63% 73%,#bda678 74% 81%,transparent 82%)}
+#trackersView .atelier-tracker-tasks{max-width:100%;padding:12px;border:1px solid var(--line,#655842);border-radius:11px;background:var(--panel,#221e18)}
+#trackersView .atelier-tracker-tasks .tracker-board-head{display:flex;align-items:center;gap:9px}
+#trackersView .atelier-tracker-tasks .tracker-board-head h3{flex:1}
+#trackersView .atelier-tracker-task-line{min-height:27px}
+
+/* Volume du son propre à L'Atelier, accessible depuis Paramètres. */
+.atelier-reminder-volume{display:flex;flex-direction:column;gap:6px;margin:12px 0;color:var(--text,#efe6d0)}
+.atelier-reminder-volume>span{display:flex;justify-content:space-between;gap:12px}
+.atelier-reminder-volume input[type=range]{width:100%;accent-color:var(--gold,#c8ae7b)}
+
+/* Grilles compactes et menu au clic droit sur une ligne de suivi. */
+#trackersView .tracker-add-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:5px 8px;border:1px dashed var(--line,#726454);background:rgba(145,134,112,.08);border-radius:7px}
+#trackersView .tracker-add-row input[name=title]{flex:1 1 160px;min-width:140px;max-width:320px;min-height:29px;padding:4px 8px;background:transparent;border:0;border-bottom:1px solid var(--line,#726454)}
+#trackersView .tracker-add-row input[name=title]::placeholder{color:var(--muted,#a39886)}
+#trackersView .tracker-add-row button,#trackersView .tracker-add-row select{min-height:27px;padding:3px 7px;font-size:12px}
+.atelier-row-context-menu{z-index:100000;display:flex;flex-direction:column;gap:2px;min-width:145px;padding:5px;border:1px solid #8b775d;border-radius:7px;background:#27241f;box-shadow:0 8px 30px #0009}
+.atelier-row-context-menu button{border:0;background:transparent;color:#f4e7d1;text-align:left;padding:8px 12px;border-radius:5px;font-size:13px}
+.atelier-row-context-menu button:hover{background:#554533}
+
+/* Crayon global : les surfaces de modules servent de prise et les poignées
+   n'occupent plus d'espace visuel tant qu'elles ne sont pas survolées. */
+#trackersView .atelier-module-editing .atelier-module-drag-surface{cursor:grab}
+#trackersView .atelier-module-editing .atelier-module-drag-surface:active{cursor:grabbing}
+#trackersView .atelier-layout-grip{display:none!important}
+#trackersView .atelier-module-editing .atelier-layout-corner{opacity:0;transition:opacity .12s}
+#trackersView .atelier-module-editing:hover .atelier-layout-corner{opacity:.85}
+#trackersView .tracker-row-setup{display:none!important}
+#trackersView .tracker-row-title,#trackersView .atelier-tracker-task-line span[role=button]{cursor:pointer}
+#trackersView .tracker-row-title:hover,#trackersView .atelier-tracker-task-line span[role=button]:hover{text-decoration:underline}
+#homeView.layout-editing .home-layout-handle{opacity:0;transition:opacity .12s}
+#homeView.layout-editing .home-module:hover .home-layout-handle{opacity:.8}
+
+/* Accueil : déplacement depuis la surface du module avec le crayon global.
+   Les poignées restent accessibles au survol sans encombrer la présentation. */
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-move-handle{display:none!important}
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-rename-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-settings-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-resize-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-width-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]>.layout-controls .layout-height-handle{opacity:0;transition:opacity .12s}
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-rename-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-settings-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-resize-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-width-handle,
+#homeView.home-free-ready.layout-editing [data-home-module]:hover>.layout-controls .layout-height-handle{opacity:.85}
+
+/* Tracker : vrai canevas commun pour chaque tableau et la To-do list.
+   Le déplacement ne modifie plus l'ordre ni les marges du flux. */
+#trackersView #trackerBoardList.atelier-tracker-canvas{position:relative!important;display:block!important;overflow:visible!important;min-height:400px}
+#trackersView #trackerBoardList.atelier-tracker-canvas>.tracker-board,
+#trackersView #trackerBoardList.atelier-tracker-canvas>.atelier-tracker-tasks{position:absolute!important;margin:0!important;transform:none!important;flex:none!important}
+#trackersView .atelier-module-editing .atelier-module-drag-surface{touch-action:none;cursor:grab}
+#trackersView .atelier-module-editing .atelier-module-drag-surface:active{cursor:grabbing}
+
+.atelier-notification-picker{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.atelier-notification-picker>label{font-weight:600}
+.atelier-notification-picker select{width:100%;padding:8px}
+.atelier-notification-picker-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.atelier-notification-picker-actions label{font-size:12px}
+.atelier-notification-picker-actions input[type=file]{display:block;font-size:12px;max-width:230px;margin-top:5px}
+
+/* Monthly relative date labels; the whole date cell is the hover target. */
+#monthGrid .day-cell[data-relative-date]{position:relative}
+#monthGrid .day-cell[data-relative-date]:hover::after,
+#monthGrid .day-cell[data-relative-date]:focus-within::after{
+ content:attr(data-relative-date);
+ position:absolute;left:50%;bottom:calc(100% - 6px);
+ transform:translateX(-50%);white-space:nowrap;pointer-events:none;
+ font:600 12px/1.3 sans-serif;padding:5px 9px;border-radius:7px;
+ background:#211f1b;color:#f5efdb;border:1px solid #9a8c66;
+ box-shadow:0 3px 12px #0009;z-index:30;
+}
+#monthGrid .day-cell[data-relative-date]:hover,
+#monthGrid .day-cell[data-relative-date]:focus-within{z-index:12}
+/* A single tidy navigation row: previous / selected week / next. */
+#weekPanel .week-navigation{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:nowrap}
+#weekPanel .week-navigation #weekTitle{min-width:165px;white-space:nowrap;text-align:center;font-size:16px}
+#weekPanel .week-navigation #prevWeek,
+#weekPanel .week-navigation #nextWeek{width:38px;min-width:38px;height:38px;border-radius:10px}
+#weekPanel .week-topbar{justify-content:space-between}
+@media(max-width:660px){#weekPanel .week-navigation{gap:6px}#weekPanel .week-navigation #weekTitle{min-width:100px;font-size:13px}}
+
+/* Infobulle hors grille, toujours devant les autres cases et rendez-vous. */
+#monthGrid .day-cell[data-relative-date]:hover::after,
+#monthGrid .day-cell[data-relative-date]:focus-within::after{display:none!important}
+#atelierRelativeDateFloat{position:fixed;z-index:2147483000;pointer-events:none;
+  background:#211f1b;color:#f5efdb;border:1px solid #9a8c66;
+  border-radius:7px;padding:6px 10px;box-shadow:0 5px 15px #0009;
+  font:600 12px/1.3 sans-serif;white-space:nowrap}
+#atelierRelativeDateFloat[hidden]{display:none!important}
+
+/* Chargée après big_refonte.css : dernière règle nécessaire pour 24 vraies lignes. */
+#weekPanel #weekGrid.week-grid{
+  grid-template-columns:62px repeat(7,minmax(156px,1fr)) 62px!important;
+  grid-template-rows:var(--week-header-height) repeat(24,var(--week-hour-height))!important;
+  grid-auto-rows:0!important
+}
+
+/* Calendrier annuel : en-têtes des jours et vraies colonnes du mois. */
+.atelier-year-days .atelier-year-weekday{display:grid;place-items:center;min-height:20px;font:700 11px/1.2 system-ui,sans-serif;color:var(--muted,#c3b9a4);opacity:.9}
+.atelier-year-days .atelier-year-empty{display:block;min-height:24px;pointer-events:none}
+.atelier-year-days .atelier-year-day{min-width:0;justify-self:stretch}
+
+/* Semainier : retrouver les couleurs des catégories avec une translucence légère,
+   sans assombrissement opaque sur le contenu des rendez-vous. */
+#weekGrid .week-timed-event{
+  background-color:rgba(56,103,79,.88)!important;
+  background-image:none!important;
+  border-color:rgba(213,231,217,.3)!important;
+  border-left-width:4px!important;
+  box-shadow:0 2px 7px rgba(0,0,0,.23)!important;
+}
+#weekGrid .week-timed-event.event-color-sage,
+#weekGrid .week-timed-event.event-general{background-color:rgba(56,106,73,.88)!important;border-left-color:#a2d3aa!important}
+#weekGrid .week-timed-event.event-color-mauve,
+#weekGrid .week-timed-event.event-medical{background-color:rgba(102,71,132,.88)!important;border-left-color:#cdb1ee!important}
+#weekGrid .week-timed-event.event-color-gold{background-color:rgba(123,90,41,.88)!important;border-left-color:#efd39a!important}
+#weekGrid .week-timed-event.event-color-red{background-color:rgba(136,65,70,.88)!important;border-left-color:#ffc0bd!important}
+#weekGrid .week-timed-event.event-color-pink{background-color:rgba(143,73,108,.88)!important;border-left-color:#f8bed9!important}
+#weekGrid .week-timed-event.event-color-blue{background-color:rgba(54,94,145,.88)!important;border-left-color:#abd5f7!important}
+#weekGrid .week-timed-event.event-color-peach,
+#weekGrid .week-timed-event.event-important{background-color:rgba(139,82,59,.88)!important;border-left-color:#ffd0af!important}
+#weekGrid .week-timed-event.event-color-cream{background-color:rgba(109,87,59,.88)!important;border-left-color:#e9d7a9!important}
+#weekGrid .week-timed-event.event-color-deep-blue{background-color:rgba(51,72,132,.89)!important;border-left-color:#b2c9ff!important}
+#weekGrid .week-timed-event.event-color-deep-green{background-color:rgba(39,91,70,.89)!important;border-left-color:#99dfbe!important}
+#weekGrid .week-timed-event .week-card-open,
+#weekGrid .week-timed-event:hover .week-card-open,
+#weekGrid .week-timed-event:focus-within .week-card-open{
+  background:transparent!important;color:#fff8ed!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.75)!important;
+}
+#weekGrid .week-timed-event .week-card-title,
+#weekGrid .week-timed-event .week-card-time{color:#fff8ed!important}
+/* Aujourd'hui : petit rectangle arrondi vert mousse, pas de pastille ovale. */
+#weekGrid .week-current-day .week-day-number{
+  width:38px!important;height:34px!important;border-radius:8px!important;
+  background:#446b59!important;color:#f7f4df!important;
+  border:1px solid #94b89c!important;
+  box-shadow:inset 0 0 0 1px #243a30!important;
+  font-weight:750!important;
+}
+#weekGrid .week-head.week-current-day{border-bottom-color:#87ad92!important}
+
+/* Lisibilite des rendez-vous du semainier, y compris ceux deja coches. */
+#weekGrid .week-timed-event.event-instance-closed{opacity:1!important}
+#weekGrid .week-timed-event .week-card-open,
+#weekGrid .week-timed-event .week-card-title,
+#weekGrid .week-timed-event .week-card-time,
+#weekGrid .week-timed-event.event-instance-closed .week-card-open,
+#weekGrid .week-timed-event.event-instance-closed .week-card-title,
+#weekGrid .week-timed-event.event-instance-closed .week-card-time{
+  color:#ffffff!important;opacity:1!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.85)!important;
+}
+
+/* Un rendez-vous valide garde sa coche, mais aucun texte barre dans le semainier. */
+#weekGrid .week-timed-event.event-instance-closed,
+#weekGrid .week-timed-event.event-instance-closed .week-card-open,
+#weekGrid .week-timed-event.event-instance-closed .week-card-title,
+#weekGrid .week-timed-event.event-instance-closed .week-card-time{
+  text-decoration:none!important;
+  text-decoration-line:none!important;
+  opacity:1!important;
+}
+
+/* Vue annuelle compacte : 12 mois visibles en grille, dates alignees et lisibles. */
+#yearPanel .atelier-year-header{margin:5px 0 10px;gap:7px}
+#yearPanel .atelier-year-header h2{font-size:19px;min-width:85px;margin:0 5px}
+#yearPanel .atelier-year-grid{gap:8px;padding-bottom:12px}
+#yearPanel .atelier-year-month{padding:7px 8px;border-radius:8px}
+#yearPanel .atelier-year-month-title{font-size:13px;padding:2px 0 5px}
+#yearPanel .atelier-year-days{gap:1px}
+#yearPanel .atelier-year-days .atelier-year-weekday{min-height:16px;font-size:10px}
+#yearPanel .atelier-year-days .atelier-year-empty{min-height:22px}
+#yearPanel .atelier-year-days .atelier-year-day{min-height:22px;padding:2px 0;font-size:11px;line-height:1.15}
+#yearPanel .atelier-year-events{max-height:52px;margin-top:5px;font-size:10px}
+#yearPanel .atelier-year-events>div{padding:2px 0}
+@media(min-width:1450px){#yearPanel .atelier-year-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){#yearPanel .atelier-year-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:450px){#yearPanel .atelier-year-grid{grid-template-columns:1fr}}

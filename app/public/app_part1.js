@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[] };
+const state = { view:'home', calendarMode:'month', cursor:new Date(), events:[], tasks:[], reminders:[], shopping:[], foods:[], recipeBooks:[], recipes:[], mealIdeas:[], objectiveNodes:[], preparationsUpcoming:[] };
 const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
@@ -34,7 +34,13 @@ function parseYMD(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,
 function monday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
 function sunday(d){ const x=monday(d); x.setDate(x.getDate()+6); return x; }
 function esc(s=''){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function eventClass(c){ return c==='medical'?'event-medical':c==='important'?'event-important':'event-general'; }
+function eventClass(event){
+  const category=typeof event==='string'?event:(event?.category||'general');
+  const color=typeof event==='string'?'auto':(event?.color||'auto');
+  const categoryClass=category==='medical'?'event-medical':category==='important'?'event-important':'event-general';
+  const allowed=['sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'];
+  return categoryClass+(allowed.includes(color)?' event-color-'+color:'');
+}
 function eventInstanceClosed(e){ return !!e.instance_done || e.instance_action==='postponed' || e.instance_action==='cancelled' || e.status==='done' || e.status==='cancelled'; }
 function eventInstanceIcon(e){ return (e.instance_done||e.status==='done')?'✓':e.instance_action==='postponed'?'↪':(e.instance_action==='cancelled'||e.status==='cancelled')?'×':''; }
 function fmtTime(t){ return t ? t.replace(':','h') : ''; }
@@ -55,6 +61,7 @@ async function refresh(){
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
     ['tasks',api('/api/tasks')],
     ['reminders',api('/api/reminders')],
+    ['preparationsUpcoming',api('/api/preparations/upcoming')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],
     ['recipeBooks',api('/api/recipe-books')],
@@ -82,26 +89,81 @@ function renderHome(){
   }else{
     deadlines.forEach(d=>{
       const b=document.createElement('button'); b.type='button'; b.className='deadline-line';
-      b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span>${esc(d.title)}</span>`;
+      const time=d.type==='event'&&d.item?.start_time?fmtTime(d.item.start_time)+(d.item.end_time?'–'+fmtTime(d.item.end_time):''):d.item?.due_time?fmtTime(d.item.due_time):'';
+      b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span class="deadline-text">${esc(d.title)}</span><span class="deadline-time">${esc(time)}</span>`;
       b.addEventListener('click',()=>d.type==='task'?openTaskModal(d.item):openEventModal(d.item)); deadlineRoot.appendChild(b);
     });
     for(let i=deadlines.length;i<3;i++){ const blank=document.createElement('div'); blank.className='deadline-empty'; blank.innerHTML='&nbsp;'; deadlineRoot.appendChild(blank); }
   }
 
   const taskRoot=$('#homeTodayTasks'); taskRoot.innerHTML='';
-  const todayTasks=state.tasks.filter(t=>!t.completed && (!t.due_date || t.due_date<=today)).slice(0,10);
+  // Une tâche cochée sur cette page reste lisible jusqu'au lendemain.
+  // La clé du jour n'affecte ni les tâches historiques ni le serveur.
+  const completedTodayKey='atelierHomeCompletedOn_'+today;
+  let checkedToday=[];
+  try{const stored=JSON.parse(localStorage.getItem(completedTodayKey)||'[]');
+      checkedToday=Array.isArray(stored)?stored.map(Number):[];}catch(_){}
+  const keptToday=new Set(checkedToday);
+  const todayTasks=state.tasks.filter(t=>(!t.due_date || t.due_date<=today)&&
+    (!t.completed || t.due_date===today || keptToday.has(Number(t.id))))
+    .sort((a,b)=>Number(a.completed)-Number(b.completed))
+    .slice(0,10);
   if(!todayTasks.length) taskRoot.innerHTML='<div class="journal-empty">Rien à faire pour le moment c:</div>';
   todayTasks.forEach(t=>{
-    const b=document.createElement('button'); b.type='button'; b.className='journal-task';
-    b.innerHTML=`<span class="journal-task-mark">${t.important?'✦':'☐'}</span><span class="journal-task-title">${esc(t.title)}</span><span class="journal-task-time">${t.due_time?fmtTime(t.due_time):''}</span>`;
-    b.addEventListener('click',()=>openTaskModal(t)); taskRoot.appendChild(b);
+    const row=document.createElement('div');row.className='journal-task journal-task-interactive'+(t.completed?' is-completed':'');
+    const check=document.createElement('input');check.type='checkbox';check.className='journal-task-check';
+    check.checked=!!t.completed;
+    check.setAttribute('aria-label','Terminer : '+t.title);
+    check.addEventListener('change',async()=>{
+      check.disabled=true;
+      const requested=check.checked;
+      const result=await runUiAction('Impossible de cocher la tâche',()=>api('/api/tasks/'+t.id,{method:'PUT',body:JSON.stringify({completed:requested})}));
+      if(result.ok){
+        const next=new Set(keptToday);
+        if(requested)next.add(Number(t.id));else next.delete(Number(t.id));
+        localStorage.setItem(completedTodayKey,JSON.stringify([...next]));
+        await refresh();
+      }else{check.checked=!requested;check.disabled=false}
+    });
+    const title=document.createElement('button');title.type='button';title.className='journal-task-open';
+    title.textContent=(t.important?'✦ ':'')+t.title;title.title='Modifier la tâche';
+    title.onclick=()=>openTaskModal(t);
+    const time=document.createElement('span');time.className='journal-task-time';time.textContent=t.due_time?fmtTime(t.due_time):'';
+    row.append(check,title,time);taskRoot.appendChild(row);
   });
 
+  // La To-do list de gauche reflète les mêmes tâches que le carnet.
+  // Aucune seconde base de tâches : chaque coche passe par /api/tasks et refresh().
+  const preview=$('#homeTodoPreview');
+  if(preview){
+    preview.replaceChildren();
+    for(const task of todayTasks.slice(0,6)){
+      const line=document.createElement('div');line.className='home-todo-row'+(task.completed?' is-done':'');
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!task.completed;
+      checkbox.setAttribute('aria-label','Terminer : '+task.title);
+      checkbox.onchange=async()=>{
+        const requested=checkbox.checked;checkbox.disabled=true;
+        const result=await runUiAction('Impossible de modifier la tâche',()=>api('/api/tasks/'+task.id,{
+          method:'PUT',body:JSON.stringify({completed:requested})}));
+        if(result.ok){
+          const next=new Set(keptToday);
+          if(requested)next.add(Number(task.id));else next.delete(Number(task.id));
+          localStorage.setItem(completedTodayKey,JSON.stringify([...next]));
+          await refresh();
+        }else{checkbox.checked=!requested;checkbox.disabled=false}
+      };
+      const title=document.createElement('button');title.type='button';title.textContent=task.title;
+      title.onclick=()=>openTaskModal(task);line.append(checkbox,title);preview.append(line);
+    }
+    if(!todayTasks.length){const empty=document.createElement('p');empty.textContent='Rien à faire pour aujourd’hui c:';preview.append(empty)}
+  }
   const objectiveRoot=$('#homeObjectiveSuggestions'); objectiveRoot.innerHTML='';
+  const allObjectives=$('#homeAllObjectives');
+  if(allObjectives)allObjectives.onclick=()=>showView('library');
   const activeObjectives=state.objectiveNodes
     .filter(x=>x.node_type==='objective'&&x.status!=='done')
     .sort((a,b)=>(a.order_index-b.order_index)||a.id-b.id)
-    .slice(0,5);
+    .slice(0,3);
   if(!activeObjectives.length){
     const empty=document.createElement('button');
     empty.type='button';empty.className='objective-note objective-open';
@@ -112,8 +174,15 @@ function renderHome(){
     activeObjectives.forEach(obj=>{
       const el=document.createElement('button');
       el.type='button';el.className='objective-note objective-open';
-      const context=(obj.description||'').trim()||`${Number(obj.progress)||0}% d’avancement`;
-      el.innerHTML=`<div class="objective-name">${esc(obj.title)}</div><div class="objective-context">${esc(context)}</div><ul class="objective-actions"><li>${Number(obj.progress)||0}% · ouvrir →</li></ul>`;
+      // Afficher le domaine parent avant l'objectif courant, sans longue description.
+      let ancestor=obj,domain=null,seen=new Set();
+      while(ancestor && !seen.has(Number(ancestor.id))){
+        seen.add(Number(ancestor.id));
+        if(ancestor.node_type==='domain'){domain=ancestor;break}
+        ancestor=state.objectiveNodes.find(node=>Number(node.id)===Number(ancestor.parent_id));
+      }
+      const percent=Math.max(0,Math.min(100,Number(obj.progress)||0));
+      el.innerHTML=`<div class="objective-domain-line"><span class="objective-domain">${esc(domain?.title||'Mes objectifs')}</span><span class="objective-progress-line"><span class="objective-progress-track"><i style="width:${percent}%"></i></span><span class="objective-percent">${percent}%</span></span></div><div class="objective-name">${esc(obj.title)}</div>`;
       el.addEventListener('click',()=>openLibraryForNode(obj.id));
       objectiveRoot.appendChild(el);
     });
@@ -150,7 +219,11 @@ function renderHome(){
   });
 
   const upcomingRoot=$('#homeUpcoming'); upcomingRoot.innerHTML='';
-  const upcoming=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||''))).slice(0,3);
+  const upcomingAll=state.events.filter(e=>e.instance_date>=today && e.status!=='cancelled').sort((a,b)=>(a.instance_date+(a.start_time||'')).localeCompare(b.instance_date+(b.start_time||'')));
+  const expanded=upcomingRoot.dataset.expanded==='1';
+  // En affichage étendu, passer au premier plan sans déplacer le module.
+  $('#homeUpcomingWidget')?.classList.toggle('home-upcoming-expanded',expanded);
+  const upcoming=expanded?upcomingAll:upcomingAll.slice(0,3);
   if(!upcoming.length) upcomingRoot.innerHTML='<div class="home-empty">Aucun rendez-vous à venir.</div>';
   upcoming.forEach(e=>{
     const row=document.createElement('div');
@@ -185,7 +258,22 @@ function renderHome(){
       actions.append(done,postpone,cancel);
     }
     row.append(main,actions); upcomingRoot.appendChild(row);
+
   });
+  if(upcomingAll.length>3){
+    const toggle=document.createElement('button');
+    toggle.type='button';toggle.className='home-upcoming-toggle';
+    toggle.textContent=expanded?'⌃  Réduire la liste':'⌄  Voir les '+upcomingAll.length+' rendez-vous';
+    toggle.setAttribute('aria-expanded',String(expanded));
+    toggle.setAttribute('aria-label',expanded?'Réduire les rendez-vous à venir':'Afficher tous les '+upcomingAll.length+' rendez-vous');
+    toggle.addEventListener('click',()=>{
+      upcomingRoot.dataset.expanded=expanded?'0':'1';
+      renderHome();
+    });
+    upcomingRoot.appendChild(toggle);
+  }
+  upcomingRoot.style.maxHeight=expanded?'min(50vh,370px)':'';
+  upcomingRoot.style.overflowY=expanded?'auto':'';
 
 }
 

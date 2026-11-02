@@ -1,10 +1,11 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from pathlib import Path
 from calendar import monthrange
-import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil
+import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
+import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -13,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 16
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS events (
   end_time TEXT,
   all_day INTEGER NOT NULL DEFAULT 0,
   category TEXT NOT NULL DEFAULT 'general',
+  color TEXT NOT NULL DEFAULT 'auto',
   location TEXT DEFAULT '',
   notes TEXT DEFAULT '',
   contact TEXT DEFAULT '',
@@ -239,6 +241,27 @@ CREATE TABLE IF NOT EXISTS budget_entries (
 CREATE TABLE IF NOT EXISTS budget_month_notes (
  month TEXT PRIMARY KEY, notes TEXT NOT NULL DEFAULT ''
 );
+-- Notes de l'Accueil : texte dans SQLite pour les sauvegardes, pas dans localStorage.
+CREATE TABLE IF NOT EXISTS home_postits (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ body TEXT NOT NULL DEFAULT '',
+ color TEXT NOT NULL DEFAULT 'gold',
+ shape TEXT NOT NULL DEFAULT 'rounded',
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+-- Positions des fenêtres Post-it sur le Bureau Windows : sauvegardées avec SQLite.
+CREATE TABLE IF NOT EXISTS desktop_postit_layout(
+ note_id INTEGER PRIMARY KEY REFERENCES home_postits(id) ON DELETE CASCADE,
+ x INTEGER NOT NULL,
+ y INTEGER NOT NULL,
+ width INTEGER NOT NULL,
+ height INTEGER NOT NULL,
+ locked INTEGER NOT NULL DEFAULT 0 CHECK(locked IN (0,1))
+);
+CREATE INDEX IF NOT EXISTS idx_home_postits_archived ON home_postits(archived,id);
 CREATE INDEX IF NOT EXISTS idx_budget_entries_date ON budget_entries(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_menstrual_period_start ON menstrual_periods(start_date);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
@@ -253,6 +276,105 @@ CREATE INDEX IF NOT EXISTS idx_meal_idea_links_recipe ON meal_idea_links(recipe_
 CREATE INDEX IF NOT EXISTS idx_objective_parent ON objective_nodes(parent_id, order_index);
 CREATE INDEX IF NOT EXISTS idx_objective_library_node ON objective_library_sections(node_id, order_index);
 CREATE INDEX IF NOT EXISTS idx_objective_library_section ON objective_library_entries(section_id, order_index);
+-- Carnet de bord, trackers et administratif : données locales, séparées par installation.
+CREATE TABLE IF NOT EXISTS personal_trackers (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
+ unit TEXT NOT NULL DEFAULT '', target REAL, archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS personal_tracker_entries (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ tracker_id INTEGER NOT NULL REFERENCES personal_trackers(id) ON DELETE CASCADE,
+ entry_date TEXT NOT NULL, value REAL NOT NULL, notes TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL,
+ UNIQUE(tracker_id,entry_date)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_entries ON personal_tracker_entries(tracker_id,entry_date);
+-- Tableaux de suivi façon bullet journal : distincts des mesures historiques.
+-- Chaque tableau contient des lignes et une marque par jour, conservées à l'archive.
+CREATE TABLE IF NOT EXISTS tracker_boards (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ color TEXT NOT NULL DEFAULT 'sage',
+ period_unit TEXT NOT NULL DEFAULT 'months' CHECK(period_unit IN ('days','weeks','months','years')),
+ period_count INTEGER NOT NULL DEFAULT 1 CHECK(period_count BETWEEN 1 AND 90),
+ anchor_date TEXT NOT NULL DEFAULT '2000-01-01',
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tracker_board_rows (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ board_id INTEGER NOT NULL REFERENCES tracker_boards(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ mode TEXT NOT NULL DEFAULT 'check' CHECK(mode IN ('check','number')),
+ order_index INTEGER NOT NULL DEFAULT 0,
+ archived INTEGER NOT NULL DEFAULT 0,
+ target_count INTEGER CHECK(target_count IS NULL OR target_count BETWEEN 1 AND 1000),
+ weekday INTEGER CHECK(weekday IS NULL OR weekday BETWEEN 0 AND 6),
+ linked_type TEXT NOT NULL DEFAULT '' CHECK(linked_type IN ('','task','objective','admin')),
+ linked_id INTEGER,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tracker_row_steps (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ row_id INTEGER NOT NULL REFERENCES tracker_board_rows(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ order_index INTEGER NOT NULL DEFAULT 0,
+ active INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS tracker_row_step_checks (
+ step_id INTEGER NOT NULL REFERENCES tracker_row_steps(id) ON DELETE CASCADE,
+ day TEXT NOT NULL,
+ PRIMARY KEY(step_id,day)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_steps ON tracker_row_steps(row_id,order_index,id);
+CREATE TABLE IF NOT EXISTS tracker_board_marks (
+ row_id INTEGER NOT NULL REFERENCES tracker_board_rows(id) ON DELETE CASCADE,
+ day TEXT NOT NULL,
+ value TEXT NOT NULL,
+ updated_at TEXT NOT NULL,
+ PRIMARY KEY(row_id,day)
+);
+CREATE INDEX IF NOT EXISTS idx_tracker_board_rows ON tracker_board_rows(board_id,archived,order_index,id);
+CREATE INDEX IF NOT EXISTS idx_tracker_board_marks ON tracker_board_marks(day,row_id);
+CREATE TABLE IF NOT EXISTS admin_documents (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,
+ category TEXT NOT NULL DEFAULT 'Général', due_date TEXT,
+ status TEXT NOT NULL DEFAULT 'todo' CHECK(status IN ('todo','waiting','done')),
+ notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_admin_due ON admin_documents(status,due_date);
+-- Préparatifs autonomes : listes indépendantes des rendez-vous et des Trackers.
+-- Pas de conversion automatique : chaque source reste distincte et retrouvable.
+CREATE TABLE IF NOT EXISTS standalone_preparation_lists (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ due_date TEXT,
+ archived INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS standalone_preparation_items (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ list_id INTEGER NOT NULL REFERENCES standalone_preparation_lists(id) ON DELETE CASCADE,
+ title TEXT NOT NULL,
+ done INTEGER NOT NULL DEFAULT 0,
+ archived INTEGER NOT NULL DEFAULT 0,
+ order_index INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL,
+ updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_standalone_prep_lists
+ ON standalone_preparation_lists(archived,due_date,id);
+CREATE INDEX IF NOT EXISTS idx_standalone_prep_items
+ ON standalone_preparation_items(list_id,archived,order_index,id);
+CREATE TABLE IF NOT EXISTS quick_captures (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, destination TEXT NOT NULL,
+ body TEXT NOT NULL, seen INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_quick_capture_unread ON quick_captures(destination,seen);
+
 
 '''
 
@@ -297,6 +419,21 @@ _backup_db_before_migration()
 with conn() as c:
     c.execute('PRAGMA journal_mode = WAL')
     c.executescript(SCHEMA)
+    progression.initialise(c)
+    objective_maps.initialise(c)
+    event_preparations.initialise(c)
+    admin_docs.initialise(c)
+    # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
+    # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
+    if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():
+        first_time = c.execute('PRAGMA user_version').fetchone()[0] < 5
+        if first_time:
+            timestamp = datetime.now().replace(microsecond=0).isoformat()
+            c.execute('INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,?,?,0,?,?)',
+                      ("Aujourd'hui", '', 'gold', 'rounded', timestamp, timestamp))
+    layout_cols = {r['name'] for r in c.execute('PRAGMA table_info(desktop_postit_layout)').fetchall()}
+    if 'locked' not in layout_cols:
+        c.execute('ALTER TABLE desktop_postit_layout ADD COLUMN locked INTEGER NOT NULL DEFAULT 0')
     reminder_cols = {r['name'] for r in c.execute('PRAGMA table_info(reminders)').fetchall()}
     if 'title' not in reminder_cols:
         c.execute("ALTER TABLE reminders ADD COLUMN title TEXT DEFAULT ''")
@@ -326,6 +463,8 @@ with conn() as c:
     event_cols = {r['name'] for r in c.execute('PRAGMA table_info(events)').fetchall()}
     if 'travel_time' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
+    if 'color' not in event_cols:
+        c.execute("ALTER TABLE events ADD COLUMN color TEXT NOT NULL DEFAULT 'auto'")
     shopping_cols = {r['name'] for r in c.execute('PRAGMA table_info(shopping_items)').fetchall()}
     if 'purchase_count' not in shopping_cols:
         c.execute("ALTER TABLE shopping_items ADD COLUMN purchase_count INTEGER NOT NULL DEFAULT 1")
@@ -400,6 +539,34 @@ with conn() as c:
             cleaned=(notes[:match.start()]+notes[match.end():]).strip()
             c.execute('UPDATE recipes SET source_url=?,notes=?,updated_at=? WHERE id=?',
                       (source_url,cleaned,migration_ts,row['id']))
+    # 0.18.0: add independent recurring periods to existing tracker boards.
+    # Old monthly boards keep their calendar alignment and ALL their marks.
+    existing={row['name'] for row in c.execute('PRAGMA table_info(tracker_boards)')}
+    for column,specification in (
+        ('period_unit', "TEXT NOT NULL DEFAULT 'months'"),
+        ('period_count', 'INTEGER NOT NULL DEFAULT 1'),
+        ('anchor_date', "TEXT NOT NULL DEFAULT '2000-01-01'"),
+    ):
+        if column not in existing:
+            c.execute(f'ALTER TABLE tracker_boards ADD COLUMN {column} {specification}')
+    # 0.18.0: opt-in ritual steps, positive counters and weekly day restrictions.
+    # Preserve every existing mark and all earlier standalone preparation data.
+    row_columns={r['name'] for r in c.execute('PRAGMA table_info(tracker_board_rows)')}
+    for column,definition in (
+        ('target_count','INTEGER'),
+        ('weekday','INTEGER'),
+        ('linked_type',"TEXT NOT NULL DEFAULT ''"),
+        ('linked_id','INTEGER'),
+    ):
+        if column not in row_columns:
+            c.execute(f'ALTER TABLE tracker_board_rows ADD COLUMN {column} {definition}')
+    admin_cols = {r['name'] for r in c.execute('PRAGMA table_info(admin_documents)')}
+    if 'event_id' not in admin_cols:
+        c.execute('ALTER TABLE admin_documents ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE SET NULL')
+    if 'archived' not in admin_cols:
+        c.execute('ALTER TABLE admin_documents ADD COLUMN archived INTEGER NOT NULL DEFAULT 0')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_admin_archive ON admin_documents(archived,status,due_date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_admin_event_link ON admin_documents(event_id)')
     c.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
     c.commit()
 

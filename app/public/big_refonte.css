@@ -1,0 +1,136 @@
+/* ALPHA 0.18 — grand bloc visuel : semaine inspirée des principes de Google Agenda.
+   Contenu préservé : vraies données, récurrences et actions de rendez-vous. */
+#weekPanel .week-topbar{
+  padding:12px 14px!important;margin-bottom:8px;background:#241f1b;border:1px solid #685a4a;
+  border-radius:13px;gap:12px!important
+}
+#weekPanel .week-topbar>.primary{min-height:42px;padding:9px 17px;font-weight:700;border-radius:22px}
+#weekPanel .week-navigation h3{font:600 clamp(16px,1.35vw,21px)/1.3 system-ui,sans-serif;min-width:170px!important}
+#weekPanel .week-navigation button{min-width:40px;min-height:40px;border-radius:50%;font-size:18px}
+#weekPanel .week-scroll{
+  border-radius:14px!important;border:1px solid #65584d!important;
+  background:#211e1b!important;max-height:min(74dvh,950px)!important;
+  overflow-y:auto!important;overflow-x:auto!important;scrollbar-gutter:stable!important
+}
+#weekPanel .week-grid{
+  --week-hour-height:66px!important;--week-header-height:83px!important;
+  min-width:884px!important;width:100%!important;
+  grid-template-columns:60px repeat(7,minmax(116px,1fr))!important;
+  grid-template-rows:var(--week-header-height) repeat(16,var(--week-hour-height))!important
+}
+#weekGrid .week-head{
+  background:#25211e!important;color:#d7c9b5!important;border-right:1px solid #4d4339!important;
+  border-bottom:1px solid #766453!important;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:1px;padding:7px 3px!important;
+  height:var(--week-header-height)!important;min-width:0
+}
+#weekGrid .week-head:first-child{background:#211e1b!important}
+#weekGrid .week-day-name{font:600 11px/1.2 system-ui,sans-serif!important;letter-spacing:.09em;text-transform:uppercase}
+#weekGrid .week-day-number{
+  display:grid;place-items:center;border-radius:50%;width:35px;height:35px;
+  font:650 20px/1 system-ui,sans-serif;color:#eee1ce
+}
+#weekGrid .week-day-month{font:500 10px/1.2 system-ui,sans-serif;color:#b6a78f;text-transform:capitalize}
+#weekGrid .week-head.week-current-day{
+  background:#2b2820!important;border-bottom:2px solid #d6ac66!important;
+  box-shadow:inset 0 0 0 1px #aa8651!important
+}
+#weekGrid .week-current-day .week-day-number{background:#e2be83;color:#2c2319}
+#weekGrid .week-today-label{font:600 8px/1.1 system-ui,sans-serif!important;position:static!important;margin:0!important}
+#weekGrid .week-head.week-all-day-header{overflow:visible!important}
+#weekGrid .week-slot{
+  background-color:#25211e;border-right:1px solid #4d4439!important;
+  background-image:linear-gradient(to bottom,transparent calc(50% - 1px),#81705c49 50%,transparent calc(50% + 1px))!important;
+  padding:0!important
+}
+#weekGrid .week-slot.week-current-day{
+  background-color:#2a2923;
+  background-image:linear-gradient(to bottom,transparent calc(50% - 1px),#81705c49 50%,transparent calc(50% + 1px))!important
+}
+#weekGrid .time-label{
+  font:500 11px/1.2 system-ui,sans-serif!important;color:#bdae97;
+  border-bottom:1px solid #5d5043!important;text-align:center!important;
+  padding:6px 0 0!important
+}
+#weekGrid .week-timed-event{
+  min-height:22px!important;border-radius:5px!important;border-left:4px solid #665440!important;
+  box-shadow:0 1px 2px #0005!important;opacity:1;transition:filter .13s ease
+}
+#weekGrid .week-timed-event:hover{filter:brightness(1.055)}
+#weekGrid .week-timed-event .week-card-open{
+  font:600 11px/1.23 system-ui,sans-serif!important;padding:5px 5px!important;
+  align-items:flex-start!important;gap:3px!important;
+}
+#weekGrid .week-timed-event .week-card-time{order:1;font:500 10px/1.2 system-ui,sans-serif!important;opacity:.82}
+#weekGrid .week-timed-event .week-card-title{order:0;font:650 11.5px/1.22 system-ui,sans-serif!important;min-width:0}
+#weekGrid .week-timed-event .week-card-open:focus-visible{outline:2px solid #f3e0b5;outline-offset:-3px}
+#weekGrid .week-timed-event.event-general{border-left-color:#607e6a!important}
+#weekGrid .week-timed-event.event-medical{border-left-color:#79618b!important}
+#weekGrid .week-timed-event.event-important{border-left-color:#be7c63!important}
+#weekGrid .week-short-event .week-card-open{flex-direction:row!important;align-items:center!important}
+#weekGrid .week-short-event .week-card-title{font-size:10px!important}
+#weekGrid .week-day-layer{pointer-events:none}
+#weekGrid .week-timed-event{pointer-events:auto}
+#weekGrid .week-now-line{
+  position:absolute;left:0;right:0;height:2px;background:#e5b77c;
+  box-shadow:0 0 6px #e5b77c73;z-index:8;pointer-events:none
+}
+#weekGrid .week-now-line::before{
+  content:'';position:absolute;top:-4px;left:-5px;width:10px;height:10px;
+  border-radius:50%;background:#e5b77c
+}
+@media(max-width:940px){#weekPanel .week-grid{min-width:880px!important}}
+/* Journal : chaque page reste dans le livre redimensionné, les listes longues
+   défilent sans recouvrir la navigation du bas. */
+#journalBook{min-height:345px}
+#journalBook .journal-page{
+  min-height:0!important;height:100%!important;min-width:0!important;
+  overflow:hidden!important;display:flex!important;flex-direction:column!important
+}
+#journalBook .journal-primary-content,
+#journalBook .journal-secondary-content{
+  min-height:0!important;flex:1 1 0%!important;overflow-y:auto!important;
+  overflow-x:hidden!important;overscroll-behavior:contain;
+  scrollbar-width:thin;padding-bottom:26px!important
+}
+#journalBook .journal-task-list{max-height:none!important;overflow:visible!important}
+#journalBook .journal-page-turn{flex:0 0 auto;position:relative;z-index:5}
+#journalBook .journal-primary-content:focus-within,#journalBook .journal-secondary-content:focus-within{outline-offset:-2px}
+/* Trackers : gestes explicites, sans masquer les noms des lignes. */
+.tracker-row-grip{
+  cursor:grab;user-select:none;touch-action:pan-y;
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;min-height:32px;color:#c5aa82;font-size:19px
+}
+.tracker-row-grip:active{cursor:grabbing}
+.tracker-row-duplicate{min-width:30px;min-height:30px;padding:3px;border:1px solid #877259;color:#e8cfaa;background:#35291e}
+.tracker-row-drop-target{outline:2px dashed #d2bb92;outline-offset:-2px;background:#4a40336b}
+.tracker-row-dragging{opacity:.5}
+.tracker-row-label{gap:5px!important}
+/* Administratif : vraie vue dossier lisible sans modifier la structure des données. */
+#adminView .life-card-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:14px}
+#adminCreateForm{padding:18px;border:1px solid #594e40;background:#28231e;border-radius:13px;margin-bottom:13px}
+.admin-workspace-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:8px 0 16px;padding:11px 14px;border:1px solid #574c3f;border-radius:12px;background:#211d1a}
+.admin-workspace-toolbar label{display:grid;gap:5px;font-size:12px;color:#cec2b2;min-width:190px}
+.admin-workspace-toolbar input,.admin-workspace-toolbar select{min-height:40px}
+.admin-workspace-count{color:#d3ba94;font-size:12px;align-self:center}
+.life-admin-dossier{gap:11px!important;background:#29231e!important;border-color:#655441!important}
+.life-admin-dossier>.life-card-head strong{font:650 19px/1.3 Georgia,serif}
+.life-admin-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.life-admin-category{display:inline-flex;border:1px solid #786751;padding:4px 9px;border-radius:12px;color:#e4c69b;font-size:12px}
+.life-admin-deadline{font-size:12px;color:#c9bead}
+.life-admin-status-group{display:grid;gap:5px;color:#d7c5ac;font-size:12px}
+.life-admin-status-group select{min-height:40px}
+.life-admin-edit-details{border:1px solid #574b3e;border-radius:9px;padding:8px 10px}
+.life-admin-edit-details summary{cursor:pointer}
+.life-admin-note-group,.life-admin-documents-group{display:grid;gap:8px;min-width:0}
+.life-admin-note-group{padding-top:5px;border-top:1px solid #65544355}
+.life-admin-notes-title{font-weight:600;color:#e1cba9;font-size:13px}
+.life-admin-note-group .life-admin-notes{min-height:110px}
+.life-admin-note-group>button{justify-self:start;min-height:36px}
+@media(max-width:680px){.admin-workspace-toolbar label{flex:1;min-width:min(100%,180px)}}
+
+/* Les nouvelles commandes ne doivent pas réduire le titre d'habitude à zéro. */
+#trackersView .tracker-grid-line{grid-template-columns:330px repeat(var(--tracker-days),32px)!important}
+#trackersView .tracker-row-label{min-width:330px}
+#trackersView .tracker-row-title{min-width:90px!important}
