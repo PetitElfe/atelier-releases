@@ -282,6 +282,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if p == '/api/mobile/mental':
+            path=DATA/'mental-health-private-v1.json'
+            with _jdr_lock:
+                try:
+                    item=json.loads(path.read_text(encoding='utf-8'))
+                    if not isinstance(item,dict): raise ValueError()
+                except (OSError, ValueError):
+                    item={'rev':0,'data':{'version':1,'cards':[],'answers':[],'journal':[]}}
+            return self._json(item)
         if p == '/api/mobile/notes':
             path = DATA / 'mobile-notes.json'
             with _jdr_lock:
@@ -638,6 +647,38 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p == '/api/mobile/mental':
+            origin=self.headers.get('Origin','')
+            if origin and origin!=f'http://{HOST}:{PORT}':
+                return self._json({'error':'Origine refusée'},403)
+            try: n=int(self.headers.get('Content-Length','0'))
+            except (ValueError,TypeError): return self._json({'error':'Taille invalide'},400)
+            if n<2 or n>2000000: return self._json({'error':'Carnet limité à 2 Mo'},413)
+            request=self._body()
+            value=request.get('data') if isinstance(request,dict) else None
+            if not isinstance(value,dict) or any(not isinstance(value.get(k),list) for k in ('cards','answers','journal')):
+                return self._json({'error':'Format de carnet invalide'},400)
+            for kind in ('cards','answers','journal'):
+                if len(value[kind])>4000: return self._json({'error':'Trop de notes'},413)
+                for item in value[kind]:
+                    if (not isinstance(item,dict) or not isinstance(item.get('id'),str) or len(item['id'])>100
+                            or not isinstance(item.get('updatedAt'),str) or len(item['updatedAt'])>80):
+                        return self._json({'error':'Entrée de carnet incorrecte'},400)
+            try: incoming=int(request.get('rev'))
+            except (TypeError,ValueError): return self._json({'error':'Révision invalide'},400)
+            path=DATA/'mental-health-private-v1.json'
+            with _jdr_lock:
+                try:
+                    old=json.loads(path.read_text(encoding='utf-8'))
+                    rev=int(old.get('rev',0))
+                except (OSError, ValueError, TypeError): rev=0
+                if incoming!=rev: return self._json({'error':'Carnet modifié ailleurs. Synchronise à nouveau.','rev':rev},409)
+                result={'rev':rev+1,'data':{'version':1,
+                    'cards':value['cards'],'answers':value['answers'],'journal':value['journal']}}
+                pending=path.with_suffix('.tmp')
+                pending.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
+                os.replace(pending,path)
+            return self._json({'ok':True,'rev':rev+1})
         if p == '/api/jdr/manoir':
             # Same-origin JSON writes only; reject cross-site requests to the MJ state.
             origin = self.headers.get('Origin', '')
