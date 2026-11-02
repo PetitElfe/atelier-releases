@@ -1,0 +1,1 @@
+Publish isolated signed Android TEST 0.1.10 only after automated JS backup tests, build, signer check, 0.1.9->0.1.10 emulator upgrade succeed. Never merge to main or install on user's device.
