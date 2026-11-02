@@ -27,6 +27,7 @@ jobs:
         run: |
           node --test tests/mental_sync_race.test.cjs
           node --test tests/mobile_auto_backup.test.cjs
+          node --test tests/mobile_navigation_notes.test.cjs
           node <<'NODE'
           const fs=require('node:fs'),assert=require('node:assert/strict');
           const html=fs.readFileSync('mobile/prototype/index.html','utf8');
