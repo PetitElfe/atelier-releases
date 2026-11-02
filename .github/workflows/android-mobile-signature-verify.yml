@@ -2,7 +2,7 @@ name: Android verify existing APK upgrade signature
 on:
   workflow_dispatch:
   push:
-    branches: [feature/mobile-journal-navigation-20261027, test/mental-sync-preserve-edits-20261102]
+    branches: [feature/mobile-journal-navigation-20261027, test/mental-sync-preserve-edits-20261102, test/mental-star-gesture-20261102]
     paths:
       - 'mobile/**'
       - '.github/workflows/android-mobile-signature-verify.yml'
