@@ -20,7 +20,7 @@ def build(revision, output):
     shutil.copyfile(ROOT / 'app' / 'updater.py', kit / 'updater.py')
     metadata = {'revision': revision,
                 'updater_sha256': hashlib.sha256((kit / 'updater.py').read_bytes()).hexdigest(),
-                'manifest_sha256': hashlib.sha256((ROOT / 'manifest.json').read_bytes()).hexdigest()}
+                'manifest_sha256': hashlib.sha256((ROOT / 'manifest.json').read_bytes().replace(b'\r\n', b'\n')).hexdigest()}
     (kit / 'delivery.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
     archive = kit.with_suffix('.zip')
     with ZipFile(archive, 'w', ZIP_DEFLATED) as zipped:

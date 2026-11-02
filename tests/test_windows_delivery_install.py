@@ -83,7 +83,7 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 print(result.stdout, flush=True)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 ready()
-                self.assertTrue(any(t['id'] == task['id'] and t['title'] == task['title'] for t in api('/api/tasks')))
+                self.assertTrue(any(t['id'] == task['id'] and t['title'] == 'Written before the candidate upgrade' for t in api('/api/tasks')))
                 self.assertEqual(profile.read_text(), 'Existing WebView profile preserved')
                 self.assertEqual(note.read_text(), 'Notes and JSON files preserved')
                 self.assertEqual(stable.read_text(), 'Stable remains untouched')

@@ -34,7 +34,7 @@ def main():
         raise RuntimeError('Une autre mise à jour est en cours. Attends sa fin.')
     # A network/integrity failure here leaves the installed application untouched.
     manifest_bytes = updater._get('https://raw.githubusercontent.com/' + updater.REPO + '/' + revision + '/manifest.json', 200000)
-    if hashlib.sha256(manifest_bytes).hexdigest() != config['manifest_sha256']:
+    if hashlib.sha256(manifest_bytes.replace(b'\r\n', b'\n')).hexdigest() != config['manifest_sha256']:
         raise RuntimeError('Le manifeste téléchargé ne correspond pas à la version vérifiée.')
     updater._manifest(manifest_bytes)
     print('Destination : E:\\LATELIER_TEST_0180 — port 8876', flush=True)
@@ -46,7 +46,7 @@ def main():
     result = updater.status()
     if result.get('phase') != 'success' or result.get('revision') != revision:
         raise RuntimeError(result.get('detail') or 'La mise à jour n’a pas abouti.')
-    if hashlib.sha256((updater.CODE / 'manifest.json').read_bytes()).hexdigest() != config['manifest_sha256']:
+    if hashlib.sha256((updater.CODE / 'manifest.json').read_bytes().replace(b'\r\n', b'\n')).hexdigest() != config['manifest_sha256']:
         raise RuntimeError('Le manifeste installé diffère de la livraison vérifiée.')
     # Opt in only after successful installation; no other installation is touched.
     channel = updater.DATA / 'windows-test-channel.json'
