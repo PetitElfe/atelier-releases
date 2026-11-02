@@ -2,7 +2,7 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>L’Atelier du Goblin — prototype mobile</title>
 <style>
-:root{font-family:system-ui,sans-serif;color:#443e31;background:#24372d}*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer}header{position:sticky;top:0;background:#24372d;color:#f0e2c3;padding:calc(15px + env(safe-area-inset-top, 0px)) 16px 15px;display:flex;align-items:center;justify-content:space-between;z-index:2}header button{background:none;border:0;color:inherit;font-size:26px}header strong{font-family:Georgia,serif;font-size:19px}.paper{background:#f1e5c9;min-height:calc(100dvh - 70px);padding:24px 18px 70px;border-radius:20px 20px 0 0}h1,h2{font-family:Georgia,serif;color:#3d5a45}h1{text-align:center;font-size:28px;margin:4px 0 6px}h2{font-size:19px;margin:0 0 12px}.sub{text-align:center;color:#786e57;font-size:13px;margin-bottom:25px}.panel{background:#fff9eb;border:1px solid #d7c9a7;border-radius:15px;padding:17px;margin:14px 0}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e8dcc5}.item:last-child{border:0}.item input{accent-color:#547b5b;width:21px;height:21px}.item span{flex:1}.item.done span{text-decoration:line-through;color:#8d8a7d}textarea,input[type=text]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31}textarea{min-height:90px}.action{background:#496a50;color:white;border:0;border-radius:10px;padding:11px 15px;margin-top:9px}.nav{position:fixed;z-index:5;inset:0 auto 0 0;width:min(82vw,310px);background:#263b30;color:#f3e6c8;padding:calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;box-shadow:0 0 0 100vmax #0008}.nav button{display:block;width:100%;text-align:left;padding:14px;background:transparent;color:inherit;border:0;border-bottom:1px solid #ffffff25}.nav[hidden],[hidden]{display:none!important}.muted{font-size:13px;color:#81765f}.arrows{display:flex;gap:8px}.arrows button{border:1px solid #cfc09f;border-radius:8px;background:#f1e5c9;padding:5px 9px}.footer{text-align:center;font-size:12px;color:#8b816b;margin-top:30px}select,input[type=date]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31;margin:5px 0}
+:root{font-family:system-ui,sans-serif;color:#443e31;background:#24372d}*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}header{position:sticky;top:0;background:#24372d;color:#f0e2c3;padding:calc(15px + env(safe-area-inset-top, 0px)) 16px 15px;display:flex;align-items:center;justify-content:space-between;z-index:2}header button{background:none;border:0;color:inherit;font-size:26px}header strong{font-family:Georgia,serif;font-size:19px}.paper{background:#f1e5c9;min-height:calc(100dvh - 70px);padding:24px 18px 70px;border-radius:20px 20px 0 0}h1,h2{font-family:Georgia,serif;color:#3d5a45}h1{text-align:center;font-size:28px;margin:4px 0 6px}h2{font-size:19px;margin:0 0 12px}.sub{text-align:center;color:#786e57;font-size:13px;margin-bottom:25px}.panel{background:#fff9eb;border:1px solid #d7c9a7;border-radius:15px;padding:17px;margin:14px 0}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e8dcc5}.item:last-child{border:0}.item input{accent-color:#547b5b;width:21px;height:21px}.item span{flex:1}.item.done span{text-decoration:line-through;color:#8d8a7d}textarea,input[type=text]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31}textarea{min-height:90px}.action{background:#496a50;color:white;border:0;border-radius:10px;padding:11px 15px;margin-top:9px}.nav{position:fixed;z-index:5;inset:0 auto 0 0;width:min(82vw,310px);background:#263b30;color:#f3e6c8;padding:calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;box-shadow:0 0 0 100vmax #0008}.nav button{display:block;width:100%;text-align:left;padding:14px;background:transparent;color:inherit;border:0;border-bottom:1px solid #ffffff25}.nav[hidden],[hidden]{display:none!important}.muted{font-size:13px;color:#81765f}.arrows{display:flex;gap:8px}.arrows button{border:1px solid #cfc09f;border-radius:8px;background:#f1e5c9;padding:5px 9px}.footer{text-align:center;font-size:12px;color:#8b816b;margin-top:30px}select,input[type=date]{width:100%;background:#fffdf6;border:1px solid #c8ba9c;border-radius:10px;padding:12px;color:#443e31;margin:5px 0}
 
 /* Mobile Goblin redesign: preserves existing localStorage and old pages. */
 :root{--page-bg:#17231e;--header-bg:#192b22;--paper-bg:#202e26;--card-bg:#2a3b2f;--card-border:#5e755f;--ink:#f1ebd8;--muted-ink:#b7c8b3;--accent:#9ebc86;--field-bg:#1d2b23;--field-border:#6b866e;--tab-bg:#1b2c23;--tab-color:#d8e5ce}
@@ -18,7 +18,7 @@ textarea,input[type=text],select,input[type=date],input[type=time]{background:va
 .arrows button{border:1px solid var(--card-border);background:var(--field-bg);color:var(--ink)}
 .nav{background:var(--header-bg);color:var(--ink)}
 .mobile-tabs{position:fixed;bottom:0;left:0;right:0;z-index:4;background:var(--tab-bg);color:var(--tab-color);display:flex;align-items:center;justify-content:space-around;padding:9px 6px calc(9px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--card-border);box-shadow:0 -8px 25px #0004}
-.mobile-tabs button{border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;font-size:10px;gap:3px;padding:4px 2px;min-width:55px}
+.mobile-tabs button{border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;font-size:10px;gap:3px;padding:4px 2px;min-width:55px;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}.mobile-tabs button .tab-icon,.mobile-tabs button svg{pointer-events:none}
 .mobile-tabs button.active{color:var(--accent);font-weight:800}
 .mobile-tabs .tab-icon{font-size:23px;line-height:27px}
 .mobile-tabs .star-tab{background:#416748;color:#fff;width:60px;height:60px;border:4px solid var(--tab-bg);border-radius:50%;margin-top:-26px;min-width:60px;box-shadow:0 5px 16px #0007;justify-content:center}
@@ -74,16 +74,51 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 </style></head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰<span id="goblinUpdateDot" hidden aria-label="Mise à jour disponible" style="color:#e5d48f;font-size:14px"> ●</span></button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><button id="quickSettings" type="button" class="quick-settings" aria-label="Ouvrir les paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.6 3h4.8l.6 2.5 1.6.9 2.5-.8 2.4 4.2-1.9 1.7v1.8l1.9 1.7-2.4 4.2-2.5-.8-1.6.9-.6 2.5H9.6L9 19.3l-1.6-.9-2.5.8-2.4-4.2 1.9-1.7v-1.8l-1.9-1.7 2.4-4.2 2.5.8L9 5.5 9.6 3Z"/><circle cx="12" cy="12" r="3"/></svg><span id="headerUpdateBadge" class="settings-badge" hidden>1</span></button></header>
 <aside id="goblinUpdateBanner" class="goblin-update-banner" hidden role="status"><span id="goblinUpdateBannerText">Nouvelle version de Goblin disponible</span><button id="openGoblinUpdate" type="button">Voir</button><button id="dismissGoblinUpdate" type="button" aria-label="Masquer l’alerte">×</button></aside>
-<nav class="nav drawer" id="nav" aria-label="Menu de Goblin" hidden><button id="close" type="button"><span class="drawer-close-mark" aria-hidden="true">×</span><span>Fermer</span></button><div class="drawer-title">Navigation</div><button data-page="journal" type="button"><span class="drawer-icon" data-drawer-icon="journal" aria-hidden="true"></span><span>Journal</span></button><button data-page="tasks" type="button"><span class="drawer-icon" data-drawer-icon="tasks" aria-hidden="true"></span><span>Tâches</span></button><button data-page="shopping" type="button"><span class="drawer-icon" data-drawer-icon="shopping" aria-hidden="true"></span><span>Courses</span></button><button data-page="calendar" type="button"><span class="drawer-icon" data-drawer-icon="calendar" aria-hidden="true"></span><span>Calendrier</span></button><button data-page="capture" type="button"><span class="drawer-icon" data-drawer-icon="capture" aria-hidden="true"></span><span>Note rapide</span></button><div class="drawer-title">Mon Atelier</div><button data-page="connected" type="button"><span class="drawer-icon" data-drawer-icon="connected" aria-hidden="true"></span><span>Atelier synchronisé</span></button><button data-page="jdr" type="button"><span class="drawer-icon" data-drawer-icon="jdr" aria-hidden="true"></span><span>Notes JDR</span></button><button data-page="grimoire" type="button"><span class="drawer-icon" data-drawer-icon="grimoire" aria-hidden="true"></span><span>Grimoire de recettes</span></button><div class="drawer-title">Options</div><button data-page="tools" type="button"><span class="drawer-icon" data-drawer-icon="tools" aria-hidden="true"></span><span>Mes outils</span></button><button data-page="settings" type="button"><span class="drawer-icon" data-drawer-icon="settings" aria-hidden="true"></span><span>Paramètres</span><span id="drawerUpdateBadge" class="drawer-update-badge" hidden>1</span></button></nav>
+<nav class="nav drawer" id="nav" aria-label="Menu de Goblin" hidden><button id="close" type="button"><span class="drawer-close-mark" aria-hidden="true">×</span><span>Fermer</span></button><div class="drawer-title">Navigation</div><button data-page="journal" type="button"><span class="drawer-icon" data-drawer-icon="journal" aria-hidden="true"></span><span>Journal</span></button><button data-page="tasks" type="button"><span class="drawer-icon" data-drawer-icon="tasks" aria-hidden="true"></span><span>Tâches</span></button><button data-page="shopping" type="button"><span class="drawer-icon" data-drawer-icon="shopping" aria-hidden="true"></span><span>Courses</span></button><button data-page="calendar" type="button"><span class="drawer-icon" data-drawer-icon="calendar" aria-hidden="true"></span><span>Calendrier</span></button><button data-page="capture" type="button"><span class="drawer-icon" data-drawer-icon="capture" aria-hidden="true"></span><span>Note rapide</span></button><div class="drawer-title">Mon Atelier</div><button data-page="connected" type="button"><span class="drawer-icon" data-drawer-icon="connected" aria-hidden="true"></span><span>Atelier synchronisé</span></button><button data-page="jdr" type="button"><span class="drawer-icon" data-drawer-icon="jdr" aria-hidden="true"></span><span>Notes</span></button><button data-page="grimoire" type="button"><span class="drawer-icon" data-drawer-icon="grimoire" aria-hidden="true"></span><span>Grimoire de recettes</span></button><div class="drawer-title">Options</div><button data-page="tools" type="button"><span class="drawer-icon" data-drawer-icon="tools" aria-hidden="true"></span><span>Mes outils</span></button><button data-page="settings" type="button"><span class="drawer-icon" data-drawer-icon="settings" aria-hidden="true"></span><span>Paramètres</span><span id="drawerUpdateBadge" class="drawer-update-badge" hidden>1</span></button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
 <button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3"/></svg></span>Calendrier</button>
-<button type="button" data-mobile-go="jdr"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Notes JDR</button>
+<button type="button" data-mobile-go="jdr"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Notes</button>
 <button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement. Glisser vers le haut pour respirer"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.4-6 3.4 1-7-5-5 7-1L12 2Z"/></svg></span></button>
 <button type="button" data-mobile-go="connected" data-mobile-section="shopping"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 10 4-7M19 10l-4-7M3 10h18l-2 10H5L3 10Z"/><path d="M9 13v4M15 13v4"/></svg></span>Courses</button>
 <button type="button" data-mobile-go="connected" data-mobile-section="tasks"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m8 13 3 3 5-6"/></svg></span>To-Do</button>
 </nav>
 <script>
+/* Capture existing 0.1.5 WebView localStorage before the new app reads or edits it.
+   Snapshots live in Android app-private files, never in a remote service. */
+function goblinSnapshot(reason='manual'){
+ try{
+  if(!window.AtelierAutoBackup?.snapshot)return false;
+  const entries=Object.create(null);
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   if(key!==null)entries[key]=localStorage.getItem(key);
+  }
+  if(!Object.keys(entries).length)return false;
+  return !!window.AtelierAutoBackup.snapshot(JSON.stringify({
+   format:'goblin-localstorage-v1',savedAt:new Date().toISOString(),entries
+  }),reason);
+ }catch(e){return false}
+}
+const goblinFirstBackupOkay=goblinSnapshot('startup');
+function goblinRestoreBackup(raw){
+ let parsed;
+ try{parsed=JSON.parse(raw)}catch(e){alert('Sauvegarde illisible. Rien n’a été modifié.');return}
+ const entries=parsed?.format==='goblin-localstorage-v1'?parsed.entries:
+  parsed?.format==='atelier-goblin-android-backup-v2'?parsed.allLocalStorage:null;
+ if(!entries||typeof entries!=='object'||Array.isArray(entries)||!Object.keys(entries).length||
+   !Object.entries(entries).every(([k,v])=>typeof k==='string'&&typeof v==='string')){
+  alert('Format de sauvegarde incompatible. Rien n’a été modifié.');return;
+ }
+ if(!confirm('Restaurer cette sauvegarde ? Les valeurs enregistrées remplaceront celles du téléphone pour les mêmes rubriques.'))return;
+ if(!goblinSnapshot('pre-restore')){
+  alert('Impossible de sauvegarder les données actuelles avant restauration. Opération annulée.');return;
+ }
+ try{
+  for(const [key,value] of Object.entries(entries))localStorage.setItem(key,value);
+  location.reload();
+ }catch(e){alert('Restauration incomplète. Restaure la sauvegarde de sécurité depuis Paramètres.')}
+}
 const KEY='goblin-mobile-prototype-v1';
 const defaults={page:'journal',sections:['habits','tasks','notes','shopping'],visible:{habits:true,tasks:true,notes:true,shopping:false},habits:[{text:'Prendre un moment pour moi',done:false},{text:'Boire de l’eau',done:false}],tasks:[],shopping:[],notes:[],events:[]};
 let state;try{state={...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(defaults)}
@@ -98,7 +133,43 @@ if(page==='journal'){state.sections.filter(k=>state.visible[k]).forEach(k=>secti
 else if(page==='tasks'||page==='shopping')section(root,page);
 else if(page==='calendar'){const p=panel(root,'Mes rendez-vous');const date=el('input',{type:'date','aria-label':'Date du rendez-vous'});const title=el('input',{type:'text',placeholder:'Nom du rendez-vous'});const btn=el('button',{class:'action'},'Ajouter au calendrier');btn.onclick=()=>{if(date.value&&title.value.trim()){state.events.push({date:date.value,text:title.value.trim(),id:crypto.randomUUID()});save();render()}};p.append(date,title,btn);[...state.events].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{const row=el('div',{class:'item'});row.append(el('span',{},e.date+' — '+e.text));const del=el('button',{'aria-label':'Supprimer le rendez-vous'},'✕');del.onclick=()=>{state.events=state.events.filter(x=>x.id!==e.id);save();render()};row.append(del);p.append(row)})}
 else if(page==='capture'){const p=panel(root,'Classer une nouvelle note');const kind=el('select',{'aria-label':'Destination'});for(const [value,name] of [['notes','Mes pensées'],['tasks','Mes tâches'],['shopping','Mes courses'],['habits','Mes habitudes']]){const o=el('option',{value},name);kind.append(o)}const ta=el('textarea',{placeholder:'Écris ici ce que tu veux garder…'});const btn=el('button',{class:'action'},'Enregistrer au bon endroit');btn.onclick=()=>{const text=ta.value.trim();if(!text)return;if(kind.value==='notes')state.notes.unshift(text);else state[kind.value].push({text,done:false});state.page=kind.value==='habits'||kind.value==='notes'?'journal':kind.value;save();render()};p.append(kind,ta,btn)}
-else if(page==='settings'){const update=panel(root,'Mises à jour de Goblin');update.append(el('p',{class:'muted'},'Vérifie les versions Android officielles. Goblin télécharge uniquement une APK publiée et signée avec le même certificat que ton application. Android te demande toujours ton accord pour installer.'));const ver=el('p',{class:'muted',id:'goblinInstalledVersion'},'Version installée : vérification…');update.append(ver);const status=el('p',{class:'muted',id:'goblinUpdateStatus'},'Appuie sur Vérifier les mises à jour.');update.append(status);const check=el('button',{class:'action'},'↻ Vérifier les mises à jour');check.onclick=()=>{if(window.AtelierUpdates?.checkUpdates){status.textContent='Vérification de GitHub…';window.AtelierUpdates.checkUpdates()}else status.textContent='Cette version ne dispose pas encore du système natif de mise à jour.'};update.append(check);const notif=el('button',{class:'action'},'Activer les notifications Android');notif.onclick=()=>{if(window.AtelierUpdates?.enableUpdateNotifications)window.AtelierUpdates.enableUpdateNotifications();else alert('Fonction disponible après mise à jour de Goblin.')};update.append(notif);const testNotif=el('button',{class:'action'},'Tester une notification');testNotif.onclick=()=>{if(window.AtelierUpdates?.testNotification)window.AtelierUpdates.testNotification();else alert('Cette version ne permet pas encore de tester les notifications natives.')};update.append(testNotif);const install=el('button',{class:'action',id:'goblinInstallUpdate'},'⬇ Télécharger et installer');install.hidden=true;install.onclick=()=>{if(!confirm('Télécharger la version officielle de Goblin puis confirmer sa mise à jour dans Android ? Ne désinstalle jamais Goblin.'))return;if(window.AtelierUpdates?.installAvailable)window.AtelierUpdates.installAvailable()};update.append(install);const releases=el('button',{class:'action'},'Voir les versions publiées');releases.onclick=()=>{if(window.AtelierUpdates?.openReleases)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(releases);updateUi();const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
+else if(page==='settings'){const update=panel(root,'Mises à jour de Goblin');update.append(el('p',{class:'muted'},'Vérifie les versions Android officielles. Goblin télécharge uniquement une APK publiée et signée avec le même certificat que ton application. Android te demande toujours ton accord pour installer.'));const ver=el('p',{class:'muted',id:'goblinInstalledVersion'},'Version installée : vérification…');update.append(ver);const row=el('div',{class:'tool-card'});
+ row.append(el('label',{for:'goblinUpdateChannel'},'Canal de mises à jour'));
+ const channel=el('select',{id:'goblinUpdateChannel','aria-label':'Choisir les versions officielles ou TEST'});
+ channel.append(el('option',{value:'stable'},'Versions officielles (stable)'));
+ channel.append(el('option',{value:'test'},'Versions TEST (essai)'));
+ channel.value=goblinUpdateChannel();
+ channel.onchange=()=>{
+  if(!window.AtelierUpdates?.setUpdateChannel){
+   channel.value='stable';
+   alert('Installe d’abord une version de Goblin compatible avec les canaux TEST.');
+   return;
+  }
+  window.AtelierUpdates.setUpdateChannel(channel.value);
+  localStorage.removeItem('goblin-update-available-v1');
+  localStorage.removeItem('goblin-update-last-check-v1');
+  goblinUpdate={type:'checking',message:'Recherche de mises à jour dans le canal '+(channel.value==='test'?'TEST':'stable')+'…',version:''};
+  updateUi();
+  window.AtelierUpdates.checkUpdates();
+ };
+ row.append(channel);
+ row.append(el('p',{class:'muted',id:'goblinUpdateChannelHint'},''));
+ update.append(row);
+ update.append(el('p',{class:'muted'},'Goblin garde une copie privée avant une mise à jour depuis l’application. Pour une copie qui résiste à une désinstallation, exporte aussi un JSON depuis Sauvegardes et données. Ne désinstalle jamais Goblin.'));
+ const status=el('p',{class:'muted',id:'goblinUpdateStatus'},'Appuie sur Vérifier les mises à jour.');update.append(status);const check=el('button',{class:'action'},'↻ Vérifier les mises à jour');check.onclick=()=>{if(window.AtelierUpdates?.checkUpdates){goblinUpdate={type:'checking',message:'Vérification de GitHub…',version:''};updateUi();window.AtelierUpdates.checkUpdates()}else status.textContent='Cette version ne dispose pas encore du système natif de mise à jour.'};update.append(check);
+ const oneTapTest=el('button',{class:'action',type:'button'},'⭐ Chercher une nouvelle version TEST en 1 clic');
+ oneTapTest.onclick=()=>{
+  if(!window.AtelierUpdates?.setUpdateChannel||!window.AtelierUpdates?.checkUpdates){
+   status.textContent='Mise à jour native indisponible : utilise la page des versions publiées.';
+   return;
+  }
+  if(goblinUpdateChannel()!=='test'){
+   channel.value='test';
+   channel.onchange();
+  }else check.onclick();
+ };
+ update.append(oneTapTest);
+ const notif=el('button',{class:'action'},'Activer les notifications Android');notif.onclick=()=>{if(window.AtelierUpdates?.enableUpdateNotifications)window.AtelierUpdates.enableUpdateNotifications();else alert('Fonction disponible après mise à jour de Goblin.')};update.append(notif);const testNotif=el('button',{class:'action'},'Tester une notification');testNotif.onclick=()=>{if(window.AtelierUpdates?.testNotification)window.AtelierUpdates.testNotification();else alert('Cette version ne permet pas encore de tester les notifications natives.')};update.append(testNotif);const install=el('button',{class:'action',id:'goblinInstallUpdate'},'⬇ Télécharger et installer');install.hidden=true;install.onclick=()=>{if(!confirm('Télécharger '+(goblinUpdateChannel()==='test'?'la version TEST':'la version officielle')+' ? Android demandera ensuite ton accord pour installer. Ne désinstalle jamais Goblin.'))return;if(!goblinSnapshot('pre-update')){alert('La sauvegarde automatique a échoué : installation annulée pour protéger tes données. Exporte une copie depuis Sauvegardes et données.');return}if(window.AtelierUpdates?.installAvailable)window.AtelierUpdates.installAvailable()};update.append(install);const releases=el('button',{class:'action'},'Voir les versions publiées');releases.onclick=()=>{if(window.AtelierUpdates?.openReleases)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(releases);updateUi();const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
 function section(root,k){const p=panel(root,names[k]);if(k==='notes'){const ta=el('textarea',{placeholder:'Une pensée à garder…'});const btn=el('button',{class:'action'},'Conserver ma note');btn.onclick=()=>{if(ta.value.trim()){state.notes.unshift(ta.value.trim());save();render()}};p.append(ta,btn);state.notes.slice(0,5).forEach(n=>p.append(el('p',{},n)))}
 else list(p,k)}
 // Swipe between pages without interfering with vertical scrolling.
@@ -132,14 +203,27 @@ document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.
 
 /* Public GitHub Releases updater: trusted native download, signature check, Android consent. */
 let goblinUpdate={type:'idle',message:'',version:''};
+function goblinUpdateChannel(){
+ try{return window.AtelierUpdates?.currentChannel?.()==='test'?'test':'stable'}catch(e){return 'stable'}
+}
 function updateUi(){
  let version='Version installée : inconnue';
  try{const native=JSON.parse(window.AtelierUpdates?.currentVersion?.()||'{}');if(native.version)version='Version installée : '+native.version}catch(e){}
  const v=document.getElementById('goblinInstalledVersion');if(v)v.textContent=version;
  const status=document.getElementById('goblinUpdateStatus');
  if(status)status.textContent=goblinUpdate.message||'Appuie sur Vérifier les mises à jour.';
+ const channel=goblinUpdateChannel();
+ const picker=document.getElementById('goblinUpdateChannel');
+ if(picker&&picker.value!==channel)picker.value=channel;
+ const hint=document.getElementById('goblinUpdateChannelHint');
+ if(hint)hint.textContent=channel==='test'
+  ? 'Canal TEST activé : versions d’essai signées, à utiliser après une sauvegarde. Installation uniquement avec ton accord.'
+  : 'Canal stable : seules les versions officielles publiées sont proposées.';
  const install=document.getElementById('goblinInstallUpdate');
- if(install)install.hidden=goblinUpdate.type!=='available'&&goblinUpdate.type!=='permission';
+ if(install){
+  install.hidden=goblinUpdate.type!=='available'&&goblinUpdate.type!=='permission';
+  install.textContent=channel==='test'?'⬇ Télécharger et installer la version TEST':'⬇ Télécharger et installer';
+ }
  const leaf=document.getElementById('goblinUpdateDot');
  if(leaf)leaf.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
  const badge=document.getElementById('headerUpdateBadge');if(badge)badge.hidden=goblinUpdate.type!=='available'&&!localStorage.getItem('goblin-update-available-v1');
@@ -275,7 +359,7 @@ function connectedSettings(root){
   catch(e){result.textContent='Adresse incorrecte : entre l’URL HTTPS de ton PC, sans /mobile.html.';return}
   diagnostic.disabled=true;result.textContent='Test des rubriques en cours… aucune donnée modifiée.';
   const now=new Date(),from=new Date(now.getFullYear(),now.getMonth()-1,1),until=new Date(now.getFullYear(),now.getMonth()+2,0);
-  const checks=[['Tâches','/api/tasks'],['Courses','/api/shopping'],['Recettes','/api/recipes'],['Notes JDR','/api/mobile/notes'],['Calendrier','/api/events?start='+isoDay(from)+'&end='+isoDay(until)]];
+  const checks=[['Tâches','/api/tasks'],['Courses','/api/shopping'],['Recettes','/api/recipes'],['Notes','/api/mobile/notes'],['Calendrier','/api/events?start='+isoDay(from)+'&end='+isoDay(until)]];
   const tests=await Promise.allSettled(checks.map(([,path])=>callPc('GET',path,null,u.origin)));
   const lines=checks.map(([name],i)=>name+' : '+(tests[i].status==='fulfilled'&&Array.isArray(tests[i].value)?'accessible':'indisponible'));
   result.textContent=lines.join(' | ')+'. Ce diagnostic est en lecture seule et ne fusionne aucune donnée.';
@@ -292,7 +376,7 @@ function connectedView(root){
  if(online)p.append(el('p',{class:'muted'},'Actualisation automatique toutes les 25 secondes pendant que cet écran est ouvert.'));
  if(!online){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
  const tabs=el('div',{class:'connected-tabs',role:'group','aria-label':'Rubriques synchronisées'});
- [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes JDR']].forEach(([key,title])=>{
+ [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes']].forEach(([key,title])=>{
   const btn=el('button',{type:'button',class:tab===key?'active':''},title);
   btn.setAttribute('aria-pressed',String(tab===key));
   btn.onclick=()=>{if(key==='recipes'){state.page='grimoire';save();render()}else{tab=key;render()}};
@@ -359,15 +443,55 @@ function toolsView(root){
  const diary=el('div',{class:'tool-card'});diary.append(el('h3',{},'📓 Journal et idées'));
  const goJournal=el('button',{class:'action'},'Mon journal');goJournal.onclick=()=>{state.page='journal';save();render()};
  const goGrimoire=el('button',{class:'action'},'🍲 Mon grimoire');goGrimoire.onclick=()=>{state.page='grimoire';save();render()};diary.append(goGrimoire);
- const goNote=el('button',{class:'action'},'Une note JDR pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
+ const goNote=el('button',{class:'action'},'Une note pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
 }
 window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
 function backupSettings(root){
  const p=panel(root,'Sauvegarder mes données du téléphone');
- p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées, tes notes JDR et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
- const button=el('button',{class:'action'},'💾 Exporter mes données Android');
- button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||''};payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
+ p.append(el('p',{class:'muted'},'Goblin crée maintenant une copie privée à chaque ouverture, au retour en arrière-plan et avant une mise à jour. La première copie de tes données anciennes est gardée séparément.'));
+ const status=el('p',{class:'muted',id:'goblinAutomaticBackupStatus'},'Vérification des sauvegardes…');
+ const refreshStatus=()=>{
+  try{
+   const data=JSON.parse(window.AtelierAutoBackup?.status?.()||'{}');
+   if(typeof data.count==='number'){
+    status.textContent=data.original
+      ? 'Sauvegarde automatique active • '+data.count+' copie(s) récentes • copie initiale conservée.'
+      : 'Sauvegarde automatique active • '+data.count+' copie(s) récente(s).';
+   }else status.textContent='Sauvegarde automatique indisponible dans cette version.';
+  }catch(e){status.textContent='État des sauvegardes indisponible.'}
+ };
+ p.append(status);
+ const saveNow=el('button',{class:'action',type:'button'},'Sauvegarder maintenant');
+ saveNow.onclick=()=>{const ok=goblinSnapshot('manual');refreshStatus();alert(ok?'Copie privée enregistrée sur le téléphone.':'Sauvegarde impossible. Exporte une copie externe pour protéger tes données.')};
+ p.append(saveNow);
+ const restoreLast=el('button',{class:'action',type:'button'},'Restaurer la dernière copie');
+ restoreLast.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.latestSnapshot?.()||'');
+ p.append(restoreLast);
+ const restoreInitial=el('button',{class:'action',type:'button'},'Retrouver ma copie avant la première mise à jour');
+ restoreInitial.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.originalSnapshot?.()||'');
+ p.append(restoreInitial);
+ p.append(el('p',{class:'muted'},'Important : ces copies automatiques sont privées et restent dans Goblin. Elles sont supprimées si tu désinstalles l’application ou effaces ses données. Pour une protection indépendante, exporte aussi une copie dans Fichiers ou Drive et conserve-la en lieu sûr.'));
+ const button=el('button',{class:'action',type:'button'},'Exporter une copie externe (JSON)');
+ button.onclick=()=>{
+  const entries=Object.create(null);
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k!==null)entries[k]=localStorage.getItem(k)}
+  const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||'',allLocalStorage:entries};
+  payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';
+  const json=JSON.stringify(payload);
+  if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}
+  else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}
+ };
  p.append(button);
+ const importLabel=el('label',{},'Restaurer un fichier JSON exporté');
+ const importFile=el('input',{type:'file',accept:'.json,application/json','aria-label':'Choisir une sauvegarde externe'});
+ importFile.onchange=async()=>{
+  const file=importFile.files?.[0];if(!file)return;
+  if(file.size>12*1024*1024){alert('Fichier trop volumineux pour être restauré.');return}
+  try{goblinRestoreBackup(await file.text())}catch(e){alert('Lecture de la sauvegarde impossible.')}
+  importFile.value='';
+ };
+ importLabel.append(importFile);p.append(importLabel);
+ refreshStatus();
 }
 function themeSettings(root){
  const p=panel(root,'Apparence de mon Atelier');p.append(el('p',{class:'muted'},'Choisis ton ambiance. Le thème Goblin sombre est proposé par défaut.'));
@@ -385,7 +509,7 @@ render=function(){
  if(state.page==='settings'){backupSettings(document.getElementById('content'));connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
 };
 
-/* Local-first, hashtag-classified JDR notes. Separate from the historic journal key. */
+/* General hashtag-classified notes. Keep the original JDR storage key for migration compatibility. */
 const jdrKey='goblin-mobile-jdr-notes-v1';
 let jdrNotes=[];try{const stored=JSON.parse(localStorage.getItem(jdrKey)||'[]');if(Array.isArray(stored))jdrNotes=stored.filter(x=>x&&typeof x==='object'&&typeof x.content==='string')}catch(e){}
 let jdrFilter='',jdrQuery='',jdrEdit=null;
@@ -394,21 +518,22 @@ function noteTags(text){return [...new Set((String(text||'').match(/#[\p{L}\p{N}
 function storeJdr(){localStorage.setItem(jdrKey,JSON.stringify(jdrNotes))}
 function jdrView(root){
  const intro=panel(root,'# Mes notes classées');
- intro.append(el('p',{class:'jdr-hint'},'Écris tes idées et range-les avec des # comme sur ton PC : #JDR, #personnage, #quête… Tu peux utiliser tes notes même sans connexion Windows.'));
+ intro.append(el('p',{class:'jdr-hint'},'Écris n’importe quelle note. Ajoute #recettes, #idées, #santé, #projets ou tes propres hashtags : les catégories apparaissent automatiquement, et une note peut figurer dans plusieurs catégories sans être dupliquée.'));
  const query=el('input',{type:'text',placeholder:'Rechercher une note ou un #…','aria-label':'Rechercher dans mes notes'});query.value=jdrQuery;query.oninput=()=>{jdrQuery=query.value;renderJdrRows()};intro.append(query);
  const allTags=[...new Set(jdrNotes.flatMap(n=>noteTags((n.tags||[]).join(' ')+' '+n.content+' '+n.title)))].sort();
+ intro.append(el('p',{class:'jdr-hint'},'Mes catégories (créées à partir des #hashtags) :'));
  const chips=el('div',{class:'jdr-tags'});intro.append(chips);
  for(const tag of ['',...allTags]){const chip=el('button',{type:'button',class:'jdr-tag'+(jdrFilter===tag?' selected':''), 'aria-pressed':String(jdrFilter===tag)},tag||'Toutes');chip.onclick=()=>{jdrFilter=tag;render()};chips.append(chip)}
- const editor=panel(root,jdrEdit?'Modifier ma note':'Nouvelle note JDR');
+ const editor=panel(root,jdrEdit?'Modifier ma note':'Nouvelle note');
  const editing=jdrEdit?jdrNotes.find(n=>n.id===jdrEdit):null;
- const title=el('input',{type:'text',placeholder:'Titre de la note','aria-label':'Titre de ma note'});title.value=editing?.title||'';
- const tags=el('input',{type:'text',placeholder:'#JDR #personnage #quête…','aria-label':'Étiquettes de ma note'});tags.value=(editing?.tags||[]).join(' ');
+ const title=el('input',{type:'text',placeholder:'Titre ou sujet de la note','aria-label':'Titre de ma note'});title.value=editing?.title||'';
+ const tags=el('input',{type:'text',placeholder:'#idées #projets #recettes…','aria-label':'Hashtags et catégories de ma note'});tags.value=(editing?.tags||[]).join(' ');
  const content=el('textarea',{placeholder:'Écris ta note ici. Tu peux aussi utiliser des # dans le texte.','aria-label':'Contenu de ma note'});content.value=editing?.content||'';content.style.minHeight='170px';
  const saveBtn=el('button',{type:'button',class:'action'},editing?'Sauvegarder les modifications':'Enregistrer sur mon téléphone');
  saveBtn.onclick=()=>{
   if(!title.value.trim()&&!content.value.trim()){alert('Écris au moins un titre ou une note.');return}
   const now=new Date().toISOString();
-  const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value),content:content.value.trim(),created:editing?.created||now,updated:now};
+  const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value+' '+title.value+' '+content.value),content:content.value.trim(),created:editing?.created||now,updated:now};
   if(editing)jdrNotes=jdrNotes.map(n=>n.id===editing.id?note:n);else jdrNotes.unshift(note);
   storeJdr();jdrEdit=null;render();
  };
@@ -434,7 +559,8 @@ function jdrView(root){
      const latest=await callPc('GET','/api/mobile/notes');
      if(!Array.isArray(latest))throw Error('Réponse PC inattendue');
      if(JSON.stringify(latest)!==JSON.stringify(pc.notes)){pc.notes=latest;throw Error('Les notes du PC ont changé : actualise et recommence pour éviter un écrasement.')}
-     const remote={id:note.id,title:note.title,category:'JDR',content:((note.tags||[]).join(' ')+'\n'+note.content).trim(),updated:note.updated};
+     const hashtags=noteTags((note.tags||[]).join(' ')+' '+note.title+' '+note.content);
+     const remote={id:note.id,title:note.title,category:hashtags[0]?.slice(1)||'Général',content:(hashtags.join(' ')+'\n'+note.content).trim(),updated:note.updated};
      if(latest.some(n=>n.id===note.id))throw Error('Cette note existe déjà sur le PC. Aucun doublon créé : vérifie les modifications sur PC.');
      await callPc('POST','/api/mobile/notes',{notes:[...latest,remote]});
      await syncPull();alert('Copie de la note envoyée au PC. La note locale reste intacte.');
@@ -445,7 +571,7 @@ function jdrView(root){
   });
  }
  renderJdrRows();
- const remote=panel(root,'Notes JDR de mon PC');
+ const remote=panel(root,'Notes de mon PC');
  if(!online){remote.append(el('p',{class:'jdr-hint'},'Hors connexion. Tes notes locales restent accessibles. Pour récupérer celles du PC, connecte-le avec Tailscale depuis Personnaliser.'));const c=el('button',{class:'action'},'Configurer mon PC');c.onclick=()=>{state.page='settings';save();render()};remote.append(c)}
  else{
   remote.append(el('p',{class:'jdr-hint'},'Notes récupérées depuis Windows. Elles ne sont pas supprimées par les notes locales.'));
@@ -703,7 +829,7 @@ function mentalSave(){localStorage.setItem(mentalKey,JSON.stringify(mentalData))
 function mentalId(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function mentalStamp(){return new Date().toISOString()}
 function mentalRefresh(){if(state.page==='mental')render()}
-function mentalGo(section='anxiety'){mentalStop();mentalBreath=false;mentalCategory=section;state.page='mental';save();render();window.scrollTo(0,0)}
+function mentalGo(section='anxiety',openBreathing=false){mentalStop();mentalBreath=openBreathing;mentalCategory=section;state.page='mental';save();render();window.scrollTo(0,0)}
 function mentalStop(){mentalRunning=false;if(mentalTimeout!==null)clearTimeout(mentalTimeout);mentalTimeout=null;if(mentalAudio){mentalAudio.close().catch(()=>{});mentalAudio=null}}
 function mentalDing(){if(!mentalSound)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!mentalAudio)mentalAudio=new A();if(mentalAudio.state==='suspended')mentalAudio.resume();const o=mentalAudio.createOscillator(),g=mentalAudio.createGain(),t=mentalAudio.currentTime;o.type='sine';o.frequency.value=540;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.018,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+.48);o.connect(g);g.connect(mentalAudio.destination);o.start(t);o.stop(t+.5)}catch(e){}}
 function mentalBreathing(root){
@@ -881,11 +1007,49 @@ render=function(){
  }
 };
 const goblinStar=document.querySelector('.star-tab');
-let starTouchStart=null,starSwiped=false;
-goblinStar.addEventListener('touchstart',e=>{starTouchStart=e.touches[0]?.clientY??null;starSwiped=false},{passive:true});
-goblinStar.addEventListener('touchend',e=>{if(starTouchStart===null)return;const moved=starTouchStart-(e.changedTouches[0]?.clientY??starTouchStart);starTouchStart=null;if(moved>35){starSwiped=true;mentalGo('anxiety');mentalBreath=true;render();setTimeout(()=>starSwiped=false,400)}},{passive:true});
-goblinStar.addEventListener('click',e=>{if(!starSwiped)return;e.stopImmediatePropagation();e.preventDefault()},true);
+/* Star swipe: follow the finger, spring home, and open breathing only above threshold.
+   Pointer events work for touch, stylus and mouse; the ordinary tap stays usable. */
+let starPointer=null,starStartY=0,starTravel=0,starSuppressClick=false;
+goblinStar.style.touchAction='none';
+goblinStar.addEventListener('pointerdown',e=>{
+ if(starPointer!==null||!e.isPrimary)return;
+ starPointer=e.pointerId;starStartY=e.clientY;starTravel=0;
+ goblinStar.style.transition='none';
+ goblinStar.setPointerCapture(e.pointerId);
+});
+goblinStar.addEventListener('pointermove',e=>{
+ if(e.pointerId!==starPointer)return;
+ starTravel=Math.max(0,Math.min(95,starStartY-e.clientY));
+ goblinStar.style.transform='translateY(-'+starTravel+'px)';
+ goblinStar.setAttribute('aria-label',starTravel>=55?'Relâcher pour ouvrir la respiration':'Glisser vers le haut pour respirer');
+});
+function starRelease(e){
+ if(e.pointerId!==starPointer)return;
+ // Pointer-up can arrive without a final pointer-move on some Android WebViews.
+ const completed=e.type==='pointerup'&&Math.max(starTravel,Math.max(0,starStartY-e.clientY))>=55;
+ starPointer=null;starTravel=0;
+ goblinStar.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';
+ goblinStar.style.transform='translateY(0)';
+ goblinStar.setAttribute('aria-label','Mes outils apaisement. Glisser vers le haut pour respirer');
+ if(completed){
+  starSuppressClick=true;
+  mentalGo('anxiety',true);
+ }else if(e.type==='pointerup'&&starStartY-e.clientY>8){
+  starSuppressClick=true;
+ }
+}
+goblinStar.addEventListener('pointerup',starRelease);
+goblinStar.addEventListener('pointercancel',starRelease);
+goblinStar.addEventListener('lostpointercapture',starRelease);
+goblinStar.addEventListener('click',e=>{
+ if(!starSuppressClick)return;
+ starSuppressClick=false;e.stopImmediatePropagation();e.preventDefault();
+},true);
+// Reset even if Android did not emit a synthetic click after the swipe.
+goblinStar.addEventListener('pointerdown',()=>{if(starSuppressClick){starSuppressClick=false}},true);
 
+// Preserve the complete page-render chain (tools, PC, mental journal) before extending it.
+const renderWithMental=render;
 render=function(){
  if(state.page==='grimoire'){
   document.getElementById('title').textContent='Grimoire de recettes';
@@ -893,11 +1057,11 @@ render=function(){
   const root=document.getElementById('content');root.replaceChildren();grimoireView(root);updateNav();return;
  }
  if(state.page==='jdr'){
-  document.getElementById('title').textContent='Notes JDR #';
-  document.getElementById('subtitle').textContent='Classer et retrouver mes idées, même sans PC.';
+  document.getElementById('title').textContent='Mes notes';
+  document.getElementById('subtitle').textContent='Mes textes rangés automatiquement par #hashtag.';
   const root=document.getElementById('content');root.replaceChildren();jdrView(root);updateNav();return;
  }
- existingRenderGoblin();
+ renderWithMental();
  if(state.page==='settings')renderOrganizedSettings();
 };
 function goHome(){
@@ -923,6 +1087,7 @@ window.__atelierHandleAndroidBack=function(){
 render();
 if(pcUrl)syncPull();
 updateUi();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')goblinSnapshot('background')});
 setTimeout(autoCheckGoblin,1800);
 
 </script></body></html>

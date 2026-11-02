@@ -1,0 +1,1 @@
+Build and publish signed Android TEST v0.1.11 only if all automatic navigation, star gesture, note hashtag, mental journal, backup, signature and 0.1.10-to-0.1.11 emulator checks pass. Do not touch main or install on user device.

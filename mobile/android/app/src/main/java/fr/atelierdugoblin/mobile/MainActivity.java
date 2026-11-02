@@ -29,6 +29,7 @@ public class MainActivity extends Activity {
     private WebView webView;
     private TailnetBridge tailnet;
     private UpdateBridge updateBridge;
+    private AutoBackupBridge autoBackupBridge;
     private ValueCallback<Uri[]> pendingAudioChooser;
     private static final int AUDIO_PICKER_REQUEST=7283;
     private String pendingBackup;
@@ -81,11 +82,14 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         updateBridge = new UpdateBridge(this, webView);
         webView.addJavascriptInterface(updateBridge, "AtelierUpdates");
+        // Available before offline HTML executes, so it can capture legacy data first.
+        autoBackupBridge = new AutoBackupBridge(this);
+        webView.addJavascriptInterface(autoBackupBridge, "AtelierAutoBackup");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
-                if(json==null || json.length()>1000000)return;
+                if(json==null || json.length()>12*1024*1024)return;
                 runOnUiThread(()->{
                     pendingBackup=json;
                     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);

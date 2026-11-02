@@ -1,0 +1,1 @@
+Test release 0.1.12: validate prior signed 0.1.11 -> 0.1.12 update on emulator, navigation, star gesture, hashtag notes, mental journal, automatic backup, and one-tap update controls. Publish only as GitHub prerelease from isolated TEST branch. Do not merge main or install on user's phone.

@@ -1,0 +1,1 @@
+Test direct signed upgrade 0.1.5 -> 0.1.10 on CI Android emulator only, using the published TEST prerelease. Must retain package and signature and install without uninstall. Does not test physical phone user data.

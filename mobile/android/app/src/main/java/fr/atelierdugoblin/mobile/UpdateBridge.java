@@ -37,6 +37,7 @@ public final class UpdateBridge {
     private static final String RELEASES = "https://github.com/" + REPO + "/releases";
     private static final String API = "https://api.github.com/repos/" + REPO + "/releases?per_page=40";
     private static final Pattern TAG = Pattern.compile("^android-v([0-9]{1,2})\\.([0-9]{1,2})\\.([0-9]{1,2})$");
+    private static final Pattern TEST_TAG = Pattern.compile("^android-test-v([0-9]{1,2})\\.([0-9]{1,2})\\.([0-9]{1,2})$");
     private final Activity activity;
     private final WebView webView;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -44,6 +45,8 @@ public final class UpdateBridge {
     private volatile String shaUrl;
     private volatile int availableCode;
     private volatile String availableVersion;
+    private volatile String availableChannel;
+    private volatile long channelGeneration = 0;
 
     UpdateBridge(Activity activity, WebView webView) {
         this.activity = activity;
@@ -58,6 +61,22 @@ public final class UpdateBridge {
             result.put("code", Build.VERSION.SDK_INT >= 28 ? p.getLongVersionCode() : p.versionCode);
             return result.toString();
         } catch (Exception e) { return "{\"version\":\"inconnue\",\"code\":0}"; }
+    }
+
+    /** The stable channel is the safe default; TEST must be explicitly enabled. */
+    @JavascriptInterface public String currentChannel() {
+        return "test".equals(activity.getPreferences(Activity.MODE_PRIVATE).getString("update_channel", "stable"))
+            ? "test" : "stable";
+    }
+
+    @JavascriptInterface public void setUpdateChannel(String channel) {
+        if (!"stable".equals(channel) && !"test".equals(channel)) return;
+        if (channel.equals(currentChannel())) return;
+        activity.getPreferences(Activity.MODE_PRIVATE).edit().putString("update_channel", channel).apply();
+        channelGeneration++;
+        apkUrl = null; shaUrl = null; availableCode = 0;
+        availableVersion = null; availableChannel = null;
+        event("channel", "Canal " + ("test".equals(channel) ? "TEST" : "stable") + " choisi. Vérifie les mises à jour.", null);
     }
 
     @JavascriptInterface public void openReleases() {
@@ -77,8 +96,8 @@ public final class UpdateBridge {
         activity.runOnUiThread(() -> webView.evaluateJavascript(script, null));
     }
 
-    private int codeForTag(String tag) {
-        Matcher m = TAG.matcher(tag);
+    private int codeForTag(String tag, boolean test) {
+        Matcher m = (test ? TEST_TAG : TAG).matcher(tag);
         if (!m.matches()) return -1;
         int a = Integer.parseInt(m.group(1)), b = Integer.parseInt(m.group(2)), c = Integer.parseInt(m.group(3));
         if (a > 99 || b > 99 || c > 99) return -1;
@@ -228,14 +247,17 @@ public final class UpdateBridge {
     @JavascriptInterface public void checkUpdates() {
         io.execute(() -> {
             try {
+                String channel = currentChannel();
+                long generation = channelGeneration;
+                boolean isTest = "test".equals(channel);
                 JSONArray releases = new JSONArray(new String(getBytes(API, 600000), StandardCharsets.UTF_8));
                 int best = (int) installedCode();
                 String foundApk = null, foundSha = null, foundVersion = null;
                 for (int i=0; i<releases.length(); i++) {
                     JSONObject release = releases.getJSONObject(i);
-                    if (release.optBoolean("draft") || release.optBoolean("prerelease")) continue;
+                    if (release.optBoolean("draft") || release.optBoolean("prerelease") != isTest) continue;
                     String tag = release.optString("tag_name");
-                    int candidate = codeForTag(tag);
+                    int candidate = codeForTag(tag, isTest);
                     if (candidate <= best) continue;
                     String ap = null, sha = null;
                     JSONArray assets = release.optJSONArray("assets");
@@ -249,16 +271,22 @@ public final class UpdateBridge {
                         if ("LAtelierDuGoblin-Mobile.apk.sha256".equals(name)) sha=link;
                     }
                     if (ap != null && sha != null) {
-                        best=candidate; foundApk=ap;foundSha=sha;foundVersion=tag.substring("android-v".length());
+                        best=candidate; foundApk=ap;foundSha=sha;
+                        foundVersion=tag.substring((isTest ? "android-test-v" : "android-v").length());
                     }
                 }
+                // Ignore stale network responses if the user switched update channels.
+                if (generation != channelGeneration || !channel.equals(currentChannel())) return;
                 if (foundApk == null) {
-                    apkUrl=null;shaUrl=null;availableCode=0;availableVersion=null;
-                    event("current","Goblin est à jour parmi les versions Android publiées.",null);
+                    apkUrl=null;shaUrl=null;availableCode=0;availableVersion=null;availableChannel=null;
+                    event("current", isTest
+                        ? "Aucune version TEST plus récente n'est publiée."
+                        : "Goblin est à jour parmi les versions Android officielles publiées.",null);
                 } else {
-                    apkUrl=foundApk;shaUrl=foundSha;availableCode=best;availableVersion=foundVersion;
-                    event("available","Nouvelle version Android " + foundVersion + " disponible.",foundVersion);
-                    notifyAvailable(foundVersion);
+                    apkUrl=foundApk;shaUrl=foundSha;availableCode=best;availableVersion=foundVersion;availableChannel=channel;
+                    String label=isTest ? "TEST " + foundVersion : foundVersion;
+                    event("available","Nouvelle version Android " + label + " disponible.",label);
+                    notifyAvailable(label);
                 }
             } catch (Exception e) {
                 event("error","Vérification impossible : " + e.getMessage() + ". Ouvre les versions GitHub si nécessaire.",null);
@@ -283,8 +311,9 @@ public final class UpdateBridge {
     @JavascriptInterface public void installAvailable() {
         io.execute(() -> {
             try {
-                String address=apkUrl, checksum=shaUrl, version=availableVersion;
-                if (address == null || checksum == null || availableCode <= installedCode())
+                String address=apkUrl, checksum=shaUrl, version=availableVersion, channel=availableChannel;
+                if (address == null || checksum == null || channel == null
+                    || !channel.equals(currentChannel()) || availableCode <= installedCode())
                     throw new IllegalStateException("Vérifie d'abord les mises à jour");
                 event("downloading","Téléchargement de Goblin " + version + "…",version);
                 String expected = new String(getBytes(checksum, 1024), StandardCharsets.UTF_8).trim().split("\\s+")[0];
@@ -305,6 +334,8 @@ public final class UpdateBridge {
                     throw new SecurityException("Version Android invalide");
                 if (!Arrays.equals(signer(target,true), signer(target,false)))
                     throw new SecurityException("Certificat de signature différent. Mise à jour refusée.");
+                if (!channel.equals(currentChannel()))
+                    throw new IllegalStateException("Le canal a changé. Vérifie de nouveau les mises à jour.");
                 activity.runOnUiThread(() -> {
                     event("ready","APK vérifiée. Confirme l'installation dans Android.",version);
                     if (Build.VERSION.SDK_INT>=26 && !activity.getPackageManager().canRequestPackageInstalls()) {

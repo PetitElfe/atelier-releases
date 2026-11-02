@@ -7,7 +7,7 @@ on:
       - 'mobile/**'
       - '.github/workflows/android-mobile-prototype.yml'
   push:
-    branches: [main, feature/mobile-journal-navigation-20261027]
+    branches: [main, feature/mobile-journal-navigation-20261027, test/mental-star-gesture-20261102]
     paths:
       - 'mobile/**'
       - '.github/workflows/android-mobile-prototype.yml'
@@ -67,7 +67,9 @@ jobs:
           assert(html.includes('function mentalMerge('),'Conflict protection absent');
           assert(html.includes('goblin-mobile-mental-sync-base-v1'),'Sync baseline missing');
           assert(html.includes('mentalBreathing(root)'),'Breathing experience missing');
-          assert(html.includes('starTouchStart'),'Star swipe gesture missing');
+          assert(html.includes('starPointer'),'Star pointer gesture missing');
+          assert(html.includes('goblinStar.setPointerCapture'),'Star drag capture missing');
+          assert(html.includes('starTravel>=55'),'Star release threshold missing');
           assert(html.includes('payload.mentalHealth='),'Mental journal omitted from Android backup');
           assert(html.includes('window.AtelierTailnet.request'),'Tailscale bridge absent');
           const gradle=fs.readFileSync('mobile/android/app/build.gradle','utf8');
@@ -82,6 +84,8 @@ jobs:
           assert(main.includes('webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")'),'App origin changed, historic WebView storage at risk');
           console.log('JS syntax, legacy storage, UI tabs, backup, bridge and package: PASS');
           NODE
+      - name: Verify touch navigation, routes and hashtag notes
+        run: node --test tests/mobile_navigation_notes.test.cjs
       - name: Build debug APK
         working-directory: mobile/android
         run: gradle --no-daemon assembleDebug
