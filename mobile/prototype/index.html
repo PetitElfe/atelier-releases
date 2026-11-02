@@ -812,14 +812,31 @@ async function mentalSyncNow(status,button){
   for(let attempt=0;attempt<3;attempt++){
    const response=await callPc('GET','/api/mobile/mental');
    if(!response||!Number.isInteger(Number(response.rev))||!response.data)throw Error('Réponse PC inattendue.');
-   const joined=mentalMerge(mentalData,response.data);
+   // Isolate the request from edits made while the native network call is pending.
+   const sentLocal=JSON.parse(JSON.stringify(mentalData));
+   const joined=mentalMerge(sentLocal,response.data);
    const uploaded=await callPc('POST','/api/mobile/mental',{rev:Number(response.rev),data:{version:1,...joined}}).catch(error=>{
     if(String(error).includes('Conflit')||String(error).includes('modifié ailleurs'))return {conflict:true};
     throw error;
    });
    if(uploaded?.conflict)continue;
-   mentalData=joined;mentalSave();mentalSetSyncBase(joined);
-   status.textContent='Carnet synchronisé avec ton PC. Les réponses sont conservées.';
+   // Reapply only edits made since this request started, including deletions.
+   // The sync baseline remains the acknowledged payload, never unsent edits.
+   let pending=false;
+   const preserved={...joined};
+   for(const kind of ['cards','answers','journal','phrases']){
+    const before=new Map(sentLocal[kind].map(x=>[x.id,x]));
+    const live=new Map(mentalData[kind].map(x=>[x.id,x]));
+    const records=new Map(joined[kind].map(x=>[x.id,x]));
+    for(const id of new Set([...before.keys(),...live.keys()])){
+     if(JSON.stringify(before.get(id))===JSON.stringify(live.get(id)))continue;
+     pending=true;
+     if(live.has(id))records.set(id,live.get(id));else records.delete(id);
+    }
+    preserved[kind]=[...records.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+   }
+   mentalData=preserved;mentalSave();mentalSetSyncBase(joined);
+   status.textContent=pending?'Envoi terminé. Tes dernières modifications sont conservées sur ce téléphone ; synchronise à nouveau pour les envoyer au PC.':'Carnet synchronisé avec ton PC. Les réponses sont conservées.';
    return;
   }
   status.textContent='Le carnet a changé sur un autre appareil. Réessaie sans effacer tes notes.';
