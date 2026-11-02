@@ -18,7 +18,7 @@ textarea,input[type=text],select,input[type=date],input[type=time]{background:va
 .arrows button{border:1px solid var(--card-border);background:var(--field-bg);color:var(--ink)}
 .nav{background:var(--header-bg);color:var(--ink)}
 .mobile-tabs{position:fixed;bottom:0;left:0;right:0;z-index:4;background:var(--tab-bg);color:var(--tab-color);display:flex;align-items:center;justify-content:space-around;padding:9px 6px calc(9px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--card-border);box-shadow:0 -8px 25px #0004}
-.mobile-tabs button{border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;font-size:10px;gap:3px;padding:4px 2px;min-width:55px}
+.mobile-tabs button{border:0;background:none;color:inherit;display:flex;flex-direction:column;align-items:center;font-size:10px;gap:3px;padding:4px 2px;min-width:55px;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}.mobile-tabs button .tab-icon,.mobile-tabs button svg{pointer-events:none}
 .mobile-tabs button.active{color:var(--accent);font-weight:800}
 .mobile-tabs .tab-icon{font-size:23px;line-height:27px}
 .mobile-tabs .star-tab{background:#416748;color:#fff;width:60px;height:60px;border:4px solid var(--tab-bg);border-radius:50%;margin-top:-26px;min-width:60px;box-shadow:0 5px 16px #0007;justify-content:center}
@@ -814,7 +814,7 @@ function mentalSave(){localStorage.setItem(mentalKey,JSON.stringify(mentalData))
 function mentalId(){return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function mentalStamp(){return new Date().toISOString()}
 function mentalRefresh(){if(state.page==='mental')render()}
-function mentalGo(section='anxiety'){mentalStop();mentalBreath=false;mentalCategory=section;state.page='mental';save();render();window.scrollTo(0,0)}
+function mentalGo(section='anxiety',openBreathing=false){mentalStop();mentalBreath=openBreathing;mentalCategory=section;state.page='mental';save();render();window.scrollTo(0,0)}
 function mentalStop(){mentalRunning=false;if(mentalTimeout!==null)clearTimeout(mentalTimeout);mentalTimeout=null;if(mentalAudio){mentalAudio.close().catch(()=>{});mentalAudio=null}}
 function mentalDing(){if(!mentalSound)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!mentalAudio)mentalAudio=new A();if(mentalAudio.state==='suspended')mentalAudio.resume();const o=mentalAudio.createOscillator(),g=mentalAudio.createGain(),t=mentalAudio.currentTime;o.type='sine';o.frequency.value=540;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.018,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+.48);o.connect(g);g.connect(mentalAudio.destination);o.start(t);o.stop(t+.5)}catch(e){}}
 function mentalBreathing(root){
@@ -1010,14 +1010,15 @@ goblinStar.addEventListener('pointermove',e=>{
 });
 function starRelease(e){
  if(e.pointerId!==starPointer)return;
- const completed=e.type==='pointerup'&&starTravel>=55;
+ // Pointer-up can arrive without a final pointer-move on some Android WebViews.
+ const completed=e.type==='pointerup'&&Math.max(starTravel,Math.max(0,starStartY-e.clientY))>=55;
  starPointer=null;starTravel=0;
  goblinStar.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';
  goblinStar.style.transform='translateY(0)';
  goblinStar.setAttribute('aria-label','Mes outils apaisement. Glisser vers le haut pour respirer');
  if(completed){
   starSuppressClick=true;
-  mentalGo('anxiety');mentalBreath=true;render();
+  mentalGo('anxiety',true);
  }else if(e.type==='pointerup'&&starStartY-e.clientY>8){
   starSuppressClick=true;
  }
@@ -1029,7 +1030,11 @@ goblinStar.addEventListener('click',e=>{
  if(!starSuppressClick)return;
  starSuppressClick=false;e.stopImmediatePropagation();e.preventDefault();
 },true);
+// Reset even if Android did not emit a synthetic click after the swipe.
+goblinStar.addEventListener('pointerdown',()=>{if(starSuppressClick){starSuppressClick=false}},true);
 
+// Preserve the complete page-render chain (tools, PC, mental journal) before extending it.
+const renderWithMental=render;
 render=function(){
  if(state.page==='grimoire'){
   document.getElementById('title').textContent='Grimoire de recettes';
@@ -1041,7 +1046,7 @@ render=function(){
   document.getElementById('subtitle').textContent='Classer et retrouver mes idées, même sans PC.';
   const root=document.getElementById('content');root.replaceChildren();jdrView(root);updateNav();return;
  }
- existingRenderGoblin();
+ renderWithMental();
  if(state.page==='settings')renderOrganizedSettings();
 };
 function goHome(){
