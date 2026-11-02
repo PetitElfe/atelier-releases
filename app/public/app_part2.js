@@ -181,9 +181,10 @@ function renderMonth(){
       if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';document.body.append(tip)}
       tip.textContent=cell.dataset.relativeDate;
       const bounds=cell.getBoundingClientRect();
-      tip.style.left=Math.max(90,Math.min(window.innerWidth-90,bounds.left+bounds.width/2))+'px';
-      tip.style.top=Math.min(window.innerHeight-40,bounds.bottom+5)+'px';
       tip.hidden=false;
+      const half=tip.getBoundingClientRect().width/2;
+      tip.style.left=Math.max(8+half,Math.min(window.innerWidth-8-half,bounds.left+bounds.width/2))+'px';
+      tip.style.top=Math.min(window.innerHeight-tip.offsetHeight-8,bounds.bottom+5)+'px';
     });
     cell.addEventListener('mouseleave',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
     cell.addEventListener('focusout',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
