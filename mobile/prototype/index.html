@@ -881,10 +881,43 @@ render=function(){
  }
 };
 const goblinStar=document.querySelector('.star-tab');
-let starTouchStart=null,starSwiped=false;
-goblinStar.addEventListener('touchstart',e=>{starTouchStart=e.touches[0]?.clientY??null;starSwiped=false},{passive:true});
-goblinStar.addEventListener('touchend',e=>{if(starTouchStart===null)return;const moved=starTouchStart-(e.changedTouches[0]?.clientY??starTouchStart);starTouchStart=null;if(moved>35){starSwiped=true;mentalGo('anxiety');mentalBreath=true;render();setTimeout(()=>starSwiped=false,400)}},{passive:true});
-goblinStar.addEventListener('click',e=>{if(!starSwiped)return;e.stopImmediatePropagation();e.preventDefault()},true);
+/* Star swipe: follow the finger, spring home, and open breathing only above threshold.
+   Pointer events work for touch, stylus and mouse; the ordinary tap stays usable. */
+let starPointer=null,starStartY=0,starTravel=0,starSuppressClick=false;
+goblinStar.style.touchAction='none';
+goblinStar.addEventListener('pointerdown',e=>{
+ if(starPointer!==null||!e.isPrimary)return;
+ starPointer=e.pointerId;starStartY=e.clientY;starTravel=0;
+ goblinStar.style.transition='none';
+ goblinStar.setPointerCapture(e.pointerId);
+});
+goblinStar.addEventListener('pointermove',e=>{
+ if(e.pointerId!==starPointer)return;
+ starTravel=Math.max(0,Math.min(95,starStartY-e.clientY));
+ goblinStar.style.transform='translateY(-'+starTravel+'px)';
+ goblinStar.setAttribute('aria-label',starTravel>=55?'Relâcher pour ouvrir la respiration':'Glisser vers le haut pour respirer');
+});
+function starRelease(e){
+ if(e.pointerId!==starPointer)return;
+ const completed=e.type==='pointerup'&&starTravel>=55;
+ starPointer=null;starTravel=0;
+ goblinStar.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';
+ goblinStar.style.transform='translateY(0)';
+ goblinStar.setAttribute('aria-label','Mes outils apaisement. Glisser vers le haut pour respirer');
+ if(completed){
+  starSuppressClick=true;
+  mentalGo('anxiety');mentalBreath=true;render();
+ }else if(e.type==='pointerup'&&starStartY-e.clientY>8){
+  starSuppressClick=true;
+ }
+}
+goblinStar.addEventListener('pointerup',starRelease);
+goblinStar.addEventListener('pointercancel',starRelease);
+goblinStar.addEventListener('lostpointercapture',starRelease);
+goblinStar.addEventListener('click',e=>{
+ if(!starSuppressClick)return;
+ starSuppressClick=false;e.stopImmediatePropagation();e.preventDefault();
+},true);
 
 render=function(){
  if(state.page==='grimoire'){
