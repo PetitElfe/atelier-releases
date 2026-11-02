@@ -44,8 +44,8 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   const prev=ymd(add(new Date(),-28));
   await api('/api/cycle-periods','POST',{start_date:prev,end_date:null});
   await page.evaluate(()=>refreshOrganisation());
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/J−28/);
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon dans J−14/);
+  assert.equal(await page.locator('#calendarCycleSummary .calendar-cycle-chip').count(),1);
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Goblin grognon · règles en cours/);
   assert.equal(await page.locator('#monthGrid .day-cell.today.cycle-recorded').count(),1);
   await page.locator('#settingsBtn').click();
   // Settings is now a single-card sidebar; select the cycle section first.

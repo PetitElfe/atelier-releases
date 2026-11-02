@@ -44,6 +44,8 @@ async function api(path,method='GET',body){
   const root=page.locator('#objectiveMapRoot');
   await root.locator('.objective-map-node').first().waitFor({timeout:10000});
   assert.equal(await root.locator('.objective-map-node').count(),2);
+  assert.equal(await root.locator('[data-action="ordering"]').isVisible(),false);
+  await root.locator('[data-action="edit"]').click();
   assert.ok(await root.locator('[data-action="ordering"]').isVisible());
   await root.locator('[data-action="ordering"]').selectOption('sequential');
   await page.waitForFunction(async id=>{const response=await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'});return (await response.json()).ordering==='sequential'},domain.id,{timeout:10000});
@@ -105,6 +107,7 @@ async function api(path,method='GET',body){
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id).required,0);
 
   assert.ok(await root.locator('path[marker-end]').count()>0);
+  await root.locator('[data-action="edit"]').click();
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
   const beforeUnlinkCanvas=await root.locator('.objective-map-canvas').elementHandle();

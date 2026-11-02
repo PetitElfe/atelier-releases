@@ -181,7 +181,7 @@ function renderMonth(){
       if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';document.body.append(tip)}
       tip.textContent=cell.dataset.relativeDate;
       const bounds=cell.getBoundingClientRect();
-      tip.style.left=Math.max(8,Math.min(window.innerWidth-180,bounds.left+bounds.width/2-80))+'px';
+      tip.style.left=Math.max(90,Math.min(window.innerWidth-90,bounds.left+bounds.width/2))+'px';
       tip.style.top=Math.min(window.innerHeight-40,bounds.bottom+5)+'px';
       tip.hidden=false;
     });
@@ -1493,18 +1493,22 @@ function insertLibraryEditorToken(token,part){
   editor.focus();
 }
 
+let libraryLoadRequest=0;
 async function loadLibraryNotebooks(domainId,preferredNotebookId=null,preferredPageId=null){
+  const request=++libraryLoadRequest;
   if(!domainId)return;
   libraryNotebookState={domainId:Number(domainId),sections:[],loading:true};
   renderLibraryDomain();
   try{
     const data=await api(`/api/objective-library?node_id=${encodeURIComponent(domainId)}`);
+    if(request!==libraryLoadRequest||Number(librarySelectedDomainId)!==Number(domainId))return;
     libraryNotebookState={domainId:Number(domainId),sections:data.sections||[],loading:false};
     if(preferredNotebookId&&libraryNotebookById(preferredNotebookId))librarySelectedNotebookId=Number(preferredNotebookId);
     else if(librarySelectedNotebookId&&!libraryNotebookById(librarySelectedNotebookId))librarySelectedNotebookId=null;
     if(preferredPageId&&libraryPageById(preferredPageId))librarySelectedPageId=Number(preferredPageId);
     else if(librarySelectedPageId&&!libraryPageById(librarySelectedPageId))librarySelectedPageId=null;
   }catch(err){
+    if(request!==libraryLoadRequest||Number(librarySelectedDomainId)!==Number(domainId))return;
     libraryNotebookState={domainId:Number(domainId),sections:[],loading:false};
     showUiError(err,'Impossible de charger les carnets');
   }
@@ -3257,7 +3261,7 @@ function renderLibraryNotebookContent(domain){
     b.innerHTML=`<span class="library-page-list-number">${index+1}</span><strong>${esc(entry.title)}</strong>`;
     b.onclick=async()=>{
       if(Number(entry.id)===Number(librarySelectedPageId))return;
-      await flushLibraryAutosave();
+      if(await flushLibraryAutosave()===false)return;
       librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain);
     };
     pageList.appendChild(b);

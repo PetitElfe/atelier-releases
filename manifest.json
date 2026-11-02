@@ -53,7 +53,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "cffc30fdcaeb6fd821b4b90ec506652331ba60ad3675b226ba51f23a51789dd1"
+      "sha256": "5bbfb717c6ad862b7e2c4ff611e40739f9aca90791799634bb40f0bb5d08d604"
     },
     {
       "path": "public/app_part3.js",
@@ -69,7 +69,7 @@
     },
     {
       "path": "public/calendar_cycle_compact.js",
-      "sha256": "6e0f029678de9fdf928c22ea9c4eb019085029eeea3b730cfd9355b25b04ecc3"
+      "sha256": "893b7f308f9243fd415c33b1d063ec8733b4de6263093c47ef00a299f15ff8ff"
     },
     {
       "path": "public/editor_flow.js",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "a0f7d9e4a4e8a140a68c261f98ec80232cc32ec1aaf14f1f628833d9a76d0b5d"
+      "sha256": "94ffe244afe8c1b569cb707cd8a2cea77e9c26c5b7fbc1bf8102ebbdc3ff79e9"
     },
     {
       "path": "public/interface_reference.css",
@@ -133,11 +133,11 @@
     },
     {
       "path": "public/objective_map.css",
-      "sha256": "79a2435fba1eafd2bc5fd5666933efe38d58ae1ac4e1bedd943b15abacfaf36f"
+      "sha256": "7479e868ae9bec7ec81c8bccc26958524bce8d8cbdf1dcf32a3c25dcdf92c648"
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "db01eb7f649101a98f253d3a5424eb289145e95aa5a1f5b332adc617ff9a5b1c"
+      "sha256": "7a775b8a8d794a648ad7241c95e8880ac731c4bb586620b554c8bcd7bacb27e3"
     },
     {
       "path": "public/postits.js",
@@ -202,6 +202,22 @@
     {
       "path": "public/mental-health.html",
       "sha256": "2cf04fe3c31188f469814ed91990f8c0557adc3a3beb423971ec99c8f5049441"
+    },
+    {
+      "path": "public/library_refresh.js",
+      "sha256": "cf4a2937a09f81726ee8d9ffa229cf3a7099fe103e98b6eadf715a1811e119dd"
+    },
+    {
+      "path": "public/library_refresh.css",
+      "sha256": "65a4a9425dc75325519ec01c86c3a25d4caf303ced681439dd0b841ffcf55c01"
+    },
+    {
+      "path": "public/calendar_decor.js",
+      "sha256": "d940ebc4a9ec850cc4221d556162e1d4639561eb7afc504640bb00a4a956c1d2"
+    },
+    {
+      "path": "public/calendar_decor.css",
+      "sha256": "84105cb56e539621410e559af5c377c4d3f2fc7a10e90dfacfcd109b2a4d9ee8"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

@@ -28,3 +28,14 @@
 .objective-map-edge:hover{stroke:#d6bb7a;stroke-width:6}
 .objective-map-preview{pointer-events:none;fill:none;stroke:#d6bb7a;stroke-width:3;stroke-dasharray:8 6}
 .objective-map-context{position:absolute;z-index:20;background:#e4eadc;color:#284035;border:1px solid #73947c;border-radius:9px;padding:9px;box-shadow:0 8px 24px #0005;min-width:180px}
+
+/* Le parcours se consulte sans déplacer les étapes par accident. */
+.objective-map-root:not(.is-editing) .objective-map-edit,.objective-map-root:not(.is-editing) .objective-map-handle,.objective-map-root:not(.is-editing) .objective-map-toolbar label{display:none}
+.objective-map-root:not(.is-editing) .objective-map-inspector label{display:none}
+.objective-map-node{border-radius:22px 22px 22px 5px;box-shadow:0 6px 0 #192d24,0 12px 20px #0004}
+.objective-map-root:not(.is-editing) .objective-map-node{cursor:pointer}
+.objective-map-edge{stroke:#a9bb9a;stroke-linecap:round;filter:drop-shadow(0 3px 0 #172d24)}
+.objective-map-root:not(.is-editing) .objective-map-edge{cursor:default}
+#librarySubgoalTree[hidden]{display:none!important}
+
+.objective-map-hierarchy{fill:none;stroke:#8d9c85;stroke-width:3;stroke-dasharray:5 10;pointer-events:none}
