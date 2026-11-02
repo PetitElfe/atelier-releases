@@ -1,0 +1,3 @@
+Trigger controlled TEST prerelease android-test-v0.1.9 on branch test/mental-star-gesture-20261102 only.
+Must pass mental journal tests, Android signed build, certificate and version checks, and emulator upgrade before publishing.
+No main merge, no official/stable release, no installation on user devices.
