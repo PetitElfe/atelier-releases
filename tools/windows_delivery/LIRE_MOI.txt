@@ -1,0 +1,32 @@
+L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
+Bibliothèque, parcours et calendrier — 3 novembre 2026
+
+1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
+2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
+3. Double-clique sur Installer_la_MAJ_TEST.cmd (sans mode administrateur).
+4. Attends « MISE À JOUR RÉUSSIE », puis ouvre ton raccourci habituel TEST.
+
+Garde les fichiers du ZIP ensemble. Ne lance pas le CMD depuis l'aperçu du ZIP.
+Le Python déjà utilisé par L'Atelier et une connexion Internet sont nécessaires.
+
+Cette livraison attend ton installation E:\LATELIER_TEST_0180, port 8876.
+Elle vérifie les empreintes des fichiers, sauvegarde la base et le code avant
+remplacement, puis redémarre le serveur. En cas d'échec d'installation, elle
+utilise la restauration du programme de mise à jour. Les sauvegardes se trouvent
+dans E:\LATELIER_TEST_0180\SAUVEGARDE_AUTO_TEST_... .
+
+Le raccourci et le profil de l'interface sont conservés. Le canal TEST de cette
+installation est fixé à la branche bibliothèque/calendrier pour éviter qu'une
+vérification suivante propose l'ancienne version du canal partagé. La version
+stable E:\00_LATELIER et l'application de Nathan ne sont pas modifiées.
+
+Ce ZIP contient des scripts Python/CMD ; il ne s'agit pas d'un EXE signé.
+En cas de message d'erreur, conserve les dossiers et envoie le message affiché.
+
+A VERIFIER APRES LA MISE A JOUR :
+- Retrouver tes carnets et les textes déjà écrits.
+- Ouvrir la bibliothèque : étagère, livre gris +, carte et mode crayon.
+- Ecrire, changer de carnet puis revenir : texte et dernière page conservés.
+- Décorer le calendrier : image du mois puis du jour, opacité et couleur.
+- Fermer/rouvrir : décoration conservée ; rendez-vous toujours lisibles.
+- Vérifier les bandes des règles et le bloc Goblin grognon unique.

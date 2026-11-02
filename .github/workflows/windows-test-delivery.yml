@@ -1,0 +1,70 @@
+name: Windows TEST isolated delivery
+on:
+  push:
+    branches: [test/windows-library-calendar-20261103]
+    paths:
+      - '.github/workflows/windows-test-delivery.yml'
+      - 'tools/windows_delivery/**'
+      - 'tools/build_windows_test_delivery.py'
+      - 'tests/test_windows_delivery_install.py'
+permissions:
+  contents: read
+jobs:
+  package-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Package pinned Windows TEST launcher
+        shell: pwsh
+        run: |
+          $revision=(Get-Content tools/windows_delivery/revision.json -Raw | ConvertFrom-Json).payload_revision
+          python tools/build_windows_test_delivery.py --revision $revision
+      - name: Test actual upgrade on disposable Windows E drive
+        env:
+          GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+          PYTHONUTF8: '1'
+        run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261103
+          path: |
+            dist/Goblin_MAJ_Windows_TEST_20261103.zip
+            dist/Goblin_MAJ_Windows_TEST_20261103.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: package-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261103
+          path: delivery
+      - name: Publish approved isolated TEST prerelease
+        shell: bash
+        run: |
+          cat > /tmp/goblin-release-notes.md <<'NOTES'
+          Mise à jour Windows TEST — bibliothèque et calendrier.
+
+          Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends le message de réussite, puis utilise ton raccourci TEST habituel. Aucun code à modifier.
+
+          Réservé à E:\LATELIER_TEST_0180 (port 8876), avec Python déjà installé et une connexion Internet. Sauvegarde automatique avant remplacement. Le profil et les données sont conservés. Le canal intégré de cette installation reste sur la branche bibliothèque/calendrier ; aucun changement de main ni du canal de Nathan.
+
+          Scripts Python/CMD, pas d'EXE signé. Une conservation réussie sur le runner Windows ne remplace pas les vérifications sur le PC de Léo. Checklist dans LIRE_MOI.txt.
+          NOTES
+          if gh release view windows-test-bibliotheque-20261103 >/dev/null 2>&1; then
+            gh release upload windows-test-bibliotheque-20261103 delivery/* --clobber
+          else
+            gh release create windows-test-bibliotheque-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Bibliothèque et calendrier — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
+          fi
