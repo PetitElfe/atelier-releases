@@ -84,6 +84,41 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 <button type="button" data-mobile-go="connected" data-mobile-section="tasks"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m8 13 3 3 5-6"/></svg></span>To-Do</button>
 </nav>
 <script>
+/* Capture existing 0.1.5 WebView localStorage before the new app reads or edits it.
+   Snapshots live in Android app-private files, never in a remote service. */
+function goblinSnapshot(reason='manual'){
+ try{
+  if(!window.AtelierAutoBackup?.snapshot)return false;
+  const entries=Object.create(null);
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   if(key!==null)entries[key]=localStorage.getItem(key);
+  }
+  if(!Object.keys(entries).length)return false;
+  return !!window.AtelierAutoBackup.snapshot(JSON.stringify({
+   format:'goblin-localstorage-v1',savedAt:new Date().toISOString(),entries
+  }),reason);
+ }catch(e){return false}
+}
+const goblinFirstBackupOkay=goblinSnapshot('startup');
+function goblinRestoreBackup(raw){
+ let parsed;
+ try{parsed=JSON.parse(raw)}catch(e){alert('Sauvegarde illisible. Rien n’a été modifié.');return}
+ const entries=parsed?.format==='goblin-localstorage-v1'?parsed.entries:
+  parsed?.format==='atelier-goblin-android-backup-v2'?parsed.allLocalStorage:null;
+ if(!entries||typeof entries!=='object'||Array.isArray(entries)||!Object.keys(entries).length||
+   !Object.entries(entries).every(([k,v])=>typeof k==='string'&&typeof v==='string')){
+  alert('Format de sauvegarde incompatible. Rien n’a été modifié.');return;
+ }
+ if(!confirm('Restaurer cette sauvegarde ? Les valeurs enregistrées remplaceront celles du téléphone pour les mêmes rubriques.'))return;
+ if(!goblinSnapshot('pre-restore')){
+  alert('Impossible de sauvegarder les données actuelles avant restauration. Opération annulée.');return;
+ }
+ try{
+  for(const [key,value] of Object.entries(entries))localStorage.setItem(key,value);
+  location.reload();
+ }catch(e){alert('Restauration incomplète. Restaure la sauvegarde de sécurité depuis Paramètres.')}
+}
 const KEY='goblin-mobile-prototype-v1';
 const defaults={page:'journal',sections:['habits','tasks','notes','shopping'],visible:{habits:true,tasks:true,notes:true,shopping:false},habits:[{text:'Prendre un moment pour moi',done:false},{text:'Boire de l’eau',done:false}],tasks:[],shopping:[],notes:[],events:[]};
 let state;try{state={...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(defaults)}
@@ -121,7 +156,7 @@ else if(page==='settings'){const update=panel(root,'Mises à jour de Goblin');up
  row.append(el('p',{class:'muted',id:'goblinUpdateChannelHint'},''));
  update.append(row);
  update.append(el('p',{class:'muted'},'Avant une mise à jour TEST, exporte une sauvegarde de tes carnets dans Sauvegardes et données. Ne désinstalle jamais Goblin.'));
- const status=el('p',{class:'muted',id:'goblinUpdateStatus'},'Appuie sur Vérifier les mises à jour.');update.append(status);const check=el('button',{class:'action'},'↻ Vérifier les mises à jour');check.onclick=()=>{if(window.AtelierUpdates?.checkUpdates){goblinUpdate={type:'checking',message:'Vérification de GitHub…',version:''};updateUi();window.AtelierUpdates.checkUpdates()}else status.textContent='Cette version ne dispose pas encore du système natif de mise à jour.'};update.append(check);const notif=el('button',{class:'action'},'Activer les notifications Android');notif.onclick=()=>{if(window.AtelierUpdates?.enableUpdateNotifications)window.AtelierUpdates.enableUpdateNotifications();else alert('Fonction disponible après mise à jour de Goblin.')};update.append(notif);const testNotif=el('button',{class:'action'},'Tester une notification');testNotif.onclick=()=>{if(window.AtelierUpdates?.testNotification)window.AtelierUpdates.testNotification();else alert('Cette version ne permet pas encore de tester les notifications natives.')};update.append(testNotif);const install=el('button',{class:'action',id:'goblinInstallUpdate'},'⬇ Télécharger et installer');install.hidden=true;install.onclick=()=>{if(!confirm('Télécharger '+(goblinUpdateChannel()==='test'?'la version TEST':'la version officielle')+' ? Android demandera ensuite ton accord pour installer. Pense à sauvegarder tes carnets. Ne désinstalle jamais Goblin.'))return;if(window.AtelierUpdates?.installAvailable)window.AtelierUpdates.installAvailable()};update.append(install);const releases=el('button',{class:'action'},'Voir les versions publiées');releases.onclick=()=>{if(window.AtelierUpdates?.openReleases)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(releases);updateUi();const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
+ const status=el('p',{class:'muted',id:'goblinUpdateStatus'},'Appuie sur Vérifier les mises à jour.');update.append(status);const check=el('button',{class:'action'},'↻ Vérifier les mises à jour');check.onclick=()=>{if(window.AtelierUpdates?.checkUpdates){goblinUpdate={type:'checking',message:'Vérification de GitHub…',version:''};updateUi();window.AtelierUpdates.checkUpdates()}else status.textContent='Cette version ne dispose pas encore du système natif de mise à jour.'};update.append(check);const notif=el('button',{class:'action'},'Activer les notifications Android');notif.onclick=()=>{if(window.AtelierUpdates?.enableUpdateNotifications)window.AtelierUpdates.enableUpdateNotifications();else alert('Fonction disponible après mise à jour de Goblin.')};update.append(notif);const testNotif=el('button',{class:'action'},'Tester une notification');testNotif.onclick=()=>{if(window.AtelierUpdates?.testNotification)window.AtelierUpdates.testNotification();else alert('Cette version ne permet pas encore de tester les notifications natives.')};update.append(testNotif);const install=el('button',{class:'action',id:'goblinInstallUpdate'},'⬇ Télécharger et installer');install.hidden=true;install.onclick=()=>{if(!confirm('Télécharger '+(goblinUpdateChannel()==='test'?'la version TEST':'la version officielle')+' ? Android demandera ensuite ton accord pour installer. Ne désinstalle jamais Goblin.'))return;if(!goblinSnapshot('pre-update')){alert('La sauvegarde automatique a échoué : installation annulée pour protéger tes données. Exporte une copie depuis Sauvegardes et données.');return}if(window.AtelierUpdates?.installAvailable)window.AtelierUpdates.installAvailable()};update.append(install);const releases=el('button',{class:'action'},'Voir les versions publiées');releases.onclick=()=>{if(window.AtelierUpdates?.openReleases)window.AtelierUpdates.openReleases();else window.open('https://github.com/PetitElfe/atelier-releases/releases','_blank')};update.append(releases);updateUi();const p=panel(root,'Choisir mes sections');state.sections.forEach((k,i)=>{const row=el('div',{class:'item'});const cb=el('input',{type:'checkbox'});cb.checked=!!state.visible[k];cb.onchange=()=>{state.visible[k]=cb.checked;save()};row.append(cb,el('span',{},names[k]));const arrows=el('div',{class:'arrows'});for(const [symbol,offset] of [['↑',-1],['↓',1]]){const b=el('button',{},symbol);b.disabled=i+offset<0||i+offset>=state.sections.length;b.onclick=()=>{[state.sections[i],state.sections[i+offset]]=[state.sections[i+offset],state.sections[i]];save();render()};arrows.append(b)}row.append(arrows);p.append(row)})}}
 function section(root,k){const p=panel(root,names[k]);if(k==='notes'){const ta=el('textarea',{placeholder:'Une pensée à garder…'});const btn=el('button',{class:'action'},'Conserver ma note');btn.onclick=()=>{if(ta.value.trim()){state.notes.unshift(ta.value.trim());save();render()}};p.append(ta,btn);state.notes.slice(0,5).forEach(n=>p.append(el('p',{},n)))}
 else list(p,k)}
 // Swipe between pages without interfering with vertical scrolling.
@@ -400,10 +435,50 @@ function toolsView(root){
 window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
 function backupSettings(root){
  const p=panel(root,'Sauvegarder mes données du téléphone');
- p.append(el('p',{class:'muted'},'Avant toute mise à jour Android, exporte ton journal, tes habitudes, tes tâches, tes pensées, tes notes JDR et tes anciens rendez-vous. Ce fichier peut contenir des données personnelles : garde-le privé.'));
- const button=el('button',{class:'action'},'💾 Exporter mes données Android');
- button.onclick=()=>{const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||''};payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';const json=JSON.stringify(payload);if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}};
+ p.append(el('p',{class:'muted'},'Goblin crée maintenant une copie privée à chaque ouverture, au retour en arrière-plan et avant une mise à jour. La première copie de tes données anciennes est gardée séparément.'));
+ const status=el('p',{class:'muted',id:'goblinAutomaticBackupStatus'},'Vérification des sauvegardes…');
+ const refreshStatus=()=>{
+  try{
+   const data=JSON.parse(window.AtelierAutoBackup?.status?.()||'{}');
+   if(typeof data.count==='number'){
+    status.textContent=data.original
+      ? 'Sauvegarde automatique active • '+data.count+' copie(s) récentes • copie initiale conservée.'
+      : 'Sauvegarde automatique active • '+data.count+' copie(s) récente(s).';
+   }else status.textContent='Sauvegarde automatique indisponible dans cette version.';
+  }catch(e){status.textContent='État des sauvegardes indisponible.'}
+ };
+ p.append(status);
+ const saveNow=el('button',{class:'action',type:'button'},'Sauvegarder maintenant');
+ saveNow.onclick=()=>{const ok=goblinSnapshot('manual');refreshStatus();alert(ok?'Copie privée enregistrée sur le téléphone.':'Sauvegarde impossible. Exporte une copie externe pour protéger tes données.')};
+ p.append(saveNow);
+ const restoreLast=el('button',{class:'action',type:'button'},'Restaurer la dernière copie');
+ restoreLast.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.latestSnapshot?.()||'');
+ p.append(restoreLast);
+ const restoreInitial=el('button',{class:'action',type:'button'},'Retrouver ma copie avant la première mise à jour');
+ restoreInitial.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.originalSnapshot?.()||'');
+ p.append(restoreInitial);
+ p.append(el('p',{class:'muted'},'Important : ces copies automatiques sont privées et restent dans Goblin. Elles sont supprimées si tu désinstalles l’application ou effaces ses données. Pour une protection indépendante, exporte aussi une copie dans Fichiers ou Drive et conserve-la en lieu sûr.'));
+ const button=el('button',{class:'action',type:'button'},'Exporter une copie externe (JSON)');
+ button.onclick=()=>{
+  const entries=Object.create(null);
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k!==null)entries[k]=localStorage.getItem(k)}
+  const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||'',allLocalStorage:entries};
+  payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';
+  const json=JSON.stringify(payload);
+  if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}
+  else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}
+ };
  p.append(button);
+ const importLabel=el('label',{},'Restaurer un fichier JSON exporté');
+ const importFile=el('input',{type:'file',accept:'.json,application/json','aria-label':'Choisir une sauvegarde externe'});
+ importFile.onchange=async()=>{
+  const file=importFile.files?.[0];if(!file)return;
+  if(file.size>12*1024*1024){alert('Fichier trop volumineux pour être restauré.');return}
+  try{goblinRestoreBackup(await file.text())}catch(e){alert('Lecture de la sauvegarde impossible.')}
+  importFile.value='';
+ };
+ importLabel.append(importFile);p.append(importLabel);
+ refreshStatus();
 }
 function themeSettings(root){
  const p=panel(root,'Apparence de mon Atelier');p.append(el('p',{class:'muted'},'Choisis ton ambiance. Le thème Goblin sombre est proposé par défaut.'));
@@ -992,6 +1067,7 @@ window.__atelierHandleAndroidBack=function(){
 render();
 if(pcUrl)syncPull();
 updateUi();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')goblinSnapshot('background')});
 setTimeout(autoCheckGoblin,1800);
 
 </script></body></html>
