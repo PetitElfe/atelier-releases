@@ -41,7 +41,7 @@ jobs:
       - name: Build signed upgrade without publishing
         working-directory: mobile/android
         env:
-          RELEASE_VERSION: '0.1.7'
+          RELEASE_VERSION: '0.1.8'
           ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
           ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
           ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
@@ -78,13 +78,28 @@ jobs:
           test "$new_package" = "$old_package"
           echo "PASS: same Android package, same SHA-256 signing certificate, higher versionCode."
           echo "This verifies published v0.1.1; installed phone APK must still be checked before upgrade."
-      - name: Fetch previous signed Android 0.1.5 test
+      - name: Fetch previous signed Android 0.1.7 test
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p "$RUNNER_TEMP/old-012"
-          gh run download 41164449516 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_015_Signed_TEST --dir "$RUNNER_TEMP/old-012"
-          test -s "$RUNNER_TEMP/old-012/app-release.apk"
+          mkdir -p "$RUNNER_TEMP/old-017"
+          gh run download 41371349773 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_017_Signed_TEST --dir "$RUNNER_TEMP/old-017"
+          test -s "$RUNNER_TEMP/old-017/app-release.apk"
+      - name: Confirm signed TEST 0.1.7 -> 0.1.8 version and certificate
+        run: |
+          set -euo pipefail
+          OLD="$RUNNER_TEMP/old-017/app-release.apk"
+          NEW="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$OLD"
+          "$APKSIGNER" verify --verbose "$NEW"
+          old_cert=$("$APKSIGNER" verify --print-certs "$OLD" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
+          new_cert=$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
+          test -n "$old_cert" && test "$old_cert" = "$new_cert"
+          "$AAPT" dump badging "$OLD" | grep -q "versionCode='107'"
+          "$AAPT" dump badging "$NEW" | grep -q "versionCode='108'"
+          echo "PASS: signer preserved and Android versionCode increased from 107 to 108."
       - name: Enable hardware acceleration for signed APK upgrade test
         run: |
           if [ -e /dev/kvm ]; then
@@ -93,7 +108,7 @@ jobs:
           else
             echo "::warning::No KVM device; emulator may be slow"
           fi
-      - name: Upgrade existing signed 0.1.5 to newly signed 0.1.7 on emulator
+      - name: Upgrade existing signed TEST 0.1.7 to TEST 0.1.8 on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -102,7 +117,7 @@ jobs:
           disable-animations: false
           emulator-boot-timeout: 720
           script: |
-            adb install -r "$RUNNER_TEMP/old-012/app-release.apk"
+            adb install -r "$RUNNER_TEMP/old-017/app-release.apk"
             adb shell am start -n fr.atelierdugoblin.mobile/.MainActivity
             adb shell am force-stop fr.atelierdugoblin.mobile
             adb install -r mobile/android/app/build/outputs/apk/release/app-release.apk
@@ -114,7 +129,7 @@ jobs:
       - name: Archive verified signed APK for review (not a published release)
         uses: actions/upload-artifact@v4
         with:
-          name: LAtelierDuGoblin_Android_017_Signed_TEST
+          name: LAtelierDuGoblin_Android_018_Signed_TEST
           path: mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
           if-no-files-found: error
