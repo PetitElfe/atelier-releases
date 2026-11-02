@@ -13,7 +13,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "f8d08c05e353927745ae2aff7c4c91bd0f9e9261a195181d44065fc8dd3f8e83"
+      "sha256": "75bc00951b0a2cc1c1ef8bad1b88693fc0bc6a3f38821ee377623554f55d2304"
     },
     {
       "path": "app_part3.py",
@@ -201,7 +201,7 @@
     },
     {
       "path": "public/mental-health.html",
-      "sha256": "1c4556f22162190790f8b5f79b2300db2a7ff4a62fc30db42627b4e04a3d3f8a"
+      "sha256": "2cf04fe3c31188f469814ed91990f8c0557adc3a3beb423971ec99c8f5049441"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."
