@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
-                if(json==null || json.length()>1000000)return;
+                if(json==null || json.length()>12*1024*1024)return;
                 runOnUiThread(()->{
                     pendingBackup=json;
                     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
