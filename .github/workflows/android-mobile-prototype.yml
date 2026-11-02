@@ -84,6 +84,8 @@ jobs:
           assert(main.includes('webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")'),'App origin changed, historic WebView storage at risk');
           console.log('JS syntax, legacy storage, UI tabs, backup, bridge and package: PASS');
           NODE
+      - name: Verify touch navigation, routes and hashtag notes
+        run: node --test tests/mobile_navigation_notes.test.cjs
       - name: Build debug APK
         working-directory: mobile/android
         run: gradle --no-daemon assembleDebug
