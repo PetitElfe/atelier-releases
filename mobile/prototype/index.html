@@ -74,11 +74,11 @@ header .header-home:focus-visible{outline:2px solid var(--accent)}
 </style></head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰<span id="goblinUpdateDot" hidden aria-label="Mise à jour disponible" style="color:#e5d48f;font-size:14px"> ●</span></button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><button id="quickSettings" type="button" class="quick-settings" aria-label="Ouvrir les paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.6 3h4.8l.6 2.5 1.6.9 2.5-.8 2.4 4.2-1.9 1.7v1.8l1.9 1.7-2.4 4.2-2.5-.8-1.6.9-.6 2.5H9.6L9 19.3l-1.6-.9-2.5.8-2.4-4.2 1.9-1.7v-1.8l-1.9-1.7 2.4-4.2 2.5.8L9 5.5 9.6 3Z"/><circle cx="12" cy="12" r="3"/></svg><span id="headerUpdateBadge" class="settings-badge" hidden>1</span></button></header>
 <aside id="goblinUpdateBanner" class="goblin-update-banner" hidden role="status"><span id="goblinUpdateBannerText">Nouvelle version de Goblin disponible</span><button id="openGoblinUpdate" type="button">Voir</button><button id="dismissGoblinUpdate" type="button" aria-label="Masquer l’alerte">×</button></aside>
-<nav class="nav drawer" id="nav" aria-label="Menu de Goblin" hidden><button id="close" type="button"><span class="drawer-close-mark" aria-hidden="true">×</span><span>Fermer</span></button><div class="drawer-title">Navigation</div><button data-page="journal" type="button"><span class="drawer-icon" data-drawer-icon="journal" aria-hidden="true"></span><span>Journal</span></button><button data-page="tasks" type="button"><span class="drawer-icon" data-drawer-icon="tasks" aria-hidden="true"></span><span>Tâches</span></button><button data-page="shopping" type="button"><span class="drawer-icon" data-drawer-icon="shopping" aria-hidden="true"></span><span>Courses</span></button><button data-page="calendar" type="button"><span class="drawer-icon" data-drawer-icon="calendar" aria-hidden="true"></span><span>Calendrier</span></button><button data-page="capture" type="button"><span class="drawer-icon" data-drawer-icon="capture" aria-hidden="true"></span><span>Note rapide</span></button><div class="drawer-title">Mon Atelier</div><button data-page="connected" type="button"><span class="drawer-icon" data-drawer-icon="connected" aria-hidden="true"></span><span>Atelier synchronisé</span></button><button data-page="jdr" type="button"><span class="drawer-icon" data-drawer-icon="jdr" aria-hidden="true"></span><span>Notes JDR</span></button><button data-page="grimoire" type="button"><span class="drawer-icon" data-drawer-icon="grimoire" aria-hidden="true"></span><span>Grimoire de recettes</span></button><div class="drawer-title">Options</div><button data-page="tools" type="button"><span class="drawer-icon" data-drawer-icon="tools" aria-hidden="true"></span><span>Mes outils</span></button><button data-page="settings" type="button"><span class="drawer-icon" data-drawer-icon="settings" aria-hidden="true"></span><span>Paramètres</span><span id="drawerUpdateBadge" class="drawer-update-badge" hidden>1</span></button></nav>
+<nav class="nav drawer" id="nav" aria-label="Menu de Goblin" hidden><button id="close" type="button"><span class="drawer-close-mark" aria-hidden="true">×</span><span>Fermer</span></button><div class="drawer-title">Navigation</div><button data-page="journal" type="button"><span class="drawer-icon" data-drawer-icon="journal" aria-hidden="true"></span><span>Journal</span></button><button data-page="tasks" type="button"><span class="drawer-icon" data-drawer-icon="tasks" aria-hidden="true"></span><span>Tâches</span></button><button data-page="shopping" type="button"><span class="drawer-icon" data-drawer-icon="shopping" aria-hidden="true"></span><span>Courses</span></button><button data-page="calendar" type="button"><span class="drawer-icon" data-drawer-icon="calendar" aria-hidden="true"></span><span>Calendrier</span></button><button data-page="capture" type="button"><span class="drawer-icon" data-drawer-icon="capture" aria-hidden="true"></span><span>Note rapide</span></button><div class="drawer-title">Mon Atelier</div><button data-page="connected" type="button"><span class="drawer-icon" data-drawer-icon="connected" aria-hidden="true"></span><span>Atelier synchronisé</span></button><button data-page="jdr" type="button"><span class="drawer-icon" data-drawer-icon="jdr" aria-hidden="true"></span><span>Notes</span></button><button data-page="grimoire" type="button"><span class="drawer-icon" data-drawer-icon="grimoire" aria-hidden="true"></span><span>Grimoire de recettes</span></button><div class="drawer-title">Options</div><button data-page="tools" type="button"><span class="drawer-icon" data-drawer-icon="tools" aria-hidden="true"></span><span>Mes outils</span></button><button data-page="settings" type="button"><span class="drawer-icon" data-drawer-icon="settings" aria-hidden="true"></span><span>Paramètres</span><span id="drawerUpdateBadge" class="drawer-update-badge" hidden>1</span></button></nav>
 <main class="paper"><h1 id="title">Mon journal</h1><p class="sub" id="subtitle">Chaque petite chose a sa place.</p><div id="content"></div><p class="footer">Glisse à gauche ou à droite pour changer de page • données locales conservées</p></main>
 <nav class="mobile-tabs" id="mobileTabs" aria-label="Navigation rapide">
 <button type="button" data-mobile-go="connected" aria-label="Calendrier et Atelier synchronisé"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h3M14 14h3"/></svg></span>Calendrier</button>
-<button type="button" data-mobile-go="jdr"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Notes JDR</button>
+<button type="button" data-mobile-go="jdr"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Notes</button>
 <button type="button" class="star-tab" data-mobile-go="tools" aria-label="Mes outils apaisement. Glisser vers le haut pour respirer"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3 6.5 7 1-5 5 1 7-6-3.4-6 3.4 1-7-5-5 7-1L12 2Z"/></svg></span></button>
 <button type="button" data-mobile-go="connected" data-mobile-section="shopping"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 10 4-7M19 10l-4-7M3 10h18l-2 10H5L3 10Z"/><path d="M9 13v4M15 13v4"/></svg></span>Courses</button>
 <button type="button" data-mobile-go="connected" data-mobile-section="tasks"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m8 13 3 3 5-6"/></svg></span>To-Do</button>
@@ -346,7 +346,7 @@ function connectedSettings(root){
   catch(e){result.textContent='Adresse incorrecte : entre l’URL HTTPS de ton PC, sans /mobile.html.';return}
   diagnostic.disabled=true;result.textContent='Test des rubriques en cours… aucune donnée modifiée.';
   const now=new Date(),from=new Date(now.getFullYear(),now.getMonth()-1,1),until=new Date(now.getFullYear(),now.getMonth()+2,0);
-  const checks=[['Tâches','/api/tasks'],['Courses','/api/shopping'],['Recettes','/api/recipes'],['Notes JDR','/api/mobile/notes'],['Calendrier','/api/events?start='+isoDay(from)+'&end='+isoDay(until)]];
+  const checks=[['Tâches','/api/tasks'],['Courses','/api/shopping'],['Recettes','/api/recipes'],['Notes','/api/mobile/notes'],['Calendrier','/api/events?start='+isoDay(from)+'&end='+isoDay(until)]];
   const tests=await Promise.allSettled(checks.map(([,path])=>callPc('GET',path,null,u.origin)));
   const lines=checks.map(([name],i)=>name+' : '+(tests[i].status==='fulfilled'&&Array.isArray(tests[i].value)?'accessible':'indisponible'));
   result.textContent=lines.join(' | ')+'. Ce diagnostic est en lecture seule et ne fusionne aucune donnée.';
@@ -363,7 +363,7 @@ function connectedView(root){
  if(online)p.append(el('p',{class:'muted'},'Actualisation automatique toutes les 25 secondes pendant que cet écran est ouvert.'));
  if(!online){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
  const tabs=el('div',{class:'connected-tabs',role:'group','aria-label':'Rubriques synchronisées'});
- [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes JDR']].forEach(([key,title])=>{
+ [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes']].forEach(([key,title])=>{
   const btn=el('button',{type:'button',class:tab===key?'active':''},title);
   btn.setAttribute('aria-pressed',String(tab===key));
   btn.onclick=()=>{if(key==='recipes'){state.page='grimoire';save();render()}else{tab=key;render()}};
@@ -430,7 +430,7 @@ function toolsView(root){
  const diary=el('div',{class:'tool-card'});diary.append(el('h3',{},'📓 Journal et idées'));
  const goJournal=el('button',{class:'action'},'Mon journal');goJournal.onclick=()=>{state.page='journal';save();render()};
  const goGrimoire=el('button',{class:'action'},'🍲 Mon grimoire');goGrimoire.onclick=()=>{state.page='grimoire';save();render()};diary.append(goGrimoire);
- const goNote=el('button',{class:'action'},'Une note JDR pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
+ const goNote=el('button',{class:'action'},'Une note pour ChatGPT');goNote.onclick=()=>{state.page='connected';tab='notes';save();render()};diary.append(goJournal,goNote);intro.append(diary);
 }
 window.__atelierBackupComplete=success=>alert(success?'Sauvegarde enregistrée. Conserve ce fichier dans un endroit sûr.':'Sauvegarde annulée ou impossible. Aucune donnée modifiée.');
 function backupSettings(root){
@@ -496,7 +496,7 @@ render=function(){
  if(state.page==='settings'){backupSettings(document.getElementById('content'));connectedSettings(document.getElementById('content'));themeSettings(document.getElementById('content'))}updateNav();
 };
 
-/* Local-first, hashtag-classified JDR notes. Separate from the historic journal key. */
+/* General hashtag-classified notes. Keep the original JDR storage key for migration compatibility. */
 const jdrKey='goblin-mobile-jdr-notes-v1';
 let jdrNotes=[];try{const stored=JSON.parse(localStorage.getItem(jdrKey)||'[]');if(Array.isArray(stored))jdrNotes=stored.filter(x=>x&&typeof x==='object'&&typeof x.content==='string')}catch(e){}
 let jdrFilter='',jdrQuery='',jdrEdit=null;
@@ -505,21 +505,22 @@ function noteTags(text){return [...new Set((String(text||'').match(/#[\p{L}\p{N}
 function storeJdr(){localStorage.setItem(jdrKey,JSON.stringify(jdrNotes))}
 function jdrView(root){
  const intro=panel(root,'# Mes notes classées');
- intro.append(el('p',{class:'jdr-hint'},'Écris tes idées et range-les avec des # comme sur ton PC : #JDR, #personnage, #quête… Tu peux utiliser tes notes même sans connexion Windows.'));
+ intro.append(el('p',{class:'jdr-hint'},'Écris n’importe quelle note. Ajoute #recettes, #idées, #santé, #projets ou tes propres hashtags : les catégories apparaissent automatiquement, et une note peut figurer dans plusieurs catégories sans être dupliquée.'));
  const query=el('input',{type:'text',placeholder:'Rechercher une note ou un #…','aria-label':'Rechercher dans mes notes'});query.value=jdrQuery;query.oninput=()=>{jdrQuery=query.value;renderJdrRows()};intro.append(query);
  const allTags=[...new Set(jdrNotes.flatMap(n=>noteTags((n.tags||[]).join(' ')+' '+n.content+' '+n.title)))].sort();
+ intro.append(el('p',{class:'jdr-hint'},'Mes catégories (créées à partir des #hashtags) :'));
  const chips=el('div',{class:'jdr-tags'});intro.append(chips);
  for(const tag of ['',...allTags]){const chip=el('button',{type:'button',class:'jdr-tag'+(jdrFilter===tag?' selected':''), 'aria-pressed':String(jdrFilter===tag)},tag||'Toutes');chip.onclick=()=>{jdrFilter=tag;render()};chips.append(chip)}
- const editor=panel(root,jdrEdit?'Modifier ma note':'Nouvelle note JDR');
+ const editor=panel(root,jdrEdit?'Modifier ma note':'Nouvelle note');
  const editing=jdrEdit?jdrNotes.find(n=>n.id===jdrEdit):null;
- const title=el('input',{type:'text',placeholder:'Titre de la note','aria-label':'Titre de ma note'});title.value=editing?.title||'';
- const tags=el('input',{type:'text',placeholder:'#JDR #personnage #quête…','aria-label':'Étiquettes de ma note'});tags.value=(editing?.tags||[]).join(' ');
+ const title=el('input',{type:'text',placeholder:'Titre ou sujet de la note','aria-label':'Titre de ma note'});title.value=editing?.title||'';
+ const tags=el('input',{type:'text',placeholder:'#idées #projets #recettes…','aria-label':'Hashtags et catégories de ma note'});tags.value=(editing?.tags||[]).join(' ');
  const content=el('textarea',{placeholder:'Écris ta note ici. Tu peux aussi utiliser des # dans le texte.','aria-label':'Contenu de ma note'});content.value=editing?.content||'';content.style.minHeight='170px';
  const saveBtn=el('button',{type:'button',class:'action'},editing?'Sauvegarder les modifications':'Enregistrer sur mon téléphone');
  saveBtn.onclick=()=>{
   if(!title.value.trim()&&!content.value.trim()){alert('Écris au moins un titre ou une note.');return}
   const now=new Date().toISOString();
-  const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value),content:content.value.trim(),created:editing?.created||now,updated:now};
+  const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value+' '+title.value+' '+content.value),content:content.value.trim(),created:editing?.created||now,updated:now};
   if(editing)jdrNotes=jdrNotes.map(n=>n.id===editing.id?note:n);else jdrNotes.unshift(note);
   storeJdr();jdrEdit=null;render();
  };
@@ -545,7 +546,8 @@ function jdrView(root){
      const latest=await callPc('GET','/api/mobile/notes');
      if(!Array.isArray(latest))throw Error('Réponse PC inattendue');
      if(JSON.stringify(latest)!==JSON.stringify(pc.notes)){pc.notes=latest;throw Error('Les notes du PC ont changé : actualise et recommence pour éviter un écrasement.')}
-     const remote={id:note.id,title:note.title,category:'JDR',content:((note.tags||[]).join(' ')+'\n'+note.content).trim(),updated:note.updated};
+     const hashtags=noteTags((note.tags||[]).join(' ')+' '+note.title+' '+note.content);
+     const remote={id:note.id,title:note.title,category:hashtags[0]?.slice(1)||'Général',content:(hashtags.join(' ')+'\n'+note.content).trim(),updated:note.updated};
      if(latest.some(n=>n.id===note.id))throw Error('Cette note existe déjà sur le PC. Aucun doublon créé : vérifie les modifications sur PC.');
      await callPc('POST','/api/mobile/notes',{notes:[...latest,remote]});
      await syncPull();alert('Copie de la note envoyée au PC. La note locale reste intacte.');
@@ -556,7 +558,7 @@ function jdrView(root){
   });
  }
  renderJdrRows();
- const remote=panel(root,'Notes JDR de mon PC');
+ const remote=panel(root,'Notes de mon PC');
  if(!online){remote.append(el('p',{class:'jdr-hint'},'Hors connexion. Tes notes locales restent accessibles. Pour récupérer celles du PC, connecte-le avec Tailscale depuis Personnaliser.'));const c=el('button',{class:'action'},'Configurer mon PC');c.onclick=()=>{state.page='settings';save();render()};remote.append(c)}
  else{
   remote.append(el('p',{class:'jdr-hint'},'Notes récupérées depuis Windows. Elles ne sont pas supprimées par les notes locales.'));
@@ -1042,8 +1044,8 @@ render=function(){
   const root=document.getElementById('content');root.replaceChildren();grimoireView(root);updateNav();return;
  }
  if(state.page==='jdr'){
-  document.getElementById('title').textContent='Notes JDR #';
-  document.getElementById('subtitle').textContent='Classer et retrouver mes idées, même sans PC.';
+  document.getElementById('title').textContent='Mes notes';
+  document.getElementById('subtitle').textContent='Mes textes rangés automatiquement par #hashtag.';
   const root=document.getElementById('content');root.replaceChildren();jdrView(root);updateNav();return;
  }
  renderWithMental();
