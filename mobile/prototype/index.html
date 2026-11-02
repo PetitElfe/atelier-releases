@@ -761,18 +761,48 @@ function mentalEntries(root,section){
 }
 
 /* Explicit two-way synchronization. Tombstones preserve intentional deletions. */
+const mentalBaseKey='goblin-mobile-mental-sync-base-v1';
+let mentalSyncBase={};try{mentalSyncBase=JSON.parse(localStorage.getItem(mentalBaseKey)||'{}')||{}}catch(e){}
+function mentalFingerprint(obj){
+ const {updatedAt,createdAt,...rest}=obj;return JSON.stringify(rest)
+}
 function mentalMerge(local,remote){
- const result={cards:[],answers:[],journal:[]};
+ const result={cards:[],answers:[],journal:[],phrases:[]};
  for(const kind of ['cards','answers','journal','phrases']){
-  const byId=new Map();
-  for(const source of [remote,local])for(const item of (Array.isArray(source?.[kind])?source[kind]:[])){
-   if(!item||typeof item.id!=='string'||typeof item.updatedAt!=='string')continue;
-   const existing=byId.get(item.id);
-   if(!existing||item.updatedAt>=existing.updatedAt)byId.set(item.id,item);
+  const L=new Map((Array.isArray(local?.[kind])?local[kind]:[]).filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+  const R=new Map((Array.isArray(remote?.[kind])?remote[kind]:[]).filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+  const merged=new Map();const baseline=mentalSyncBase[kind]||{};
+  for(const id of new Set([...L.keys(),...R.keys()])){
+   const left=L.get(id),right=R.get(id);
+   if(!left||!right){merged.set(id,left||right);continue}
+   const winner=left.updatedAt>=right.updatedAt?left:right,loser=winner===left?right:left;
+   if(mentalFingerprint(left)!==mentalFingerprint(right)){
+    const last=baseline[id];
+    if(last && (left.updatedAt===last)!==(right.updatedAt===last)){
+      // Only one device edited this record after last sync.
+      merged.set(id,left.updatedAt===last?right:left);continue
+    }
+    if(!winner.deletedAt&&!loser.deletedAt){
+      // Both devices edited: preserve the prior text as a clearly marked copy.
+      let h=0;for(const c of JSON.stringify(loser)){h=((h*31)+c.charCodeAt(0))|0}
+      const copyId='history-'+id.slice(0,50)+'-'+(h>>>0).toString(36);
+      const copy={...loser,id:copyId,updatedAt:loser.updatedAt,
+        ...(kind==='cards'||kind==='journal'?{title:(loser.title||'Sans titre')+' (ancienne version)'}:
+        kind==='answers'?{text:loser.text+'\n(Ancienne version conservée après conflit)'}:
+        {text:loser.text+' (ancienne version)'})};
+      if(!L.has(copyId)&&!R.has(copyId))merged.set(copyId,copy);
+    }
+   }
+   merged.set(id,winner);
   }
-  result[kind]=[...byId.values()].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  result[kind]=[...merged.values()].filter(x=>x&&typeof x.updatedAt==='string').sort((x,y)=>y.updatedAt.localeCompare(x.updatedAt));
  }
  return result;
+}
+function mentalSetSyncBase(data){
+ mentalSyncBase={};
+ for(const kind of ['cards','answers','journal','phrases'])mentalSyncBase[kind]=Object.fromEntries((data[kind]||[]).map(x=>[x.id,x.updatedAt]));
+ localStorage.setItem(mentalBaseKey,JSON.stringify(mentalSyncBase))
 }
 async function mentalSyncNow(status,button){
  if(mentalSyncBusy)return;
@@ -788,7 +818,7 @@ async function mentalSyncNow(status,button){
     throw error;
    });
    if(uploaded?.conflict)continue;
-   mentalData=mentalMerge(mentalData,joined);mentalSave();
+   mentalData=joined;mentalSave();mentalSetSyncBase(joined);
    status.textContent='Carnet synchronisé avec ton PC. Les réponses sont conservées.';
    return;
   }
