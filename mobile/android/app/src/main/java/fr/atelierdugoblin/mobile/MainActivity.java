@@ -87,9 +87,10 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(autoBackupBridge, "AtelierAutoBackup");
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
+        webView.addJavascriptInterface(new KitchenTimerBridge(this), "AtelierTimers");
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
-                if(json==null || json.length()>12*1024*1024)return;
+                if(json==null || json.length()>48*1024*1024)return;
                 runOnUiThread(()->{
                     pendingBackup=json;
                     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -183,6 +184,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume();
+        KitchenTimerBridge.resume(this);
         // On returning from the background, refresh remote PC lists only.
         // Existing local WebView data and the offline journal remain untouched.
         if (webView != null) webView.evaluateJavascript(

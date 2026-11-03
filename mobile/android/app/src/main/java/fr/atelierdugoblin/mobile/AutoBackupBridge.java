@@ -18,7 +18,7 @@ import java.util.Comparator;
  * still export an independent file for disaster recovery.
  */
 public final class AutoBackupBridge {
-    private static final int MAX_BYTES = 12 * 1024 * 1024;
+    private static final int MAX_BYTES = 48 * 1024 * 1024;
     private static final int MAX_ROTATING = 12;
     private final File folder;
     AutoBackupBridge(Activity activity) {
