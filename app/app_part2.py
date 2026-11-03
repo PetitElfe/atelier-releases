@@ -332,6 +332,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static(p)
         if p == '/api/version':
             return self._json({'version': atelier_version()})
+        if p == '/api/personal-design':
+            if not personal_design.available():
+                return self._json({'available':False})
+            try:
+                return self._json(dict(personal_design.get(DATA), available=True))
+            except (OSError,ValueError,KeyError) as ex:
+                return self._json({'error':str(ex)},500)
         if p == '/api/runtime-version':
             return self._json({'version':atelier_version()})
         parts=p.strip('/').split('/')
@@ -1260,6 +1267,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if p == '/api/personal-design':
+            if not personal_design.available():
+                return self._json({'error':'Mode réservé à l’installation Windows TEST de Léo.'},403)
+            if self.headers.get('Origin') != f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Design') != '1':
+                return self._json({'error':'Ouvre le mode depuis les Paramètres de cette installation.'},403)
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+                if not 2 <= size <= personal_design.MAX_BYTES + 100000:
+                    return self._json({'error':'Thème limité à 24 Mo.'},413)
+                request=self._body()
+                return self._json(personal_design.save(DATA,request['revision'],request['theme']))
+            except personal_design.Conflict as ex:
+                return self._json({'error':str(ex)},409)
+            except (ValueError,KeyError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
+            except OSError:
+                return self._json({'error':'Écriture impossible. Ton aperçu reste ouvert : exporte-le pour le garder.'},500)
         if p == '/api/library-moodboard':
             origin=self.headers.get('Origin', '')
             if origin and origin != f'http://{HOST}:{PORT}':
