@@ -58,7 +58,8 @@
      rules.push(selector+'{background-image:url("'+a.src+'")!important;background-size:'+(fit==='repeat'?size+'px auto':size===100?fit:size+'% auto')+'!important;background-repeat:'+(fit==='repeat'?'repeat':'no-repeat')+'!important;background-position:'+x+'% '+y+'%!important;}');
      if(a.hideLabel&&targets.get(key)?.kind==='bouton')rules.push(selector+'{color:transparent!important;text-shadow:none!important;}'+selector+' > *{opacity:0!important;}');
    }
-   style.textContent=rules.join('\n');
+   // Important declarations in this named layer override the legacy unlayered skins.
+   style.textContent='@layer personal-drawings {'+rules.join('\n')+'}';
  }
  function point(el){
    const target=el?.closest?.('[data-design-key]');return target?.dataset.designKey||'app';
