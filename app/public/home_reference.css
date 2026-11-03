@@ -341,7 +341,7 @@
 .topbar #topXpLevel .top-xp-track{border-color:#746345;background:#2b251d}
 /* Sur l'Accueil le hamburger remplace la languette latérale.
    Les autres rubriques conservent la languette pour la compatibilité. */
-body.home-active #sideNavToggle{display:none!important}
+
 #homeView .home-heading-button{
   display:inline-block;cursor:pointer;text-align:left;
   color:inherit;border:0!important;background:transparent!important;

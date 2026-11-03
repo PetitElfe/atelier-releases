@@ -1,0 +1,27 @@
+/* Shelves are CSS geometry, without generated pictures. */
+#cuisineView .recipe-library-content{min-width:0;overflow:visible}
+.recipe-shelf-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;padding:10px 0;border-bottom:1px solid var(--line)}
+.recipe-shelf-toolbar label{display:flex;gap:8px;align-items:center}.recipe-shelf-toolbar select{max-width:210px}.recipe-shelf-toolbar button{font-size:13px}
+#recipeResultCount{margin-right:auto;color:var(--muted);font-size:13px}
+#recipeLibraryList{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));column-gap:16px;row-gap:22px;padding:0 20px 25px;align-items:end}
+#recipeLibraryList>.library-empty{grid-column:1/-1;min-height:240px;display:grid;place-content:center;text-align:center}
+#recipeLibraryList .recipe-volume{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:355px;padding:0 0 16px;border:0;border-radius:0;background:transparent;box-shadow:none}
+#recipeLibraryList .recipe-volume:after{content:'';position:absolute;bottom:0;left:-9px;right:-9px;height:12px;background:linear-gradient(#a88c60 0 32%,#756043 33% 80%,#453b2c 81%);box-shadow:0 7px 8px #0005;z-index:-1}
+#recipeLibraryList .recipe-library-title{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:10px;width:83px;max-width:100%;height:var(--recipe-book-height,260px);padding:12px 9px;border:1px solid #c9b48d70;border-left:7px solid #0003;border-right:3px solid #f1e1bd50;border-radius:6px 9px 4px 3px;background:linear-gradient(90deg,#0002,transparent 15% 75%,#ffffff0c),var(--recipe-ink,#73876a);color:#fff6dd;box-shadow:4px 3px 0 #d8cfb6,7px 5px 8px #0005;text-shadow:0 1px 1px #0004;text-align:center;transition:transform .15s ease}
+#recipeLibraryList .recipe-library-title:hover{transform:translateY(-6px);text-decoration:none;color:#fff6dd;border-color:#e4c890}
+#recipeLibraryList .recipe-library-title:focus-visible{outline:3px solid #ebcb7e;outline-offset:5px}
+.recipe-spine-name{writing-mode:vertical-rl;transform:rotate(180deg);text-orientation:mixed;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-height:190px;font:600 17px/1.3 Georgia,serif;letter-spacing:.3px}
+.recipe-spine-rule{height:5px;width:80%;border-top:1px solid #f1d397;border-bottom:1px solid #f1d397;flex-shrink:0}.recipe-spine-foot{font:11px/1.3 Georgia,serif;white-space:nowrap}
+#recipeLibraryList .recipe-library-meta{max-width:100%;min-height:0;margin:10px 0 4px;font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recipe-volume-menu{position:relative;font:12px/1.4 system-ui,sans-serif}.recipe-volume-menu summary{padding:3px 9px;cursor:pointer;color:var(--muted);border-radius:5px}.recipe-volume-menu summary:focus-visible{outline:2px solid var(--gold)}
+.recipe-volume-menu[open]{z-index:10}.recipe-volume-menu[open] summary{color:var(--text);background:var(--panel)}
+#recipeLibraryList .recipe-library-actions{position:absolute;top:28px;right:-20px;display:flex;flex-direction:column;align-items:stretch;gap:6px;width:180px;padding:10px;background:#252b23;border:1px solid var(--line);border-radius:9px;box-shadow:0 7px 20px #0008;z-index:15}
+#recipeLibraryList .recipe-library-actions button{padding:8px;text-align:left;font-size:12px}.recipes-archived .recipe-library-title{filter:saturate(.55)}
+.recipe-book-actions button{font-size:10px!important;padding:3px 5px!important}
+@media(max-width:1000px){.cuisine-library{grid-template-columns:185px minmax(0,1fr)}#recipeLibraryList{padding-left:12px;padding-right:12px}}
+@media(max-width:700px){.cuisine-library{grid-template-columns:1fr}.recipe-library-sidebar{position:static}.recipe-shelf-toolbar{gap:8px}#recipeLibraryList{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}}
+
+#recipeLibraryList .recipe-volume:has(details[open]){z-index:20}
+#recipeIngredientsList .recipe-ingredient-row{grid-template-columns:minmax(95px,auto) minmax(0,1fr) auto;gap:10px}
+.recipe-shopping-add{font-size:11px;padding:5px 8px;align-self:center;white-space:nowrap}
+@media(max-width:700px){#recipeIngredientsList .recipe-ingredient-row{grid-template-columns:auto minmax(0,1fr)}.recipe-shopping-add{grid-column:2;justify-self:start}}

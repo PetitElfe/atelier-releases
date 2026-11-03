@@ -3,7 +3,7 @@
 .library-compact-domain .library-domain-head-left{display:block;width:100%;min-width:0}
 .library-compact-domain .library-domain-title-row{display:block}
 .library-compact-domain #libraryBack,.library-compact-domain #libraryDomainKicker,.library-compact-domain #libraryDomainTitle,.library-compact-domain #libraryDomainDescription,.library-compact-domain .library-domain-head-actions{display:none!important}
-.library-compact-domain .library-domain-quick-context{display:flex;align-items:center;flex-wrap:nowrap;gap:18px;width:100%;min-width:0;padding-right:46px;box-sizing:border-box}
+.library-compact-domain .library-domain-quick-context{display:flex;align-items:center;flex-wrap:nowrap;gap:18px;width:100%;min-width:0;padding-right:0;box-sizing:border-box}
 .library-compact-domain .domain-home-button{width:44px;height:44px;padding:8px;flex:0 0 44px;border-radius:10px}
 .library-compact-domain .library-real-shelf{padding:0;border:0;border-radius:0;background:none;min-width:0;max-width:55%}
 .library-compact-domain .library-shelf-books{display:flex;align-items:flex-end;flex-wrap:nowrap;gap:8px;padding:3px 5px 6px;border-bottom:5px solid #957554;box-shadow:0 3px 2px -2px #0008;overflow:auto}

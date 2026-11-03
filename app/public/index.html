@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/library_moodboard.css" />
   <link rel="stylesheet" href="/calendar_decor.css" />
   <link rel="stylesheet" href="/personal_design.css" />
+  <link rel="stylesheet" href="/recipe_shelves.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -53,9 +54,6 @@
 
   <nav id="sideNav" class="tabs side-nav side-nav-right" aria-label="Navigation principale">
     <div id="sideNavDragHandle" class="side-nav-drag-handle" title="Glisser pour déplacer le menu" aria-label="Glisser pour déplacer le menu">⋮⋮</div>
-    <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Masquer le menu" title="Masquer le menu">
-      <span class="side-nav-arrow">›</span>
-    </button>
     <div class="side-nav-links">
       <button data-view="home" class="active">Accueil</button>
       <button data-view="calendar">Calendrier</button>
@@ -380,7 +378,7 @@
         </div>
         <div class="cuisine-library-actions">
           <button id="importRecipe" type="button">Importer une recette</button>
-          <button id="addRecipeBook" type="button">+ Livre</button>
+          <button id="addRecipeBook" type="button">+ Rayon</button>
           <button id="addRecipe" class="primary" type="button">+ Recette</button>
         </div>
       </div>
@@ -388,8 +386,8 @@
       <div class="cuisine-library">
         <aside class="recipe-library-sidebar">
           <label for="recipeSearch">Rechercher</label>
-          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Nom, livre, note…">
-          <div class="recipe-books-title">Livres</div>
+          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Titre, rayon, ingrédient…">
+          <div class="recipe-books-title">Rayons</div>
           <div id="recipeBookShelf" class="recipe-book-shelf"></div>
         </aside>
         <section class="recipe-library-content">
@@ -674,5 +672,6 @@
   <script src="/library_refresh.js"></script>
   <script src="/calendar_decor.js"></script>
   <script src="/personal_design.js"></script>
+  <script src="/recipe_shelves.js"></script>
 </body>
 </html>
