@@ -53,7 +53,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "b5f35c3559fc1ca5ff276a478277af47527b75f7177734a3c548aa413d155b71"
+      "sha256": "7265e162b93e54738dea4f1243b27458e16fd1a99a5a02057c8b7a2193217a48"
     },
     {
       "path": "public/app_part3.js",
@@ -245,11 +245,11 @@
     },
     {
       "path": "public/recipe_shelves.js",
-      "sha256": "63af46395efb7e6e4e588d5e8f66e06981a68dc6cf2a5424521c51fa6127ca1b"
+      "sha256": "02ae878d47802a2fa4522227b2958fe75c9a387120914bc1784758d50ffddeff"
     },
     {
       "path": "public/recipe_shelves.css",
-      "sha256": "c2779bc450beea11227812b2ef7be7116e1d8b4ee90cc60a706f91fb20966b87"
+      "sha256": "837a9ae922096d582a922aed89f5098b717943626bad176dff34e1ad313c4847"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

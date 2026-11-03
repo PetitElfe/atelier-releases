@@ -9,7 +9,7 @@
  toolbar.innerHTML='<span id="recipeResultCount" role="status" aria-live="polite"></span><label>Trier <select id="recipeShelfSort"><option value="title">Titre A → Z</option><option value="recent">Modifiées récemment</option><option value="shelf">Rayon, puis titre</option></select></label><button id="recipeClearSearch" type="button">Effacer les filtres</button><button id="recipeShowArchived" type="button" aria-pressed="false">Recettes archivées</button>';
  list.before(toolbar);
  const $=id=>document.getElementById(id);
- async function reloadArchives(){const ticket=++archiveRequest;loading=true;renderCuisineLibrary();try{const result=await api('/api/recipes?archived=1');if(ticket===archiveRequest)archives=result}catch(e){showUiMessage('Archives indisponibles',e.message||'Réessaie dans un instant.')}finally{if(ticket===archiveRequest){loading=false;renderCuisineLibrary()}}}
+ async function reloadArchives(){const ticket=++archiveRequest;loading=true;renderCuisineLibrary();try{const result=await api('/api/recipes?archived=1');if(ticket===archiveRequest)archives=result}catch(e){if(ticket===archiveRequest)showUiMessage('Archives indisponibles',e.message||'Réessaie dans un instant.')}finally{if(ticket===archiveRequest){loading=false;renderCuisineLibrary()}}}
  $('recipeShowArchived').onclick=()=>{if(loading)return;archived=!archived;if(archived)reloadArchives();else renderCuisineLibrary()};
  $('recipeShelfSort').onchange=e=>{sort=e.target.value;persist();renderCuisineLibrary()};
  $('recipeClearSearch').onclick=()=>{recipeSearchQuery='';recipeBookFilter='all';persist();renderCuisineLibrary();$('recipeSearch').focus()};
@@ -18,6 +18,7 @@
    $('recipeShelfSort').value=sort;$('recipeShowArchived').textContent=archived?'Revenir aux recettes':'Recettes archivées';$('recipeShowArchived').setAttribute('aria-pressed',String(archived));$('recipeShowArchived').disabled=loading;
    const source=archived?archives:state.recipes;
    if(recipeBookFilter!=='all'&&state.recipeBooks.length&&!state.recipeBooks.some(x=>String(x.id)===String(recipeBookFilter)))recipeBookFilter='all';
+   persist();
    const makeFilter=(id,name,count)=>{const button=document.createElement('button');button.type='button';button.className='recipe-book-button'+(String(id)===String(recipeBookFilter)?' active':'');button.setAttribute('aria-pressed',String(String(id)===String(recipeBookFilter)));button.innerHTML='<span>'+esc(name)+'</span><small>'+count+'</small>';button.onclick=()=>{recipeBookFilter=id;persist();renderCuisineLibrary()};return button};
    shelf.replaceChildren();shelf.append(makeFilter('all','Tous les rayons',source.length));
    for(const book of state.recipeBooks){const row=document.createElement('div');row.className='recipe-book-row';row.append(makeFilter(book.id,book.name,source.filter(x=>Number(x.book_id)===Number(book.id)).length));if(String(book.name).toLowerCase()!=='à classer'){
@@ -38,6 +39,8 @@
      list.append(card);
    }
  };
+ const originalEditor=openRecipeModal;openRecipeModal=function(item=null,prefill=null){if(!item?.id&&archived){archiveRequest++;archived=false;loading=false;renderCuisineLibrary()}return originalEditor(item,prefill)};
+ const originalRayon=openRecipeBookModal;openRecipeBookModal=function(){if(archived){archiveRequest++;archived=false;loading=false;renderCuisineLibrary()}return originalRayon()};
  // Block executable/unusable source URLs in old imported recipes as well.
  const basePage=renderRecipePage;renderRecipePage=function(item){basePage(item);
    const ingredients=parseRecipeIngredients(item),factor=recipeTargetServings/Math.max(1,Number(item.base_servings)||1);
