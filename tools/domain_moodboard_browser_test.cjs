@@ -42,6 +42,14 @@ async function saved(id,predicate){for(let i=0;i<100;i++){const board=await api(
  await page.locator('[data-domain-view=home]').click();assert.equal(await mood.locator('.domain-mood-item').count(),3);
  await open(other.id);assert.equal(await mood.locator('.domain-mood-item').count(),0);
  await open(domain.id);assert.equal(await mood.locator('.domain-mood-item').count(),3);
+ // A pending text save must not capture intermediate drag coordinates.
+ const beforeCancel=await api('/api/library-moodboard?domain_id='+domain.id),origin=beforeCancel.items[0];
+ await mood.locator('textarea').first().fill('Texte gardé malgré le déplacement annulé');
+ const cancelHandle=mood.locator('.domain-mood-item').first().locator('.mood-move'),cb=await cancelHandle.boundingBox();
+ await page.mouse.move(cb.x+20,cb.y+10);await page.mouse.down();await page.mouse.move(cb.x+150,cb.y+60,{steps:6});await page.waitForTimeout(650);
+ const during=await api('/api/library-moodboard?domain_id='+domain.id);assert.equal(during.items[0].x,origin.x,'No in-progress coordinate save');
+ await cancelHandle.dispatchEvent('pointercancel',{pointerId:1});await page.mouse.up();
+ await saved(domain.id,b=>b.items[0]?.text==='Texte gardé malgré le déplacement annulé'&&b.items[0].x===origin.x&&b.items[0].y===origin.y);
  // Network failures retain a draft, recovered and persisted after reload.
  await page.route('**/api/library-moodboard',route=>route.request().method()==='PUT'?route.abort():route.continue());await mood.locator('textarea').first().fill('Texte conservé pendant une coupure');
  await page.waitForFunction(()=>document.querySelector('[data-mood-status]')?.textContent.includes('brouillon conservé'));

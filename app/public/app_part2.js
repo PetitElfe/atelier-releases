@@ -770,7 +770,7 @@ function renderCuisineLibrary(){
 
 
 function openRenameRecipeBookModal(book){
-  openModal(`<h2>Renommer le livre</h2><form id="renameRecipeBookForm" class="form-grid">
+  openModal(`<h2>Renommer le rayon</h2><form id="renameRecipeBookForm" class="form-grid">
     <div class="field full"><label>Nouveau nom</label><input name="name" required value="${esc(book.name)}"></div>
     <div class="form-actions field full"><button type="button" id="cancelRenameBook">Annuler</button><button class="primary">Renommer</button></div>
   </form>`);
@@ -778,20 +778,17 @@ function openRenameRecipeBookModal(book){
   $('#renameRecipeBookForm').onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
-    const result=await runUiAction("Impossible de renommer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'PUT',body:JSON.stringify(payload)}));
+    const result=await runUiAction("Impossible de renommer le rayon",()=>api(`/api/recipe-books/${book.id}`,{method:'PUT',body:JSON.stringify(payload)}));
     if(!result.ok)return;
     closeModal();await refresh();
   };
 }
 
 async function deleteRecipeBook(book){
-  const count=Number(book.recipe_count)||0;
-  const message=count
-    ? `Supprimer le livre « ${book.name} » ? Ses ${count} recette${count>1?'s':''} seront déplacées dans « À classer ».`
-    : `Supprimer le livre « ${book.name} » ?`;
-  const ok=await askUiConfirm('Supprimer le livre',message,'Supprimer',true);
+  const message=`Supprimer le rayon « ${book.name} » ? Ses recettes, y compris les recettes archivées, seront déplacées dans « À classer ».`;
+  const ok=await askUiConfirm('Supprimer le rayon',message,'Supprimer',true);
   if(!ok)return;
-  const result=await runUiAction("Impossible de supprimer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
+  const result=await runUiAction("Impossible de supprimer le rayon",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
   if(!result.ok)return;
   if(String(recipeBookFilter)===String(book.id))recipeBookFilter='all';
   await refresh();
@@ -857,17 +854,18 @@ function openMealIdeaPicker(){
 }
 
 function openRecipeBookModal(){
-  openModal(`<h2>Nouveau livre de recettes</h2><form id="recipeBookForm" class="form-grid">
-    <div class="field full"><label>Nom du livre</label><input name="name" required placeholder="ex. Soupes, Pains, Recettes de Mamie…"></div>
-    <div class="field-help full">Pour l’instant, on crée seulement le livre. Les options personnalisables du livre seront définies pendant les prochains tests.</div>
+  openModal(`<h2>Nouveau rayon de recettes</h2><form id="recipeBookForm" class="form-grid">
+    <div class="field full"><label>Nom du rayon</label><input name="name" required placeholder="ex. Soupes, Pains, Recettes de Mamie…"></div>
+    <div class="field-help full">Un rayon regroupe tes recettes : par exemple Soupes, Desserts ou Recettes de famille.</div>
     <div class="form-actions field full"><button type="button" id="cancelRecipeBook">Annuler</button><button class="primary">Créer</button></div>
   </form>`);
   $('#cancelRecipeBook').onclick=closeModal;
   $('#recipeBookForm').onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
-    const result=await runUiAction("Impossible de créer le livre",()=>api('/api/recipe-books',{method:'POST',body:JSON.stringify(payload)}));
+    const result=await runUiAction("Impossible de créer le rayon",()=>api('/api/recipe-books',{method:'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
+    recipeBookFilter=result.value.id||'all';recipeSearchQuery='';
     closeModal();await refresh();showView('cuisine');
   };
 }
@@ -1083,7 +1081,7 @@ function openRecipeModal(item=null,prefill=null){
   const recipeSteps=parseRecipeSteps(source.recipe||'');
   let mealImageData=source.image_data||'';
   const fallbackBook=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')?.id||state.recipeBooks[0]?.id||'';
-  const selectedBook=Number(source.book_id)||Number(fallbackBook)||'';
+  const selectedBook=Number(source.book_id)||(state.recipeBooks.some(x=>String(x.id)===String(recipeBookFilter))?Number(recipeBookFilter):0)||Number(fallbackBook)||'';
   const bookOptions=state.recipeBooks.map(book=>`<option value="${book.id}" ${Number(book.id)===Number(selectedBook)?'selected':''}>${esc(book.name)}</option>`).join('');
   openModal(`<form id="mealForm" class="recipe-form recipe-form-04">
     <div class="recipe-edit-heading">
@@ -1108,7 +1106,7 @@ function openRecipeModal(item=null,prefill=null){
 
       <div class="recipe-edit-summary">
         <div class="recipe-edit-meta">
-          <label class="field"><span>Livre</span><select name="book_id">${bookOptions}</select></label>
+          <label class="field"><span>Rayon</span><select name="book_id">${bookOptions}</select></label>
           <label class="field"><span>Recette prévue pour</span><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></label>
         </div>
         <label class="field recipe-note-field"><span>Petite note</span><textarea name="notes" placeholder="Variante, accompagnement, conseil…">${esc(source.notes||'')}</textarea></label>
@@ -1200,6 +1198,7 @@ function openRecipeModal(item=null,prefill=null){
     payload.image_data=mealImageData;
     const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/recipes/${item.id}`:'/api/recipes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
+    if(!editing){recipeBookFilter=payload.book_id||'all';recipeSearchQuery=''}
     closeModal();
     await refresh();
     if(editing&&state.view==='recipe'){

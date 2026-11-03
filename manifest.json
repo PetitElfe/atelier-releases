@@ -13,7 +13,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "373ba68d3812290d6241912e71dac88c35973d919e6bd21d5c52fb21d79e1549"
+      "sha256": "1b58ae9b7f76ff2e2cf86e1636718d0e5c094479eae9dc540fbc9ed02e0fae84"
     },
     {
       "path": "app_part3.py",
@@ -53,11 +53,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "d6a5deec9f53cfd20d6821e8fcf67a93fd0c9939e6fb9d668dd1f851a9895ddb"
+      "sha256": "7265e162b93e54738dea4f1243b27458e16fd1a99a5a02057c8b7a2193217a48"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "31c3eab5e16a341588e825293be1f89ef92e88cc494b29d0b1b656439c3c4870"
+      "sha256": "56078a744be8f0c003340bdd079beab7ec4bd89fbc3345d19ae80941a376eebb"
     },
     {
       "path": "public/big_refonte.css",
@@ -85,11 +85,11 @@
     },
     {
       "path": "public/home_reference.css",
-      "sha256": "7033858b5374f51a2ee36ab1ec2c7336ba7de19925bdacd8b45fd6a0e3e5f220"
+      "sha256": "902ea1f821a7eecab01b344b60fbecbac6e3c749e0f7104ae48a7a1d1e77d4f9"
     },
     {
       "path": "public/index.html",
-      "sha256": "a62955456554039917236edb7e88c1b21a48bdc72bf368c884f841c0773c9bb1"
+      "sha256": "c661b87355169370b229fdc600b4da99a554fecc1b8a20df58bd92e427879b02"
     },
     {
       "path": "public/interface_reference.css",
@@ -157,7 +157,7 @@
     },
     {
       "path": "public/styles.css",
-      "sha256": "f189ae37f4855f796ca284864496313f1ad3a936a708f7961df463382277cf1f"
+      "sha256": "48d4e12555d4fd82c37ca8e03e883a457fb113bbd238fb30c3c2650fb69f6bd2"
     },
     {
       "path": "public/tracker_ritual_ui.js",
@@ -225,11 +225,11 @@
     },
     {
       "path": "public/library_moodboard.js",
-      "sha256": "1e83a3462e9bfe73f335562344eb798106a50abe49cb78a1a5d0274819c43121"
+      "sha256": "4a7f457d0126075baf2636c7c7763baa8ab07989252179a2e1aba1b43d0520ea"
     },
     {
       "path": "public/library_moodboard.css",
-      "sha256": "7d196c81dd4b191b7a3f80f8b7bce91ae0bcb1a72c431b7354379de53a89e798"
+      "sha256": "de64b4866eeef38ac2bbde622e3840990e9bacd66799796ea073af6128610a2e"
     },
     {
       "path": "personal_design.py",
@@ -242,6 +242,14 @@
     {
       "path": "public/personal_design.css",
       "sha256": "c91ce65d4157f8d06bfbcd85b72a377689ca6b13a48faa478e2ad42cc540e7fd"
+    },
+    {
+      "path": "public/recipe_shelves.js",
+      "sha256": "02ae878d47802a2fa4522227b2958fe75c9a387120914bc1784758d50ffddeff"
+    },
+    {
+      "path": "public/recipe_shelves.css",
+      "sha256": "837a9ae922096d582a922aed89f5098b717943626bad176dff34e1ad313c4847"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

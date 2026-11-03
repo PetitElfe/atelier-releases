@@ -8,9 +8,9 @@
   const mounted=s=>s.root?.isConnected&&s.root.dataset.domainId===String(s.id);
   function status(s){if(!mounted(s))return;const root=s.root.querySelector('[data-mood-status]');if(root)root.textContent=s.message||(s.saving?'Enregistrement…':s.dirty?'Modifications en cours…':'Enregistré');s.root.querySelector('[data-mood-undo]').disabled=!s.undo;s.root.querySelector('[data-mood-save]').disabled=s.saving||s.loading||s.conflict;for(const b of s.root.querySelectorAll('[data-mood-add]'))b.disabled=!s.ready}
   function draft(s,remove=false){const snapshot={revision:s.revision,items:clone(s.items)};s.draftQueue=(s.draftQueue||Promise.resolve()).catch(()=>{}).then(()=>draftOp(s.id,snapshot,remove)).catch(()=>{s.message='Brouillon local indisponible ; garde la fenêtre ouverte jusqu’à l’enregistrement.';status(s)});return s.draftQueue}
-  function changed(s){s.version++;s.dirty=true;s.message='';draft(s);status(s);clearTimeout(s.timer);s.timer=setTimeout(()=>save(s),450)}
+  function changed(s){s.version++;s.dirty=true;s.message='';status(s);clearTimeout(s.timer);if(s.gesture)return;draft(s);s.timer=setTimeout(()=>save(s),450)}
   async function save(s){
-    clearTimeout(s.timer);if(!s.ready||s.conflict||!s.dirty)return;if(s.saving)return;
+    clearTimeout(s.timer);if(s.gesture||!s.ready||s.conflict||!s.dirty)return;if(s.saving)return;
     s.saving=true;s.message='';status(s);const version=s.version,payload={domain_id:s.id,revision:s.revision,items:clone(s.items)};let success=false;
     try{const response=await api('/api/library-moodboard',{method:'PUT',body:JSON.stringify(payload)});s.revision=response.revision;success=true;
       if(version===s.version){s.dirty=false;await draft(s,true)}else await draft(s);
@@ -21,12 +21,14 @@
   function exportBoard(s){const blob=new Blob([JSON.stringify({format:'atelier-domain-moodboard-v1',domain_id:s.id,revision:s.revision,items:s.items},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='Moodboard_domaine_'+s.id+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   function size(s){if(!mounted(s))return;const surface=s.root.querySelector('.domain-mood-surface');surface.style.minHeight='max('+Math.max(580,...s.items.map(item=>item.y+item.h+48))+'px, calc(100vh - 245px))';const available=Math.max(180,surface.clientWidth-16);surface.querySelectorAll('[data-mood-item]').forEach(card=>{const item=s.items.find(x=>x.id===card.dataset.moodItem);const w=Math.min(item.w,available);card.style.width=w+'px';card.style.height=item.h+'px';card.style.left=Math.min(item.x,Math.max(0,available-w))+'px';card.style.top=item.y+'px'})}
   function moveOrResize(event,s,item,card,resizing){
-    if(event.button!==0)return;event.preventDefault();undoSnapshot(s);const handle=event.currentTarget;handle.setPointerCapture(event.pointerId);
+    if(event.button!==0||s.gesture)return;event.preventDefault();const previousUndo=s.undo,geometry={x:item.x,y:item.y,w:item.w,h:item.h};undoSnapshot(s);s.gesture=true;clearTimeout(s.timer);const handle=event.currentTarget;handle.setPointerCapture(event.pointerId);
     const x=event.clientX,y=event.clientY,original={x:parseFloat(card.style.left),y:item.y,w:card.offsetWidth,h:item.h},surface=card.parentElement;
     const move=e=>{const dx=e.clientX-x,dy=e.clientY-y;if(resizing){item.w=Math.min(1400,surface.clientWidth-original.x-12,Math.max(160,original.w+dx));item.h=Math.max(120,Math.min(1400,original.h+dy))}else{item.x=Math.max(0,Math.min(surface.clientWidth-card.offsetWidth-12,original.x+dx));item.y=Math.max(0,Math.min(20000,original.y+dy))}size(s)};
-    const end=e=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',cancel);if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId);changed(s)};
-    const cancel=e=>{s.items=s.undo;s.undo=null;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',cancel);renderItems(s);if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)};
-    handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',cancel);
+    let finished=false;
+    const cleanup=()=>{finished=true;s.gesture=false;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);window.removeEventListener('blur',cancel);if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId)};
+    const end=e=>{if(finished||e.pointerId!==event.pointerId)return;cleanup();changed(s)};
+    const cancel=()=>{if(finished)return;Object.assign(item,geometry);s.undo=previousUndo;cleanup();renderItems(s);changed(s)};
+    handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);window.addEventListener('blur',cancel);
   }
   function renderItems(s){
     if(!mounted(s))return;const surface=s.root.querySelector('.domain-mood-surface');surface.replaceChildren();

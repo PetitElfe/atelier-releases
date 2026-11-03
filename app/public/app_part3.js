@@ -475,6 +475,8 @@ function setSideNavCollapsed(collapsed){
   const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left;
   syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
+  nav.inert=!!collapsed;
+  nav.setAttribute('aria-hidden',String(!!collapsed));
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
   const headerButton=$('#sideNavHeaderToggle');
   if(headerButton){
@@ -482,11 +484,7 @@ function setSideNavCollapsed(collapsed){
     headerButton.setAttribute('aria-label',collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques');
     headerButton.title=collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques';
   }
-  const toggle=$('#sideNavToggle');
-  if(toggle){
-    toggle.setAttribute('aria-label',collapsed?'Afficher le menu':'Masquer le menu');
-    toggle.title=collapsed?'Afficher le menu':'Masquer le menu';
-  }
+
 }
 
 function clampSideNavPosition(left,top){
@@ -561,7 +559,6 @@ window.addEventListener('resize',()=>{
   const next=applySideNavPosition();
   if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
 });
-$('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
 $('#sideNavHeaderToggle')?.addEventListener('click',()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed')));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));

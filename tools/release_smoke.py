@@ -147,9 +147,11 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"', 'id="libraryNotebookPageList"', 'id="addLibraryPageSmall"'):
+    for required in ('id="sideNav"', 'id="sideNavHeaderToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"', 'id="libraryNotebookPageList"', 'id="addLibraryPageSmall"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
+    if 'id="sideNavToggle"' in index or 'side-nav-arrow' in index:
+        fail("L’ancienne flèche du tiroir doit être absente.")
     if 'id="todayBtn"' in index:
         fail("Le bouton Aujourd’hui ne doit plus être présent.")
     if "Rappel :" not in js or "Clique pour ouvrir L’Atelier." not in js:

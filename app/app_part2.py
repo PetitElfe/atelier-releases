@@ -607,11 +607,12 @@ class Handler(BaseHTTPRequestHandler):
                                     ORDER BY b.id''').fetchall()
                 return self._json([dict(r) for r in rows])
             if p in ('/api/recipes','/api/meals'):
+                archived=1 if q.get('archived',['0'])[0]=='1' else 0
                 rows = c.execute('''SELECT r.*,b.name AS book_name
                                     FROM recipes r
                                     LEFT JOIN recipe_books b ON b.id=r.book_id
-                                    WHERE r.archived=0
-                                    ORDER BY lower(r.title),r.id''').fetchall()
+                                    WHERE r.archived=?
+                                    ORDER BY lower(r.title),r.id''',(archived,)).fetchall()
                 return self._json([dict(r) for r in rows])
             if p == '/api/meal-ideas':
                 rows = c.execute('''SELECT m.id AS idea_id,r.*,b.name AS book_name
