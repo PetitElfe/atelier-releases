@@ -29,7 +29,9 @@ let stored={available:true,revision:0,theme:{}},reject=false;
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=120;c.height=120;const x=c.getContext('2d');x.fillStyle='#bca26c';x.fillRect(12,12,96,96);return c.toDataURL('image/png').split(',')[1]});
  const file={name:'Mon bouton.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')};
  await dock.locator('[data-design=target]').selectOption('id:settingsBtn');await dock.locator('[data-design=image]').setInputFiles(file);
- await page.waitForFunction(()=>document.querySelector('#settingsBtn').style.backgroundImage||getComputedStyle(document.querySelector('#settingsBtn')).backgroundImage.includes('data:image/'));
+ await page.waitForFunction(()=>document.querySelector('[data-design=asset]').textContent.includes('Mon bouton'));
+ console.log('ART DIAGNOSTICS',await page.evaluate(()=>({status:document.querySelector('[data-design=status]').textContent,selected:document.querySelector('[data-design=target]').value,rules:document.querySelector('#personalDesignRules').textContent.slice(0,200),target:document.querySelector('#settingsBtn').dataset.designKey,background:getComputedStyle(document.querySelector('#settingsBtn')).backgroundImage})));
+ assert.match(await page.locator('#settingsBtn').evaluate(el=>getComputedStyle(el).backgroundImage),/data:image/);
  await dock.locator('[data-design=x]').fill('25');await dock.locator('[data-design=x]').dispatchEvent('change');
  await dock.locator('[data-design=hideLabel]').check();assert.equal(await page.locator('#settingsBtn').getAttribute('aria-label'),'Paramètres');
  // File drop is targeted to the actual hovered element, not to the selected dropdown.
@@ -53,5 +55,5 @@ let stored={available:true,revision:0,theme:{}},reject=false;
  await dock.locator('[data-design=exit]').click();assert.equal(await dock.isVisible(),false);
  await page.setViewportSize({width:1000,height:720});await page.locator('#personalDesignStart').click();assert.ok((await dock.boundingBox()).width<1000);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  assert.deepEqual(errors,[]);console.log('PASS personal design: gate, own art drop, controls, save/reload, undo, conflict, export, template, selection and smaller window');
- }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('exit',r));rmSync(data,{recursive:true,force:true})}
+ }catch(e){if(browser){const p=browser.contexts()[0]?.pages()[0];if(p){console.log('FAIL STATE',await p.evaluate(()=>({status:document.querySelector('[data-design=status]')?.textContent,asset:document.querySelector('[data-design=asset]')?.textContent,selected:document.querySelector('[data-design=target]')?.value,rules:document.querySelector('#personalDesignRules')?.textContent.slice(0,250)})));mkdirSync('artifacts',{recursive:true});await p.screenshot({path:'artifacts/personal-design-failure.png'})}}throw e;}finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('exit',r));rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
