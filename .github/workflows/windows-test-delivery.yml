@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           cat > /tmp/goblin-release-notes.md <<'NOTES'
-          Mise à jour Windows TEST — bibliothèque et calendrier.
+          Mise à jour Windows TEST — domaine compact et moodboard.
 
           Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends le message de réussite, puis utilise ton raccourci TEST habituel. Aucun code à modifier.
 
@@ -63,8 +63,8 @@ jobs:
 
           Scripts Python/CMD, pas d'EXE signé. Une conservation réussie sur le runner Windows ne remplace pas les vérifications sur le PC de Léo. Checklist dans LIRE_MOI.txt.
           NOTES
-          if gh release view windows-test-bibliotheque-20261103 >/dev/null 2>&1; then
-            gh release upload windows-test-bibliotheque-20261103 delivery/* --clobber
+          if gh release view windows-test-moodboard-20261103 >/dev/null 2>&1; then
+            gh release upload windows-test-moodboard-20261103 delivery/* --clobber
           else
-            gh release create windows-test-bibliotheque-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Bibliothèque et calendrier — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
+            gh release create windows-test-moodboard-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Domaine et moodboard — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
           fi

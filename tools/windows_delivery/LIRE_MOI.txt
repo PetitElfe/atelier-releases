@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Bibliothèque, parcours et calendrier — 3 novembre 2026
+Domaine compact, moodboard, carnets et parcours — 3 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -25,7 +25,10 @@ En cas de message d'erreur, conserve les dossiers et envoie le message affiché.
 
 A VERIFIER APRES LA MISE A JOUR :
 - Retrouver tes carnets et les textes déjà écrits.
-- Ouvrir la bibliothèque : étagère, livre gris +, carte et mode crayon.
+- Ouvrir un domaine : petite barre de livres en haut et moodboard en dessous.
+- Ajouter une image et un texte, les déplacer/redimensionner, fermer/rouvrir.
+- Cliquer sur un livre : éditeur dans toute la zone principale.
+- Cliquer sur Parcours, puis sur la maison : retour au moodboard.
 - Ecrire, changer de carnet puis revenir : texte et dernière page conservés.
 - Décorer le calendrier : image du mois puis du jour, opacité et couleur.
 - Fermer/rouvrir : décoration conservée ; rendez-vous toujours lisibles.
