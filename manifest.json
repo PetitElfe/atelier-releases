@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "e50edbac78a6b2a1b11bf90287a35be803b7d00ea700eb3ec8a150b9dee81c79"
+      "sha256": "951ed0592a0454f18e1339685c714caa26a85a841cda7b1839d27e45eb1e500f"
     },
     {
       "path": "public/interface_reference.css",
@@ -237,7 +237,7 @@
     },
     {
       "path": "public/personal_design.js",
-      "sha256": "5b5fcfd54214c3cee5a44fecaae5748ea61a0292ed6751cba31bfc05979902a0"
+      "sha256": "cd6ffdd473a0ed5da47d5bafbcaea4ce678670ac35bb00c9f1ff07bb65c1530e"
     },
     {
       "path": "public/personal_design.css",

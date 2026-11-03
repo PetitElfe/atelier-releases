@@ -33,7 +33,7 @@
    for(const el of document.querySelectorAll('main .view[id],main section[id],main article[id],main div[id],button[id],button[data-notebook-id]')){
      if(el.closest('#personalDesignDock,#settingsPersonalDesignCard')||!el.id&&!el.dataset.notebookId)continue;
      const button=el.tagName==='BUTTON';
-     if(!button&&!el.matches('.view,section,article')&&!/(panel|widget|card|shelf|canvas)/i.test(el.id))continue;
+     if(!button&&!el.matches('.view,section,article,[data-home-module]')&&!/(panel|widget|card|shelf|canvas)/i.test(el.id))continue;
      const key=el.dataset.notebookId?'book:'+el.dataset.notebookId:'id:'+el.id;
      if(!/^(id:[A-Za-z][\w-]{0,100}|book:[0-9]{1,12})$/.test(key))continue;
      next.set(key,{el,name:(button?'Bouton · ':el.matches('.view')?'Page · ':'Zone · ')+label(el),kind:button?'bouton':'fond'});
@@ -87,7 +87,7 @@
  function open(){active=true;dock.hidden=false;register();updateList();select(selected);status(dirty?'Aperçu non enregistré.':'Glisse un PNG, JPEG ou WebP sur une zone.');}
  function close(){active=false;dock.hidden=true;marker.hidden=true;pick(false);if(dirty)status('Aperçu non enregistré.');}
  function download(name,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
- async function image(file,key){
+ async function image(file,key,position){
    if(!file||busy)return;
    const ticket=++pendingImage;
    try{
@@ -98,7 +98,7 @@
      const src=c.toDataURL('image/webp',0.92);
      if(src.length>4_000_000)throw Error('Le dessin est trop lourd. Exporte une version plus petite.');
      if(ticket!==pendingImage)return;
-     remember();theme[key]={src,name:file.name.slice(0,160),fit:targets.get(key)?.kind==='bouton'?'contain':'cover',size:100,x:50,y:50,opacity:100,hideLabel:false};select(key);change();
+     remember();theme[key]={src,name:file.name.slice(0,160),fit:targets.get(key)?.kind==='bouton'?'contain':'cover',size:100,x:position?.x??50,y:position?.y??50,opacity:100,hideLabel:false};select(key);change();
    }catch(e){status(e.message||'Cette image ne peut pas être ouverte.')}
  }
  async function save(){
@@ -139,7 +139,7 @@
  document.addEventListener('click',e=>{if(active&&picking&&!dock.contains(e.target)){e.preventDefault();e.stopImmediatePropagation();select(point(e.target));pick(false)}},true);
  document.addEventListener('keydown',e=>{if(active&&e.key==='Escape'){e.preventDefault();if(picking){pick(false);mark(selected)}else close()}},true);
  document.addEventListener('dragover',e=>{if(active&&e.dataTransfer?.types.includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';if(!dock.contains(e.target))mark(point(e.target))}},true);
- document.addEventListener('drop',e=>{if(!active||!e.dataTransfer?.files.length)return;e.preventDefault();e.stopImmediatePropagation();image(e.dataTransfer.files[0],dock.contains(e.target)?selected:point(e.target));pick(false)},true);
+ document.addEventListener('drop',e=>{if(!active||!e.dataTransfer?.files.length)return;e.preventDefault();e.stopImmediatePropagation();const key=dock.contains(e.target)?selected:point(e.target),el=targets.get(key)?.el,r=key==='app'?{left:0,top:0,width:innerWidth,height:innerHeight}:el?.getBoundingClientRect();const position=r?{x:Math.round(Math.max(0,Math.min(100,(e.clientX-r.left)/Math.max(1,r.width)*100))),y:Math.round(Math.max(0,Math.min(100,(e.clientY-r.top)/Math.max(1,r.height)*100)))}:undefined;image(e.dataTransfer.files[0],key,dock.contains(e.target)?undefined:position);pick(false)},true);
  addEventListener('resize',()=>{if(active){controls();mark(selected)}});addEventListener('scroll',()=>{if(active)mark(selected)},true);
  addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
  let timer;new MutationObserver(records=>{if(records.every(r=>dock.contains(r.target)||r.target===style||r.target===marker))return;clearTimeout(timer);timer=setTimeout(register,120)}).observe(document.body,{childList:true,subtree:true});
