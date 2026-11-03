@@ -23,7 +23,7 @@ let stored={available:true,revision:0,theme:{}},reject=false;
   }
   await route.fulfill({json:stored});
  });
- await page.goto(base);await page.locator('#personalDesignStart:not([disabled])').waitFor();await page.locator('#settingsBtn').click();await page.locator('.atelier-settings-nav [data-target=settingsPersonalDesignCard]').click();
+ await page.goto(base);await page.locator('#personalDesignStart:not([disabled])').waitFor({state:'attached'});await page.locator('#settingsBtn').click();await page.locator('.atelier-settings-nav [data-target=settingsPersonalDesignCard]').click();
  await page.locator('#personalDesignStart').click();const dock=page.locator('#personalDesignDock');await dock.waitFor();
  assert.match(await dock.locator('[data-design=guide]').innerText(),/Fond général.*1440 × 1000/);
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=120;c.height=120;const x=c.getContext('2d');x.fillStyle='#bca26c';x.fillRect(12,12,96,96);return c.toDataURL('image/png').split(',')[1]});
@@ -40,7 +40,7 @@ let stored={available:true,revision:0,theme:{}},reject=false;
  // Gabarit exports real measured pixel dimensions and export includes image bytes.
  const template=page.waitForEvent('download');await dock.locator('[data-design=template]').click();assert.match((await template).suggestedFilename(),/^Gabarit-Goblin-\d+x\d+\.png$/);
  const exported=page.waitForEvent('download');await dock.locator('[data-design=export]').click();assert.equal((await exported).suggestedFilename(),'Mon-theme-Goblin.json');
- await page.reload();await page.locator('#personalDesignStart:not([disabled])').waitFor();assert.match(await page.locator('#settingsBtn').evaluate(el=>getComputedStyle(el).backgroundImage),/data:image/);
+ await page.reload();await page.locator('#personalDesignStart:not([disabled])').waitFor({state:'attached'});assert.match(await page.locator('#settingsBtn').evaluate(el=>getComputedStyle(el).backgroundImage),/data:image/);
  await page.locator('#settingsBtn').click();await page.locator('.atelier-settings-nav [data-target=settingsPersonalDesignCard]').click();await page.locator('#personalDesignStart').click();
  await dock.locator('[data-design=target]').selectOption('header');await dock.locator('[data-design=remove]').click();await dock.locator('[data-design=undo]').click();assert.match(await dock.locator('[data-design=asset]').innerText(),/Bandeau/);
  // Failed writes retain the preview, permit exporting, and do not claim success.

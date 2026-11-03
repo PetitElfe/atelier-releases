@@ -93,7 +93,7 @@
      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>15_000_000)throw Error('Choisis un PNG, JPEG ou WebP de moins de 15 Mo. Les fichiers .clip restent dans Clip Studio Paint.');
      const bitmap=await createImageBitmap(file);
      if(bitmap.width*bitmap.height>80_000_000){bitmap.close();throw Error('Image trop grande : exporte une version de moins de 80 millions de pixels.')}
-     const scale=Math.min(1,3072/Math.max(bitmap.width,bitmap.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bitmap.width*scale));c.height=Math.max(1,Math.round(bitmap.height*scale));c.getContext('2d').drawImage(bitmap,0,0,c.width,c.height);bitmap.close();
+     const scale=Math.min(1,4096/Math.max(bitmap.width,bitmap.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bitmap.width*scale));c.height=Math.max(1,Math.round(bitmap.height*scale));c.getContext('2d').drawImage(bitmap,0,0,c.width,c.height);bitmap.close();
      const src=c.toDataURL('image/webp',0.92);
      if(src.length>4_000_000)throw Error('Le dessin est trop lourd. Exporte une version plus petite.');
      if(ticket!==pendingImage)return;
@@ -134,6 +134,7 @@
    c.toBlob(blob=>{if(blob)download('Gabarit-Goblin-'+w+'x'+h+'.png',blob)},'image/png');status('Ouvre le gabarit dans Clip Studio Paint et dessine sur un nouveau calque. Masque les repères avant ton export.');
  };
  document.addEventListener('pointermove',e=>{if(active&&picking&&!dock.contains(e.target))mark(point(e.target))});
+ document.addEventListener('pointerdown',e=>{if(active&&picking&&!dock.contains(e.target)){e.preventDefault();e.stopImmediatePropagation()}},true);
  document.addEventListener('click',e=>{if(active&&picking&&!dock.contains(e.target)){e.preventDefault();e.stopImmediatePropagation();select(point(e.target));pick(false)}},true);
  document.addEventListener('keydown',e=>{if(active&&e.key==='Escape'){e.preventDefault();if(picking){pick(false);mark(selected)}else close()}},true);
  document.addEventListener('dragover',e=>{if(active&&e.dataTransfer?.types.includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';if(!dock.contains(e.target))mark(point(e.target))}},true);
