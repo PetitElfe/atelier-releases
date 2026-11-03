@@ -46,6 +46,10 @@ def menu(label):
 
 def launch():
     adb('shell','am','start','-n',PKG+'/.MainActivity');time.sleep(6)
+    # Android shows its own first-use immersive-mode tutorial above the app.
+    for node in nodes().iter('node'):
+        if node.attrib.get('text') in ('Got it','Compris','OK'):
+            x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(1);break
 
 Path('artifacts').mkdir(exist_ok=True)
 adb('install','-r',str(OLD));launch();menu('Notes')
