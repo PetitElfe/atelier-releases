@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="/library_refresh.css" />
   <link rel="stylesheet" href="/library_moodboard.css" />
   <link rel="stylesheet" href="/calendar_decor.css" />
+  <link rel="stylesheet" href="/personal_design.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -464,6 +465,7 @@
 
         <div class="settings-grid">
 
+
           <section class="settings-card" id="settingsUpdatesCard">
             <div class="settings-card-title">
               <span class="settings-card-icon">↻</span>
@@ -585,6 +587,18 @@
               <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
             </div>
           </section>
+          <section class="settings-card" id="settingsPersonalDesignCard">
+            <div class="settings-card-title"><div><h3>Mes dessins</h3><p>Habille L’Atelier avec tes propres créations.</p></div></div>
+            <p id="personalDesignAvailability">Vérification de ton installation TEST…</p>
+            <button type="button" id="personalDesignStart" disabled>Ouvrir le mode création</button>
+            <p>Choisis une zone, glisse ton dessin dessus, ajuste le rendu puis enregistre ton thème. Les boutons gardent leur fonction.</p>
+            <p>Ce mode est réservé à l’installation Windows TEST de Léo (8876). Il n’est pas protégé par un mot de passe sur cet ordinateur.</p>
+            <details><summary>Préparer mes dessins dans Clip Studio Paint</summary>
+              <p>Garde ton original en .clip avec ses calques. Pour l’application, utilise Fichier → Exporter (calque simple) → PNG. Pour les contours transparents, masque le calque Papier et active l’export de la transparence.</p>
+              <p>Les dimensions sont données en pixels pour chaque zone. Dessiner à deux fois la taille affichée aide à garder des contours nets ; les ppp ne changent pas la taille à l’écran. Pour un bouton, garde le centre lisible. Pour un fond, évite les détails forts derrière les textes.</p>
+              <a href="https://help.clip-studio.com/fr-fr/manual_fr/210_file/Exporter_des_fichiers.htm" target="_blank" rel="noopener noreferrer">Guide officiel d’export Clip Studio Paint</a>
+            </details>
+          </section>
         </div>
       </div>
     </section>
@@ -659,5 +673,6 @@
   <script src="/library_moodboard.js"></script>
   <script src="/library_refresh.js"></script>
   <script src="/calendar_decor.js"></script>
+  <script src="/personal_design.js"></script>
 </body>
 </html>

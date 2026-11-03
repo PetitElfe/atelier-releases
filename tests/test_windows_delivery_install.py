@@ -91,6 +91,21 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 self.assertEqual(library['sections'][0]['entries'][0]['notes'], 'Original notebook text before upgrade')
                 if (code / 'app/library_moodboard.py').is_file():
                     self.assertEqual(api('/api/library-moodboard?domain_id=' + str(domain['id']))['items'], [])
+                if (code / 'app/personal_design.py').is_file():
+                    current=api('/api/personal-design')
+                    self.assertTrue(current['available'])
+                    # Real same-origin save, then server restart: image lives in DATA.
+                    art={'app':{'src':'data:image/png;base64,iVBORw0KGgo=', 'name':'Own art'}}
+                    request=Request(BASE+'/api/personal-design',data=json.dumps({'revision':current['revision'],'theme':art}).encode(),method='PUT',headers={'Content-Type':'application/json','Origin':BASE,'X-Atelier-Design':'1'})
+                    with urlopen(request,timeout=8) as response:
+                        written=json.load(response)
+                    api('/api/shutdown','POST',{})
+                    time.sleep(1)
+                    env=dict(os.environ,ATELIER_DATA_DIR=str(data),ATELIER_PORT='8876',ATELIER_NO_BROWSER='1')
+                    process=subprocess.Popen([sys.executable,str(code/'app/app.py')],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                    ready()
+                    self.assertEqual(api('/api/personal-design')['theme'],written['theme'])
+                    self.assertTrue((data/'personal-design-v1.json').is_file())
                 self.assertEqual(profile.read_text(), 'Existing WebView profile preserved')
                 self.assertEqual(note.read_text(), 'Notes and JSON files preserved')
                 self.assertEqual(stable.read_text(), 'Stable remains untouched')

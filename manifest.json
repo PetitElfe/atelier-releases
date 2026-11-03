@@ -9,11 +9,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "ff98c7913f07febebd5d0ed5e4534ffe4bb00f77c38c38d28b1fc5fb5b5608a5"
+      "sha256": "54621cbcd12a3bcc74e02e52e79ac6bcce1734e7ca393105b45251a4c8b76664"
     },
     {
       "path": "app_part2.py",
-      "sha256": "629783f8a6bf6c8620783834ffdbdc16213356c5289916628a7ef5c74fd23b2f"
+      "sha256": "373ba68d3812290d6241912e71dac88c35973d919e6bd21d5c52fb21d79e1549"
     },
     {
       "path": "app_part3.py",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "e5da5553fe506bde38cc19052676ee87510f90356b33b8de0282b274c8ed5342"
+      "sha256": "e50edbac78a6b2a1b11bf90287a35be803b7d00ea700eb3ec8a150b9dee81c79"
     },
     {
       "path": "public/interface_reference.css",
@@ -230,6 +230,18 @@
     {
       "path": "public/library_moodboard.css",
       "sha256": "7d196c81dd4b191b7a3f80f8b7bce91ae0bcb1a72c431b7354379de53a89e798"
+    },
+    {
+      "path": "personal_design.py",
+      "sha256": "0fe160676a78d39d7524c84744971d4deb11c35420843eeef5dc79e0c2692f92"
+    },
+    {
+      "path": "public/personal_design.js",
+      "sha256": "2b3d9706ccb1d13725c093fc7b3c0f041f1d20672f12a19b14a35af843f02895"
+    },
+    {
+      "path": "public/personal_design.css",
+      "sha256": "c91ce65d4157f8d06bfbcd85b72a377689ca6b13a48faa478e2ad42cc540e7fd"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."
