@@ -121,7 +121,10 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 self.assertTrue((backups[0] / 'code_avant/manifest.json').is_file())
                 # Check through the running application: no downgrade to the shared channel.
                 check = api('/api/update/check')
-                with urlopen('https://raw.githubusercontent.com/PetitElfe/atelier-releases/test/windows-library-calendar-20261103/manifest.json', timeout=20) as remote:
+                # Compare the immutable revision actually returned by the updater. A
+                # branch URL may still be cached at its pre-merge contents.
+                self.assertRegex(check['revision'],r'^[a-f0-9]{40}$')
+                with urlopen('https://raw.githubusercontent.com/PetitElfe/atelier-releases/'+check['revision']+'/manifest.json', timeout=20) as remote:
                     candidate = json.load(remote)
                 expected_available = {x['path']: x['sha256'] for x in manifest['files']} != {x['path']: x['sha256'] for x in candidate['files']}
                 self.assertEqual(check['available'], expected_available)
