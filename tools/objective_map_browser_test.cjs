@@ -41,6 +41,7 @@ async function api(path,method='GET',body){
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
+  await page.locator('[data-domain-view=map]').click();
   const root=page.locator('#objectiveMapRoot');
   await root.locator('.objective-map-node').first().waitFor({timeout:10000});
   assert.equal(await root.locator('.objective-map-node').count(),2);
@@ -100,6 +101,7 @@ async function api(path,method='GET',body){
   if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
+  await page.locator('[data-domain-view=map]').click();
   await root.locator('.objective-map-node').first().waitFor();
   assert.equal(await root.locator('[data-action="ordering"]').inputValue(),'sequential');
   assert.deepEqual((await api('/api/objective-map?domain_id='+domain.id)).edges,[{from_id:a.id,to_id:b.id}],

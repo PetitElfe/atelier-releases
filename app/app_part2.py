@@ -551,6 +551,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(progression.summary(c))
             if p == '/api/progression/history':
                 return self._json(progression.history(c))
+            if p == '/api/library-moodboard':
+                try:
+                    domain_id = int(q.get('domain_id', ['0'])[0])
+                    return self._json(library_moodboard.get(c, domain_id))
+                except (ValueError, TypeError) as ex:
+                    return self._json({'error': str(ex)}, 400)
             if p == '/api/objective-map':
                 try:
                     root_id=int(q.get('domain_id',['0'])[0])
@@ -1253,7 +1259,26 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({'error':'not found'},404)
 
     def do_PUT(self):
-        u=urlparse(self.path); p=u.path; body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
+        u=urlparse(self.path); p=u.path
+        if p == '/api/library-moodboard':
+            origin=self.headers.get('Origin', '')
+            if origin and origin != f'http://{HOST}:{PORT}':
+                return self._json({'error':'Origine refusée.'},403)
+            try: size=int(self.headers.get('Content-Length','0'))
+            except (ValueError, TypeError): return self._json({'error':'Taille invalide.'},400)
+            if not 2 <= size <= library_moodboard.MAX_BYTES + 100000:
+                return self._json({'error':'Moodboard limité à 8 Mo.'},413)
+            request=self._body()
+            try:
+                with conn() as c:
+                    result=library_moodboard.save(c, int(request['domain_id']), request['revision'], request['items'])
+                    c.commit()
+                return self._json(result)
+            except library_moodboard.Conflict as ex:
+                return self._json({'error':str(ex)},409)
+            except (KeyError,ValueError,TypeError) as ex:
+                return self._json({'error':str(ex)},400)
+        body=self._body(); ts=now_iso(); parts=p.strip('/').split('/')
         if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='move':
             try:row_id=int(parts[2])
             except (ValueError,TypeError):return self._json({'error':'Ligne invalide.'},400)
