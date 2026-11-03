@@ -9,11 +9,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "90c058493add817cbf03a428785ea67dd00560c6ae52f6163b6759e3cca27d61"
+      "sha256": "ff98c7913f07febebd5d0ed5e4534ffe4bb00f77c38c38d28b1fc5fb5b5608a5"
     },
     {
       "path": "app_part2.py",
-      "sha256": "75bc00951b0a2cc1c1ef8bad1b88693fc0bc6a3f38821ee377623554f55d2304"
+      "sha256": "629783f8a6bf6c8620783834ffdbdc16213356c5289916628a7ef5c74fd23b2f"
     },
     {
       "path": "app_part3.py",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "94ffe244afe8c1b569cb707cd8a2cea77e9c26c5b7fbc1bf8102ebbdc3ff79e9"
+      "sha256": "e5da5553fe506bde38cc19052676ee87510f90356b33b8de0282b274c8ed5342"
     },
     {
       "path": "public/interface_reference.css",
@@ -205,7 +205,7 @@
     },
     {
       "path": "public/library_refresh.js",
-      "sha256": "cf4a2937a09f81726ee8d9ffa229cf3a7099fe103e98b6eadf715a1811e119dd"
+      "sha256": "8b9293a69c3ce0ef6b4cae0102dd37b445dbfecd034ed83d3aa9d835d773e7e5"
     },
     {
       "path": "public/library_refresh.css",
@@ -218,6 +218,18 @@
     {
       "path": "public/calendar_decor.css",
       "sha256": "705c06f6f9ed60d69669574bf7ebc9d0bfd66f45c7cd90fe80191a86219d59d0"
+    },
+    {
+      "path": "library_moodboard.py",
+      "sha256": "e19c3d0f296bc227867988326bea1ba615f71f82147e976c774ff481e4e359c2"
+    },
+    {
+      "path": "public/library_moodboard.js",
+      "sha256": "1e83a3462e9bfe73f335562344eb798106a50abe49cb78a1a5d0274819c43121"
+    },
+    {
+      "path": "public/library_moodboard.css",
+      "sha256": "7d196c81dd4b191b7a3f80f8b7bce91ae0bcb1a72c431b7354379de53a89e798"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

@@ -64,6 +64,9 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 process = subprocess.Popen([sys.executable, str(code / 'app/app.py')], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 ready()
                 task = api('/api/tasks', 'POST', {'title': 'Written before the candidate upgrade'})
+                domain = api('/api/objective-nodes', 'POST', {'node_type':'domain','title':'Existing domain'})
+                book = api('/api/objective-library-sections', 'POST', {'node_id':domain['id'],'title':'Existing notebook','section_type':'notes'})
+                api('/api/objective-library-entries', 'POST', {'section_id':book['id'],'title':'Existing page','notes':'Original notebook text before upgrade'})
                 api('/api/shutdown', 'POST', {})
                 process.wait(timeout=25)
                 kit = ROOT / 'dist/Goblin_MAJ_Windows_TEST_20261103'
@@ -84,6 +87,10 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 ready()
                 self.assertTrue(any(t['id'] == task['id'] and t['title'] == 'Written before the candidate upgrade' for t in api('/api/tasks')))
+                library = api('/api/objective-library?node_id=' + str(domain['id']))
+                self.assertEqual(library['sections'][0]['entries'][0]['notes'], 'Original notebook text before upgrade')
+                if (code / 'app/library_moodboard.py').is_file():
+                    self.assertEqual(api('/api/library-moodboard?domain_id=' + str(domain['id']))['items'], [])
                 self.assertEqual(profile.read_text(), 'Existing WebView profile preserved')
                 self.assertEqual(note.read_text(), 'Notes and JSON files preserved')
                 self.assertEqual(stable.read_text(), 'Stable remains untouched')
@@ -99,7 +106,10 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 self.assertTrue((backups[0] / 'code_avant/manifest.json').is_file())
                 # Check through the running application: no downgrade to the shared channel.
                 check = api('/api/update/check')
-                self.assertFalse(check['available'])
+                with urlopen('https://raw.githubusercontent.com/PetitElfe/atelier-releases/test/windows-library-calendar-20261103/manifest.json', timeout=20) as remote:
+                    candidate = json.load(remote)
+                expected_available = {x['path']: x['sha256'] for x in manifest['files']} != {x['path']: x['sha256'] for x in candidate['files']}
+                self.assertEqual(check['available'], expected_available)
                 self.assertEqual(check['source_branch'], 'test/windows-library-calendar-20261103')
                 print('PASS: actual Windows pinned upgrade, checksum, backup, task/profile preservation and private TEST channel')
             finally:

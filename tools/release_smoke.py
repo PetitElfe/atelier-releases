@@ -458,8 +458,11 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 16:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 17:
                 fail("PRAGMA user_version n'a pas été appliqué.")
+            mood_cols={row[1] for row in c.execute("PRAGMA table_info(library_moodboards)")}
+            if not {"domain_id", "revision", "items_json"}.issubset(mood_cols):
+                fail("Le stockage du moodboard manque à la migration.")
             admin_cols={row[1] for row in c.execute("PRAGMA table_info(admin_documents)")}
             if "archived" not in admin_cols:
                 fail("La colonne des archives administratives manque à la migration.")
