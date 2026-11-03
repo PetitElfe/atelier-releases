@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Domaine compact, moodboard, carnets et parcours — 3 novembre 2026
+Mes dessins, domaine compact et moodboard — 3 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -33,3 +33,20 @@ A VERIFIER APRES LA MISE A JOUR :
 - Décorer le calendrier : image du mois puis du jour, opacité et couleur.
 - Fermer/rouvrir : décoration conservée ; rendez-vous toujours lisibles.
 - Vérifier les bandes des règles et le bloc Goblin grognon unique.
+
+MODE PERSONNEL MES DESSINS :
+- Paramètres > Mes dessins > Ouvrir le mode création.
+- Choisis une zone ou active Viser, puis clique sur le bouton ou le fond.
+- Glisse un PNG/JPEG/WebP dessus, ou utilise Choisir une image.
+- Ajuste le cadrage et la position, puis Enregistrer le thème.
+- Dans Clip Studio Paint, garde ton original .clip et exporte un PNG.
+  Pour la transparence, masque Papier et active l’export de transparence.
+- Le Gabarit PNG donne une référence à ouvrir dans Clip Studio Paint :
+  dessine sur un autre calque et masque les repères avant l’export.
+- Exporter conserve un thème complet avec ses images dans un fichier JSON.
+- Vérifie que ton dessin reste présent après fermeture et réouverture.
+
+L’accès est limité à ton installation TEST, pas à un compte avec mot de passe.
+Une autre personne utilisant cette même installation pourra ouvrir ce mode.
+Les dessins habillent les zones existantes ; le moodboard du domaine reste
+l’espace pour placer librement des images et des textes comme des objets.
