@@ -802,6 +802,7 @@ $('#settingsInstallUpdate').onclick=async()=>{
   button.disabled=true;check.disabled=true;
   message.textContent='Démarrage de l’assistant de mise à jour…';
   try{
+    if(window.atelierSafety){await window.atelierSafety.flush();await window.atelierSafety.request('snapshot',{browser:await window.atelierSafety.browserCopy()})}
     await atelierUpdateRequest('/api/update/start',{
       method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Update':'1'},
       body:JSON.stringify({revision:atelierUpdateCandidate})

@@ -70,6 +70,7 @@ def _db(db_path=DB):
 
 
 def _update_in_progress():
+    if (DATA/'safety-maintenance.json').exists():return True
     try:
         status = json.loads((DATA / "updater-state.json").read_text(encoding="utf-8"))
         return status.get("phase") in (

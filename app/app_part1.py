@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
+import utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -24,6 +24,7 @@ def atelier_version():
         return '0.0.5'
 
 DATA.mkdir(exist_ok=True)
+utility_safety.apply_pending(DATA,atelier_version(),SCHEMA_VERSION,PORT)
 
 SCHEMA = '''
 PRAGMA foreign_keys = ON;
@@ -404,6 +405,9 @@ def _backup_db_before_migration():
     destination = sqlite3.connect(target)
     try:
         source.backup(destination)
+        original=backup_dir/'atelier-original-before-first-migration.db'
+        if not original.exists():
+            with sqlite3.connect(original) as first:source.backup(first)
     finally:
         destination.close()
         source.close()
@@ -422,6 +426,7 @@ with conn() as c:
     progression.initialise(c)
     objective_maps.initialise(c)
     library_moodboard.initialise(c)
+    utility_sync.initialise(c)
     event_preparations.initialise(c)
     admin_docs.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».

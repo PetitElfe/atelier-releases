@@ -68,7 +68,7 @@
     else{s.message='Chargement impossible. Clique sur Réessayer.';s.ready=false}
     renderItems(s);status(s);
   }
-  window.libraryMoodboard={mount(id,root){
+  window.libraryMoodboard={async flush(){for(const s of states.values()){if(s.gesture)throw Error('Termine le déplacement du moodboard avant de continuer.');while(s.saving)await new Promise(r=>setTimeout(r,50));if(s.dirty)await save(s);await s.draftQueue?.catch(()=>{});if(s.dirty||s.conflict)throw Error('Un moodboard reste à enregistrer. Exporte son brouillon avant une mise à jour.')}},mount(id,root){
     let s=states.get(id);if(!s){s={id,items:[],revision:0,version:0,ready:false,dirty:false,conflict:false,message:'Chargement…'};states.set(id,s)}
     if(root.dataset.domainId===String(id)){s.root=root;size(s);return}
     root.dataset.domainId=String(id);s.root=root;root.className='domain-moodboard';

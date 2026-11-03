@@ -9,15 +9,15 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "54621cbcd12a3bcc74e02e52e79ac6bcce1734e7ca393105b45251a4c8b76664"
+      "sha256": "768d146b1327261af5767f08dab0d9cae7db0ac8c449b6ea8f2934b6cb70701c"
     },
     {
       "path": "app_part2.py",
-      "sha256": "1b58ae9b7f76ff2e2cf86e1636718d0e5c094479eae9dc540fbc9ed02e0fae84"
+      "sha256": "6a0cf8c108bae67fd760670a4cfdb8f700be6594c4e199aa1c335e4d00b5e6cb"
     },
     {
       "path": "app_part3.py",
-      "sha256": "70c98367ff1ddb986c1d3693e23e55a4fc1ed92687fc1b2eacd8853161adfe75"
+      "sha256": "651dfc80547845ed621aaaf7f6e4a7051be82e07fb1e5234e4563b59d051777d"
     },
     {
       "path": "app.py",
@@ -25,7 +25,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "8e43a2efde6de2008765eef4d969d2a0033863518f99b37263ee87f168ee5b6b"
+      "sha256": "6bfebee980707ce4cda07e0941f88dff4cd8f7651e1a4f475fbc5cb4022bb0dc"
     },
     {
       "path": "desktop_shell.py",
@@ -49,7 +49,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "b1cbc91303fdb2aebbf0ef8dbfe6e0c56046cb7c1b730d5fed776a03926a9944"
+      "sha256": "e1b8836b7ec9be7c8fffc224ca84e45c6264989471167349f9f2da65d37ea651"
     },
     {
       "path": "public/app_part2.js",
@@ -57,7 +57,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "56078a744be8f0c003340bdd079beab7ec4bd89fbc3345d19ae80941a376eebb"
+      "sha256": "549ac3194c51cd3f460c63b2e971803a53d1639097967e2f3053959400d88af0"
     },
     {
       "path": "public/big_refonte.css",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "c661b87355169370b229fdc600b4da99a554fecc1b8a20df58bd92e427879b02"
+      "sha256": "c63d598eaac107c7ec18989e8cfb7da3498fa7091e852eafe3c346facf394c55"
     },
     {
       "path": "public/interface_reference.css",
@@ -225,7 +225,7 @@
     },
     {
       "path": "public/library_moodboard.js",
-      "sha256": "4a7f457d0126075baf2636c7c7763baa8ab07989252179a2e1aba1b43d0520ea"
+      "sha256": "1ab17cf963ab3551ca77317a91ba21d2b39d93a9a00594858a33447ff2a05a6c"
     },
     {
       "path": "public/library_moodboard.css",
@@ -237,7 +237,7 @@
     },
     {
       "path": "public/personal_design.js",
-      "sha256": "cd6ffdd473a0ed5da47d5bafbcaea4ce678670ac35bb00c9f1ff07bb65c1530e"
+      "sha256": "129e6550a7dd1b80e412833fb56cbfa029c2999803ab92160df74ba677981ab4"
     },
     {
       "path": "public/personal_design.css",
@@ -250,6 +250,34 @@
     {
       "path": "public/recipe_shelves.css",
       "sha256": "837a9ae922096d582a922aed89f5098b717943626bad176dff34e1ad313c4847"
+    },
+    {
+      "path": "utility_safety.py",
+      "sha256": "c42ac1afdea3d8e639edbebea01d9efba9b3ce05efe8a4e6985d7101f0c3d416"
+    },
+    {
+      "path": "utility_sync.py",
+      "sha256": "6aeaeaf35c93e5746cf20d661945b3e1cf79015d45ed60bdf72978021b8d528e"
+    },
+    {
+      "path": "utility_notes.py",
+      "sha256": "14cbb47b42f0762fe1fe1723f36ef063faa5ae08ed69d1f40b40cb0845d1b96b"
+    },
+    {
+      "path": "public/safety_boot.js",
+      "sha256": "582e802d4c01672221fc70c20e0f7856abed6b7c4181e523d9e087a62149ea9d"
+    },
+    {
+      "path": "public/utility_safety.js",
+      "sha256": "79dd6d187f804b34198fa686e959c519b151432ae2f67fac2933a4c20d592753"
+    },
+    {
+      "path": "public/utility_notes.js",
+      "sha256": "5dbf7a6545f05ba5e9ef25cc4714cb30f52c9c6d242c9e4675e7c7af89c6ec7b"
+    },
+    {
+      "path": "public/utility_live.js",
+      "sha256": "96e5f65f88f4b0654ab05a788e9a30e56f2a68a30cb39c084f188859a8b92cc1"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

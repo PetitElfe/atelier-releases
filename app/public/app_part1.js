@@ -6,13 +6,19 @@ const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const api = async (url, opts={}) => {
+  if(['POST','PUT'].includes(opts.method)&&/^\/api\/(tasks|shopping|events|recipes)(?:\/\d+)?$/.test(url)&&typeof opts.body==='string'){
+    try{const payload=JSON.parse(opts.body);if(!payload._sync){const match=url.match(/^\/api\/([^/]+)(?:\/(\d+))?$/),rows=state[match[1]]||[],row=match[2]?rows.find(x=>String(x.id)===match[2]):null;
+      if(opts.method==='POST'||(row&&Object.keys(payload).every(k=>k in row&&!['id','created_at','updated_at'].includes(k)))){payload._sync={id:'desktop-'+crypto.randomUUID()};if(row)payload._sync.base=Object.fromEntries(Object.keys(payload).filter(k=>k!=='_sync').map(k=>[k,row[k]]));opts={...opts,body:JSON.stringify(payload)}}
+    }}catch(_){}
+  }
+
   const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
   const raw=await r.text();
   let data={};
   try{data=raw?JSON.parse(raw):{}}catch(e){data={raw}}
   if(!r.ok){
     const err=new Error(data.error||data.detail||raw||`Erreur HTTP ${r.status}`);
-    err.status=r.status; err.data=data; throw err;
+    err.status=r.status; err.data=data; window.dispatchEvent(new CustomEvent('atelier-api-error',{detail:{path:url.split('?')[0].replace(/\/\d+/g,'/:id'),status:r.status}}));throw err;
   }
   return data;
 };

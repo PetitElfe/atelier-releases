@@ -282,6 +282,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if p == '/api/sync/capabilities':
+            return self._json({'protocol':2,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
+        if p == '/api/safety/status':
+            try:return self._json(utility_safety.diagnostics(DATA,atelier_version(),SCHEMA_VERSION,PORT))
+            except (OSError,ValueError,sqlite3.Error) as exc:return self._json({'error':'Diagnostic impossible : '+str(exc)},500)
+        if p == '/api/safety/browser-recovery':
+            path=DATA/'browser-recovery.json'
+            try:return self._json(json.loads(path.read_text(encoding='utf-8')) if path.exists() else {})
+            except (OSError,ValueError):return self._json({'error':'Réglages restaurés illisibles.'},500)
         if p == '/api/mobile/mental':
             path=DATA/'mental-health-private-v1.json'
             with _jdr_lock:
@@ -289,17 +298,14 @@ class Handler(BaseHTTPRequestHandler):
                     item=json.loads(path.read_text(encoding='utf-8'))
                     if not isinstance(item,dict): raise ValueError()
                 except (OSError, ValueError):
+                    if path.exists():return self._json({'error':'Le carnet existant est illisible. Il est conservé, sans remplacement.'},500)
                     item={'rev':0,'data':{'version':1,'cards':[],'answers':[],'journal':[],'phrases':[]}}
             return self._json(item)
-        if p == '/api/mobile/notes':
-            path = DATA / 'mobile-notes.json'
-            with _jdr_lock:
-                try:
-                    notes = json.loads(path.read_text(encoding='utf-8'))
-                    if not isinstance(notes,list): notes=[]
-                except (OSError,ValueError):
-                    notes=[]
-            return self._json(notes)
+        if p in ('/api/mobile/notes','/api/mobile/notes-v2'):
+            try:
+                result=utility_notes.get(DATA)
+                return self._json(result if p.endswith('notes-v2') else [n for n in result['notes'] if not n.get('deleted_at')])
+            except (OSError,ValueError,TypeError):return self._json({'error':'Les notes enregistrées sont illisibles. Le fichier est conservé ; aucune liste vide ne le remplace.'},500)
         if p == '/api/jdr/hot-update':
             # Local-only. The browser checks every few minutes without disturbing its current map.
             origin=self.headers.get('Origin','')
@@ -661,6 +667,43 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p.startswith('/api/safety/'):
+            if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Safety')!='1':
+                return self._json({'error':'Ouvre Sauvegardes depuis les Paramètres de cette installation.'},403)
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+                if not 2<=size<=utility_safety.MAX_BYTES+100000:return self._json({'error':'Fichier limité à 256 Mo.'},413)
+                body=self._body()
+                if not isinstance(body,dict):raise ValueError('Requête invalide.')
+                browser=body.get('browser',{})
+                if not isinstance(browser,dict) or len(json.dumps(browser).encode())>50000000:raise ValueError('Réglages limités à 50 Mo.')
+                if p == '/api/safety/browser':
+                    utility_safety.atomic(DATA/'browser-settings.json',browser)
+                    return self._json({'ok':True})
+                if p == '/api/safety/browser-recovered':
+                    path=DATA/'browser-recovery.json'
+                    if path.exists() and json.loads(path.read_text()).get('token')==body.get('token'):path.unlink()
+                    return self._json({'ok':True})
+                if p in ('/api/safety/export','/api/safety/snapshot'):
+                    path,item=utility_safety.save_snapshot(DATA,atelier_version(),PORT,browser,reason='export' if p.endswith('export') else 'manual')
+                    if p.endswith('snapshot'):return self._json({'ok':True,'name':path.name})
+                    raw=json.dumps(item,ensure_ascii=False).encode('utf-8')
+                    self.send_response(200);self.send_header('Content-Type','application/json; charset=utf-8');self.send_header('Content-Disposition','attachment; filename="Atelier-sauvegarde-'+utility_safety.stamp()+'.json"');self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return
+                if p == '/api/safety/check':return self._json(utility_safety.prepare_restore(DATA,body.get('backup'),SCHEMA_VERSION,PORT,bool(body.get('allow_new_installation'))))
+                if p == '/api/safety/restart':
+                    utility_safety.save_snapshot(DATA,atelier_version(),PORT,browser,reason='before-restart')
+                    utility_safety.request_restart(DATA,None,ROOT/'app.py',PORT)
+                    self._json({'ok':True,'restarting':True})
+                    threading.Thread(target=self.server.shutdown,daemon=True).start();return
+                if p == '/api/safety/restore':
+                    if body.get('confirmation')!=utility_safety.identity(DATA):raise ValueError('Confirme la restauration depuis son aperçu.')
+                    utility_safety.save_snapshot(DATA,atelier_version(),PORT,browser,reason='before-restore-request')
+                    utility_safety.request_restart(DATA,body.get('token'),ROOT/'app.py',PORT)
+                    self._json({'ok':True,'restarting':True})
+                    threading.Thread(target=self.server.shutdown,daemon=True).start();return
+                return self._json({'error':'Action inconnue.'},404)
+            except (ValueError,TypeError,KeyError,sqlite3.Error) as exc:return self._json({'error':str(exc)},400)
+            except OSError as exc:return self._json({'error':'Écriture impossible : '+str(exc)},500)
         if p == '/api/mobile/mental':
             origin=self.headers.get('Origin','')
             if origin and origin!=f'http://{HOST}:{PORT}':
@@ -685,10 +728,18 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     old=json.loads(path.read_text(encoding='utf-8'))
                     rev=int(old.get('rev',0))
-                except (OSError, ValueError, TypeError): rev=0
+                except (OSError, ValueError, TypeError):
+                    if path.exists():return self._json({'error':'Le carnet existant est illisible ; aucune écriture ne le remplace.'},409)
+                    rev=0
                 if incoming!=rev: return self._json({'error':'Carnet modifié ailleurs. Synchronise à nouveau.','rev':rev},409)
                 result={'rev':rev+1,'data':{'version':1,
                     'cards':value['cards'],'answers':value['answers'],'journal':value['journal'],'phrases':value['phrases']}}
+                if path.exists():
+                    history=DATA/'health-history'
+                    utility_safety.atomic(history/('journal-'+utility_safety.stamp()+'.json'),old)
+                    initial=history/'original-before-first-revision.json'
+                    if not initial.exists():utility_safety.atomic(initial,old)
+                    for old_path in sorted(history.glob('journal-*.json'),reverse=True)[100:]:old_path.unlink()
                 pending=path.with_suffix('.tmp')
                 pending.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
                 os.replace(pending,path)
@@ -728,7 +779,7 @@ class Handler(BaseHTTPRequestHandler):
                 tmp.write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8')
                 os.replace(tmp,path)
             return self._json({'ok':True,'rev':rev+1})
-        if p == '/api/mobile/notes':
+        if p in ('/api/mobile/notes','/api/mobile/notes-v2'):
             origin=self.headers.get('Origin','')
             host=self.headers.get('Host','').lower().strip()
             try:
@@ -746,27 +797,15 @@ class Handler(BaseHTTPRequestHandler):
                 size=int(self.headers.get('Content-Length','0'))
             except ValueError:
                 return self._json({'error':'Taille invalide'},400)
-            if size<2 or size>250000:
+            if size<2 or size>utility_notes.MAX_BYTES+100000:
                 return self._json({'error':'Fichier trop volumineux'},413)
             body=self._body()
-            notes=body.get('notes') if isinstance(body,dict) else None
-            if not isinstance(notes,list) or len(notes)>200:
-                return self._json({'error':'Notes invalides'},400)
-            cleaned=[]
-            for item in notes:
-                if not isinstance(item,dict):
-                    return self._json({'error':'Note incorrecte'},400)
-                cleaned.append({'id':str(item.get('id',''))[:80],
-                    'title':str(item.get('title',''))[:160],
-                    'category':str(item.get('category','Général'))[:80],
-                    'content':str(item.get('content',''))[:16000],
-                    'updated':str(item.get('updated',''))[:48]})
-            path=DATA / 'mobile-notes.json'
-            with _jdr_lock:
-                tmp=path.with_suffix('.tmp')
-                tmp.write_text(json.dumps(cleaned,ensure_ascii=False),encoding='utf-8')
-                os.replace(tmp,path)
-            return self._json({'ok':True,'count':len(cleaned)})
+            try:
+                result=utility_notes.save(DATA,body.get('revision'),body.get('notes')) if p.endswith('notes-v2') else utility_notes.legacy_save(DATA,body.get('notes'))
+                return self._json(result if p.endswith('notes-v2') else {'ok':True,'count':len(result['notes'])})
+            except utility_notes.Conflict as exc:return self._json({'error':str(exc),'conflict':True},409)
+            except (ValueError,TypeError,KeyError) as exc:return self._json({'error':str(exc)},400)
+            except OSError:return self._json({'error':'Écriture des notes impossible. Le brouillon doit être conservé.'},500)
         if p in ('/api/jdr/state','/api/jdr/open-mj','/api/jdr/open-manoir-mj'):
             origin = self.headers.get('Origin', '')
             if origin and origin not in (f'http://{HOST}:{PORT}',):
@@ -1126,6 +1165,11 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('INSERT INTO menstrual_periods(start_date,end_date,notes,created_at) VALUES(?,?,?,?)',(start.isoformat(),end.isoformat() if end else None,str(body.get('notes',''))[:500],ts))
                 c.commit();return self._json({'id':cur.lastrowid},201)
         with conn() as c:
+            try:
+                sync_lease,replay=utility_sync.begin(c,'POST',p,body)
+                if replay is not None:return self._json(replay,201)
+            except utility_sync.Conflict as exc:return self._json({'error':str(exc),'conflict':True},409)
+            except (ValueError,TypeError) as exc:return self._json({'error':str(exc)},400)
             if p == '/api/reminders':
                 title=(body.get('title') or '').strip()
                 remind_at=(body.get('remind_at') or '').strip()
@@ -1133,7 +1177,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
                 cur=c.execute('''INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,snoozed_until,created_at)
                                  VALUES('standalone',0,?,?,'pending',NULL,?)''',(title,remind_at,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/events':
                 vals = (
                     body.get('title','').strip(), body.get('event_date'), body.get('start_time') or None, body.get('end_time') or None,
@@ -1153,11 +1197,11 @@ class Handler(BaseHTTPRequestHandler):
                         event_preparations.replace_templates(c,eid,body['preparations'],ts)
                 except (ValueError,TypeError,LookupError) as ex:
                     c.rollback();return self._json({'error':str(ex)},400)
-                c.commit(); return self._json({'id':eid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':eid},201)
             if p == '/api/objective-map/edges':
                 try:
                     objective_maps.add_edge(c,int(body['from_id']),int(body['to_id']))
-                    c.commit(); return self._json({'ok':True},201)
+                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True},201)
                 except (ValueError,KeyError,TypeError,sqlite3.IntegrityError) as ex:
                     return self._json({'error':str(ex)},400)
             if p == '/api/objective-nodes':
@@ -1177,7 +1221,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('''INSERT INTO objective_nodes(parent_id,node_type,title,description,status,progress,order_index,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?,?,?,?)''',
                               (parent_id,node_type,title,body.get('description',''),status,progress,oi,ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/objective-library-sections':
                 node_id=int_or_none(body.get('node_id'))
                 title=(body.get('title') or '').strip()
@@ -1188,7 +1232,7 @@ class Handler(BaseHTTPRequestHandler):
                 oi=c.execute('SELECT COALESCE(MAX(order_index),0)+1 n FROM objective_library_sections WHERE node_id=?',(node_id,)).fetchone()['n']
                 cur=c.execute('''INSERT INTO objective_library_sections(node_id,title,section_type,order_index,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?)''',(node_id,title,section_type,oi,ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/objective-library-entries':
                 section_id=int_or_none(body.get('section_id'))
                 title=(body.get('title') or '').strip()
@@ -1199,7 +1243,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('''INSERT INTO objective_library_entries(section_id,title,url,notes,done,order_index,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?,?,?)''',
                               (section_id,title,body.get('url',''),body.get('notes',''),1 if body.get('done') else 0,oi,ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/tasks':
                 title=body.get('title','').strip()
                 if not title: return self._json({'error':'title required'},400)
@@ -1214,7 +1258,7 @@ class Handler(BaseHTTPRequestHandler):
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
-                c.commit(); return self._json({'id':tid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':tid},201)
             if p == '/api/shopping':
                 name=body.get('name','').strip()
                 if not name: return self._json({'error':'name required'},400)
@@ -1222,7 +1266,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('''INSERT INTO shopping_items(name,quantity,purchase_count,price,calories,checked,archived,created_at,updated_at)
                                  VALUES(?,?,?,?,?,0,0,?,?)''',
                               (name,body.get('quantity',''),count,float_or_none(body.get('price')),float_or_none(body.get('calories')),ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/foods':
                 name=body.get('name','').strip()
                 if not name: return self._json({'error':'name required'},400)
@@ -1233,13 +1277,13 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('''INSERT INTO food_items(name,quantity,units_count,price,calories,expiry_date,expiry_mode,notes,status,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
                               (name,body.get('quantity',''),units,float_or_none(body.get('price')),float_or_none(body.get('calories')),expiry,mode,body.get('notes',''),'active',ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/recipe-books':
                 name=(body.get('name') or '').strip()
                 if not name: return self._json({'error':'name required'},400)
                 try:
                     cur=c.execute('INSERT INTO recipe_books(name,created_at) VALUES(?,?)',(name,ts))
-                    c.commit(); return self._json({'id':cur.lastrowid},201)
+                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
                 except sqlite3.IntegrityError:
                     row=c.execute('SELECT id FROM recipe_books WHERE lower(name)=lower(?)',(name,)).fetchone()
                     return self._json({'id':row['id'] if row else None,'existing':True})
@@ -1263,7 +1307,7 @@ class Handler(BaseHTTPRequestHandler):
                                  VALUES(?,?,?,?,?,?,?,?,0,?,?)''',
                               (title,book_id,body.get('notes',''),body.get('recipe',''),max(1,int_or_none(body.get('base_servings')) or 1),
                                body.get('ingredients_json','[]'),body.get('image_data',''),body.get('source_url',''),ts,ts))
-                c.commit(); return self._json({'id':cur.lastrowid},201)
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
         return self._json({'error':'not found'},404)
 
     def do_PUT(self):
@@ -1638,6 +1682,11 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('UPDATE habits SET title=?,frequency=?,target_per_week=?,updated_at=? WHERE id=?',(title,freq,target,ts,hid))
                 c.commit();return self._json({'ok':True})
         with conn() as c:
+            try:
+                sync_lease,replay=utility_sync.begin(c,'PUT',p,body)
+                if replay is not None:return self._json(replay)
+            except utility_sync.Conflict as exc:return self._json({'error':str(exc),'conflict':True},409)
+            except (ValueError,TypeError) as exc:return self._json({'error':str(exc)},400)
             if len(parts)==3 and parts[0]=='api' and parts[1]=='recipe-books':
                 bid=int(parts[2]); book=c.execute('SELECT * FROM recipe_books WHERE id=?',(bid,)).fetchone()
                 if not book: return self._json({'error':'Livre introuvable.'},404)
@@ -1647,7 +1696,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not name: return self._json({'error':'Le nom du livre est requis.'},400)
                 try:
                     c.execute('UPDATE recipe_books SET name=? WHERE id=?',(name,bid))
-                    c.commit(); return self._json({'ok':True})
+                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
                 except sqlite3.IntegrityError:
                     return self._json({'error':'Un livre porte déjà ce nom.'},409)
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-nodes':
@@ -1683,7 +1732,7 @@ class Handler(BaseHTTPRequestHandler):
                     objective_maps.reconcile_automatic(c,progression,ts)
                 if status=='done' and old['status']!='done':
                     progression.award(c,source_kind='objective_step' if node_type!='objective' else 'objective_complete',source_id=oid)
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-sections':
                 sid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_sections WHERE id=?',(sid,)).fetchone()
                 if not old: return self._json({'error':'Section introuvable.'},404)
@@ -1692,7 +1741,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not title: return self._json({'error':'Le nom de la section est requis.'},400)
                 c.execute('''UPDATE objective_library_sections SET title=?,section_type=?,order_index=?,updated_at=? WHERE id=?''',
                           (title,d.get('section_type','resources'),int_or_none(d.get('order_index')) or 0,ts,sid))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='objective-library-entries':
                 eid=int(parts[2]); old=c.execute('SELECT * FROM objective_library_entries WHERE id=?',(eid,)).fetchone()
                 if not old: return self._json({'error':'Ressource introuvable.'},404)
@@ -1702,7 +1751,7 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE objective_library_entries SET title=?,url=?,notes=?,done=?,order_index=?,updated_at=? WHERE id=?''',
                           (title,d.get('url',''),d.get('notes',''),1 if d.get('done') else 0,int_or_none(d.get('order_index')) or 0,ts,eid))
                 objective_maps.reconcile_automatic(c,progression,ts)
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='complete-instance':
                 eid=int(parts[2]); instance_date=(body.get('instance_date') or '').strip()
                 if not instance_date: return self._json({'error':'instance_date required'},400)
@@ -1713,7 +1762,7 @@ class Handler(BaseHTTPRequestHandler):
                               (eid,instance_date,ts))
                 else:
                     c.execute('DELETE FROM event_completions WHERE event_id=? AND instance_date=?',(eid,instance_date))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
 
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='hide-instance':
                 try:
@@ -1731,7 +1780,7 @@ class Handler(BaseHTTPRequestHandler):
                                   (eid,instance_date,ts))
                     c.execute("UPDATE event_instance_actions SET action='hidden',action_at=? WHERE event_id=? AND instance_date=?",
                               (ts,eid,instance_date))
-                    c.commit();return self._json({'ok':True})
+                    utility_sync.record(c,sync_lease);c.commit();return self._json({'ok':True})
                 except Exception as ex:
                     return self._json({'error':'Impossible de masquer cette occurrence.','detail':str(ex)},500)
 
@@ -1832,7 +1881,7 @@ class Handler(BaseHTTPRequestHandler):
                               (eid,instance_date,ts))
                     if old['recurrence']=='none':
                         c.execute("UPDATE reminders SET status='done' WHERE entity_type='event' AND entity_id=? AND status!='done'",(eid,))
-                    c.commit(); return self._json({'ok':True})
+                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
                 except Exception as ex:
                     print('[Atelier] Erreur annulation rendez-vous:', repr(ex))
                     return self._json({'error':"L’annulation a échoué côté Atelier.",'detail':str(ex)},500)
@@ -1887,7 +1936,7 @@ class Handler(BaseHTTPRequestHandler):
                              VALUES(?,?,?,?,?)
                              ON CONFLICT(event_id,instance_date) DO UPDATE SET action=excluded.action,moved_event_id=excluded.moved_event_id,action_at=excluded.action_at''',
                           (eid,instance_date,action,moved_event_id,ts))
-                c.commit(); return self._json({'ok':True,'moved_event_id':moved_event_id})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True,'moved_event_id':moved_event_id})
 
             if len(parts)==4 and parts[0]=='api' and parts[1]=='events' and parts[3]=='edit-instance':
                 # Édition atomique d'une seule occurrence récurrente.
@@ -1971,7 +2020,7 @@ class Handler(BaseHTTPRequestHandler):
                     try: event_preparations.replace_templates(c,eid,body['preparations'],ts)
                     except (ValueError,TypeError,LookupError) as ex:
                         c.rollback();return self._json({'error':str(ex)},400)
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='tasks':
                 tid=int(parts[2]); old=c.execute('SELECT * FROM tasks WHERE id=?',(tid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
@@ -1990,7 +2039,7 @@ class Handler(BaseHTTPRequestHandler):
                 objective_maps.reconcile_automatic(c,progression,ts)
                 if d.get('completed') and not old['completed']:
                     progression.award(c,source_kind='task',source_id=tid)
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping' and parts[2]=='validate':
                 rows=c.execute('SELECT * FROM shopping_items WHERE archived=0 AND checked=1 ORDER BY id').fetchall()
                 moved=[]
@@ -2000,7 +2049,7 @@ class Handler(BaseHTTPRequestHandler):
                                   (row['name'],row['quantity'] or '',max(1,int(row['purchase_count'] or 1)),row['price'],row['calories'],ts,ts))
                     moved.append(cur.lastrowid)
                     c.execute('UPDATE shopping_items SET archived=1,updated_at=? WHERE id=?',(ts,row['id']))
-                c.commit(); return self._json({'ok':True,'count':len(moved),'food_ids':moved})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True,'count':len(moved),'food_ids':moved})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping':
                 iid=int(parts[2]); old=c.execute('SELECT * FROM shopping_items WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
@@ -2008,7 +2057,7 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE shopping_items SET name=?,quantity=?,purchase_count=?,price=?,calories=?,checked=?,archived=?,updated_at=? WHERE id=?''',
                           (d['name'],d.get('quantity',''),max(1,int(d.get('purchase_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
                            1 if d.get('checked') else 0,1 if d.get('archived') else 0,ts,iid))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='foods':
                 iid=int(parts[2]); old=c.execute('SELECT * FROM food_items WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
@@ -2019,7 +2068,7 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE food_items SET name=?,quantity=?,units_count=?,price=?,calories=?,expiry_date=?,expiry_mode=?,notes=?,status=?,updated_at=? WHERE id=?''',
                           (d['name'],d.get('quantity',''),max(1,int(d.get('units_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
                            expiry,mode,d.get('notes',''),d.get('status','active'),ts,iid))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1] in ('recipes','meals'):
                 iid=int(parts[2]); old=c.execute('SELECT * FROM recipes WHERE id=?',(iid,)).fetchone()
                 if not old: return self._json({'error':'not found'},404)
@@ -2033,7 +2082,7 @@ class Handler(BaseHTTPRequestHandler):
                              WHERE id=?''',
                           (d['title'],book_id,d.get('notes',''),d.get('recipe',''),max(1,int_or_none(d.get('base_servings')) or 1),
                            d.get('ingredients_json','[]'),d.get('image_data',''),d.get('source_url',''),1 if d.get('archived') else 0,ts,iid))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2])
                 rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
@@ -2044,11 +2093,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({'error':'Le titre du rappel est requis.'},400)
                 if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
                 c.execute("UPDATE reminders SET title=?,remind_at=?,snoozed_until=NULL,status='pending' WHERE id=?",(title,remind_at,rid))
-                c.commit(); return self._json({'ok':True})
+                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2]); action=parts[3]
                 if action=='done':
-                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,)); c.commit(); return self._json({'ok':True})
+                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,)); utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
                 if action=='finish':
                     rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
                     if not rem: return self._json({'error':'not found'},404)
@@ -2057,11 +2106,11 @@ class Handler(BaseHTTPRequestHandler):
                     elif rem['entity_type']=='event':
                         c.execute("UPDATE events SET status='done',updated_at=? WHERE id=?",(ts,rem['entity_id']))
                     c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,))
-                    c.commit(); return self._json({'ok':True})
+                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
                 if action=='snooze':
                     val=body.get('snoozed_until')
                     if not val: return self._json({'error':'snoozed_until required'},400)
-                    c.execute("UPDATE reminders SET status='pending',snoozed_until=? WHERE id=?",(val,rid)); c.commit(); return self._json({'ok':True})
+                    c.execute("UPDATE reminders SET status='pending',snoozed_until=? WHERE id=?",(val,rid)); utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
         return self._json({'error':'not found'},404)
 
 
