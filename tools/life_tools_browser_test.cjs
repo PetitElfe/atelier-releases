@@ -181,6 +181,10 @@ async function api(path,method='GET',body){
     return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]===undefined;
   },{id:wellness.id,day:date});
   await checked.click();
+  await page.waitForFunction(async({id,day})=>{
+    const boards=await (await fetch('/api/tracker-boards')).json();
+    return boards.find(b=>b.id===id)?.rows.find(r=>r.title==='Boire de l’eau')?.marks?.[day]==='1';
+  },{id:wellness.id,day:date});
   const numberCell=wellnessCard.locator('.tracker-grid-line').filter({hasText:'Sommeil'})
     .locator('.tracker-day-cell').nth(todayN);
   await numberCell.click();
@@ -516,7 +520,13 @@ async function api(path,method='GET',body){
     const notes=await (await fetch('/api/postits')).json();
     return notes.some(n=>n.id===id&&n.archived===0);
   },postit.id);
-  const restored=(await api('/api/postits')).find(n=>n.id===postit.id);
+  let restored;
+  for(let attempt=0;attempt<50;attempt++){
+    restored=(await api('/api/postits')).find(n=>n.id===postit.id);
+    if(restored&&restored.archived===0)break;
+    await page.waitForTimeout(100);
+  }
+  assert.ok(restored,'Restored Post-it must be visible to a second API connection');
   assert.equal(restored.body,'Première ligne'+String.fromCharCode(10)+'Deuxième ligne');
   assert.equal(restored.color,'mauve');
   assert.equal((await api('/api/postits?archived=1')).some(n=>n.id===postit.id),false);
@@ -625,7 +635,7 @@ async function api(path,method='GET',body){
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
   assert.ok((await api('/api/trackers'))[0].entries.some(x=>x.value===42));
-  assert.equal((await api('/api/admin'))[0].status,'waiting');
+  assert.equal((await api('/api/admin')).find(item=>item.id===admin.id)?.status,'waiting');
   assert.ok((await api('/api/captures')).some(x=>x.body.includes('Deuxième ligne')));
   assert.equal(await page.evaluate(()=>localStorage.getItem('atelierReminderSound')),'1');
   assert.deepEqual(errors,[]);
