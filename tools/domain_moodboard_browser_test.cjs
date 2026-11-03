@@ -50,5 +50,10 @@ async function saved(id,predicate){for(let i=0;i<100;i++){const board=await api(
  const current=await api('/api/library-moodboard?domain_id='+domain.id);current.items[0].text='Version écrite dans une autre fenêtre';await api('/api/library-moodboard','PUT',current);
  await mood.locator('textarea').first().fill('Mon brouillon concurrent');await page.waitForFunction(()=>document.querySelector('[data-mood-status]')?.textContent.includes('Modifié ailleurs'));
  assert.equal((await api('/api/library-moodboard?domain_id='+domain.id)).items[0].text,'Version écrite dans une autre fenêtre');assert.equal(await mood.locator('textarea').first().inputValue(),'Mon brouillon concurrent');
+ await page.reload();await page.waitForFunction(()=>state.objectiveNodes.length>0);await open(domain.id);
+ await page.waitForFunction(()=>document.querySelector('[data-mood-status]')?.textContent.includes('Modifié ailleurs'));
+ assert.equal(await mood.locator('textarea').first().inputValue(),'Mon brouillon concurrent');
+ await page.setViewportSize({width:1280,height:800});
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Compact domain must fit a smaller window');
  assert.deepEqual(errors,[]);console.log('PASS: compact header, moodboard CRUD/drag/resize/images/links, notebook preservation, route view, domain isolation, offline draft and conflict protection');
 }finally{if(browser)await browser.close();server.kill();rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

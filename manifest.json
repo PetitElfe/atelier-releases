@@ -205,7 +205,7 @@
     },
     {
       "path": "public/library_refresh.js",
-      "sha256": "2fcd8c83498a905c1314d281fa244e703d0bf8a7f4bcdbeeabb8c34fca4513f1"
+      "sha256": "8b9293a69c3ce0ef6b4cae0102dd37b445dbfecd034ed83d3aa9d835d773e7e5"
     },
     {
       "path": "public/library_refresh.css",
@@ -225,11 +225,11 @@
     },
     {
       "path": "public/library_moodboard.js",
-      "sha256": "373908c9ca3ee3b9bef5ef0bd1a4c0c36574a4458360e5e4a51d5c669e421516"
+      "sha256": "1e83a3462e9bfe73f335562344eb798106a50abe49cb78a1a5d0274819c43121"
     },
     {
       "path": "public/library_moodboard.css",
-      "sha256": "70df8b86576b8343109f11535a4c9574982734465b031f0d9f72f483ac727f5f"
+      "sha256": "7d196c81dd4b191b7a3f80f8b7bce91ae0bcb1a72c431b7354379de53a89e798"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."

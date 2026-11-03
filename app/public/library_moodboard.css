@@ -3,7 +3,7 @@
 .library-compact-domain .library-domain-head-left{display:block;width:100%;min-width:0}
 .library-compact-domain .library-domain-title-row{display:block}
 .library-compact-domain #libraryBack,.library-compact-domain #libraryDomainKicker,.library-compact-domain #libraryDomainTitle,.library-compact-domain #libraryDomainDescription,.library-compact-domain .library-domain-head-actions{display:none!important}
-.library-compact-domain .library-domain-quick-context{display:flex;align-items:center;flex-wrap:nowrap;gap:18px;width:100%;min-width:0}
+.library-compact-domain .library-domain-quick-context{display:flex;align-items:center;flex-wrap:nowrap;gap:18px;width:100%;min-width:0;padding-right:46px;box-sizing:border-box}
 .library-compact-domain .domain-home-button{width:44px;height:44px;padding:8px;flex:0 0 44px;border-radius:10px}
 .library-compact-domain .library-real-shelf{padding:0;border:0;border-radius:0;background:none;min-width:0;max-width:55%}
 .library-compact-domain .library-shelf-books{display:flex;align-items:flex-end;flex-wrap:nowrap;gap:8px;padding:3px 5px 6px;border-bottom:5px solid #957554;box-shadow:0 3px 2px -2px #0008;overflow:auto}
@@ -41,3 +41,5 @@
 .domain-mood-item .mood-resize{position:absolute;bottom:0;right:0;width:23px;height:23px;padding:0;color:#394232;border:0;border-radius:0;background:#00000010;cursor:nwse-resize;touch-action:none;font-size:17px}
 @media(max-width:740px){.library-compact-domain .library-domain-quick-context{gap:10px}.library-compact-domain .library-real-shelf{max-width:calc(100% - 185px)}.domain-current-goal{display:none}.library-compact-domain .domain-route-button{min-width:86px}.domain-route-button svg{width:76px}.domain-mood-toolbar{gap:5px}.domain-mood-toolbar button{padding:5px 6px}}
 @media(prefers-reduced-motion:reduce){.library-compact-domain button.domain-book-spine{transition:none}}
+
+.library-compact-domain button.library-shelf-add svg{display:block;margin:auto}
