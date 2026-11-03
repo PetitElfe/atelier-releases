@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Mes dessins, domaine compact et moodboard — 3 novembre 2026
+Bibliothèque de recettes et corrections — 3 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -50,3 +50,21 @@ L’accès est limité à ton installation TEST, pas à un compte avec mot de pa
 Une autre personne utilisant cette même installation pourra ouvrir ce mode.
 Les dessins habillent les zones existantes ; le moodboard du domaine reste
 l’espace pour placer librement des images et des textes comme des objets.
+
+NOUVEAU DANS CETTE LIVRAISON :
+- L’ancienne flèche du tiroir a disparu de toutes les pages.
+  Le hamburger du haut ouvre et ferme le menu.
+- Cuisine : un livre par recette, avec son titre sur la tranche.
+- Rayons, recherche par titre ou ingrédient, tri et filtres conservés.
+- Options sous chaque livre : modifier, idée de repas, archiver.
+- Recettes archivées : lire puis restaurer sans perdre le texte.
+- Le lecteur adapte les quantités aux personnes choisies et le bouton
+  + Courses ajoute l’ingrédient avec cette quantité.
+- Une nouvelle recette reprend le rayon sélectionné.
+- Un déplacement annulé du moodboard conserve sa position initiale
+  et les textes saisis, sans enregistrer la position intermédiaire.
+
+A TESTER SUR TON PC : ouvrir une ancienne recette, changer les portions,
+ajouter un ingrédient aux courses, archiver puis restaurer une recette,
+créer un rayon et y enregistrer une recette, fermer puis rouvrir TEST.
+Les contrôles automatiques ne remplacent pas ces essais sur ton installation.

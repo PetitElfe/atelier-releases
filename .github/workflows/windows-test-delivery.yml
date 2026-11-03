@@ -55,18 +55,20 @@ jobs:
         shell: bash
         run: |
           cat > /tmp/goblin-release-notes.md <<'NOTES'
-          Mise à jour Windows TEST — mode personnel Mes dessins, domaine compact et moodboard.
+          Mise à jour Windows TEST — bibliothèque de recettes et corrections de fonctionnement.
 
           Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends le message de réussite, puis utilise ton raccourci TEST habituel. Aucun code à modifier.
 
           Réservé à E:\LATELIER_TEST_0180 (port 8876), avec Python déjà installé et une connexion Internet. Sauvegarde automatique avant remplacement. Le profil et les données sont conservés. Le canal intégré de cette installation reste sur la branche bibliothèque/calendrier ; aucun changement de main ni du canal de Nathan.
 
+          Cuisine : recettes en livres avec le titre sur la tranche, rayons, recherche par ingrédient, tri, archives et restauration. Les quantités affichées dans le lecteur peuvent être envoyées aux courses. La flèche latérale du tiroir est retirée partout ; utilise le hamburger du haut. Sauvegarde des gestes annulés du moodboard corrigée.
+
           Après installation : Paramètres → Mes dessins. Ajoute tes propres PNG/JPEG/WebP sur les boutons et fonds, utilise les gabarits Clip Studio Paint et enregistre ton thème. Réservé à l’installation de Léo ; pas de mot de passe individuel.
 
           Scripts Python/CMD, pas d'EXE signé. Une conservation réussie sur le runner Windows ne remplace pas les vérifications sur le PC de Léo. Checklist dans LIRE_MOI.txt.
           NOTES
-          if gh release view windows-test-dessins-20261103 >/dev/null 2>&1; then
-            gh release upload windows-test-dessins-20261103 delivery/* --clobber
+          if gh release view windows-test-recettes-20261103 >/dev/null 2>&1; then
+            gh release upload windows-test-recettes-20261103 delivery/* --clobber
           else
-            gh release create windows-test-dessins-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Mes dessins — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
+            gh release create windows-test-recettes-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Recettes et corrections — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
           fi
