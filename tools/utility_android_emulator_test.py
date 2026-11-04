@@ -29,6 +29,17 @@ def find(label,scroll=True):
         tree=nodes()
         candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and bounds(n)[3]>bounds(n)[1]]
         if candidates:return candidates[0]
+        # The old release WebView exposes empty EditText accessibility labels.
+        # Locate the fields in their observed named section and DOM order.
+        contexts={'Titre de ma note':('Nouvelle note',0),'Contenu de ma note':('Nouvelle note',2),'Nom du minuteur':('⏲ Mes minuteurs de cuisine',0),'Minutes':('⏲ Mes minuteurs de cuisine',1),'Secondes':('⏲ Mes minuteurs de cuisine',2)}
+        if label in contexts:
+            heading,index=contexts[label]
+            for parent in tree.iter('node'):
+                if any(child.attrib.get('text')==heading for child in parent):
+                    fields=[n for n in parent.iter('node') if n.attrib.get('class')=='android.widget.EditText']
+                    if len(fields)>index:
+                        candidate=fields[index];b=bounds(candidate)
+                        if b[1]>=270 and b[3]>b[1] and b[3]<2080:return candidate
         if scroll:adb('shell','input','swipe','520','1650','520','450','350')
         else:time.sleep(1)
     Path('artifacts').mkdir(exist_ok=True)
@@ -41,6 +52,7 @@ def tap(label,scroll=True):
     x1,y1,x2,y2=bounds(find(label,scroll));adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
 
 def text(label,value):
+    for _ in range(2):adb('shell','input','swipe','520','420','520','1900','200')
     node=find(label);x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));adb('shell','input','keyevent','123')
     for _ in range(min(30,len(node.attrib.get('text',''))+3)):adb('shell','input','keyevent','67')
     adb('shell','input','text',value);adb('shell','input','keyevent','4')
@@ -54,7 +66,7 @@ def launch():
     # never an application ANR (which must remain a failing product test).
     for _ in range(15):
         tree=nodes();labels=[n.attrib.get('text','') for n in tree.iter('node')]
-        if any(n.attrib.get('content-desc')=='Ouvrir le menu' for n in tree.iter('node')):return
+        if any('Ouvrir le menu' in (n.attrib.get('content-desc'),n.attrib.get('text')) for n in tree.iter('node')):return
         dismiss=['Got it','Compris','OK']
         if any('Quickstep' in label and 'responding' in label for label in labels):dismiss.append('Close app')
         for n in tree.iter('node'):
