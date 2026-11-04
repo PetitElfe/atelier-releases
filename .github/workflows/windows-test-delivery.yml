@@ -54,25 +54,29 @@ jobs:
       - name: Publish approved isolated TEST prerelease
         shell: bash
         run: |
+          set -euo pipefail
           cat > /tmp/goblin-release-notes.md <<'NOTES'
-          Mise à jour Windows TEST — sauvegardes complètes, brouillons et outils quotidiens.
+          Finition utilitaire Windows TEST — rappels, documents, budget et dessins personnels.
 
-          Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends le message de réussite, puis utilise ton raccourci TEST habituel. Aucun code à modifier.
+          Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends MISE À JOUR RÉUSSIE puis ouvre ton raccourci TEST habituel. Python et une connexion Internet sont nécessaires.
 
-          Réservé à E:\LATELIER_TEST_0180 (port 8876), avec Python déjà installé et une connexion Internet. Sauvegarde automatique avant remplacement. Le profil et les données sont conservés. Le canal intégré de cette installation reste sur la branche bibliothèque/calendrier ; aucun changement de main ni du canal de Nathan.
+          Réservé à E:\LATELIER_TEST_0180, port 8876. Sauvegarde automatique avant remplacement, profil et données conservés, canal personnel maintenu. Aucun changement de main, de la version stable ou de Nathan.
 
-          Cuisine : recettes en livres avec le titre sur la tranche, rayons, recherche par ingrédient, tri, archives et restauration. Les quantités affichées dans le lecteur peuvent être envoyées aux courses. La flèche latérale du tiroir est retirée partout ; utilise le hamburger du haut. Sauvegarde des gestes annulés du moodboard corrigée.
+          Rappels récurrents avec état par date ; terminer une occurrence ne termine pas la série. Notifications Windows facultatives via le compagnon près de l’horloge. Compatible avec Android 0.1.14 TEST et ses rappels natifs copiés du PC.
 
-          Ce lot ajoute l’export JSON complet indépendant, la restauration contrôlée avec copie de secours et redémarrage, les brouillons du carnet de santé mentale, les notes partagées à hashtags multiples, le diagnostic et la protection des conflits/rejeux. Cuisine propose aussi des minuteurs nommés avec pause/reprise. Les rappels natifs Windows sont facultatifs, via le compagnon près de l’horloge ; teste-les dans Paramètres. La fenêtre fermée exige que ce compagnon reste actif.
+          Tâches : liens, sous-tâches et documents. Carnets : annotations et corrections proposées sans réécrire le texte original. Budget : plafonds mensuels par catégorie, correction sans doublon, justificatifs. Administratif : états des documents, renommage et classement avec historique et originaux conservés. Protection des modifications simultanées.
 
-          Compatible avec le nouveau client Android 0.1.13 TEST. Les rappels Android généraux en arrière-plan, le suivi complet des rappels récurrents Windows et la recette réelle restent ouverts. Ce lot ne signifie pas que toute la checklist est terminée.
+          Mes dessins : six thèmes nommés, aperçu, retour au thème par défaut, mot de passe personnel à définir dans Paramètres. Cette protection de l’interface ne remplace pas la sécurité de la session Windows ni le chiffrement des données.
 
-          Après installation : Paramètres → Mes dessins. Ajoute tes propres PNG/JPEG/WebP sur les boutons et fonds, utilise les gabarits Clip Studio Paint et enregistre ton thème. Réservé à l’installation de Léo ; pas de mot de passe individuel.
+          Sauvegardes complètes et restauration contrôlée, brouillons, synchronisation avec conflits visibles, livres et moodboards, carte d’objectifs, bibliothèque de recettes sur tranches et minuteurs nommés conservés. L’ancienne flèche du tiroir est retirée.
 
-          Scripts Python/CMD, pas d'EXE signé. Une conservation réussie sur le runner Windows ne remplace pas les vérifications sur le PC de Léo. Checklist dans LIRE_MOI.txt.
+          Validé : suite automatique complète, navigateurs et installation réelle sur un runner Windows isolé. Les essais sur le PC et le téléphone de Léo restent nécessaires avant une version stable. Aucun appareil réel modifié. Scripts Python/CMD, pas d’EXE signé. Mode d’emploi dans LIRE_MOI.txt.
           NOTES
-          if gh release view windows-test-utilitaire-20261104 >/dev/null 2>&1; then
-            gh release upload windows-test-utilitaire-20261104 delivery/* --clobber
-          else
-            gh release create windows-test-utilitaire-20261104 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Fiabilité et outils quotidiens — 04/11/2026" --notes-file /tmp/goblin-release-notes.md
+          cd delivery
+          sha256sum -c Goblin_MAJ_Windows_TEST_20261104.zip.sha256
+          cd ..
+          if gh release view windows-test-utilitaire-complet-20261104 >/dev/null 2>&1; then
+            echo 'Existing TEST release preserved; no replacement performed.'
+            exit 0
           fi
+          gh release create windows-test-utilitaire-complet-20261104 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Finition utilitaire — 04/11/2026" --notes-file /tmp/goblin-release-notes.md
