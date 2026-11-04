@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def build(revision, output):
     if not re.fullmatch(r'[a-f0-9]{40}', revision):
         raise ValueError('Invalid pinned revision')
-    kit = output / 'Goblin_MAJ_Windows_TEST_20261103'
+    kit = output / 'Goblin_MAJ_Windows_TEST_20261104'
     kit.mkdir(parents=True, exist_ok=False)
     for name in ('installer.py', 'Installer_la_MAJ_TEST.cmd', 'LIRE_MOI.txt'):
         shutil.copyfile(ROOT / 'tools' / 'windows_delivery' / name, kit / name)

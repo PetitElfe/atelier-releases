@@ -32,10 +32,10 @@ jobs:
         run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
       - uses: actions/upload-artifact@v4
         with:
-          name: Goblin_MAJ_Windows_TEST_20261103
+          name: Goblin_MAJ_Windows_TEST_20261104
           path: |
-            dist/Goblin_MAJ_Windows_TEST_20261103.zip
-            dist/Goblin_MAJ_Windows_TEST_20261103.zip.sha256
+            dist/Goblin_MAJ_Windows_TEST_20261104.zip
+            dist/Goblin_MAJ_Windows_TEST_20261104.zip.sha256
           if-no-files-found: error
           retention-days: 30
   publish:
@@ -49,13 +49,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Goblin_MAJ_Windows_TEST_20261103
+          name: Goblin_MAJ_Windows_TEST_20261104
           path: delivery
       - name: Publish approved isolated TEST prerelease
         shell: bash
         run: |
           cat > /tmp/goblin-release-notes.md <<'NOTES'
-          Mise à jour Windows TEST — bibliothèque de recettes et corrections de fonctionnement.
+          Mise à jour Windows TEST — sauvegardes complètes, brouillons et outils quotidiens.
 
           Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends le message de réussite, puis utilise ton raccourci TEST habituel. Aucun code à modifier.
 
@@ -63,12 +63,16 @@ jobs:
 
           Cuisine : recettes en livres avec le titre sur la tranche, rayons, recherche par ingrédient, tri, archives et restauration. Les quantités affichées dans le lecteur peuvent être envoyées aux courses. La flèche latérale du tiroir est retirée partout ; utilise le hamburger du haut. Sauvegarde des gestes annulés du moodboard corrigée.
 
+          Ce lot ajoute l’export JSON complet indépendant, la restauration contrôlée avec copie de secours et redémarrage, les brouillons du carnet de santé mentale, les notes partagées à hashtags multiples, le diagnostic et la protection des conflits/rejeux. Cuisine propose aussi des minuteurs nommés avec pause/reprise. Les rappels natifs Windows sont facultatifs, via le compagnon près de l’horloge ; teste-les dans Paramètres. La fenêtre fermée exige que ce compagnon reste actif.
+
+          Compatible avec le nouveau client Android 0.1.13 TEST. Les rappels Android généraux en arrière-plan, le suivi complet des rappels récurrents Windows et la recette réelle restent ouverts. Ce lot ne signifie pas que toute la checklist est terminée.
+
           Après installation : Paramètres → Mes dessins. Ajoute tes propres PNG/JPEG/WebP sur les boutons et fonds, utilise les gabarits Clip Studio Paint et enregistre ton thème. Réservé à l’installation de Léo ; pas de mot de passe individuel.
 
           Scripts Python/CMD, pas d'EXE signé. Une conservation réussie sur le runner Windows ne remplace pas les vérifications sur le PC de Léo. Checklist dans LIRE_MOI.txt.
           NOTES
-          if gh release view windows-test-recettes-20261103 >/dev/null 2>&1; then
-            gh release upload windows-test-recettes-20261103 delivery/* --clobber
+          if gh release view windows-test-utilitaire-20261104 >/dev/null 2>&1; then
+            gh release upload windows-test-utilitaire-20261104 delivery/* --clobber
           else
-            gh release create windows-test-recettes-20261103 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Recettes et corrections — 03/11/2026" --notes-file /tmp/goblin-release-notes.md
+            gh release create windows-test-utilitaire-20261104 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Fiabilité et outils quotidiens — 04/11/2026" --notes-file /tmp/goblin-release-notes.md
           fi

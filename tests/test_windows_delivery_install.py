@@ -70,7 +70,7 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 api('/api/objective-library-entries', 'POST', {'section_id':book['id'],'title':'Existing page','notes':'Original notebook text before upgrade'})
                 api('/api/shutdown', 'POST', {})
                 process.wait(timeout=25)
-                kit = ROOT / 'dist/Goblin_MAJ_Windows_TEST_20261103'
+                kit = ROOT / 'dist/Goblin_MAJ_Windows_TEST_20261104'
                 # An altered launcher is rejected before the local server starts.
                 updater_file = kit / 'updater.py'
                 clean = updater_file.read_bytes()

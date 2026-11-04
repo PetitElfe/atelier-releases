@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Bibliothèque de recettes et corrections — 3 novembre 2026
+Fiabilité, sauvegardes et fonctions quotidiennes — 4 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -68,3 +68,27 @@ A TESTER SUR TON PC : ouvrir une ancienne recette, changer les portions,
 ajouter un ingrédient aux courses, archiver puis restaurer une recette,
 créer un rayon et y enregistrer une recette, fermer puis rouvrir TEST.
 Les contrôles automatiques ne remplacent pas ces essais sur ton installation.
+
+LOT UTILITAIRE DU 4 NOVEMBRE :
+- Paramètres > Sauvegardes : export complet indépendant, copie manuelle,
+  import vérifié avec aperçu, restauration avec copie de secours et redémarrage.
+  Les exports contiennent tes données privées : conserve-les sur ton support personnel.
+- Paramètres > Notifications : active et teste les rappels Windows natifs.
+  Le compagnon près de l’horloge doit rester actif. Teste un report de 10 minutes.
+- Cuisine : minuteurs nommés indépendants, pause/reprise/arrêt.
+- Notes et captures : notes partagées, hashtags multiples, liens, brouillons,
+  archives restaurables. L’envoi depuis Android reste volontaire.
+- Carnet de santé mentale : brouillons locaux et export, récupération d’un
+  enregistrement échoué, historique privé avant révision.
+- Actualisation des vues, diagnostic et redémarrage dans les paramètres.
+- Conflits et créations rejouées protégés avec le nouveau client Android 0.1.13 TEST.
+
+RECETTE REELLE ENCORE NECESSAIRE : ancienne donnée, arrêt/redémarrage, export
+sur un support externe, restauration d’une copie de démonstration, notifications
+réduites/verrouillées/en jeu et sons personnels. Ne restaure pas une copie ancienne
+sans garder d’abord un export actuel. Le système crée aussi une copie de secours.
+
+Cette préversion ne ferme pas toute la checklist : rappels Android généraux en
+arrière-plan, suivi complet des rappels récurrents Windows, certains enrichissements
+des domaines et thèmes multiples restent à finir. Le mode créatrice ne constitue
+pas une authentification individuelle. Aucune promotion stable ni modification Nathan.
