@@ -284,6 +284,8 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
         if p == '/api/sync/capabilities':
             return self._json({'protocol':2,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
+        if p == '/api/native-reminders/status':
+            return self._json(native_reminders.status(DATA))
         if p == '/api/safety/status':
             try:return self._json(utility_safety.diagnostics(DATA,atelier_version(),SCHEMA_VERSION,PORT))
             except (OSError,ValueError,sqlite3.Error) as exc:return self._json({'error':'Diagnostic impossible : '+str(exc)},500)
@@ -667,6 +669,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p in ('/api/native-reminders/enable','/api/native-reminders/test'):
+            if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Native')!='1':return self._json({'error':'Ouvre ces réglages depuis les Paramètres de cette installation.'},403)
+            try:
+                body=self._body()
+                if p.endswith('enable'):return self._json(native_reminders.enable(bool(body.get('enabled'))))
+                updater.guard(external_runner=True)
+                native_reminders.send('Test de notification Windows — L’Atelier TEST', 'test',test=True)
+                return self._json({'ok':True})
+            except (RuntimeError,OSError,ValueError) as exc:return self._json({'error':str(exc)},409)
         if p.startswith('/api/safety/'):
             if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Safety')!='1':
                 return self._json({'error':'Ouvre Sauvegardes depuis les Paramètres de cette installation.'},403)

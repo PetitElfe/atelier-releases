@@ -63,7 +63,7 @@ function render(){const nav=$('nav');nav.replaceChildren();for(const [key,label]
  const presets=(prompts[category]||[]).map(([title,prompt],i)=>({id:category+'-'+i,title,prompt,builtin:true,section:category}));
  const allCards=[...presets.map(p=>custom.find(c=>c.id===p.id)||p).filter(x=>!x.deletedAt),...custom.filter(c=>!presets.some(p=>p.id===c.id)&&!c.deletedAt)];
  for(const c of allCards){
- const box=node('article');box.append(node('h3',c.title),node('p',c.prompt));
+ const box=node('article');box.dataset.draftCard=c.id;box.append(node('h3',c.title),node('p',c.prompt));
  const ta=textArea('','Ma réponse personnelle…'),add=button('Enregistrer cette réponse',async()=>{if(!ta.value.trim())return;data.answers.unshift({id:id(),section:category,cardId:c.id,text:ta.value,createdAt:stamp(),updatedAt:stamp()});if(await write())render()});box.append(ta,add);
  if(c.builtin){
   box.append(button('Modifier cette carte',()=>{editing={kind:'cards',id:c.id};render()}));
@@ -84,5 +84,4 @@ function render(){const nav=$('nav');nav.replaceChildren();for(const [key,label]
  if(!entries.children.length)entries.append(node('p','Ton carnet est encore vide.','empty'))
 }
 $('reload').onclick=()=>{if(confirm('Actualiser depuis le PC ? Les modifications non enregistrées dans les champs seront perdues.'))pull()};
-pull();
-</script></body></html>
+</script><script src="/public/mental_drafts.js"></script><script>pull();</script></body></html>

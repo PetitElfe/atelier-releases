@@ -24,6 +24,17 @@ async function ready(){for(let i=0;i<150;i++){try{if((await fetch(base+'/api/run
  const current=(await api('/api/tasks')).find(x=>x.id===task.id);await api('/api/tasks/'+task.id,'PUT',{title:'Autre fenêtre'});
  await assert.rejects(()=>api('/api/tasks/'+task.id,'PUT',{title:'Version ancienne',_sync:{id:'browser-conflict-0001',base:{title:current.title}}}),e=>e.status===409);
  assert.equal((await api('/api/tasks')).find(x=>x.id===task.id).title,'Autre fenêtre');
+ // Private health drafts survive reload and a failed write without duplicating entries.
+ await page.goto(base+'/public/mental-health.html');await page.getByPlaceholder('Titre de ma page').waitFor();
+ await page.getByPlaceholder('Titre de ma page').fill('Brouillon privé');await page.getByPlaceholder('Tout ce que tu souhaites écrire…').fill('Texte conservé après coupure');await page.reload();
+ await page.getByPlaceholder('Tout ce que tu souhaites écrire…').waitFor();assert.equal(await page.getByPlaceholder('Tout ce que tu souhaites écrire…').inputValue(),'Texte conservé après coupure');
+ await page.route('**/api/mobile/mental',route=>route.request().method()==='POST'?route.abort():route.continue());
+ await page.getByRole('button',{name:'Ajouter une page',exact:true}).click();await page.getByRole('button',{name:'Revoir ma sauvegarde non envoyée'}).waitFor();
+ assert.equal(await page.getByPlaceholder('Tout ce que tu souhaites écrire…').inputValue(),'Texte conservé après coupure');await page.unroute('**/api/mobile/mental');
+ await page.getByRole('button',{name:'Ajouter une page',exact:true}).click();await page.locator('#entries article').filter({hasText:'Brouillon privé'}).waitFor();
+ assert.equal((await api('/api/mobile/mental')).data.journal.filter(x=>x.title==='Brouillon privé').length,1);
+ await page.reload();await page.getByPlaceholder('Tout ce que tu souhaites écrire…').waitFor();assert.equal(await page.getByPlaceholder('Tout ce que tu souhaites écrire…').inputValue(),'');
+ await page.goto(base);await page.waitForFunction(()=>typeof showView==='function');
  mkdirSync('artifacts',{recursive:true});await page.evaluate(()=>showView('settings'));await page.locator('.atelier-settings-nav [data-target=settingsSafetyCard]').click();await page.locator('#safetyRefresh').click();await page.screenshot({path:'artifacts/utility-safety.png'});assert.deepEqual(errors,[]);console.log('PASS: full export, strict origin, verified import, actual recovery/restart, browser settings, replay and conflict protection');
  }finally{if(browser)await browser.close();try{await api('/api/shutdown','POST',{})}catch{}if(server.exitCode===null)server.kill();await new Promise(r=>setTimeout(r,700));rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});

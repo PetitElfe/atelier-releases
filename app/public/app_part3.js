@@ -340,6 +340,8 @@ function localIsoSeconds(d=new Date()){
 }
 async function checkDue(){
   try{
+    const native=await api('/api/native-reminders/status');
+    if(native.available&&native.enabled&&!native.error)return;
     const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`);
     due.forEach(r=>notifyReminder(r));
   }catch(e){

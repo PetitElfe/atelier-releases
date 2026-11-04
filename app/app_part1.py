@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
+import native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -427,6 +427,7 @@ with conn() as c:
     objective_maps.initialise(c)
     library_moodboard.initialise(c)
     utility_sync.initialise(c)
+    native_reminders.initialise(c)
     event_preparations.initialise(c)
     admin_docs.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».

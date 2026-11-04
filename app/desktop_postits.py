@@ -710,6 +710,10 @@ def _run_gui():
             root.after(1700, sync)
             return
         try:
+            import native_reminders
+            native_reminders.tick()
+        except (ImportError,OSError,RuntimeError):pass
+        try:
             current_wake = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
             if current_wake != wake_value:
                 closed.clear()

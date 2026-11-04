@@ -64,6 +64,9 @@ if __name__ == '__main__':
     except Exception as exc:
         utility_safety.atomic(DATA/'safety-status.json',{'error':'Sauvegarde de démarrage impossible : '+str(exc)})
     (DATA/'safety-maintenance.json').unlink(missing_ok=True)
+    if native_reminders.status(DATA).get('enabled') and os.name=='nt' and PORT==8876:
+        try:desktop_postits.launch()
+        except (OSError,RuntimeError):pass
     url = f"http://{HOST}:{active_port}/"
     try:
         pid_file.write_text(str(os.getpid()), encoding='ascii')
