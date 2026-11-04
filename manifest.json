@@ -17,7 +17,7 @@
     },
     {
       "path": "admin_docs.py",
-      "sha256": "3af1656d20a19d48dd7c671037d0f79cc6b57896585fcc6bf5b638885b4cd0a1"
+      "sha256": "ab09d95f3321882b2808ce4df21cf2df7b47507f14401df607870eff924b54bb"
     },
     {
       "path": "app.py",
@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "1668f53bf1d6c8d0b562db89e8de8002a98294ee70375e2be2c5ff9b2804dc79"
+      "sha256": "40ed0e872ee684f9d9aeb2fa732d6dc6ade69ea962dfdb44b7fb34874aec31f9"
     },
     {
       "path": "app_part2.py",
-      "sha256": "54218ff624227d246725e165d750a6801c003d7bacade92d65dea82e88984c54"
+      "sha256": "5a1d2b082f056c066908d147794a4aa144b64330dfffc00fa0e575121f090a50"
     },
     {
       "path": "app_part3.py",
@@ -53,7 +53,7 @@
     },
     {
       "path": "native_reminders.py",
-      "sha256": "cddbd6a6a16b27ddc278cf8221902f8c7871be7724c3abd1e25357c4c468249c"
+      "sha256": "06077ce7b423b02f740047e78a2d1f0290285619f951d0d35a733ec30f80e9b4"
     },
     {
       "path": "native_toasts.ps1",
@@ -73,15 +73,15 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "e1b8836b7ec9be7c8fffc224ca84e45c6264989471167349f9f2da65d37ea651"
+      "sha256": "603896da9dbdb0d4fa2888bbefb9028676d78d854d1148b5ff4c7d06bfcfb732"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "7265e162b93e54738dea4f1243b27458e16fd1a99a5a02057c8b7a2193217a48"
+      "sha256": "51050b16b38d4cd6b6c0a058d51e39306815aa6a03df18a40f31569c47dc28bf"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "0b29061cbe30bdd788d490b1600fe085e7eef9e3dde5d0139c0afd3a21d04ec2"
+      "sha256": "132add6bf93131c4d6255c8398957cf5f3bf21c19f1b5cf12381c5d7f94b50de"
     },
     {
       "path": "public/big_refonte.css",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "785cb48642974a4569a80325a0200eedf5db539cc40a690263dc1994e5194072"
+      "sha256": "cfc4be57210a312e0fc338d472396851d3588534aa9447766ab624e3987e0c5b"
     },
     {
       "path": "public/interface_reference.css",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "a144416b9e58651923493cba8a66408b51103d789a2f8b40f2bdf283cbf2a36c"
+      "sha256": "10e2afea0a09a36a5f3b20bc223f1d144699f552f534bdc38bd53f69c16a35a3"
     },
     {
       "path": "public/mental-health.html",
@@ -201,11 +201,11 @@
     },
     {
       "path": "public/personal_design.css",
-      "sha256": "c91ce65d4157f8d06bfbcd85b72a377689ca6b13a48faa478e2ad42cc540e7fd"
+      "sha256": "cb3a0e3092cd7e9ed81eed195ce78fae635107879da1dc0aba4c7a75017bb089"
     },
     {
       "path": "public/personal_design.js",
-      "sha256": "129e6550a7dd1b80e412833fb56cbfa029c2999803ab92160df74ba677981ab4"
+      "sha256": "9ed2734f0f6c8714e0167382db7a1e6ea50d11b40df215a4a4def10038532dee"
     },
     {
       "path": "public/postits.js",
@@ -289,7 +289,7 @@
     },
     {
       "path": "utility_sync.py",
-      "sha256": "487ce0ac69b5c88f965fdf61cb40260df82a616c342aa120b7c2ff48ca465f5c"
+      "sha256": "5e19197ba399ac17e63e962bc7a6e5449bbea01be2a23a9efc0a66ccd141e9bd"
     },
     {
       "path": "windows_tray.py",
@@ -298,8 +298,32 @@
     {
       "path": "public/kitchen_timers.js",
       "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
+    },
+    {
+      "path": "reminder_occurrences.py",
+      "sha256": "a9cad55e09f154afde8c416d8a28a95ba579d6ca0f7e24b18205ea45b8776455"
+    },
+    {
+      "path": "creator_access.py",
+      "sha256": "2284267db32833ee534adf44b7c14cff59589f55de99f0e50352e30cbd22953f"
+    },
+    {
+      "path": "public/creator_access.js",
+      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
+    },
+    {
+      "path": "utility_details.py",
+      "sha256": "ee09ed31195b05a52750e6ce78c536aade158445b3d16297ecf5fafa206a60bb"
+    },
+    {
+      "path": "public/utility_details.js",
+      "sha256": "3036a5006414b874205ef730d5ee80e7856f09493dc1e72c4497b467f1df4da9"
+    },
+    {
+      "path": "public/budget_support.js",
+      "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
-  "build_sequence": 2026110401
+  "build_sequence": 2026110402
 }

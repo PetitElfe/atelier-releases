@@ -23,6 +23,7 @@ let stored={available:true,revision:0,theme:{}},reject=false;
   }
   await route.fulfill({json:stored});
  });
+ await page.route('**/api/creator-access',route=>route.fulfill({json:{configured:false,unlocked:true}}));
  await page.goto(base);await page.locator('#personalDesignStart:not([disabled])').waitFor({state:'attached'});await page.locator('#settingsBtn').click();await page.locator('.atelier-settings-nav [data-target=settingsPersonalDesignCard]').click();
  await page.locator('#personalDesignStart').click();const dock=page.locator('#personalDesignDock');await dock.waitFor();
  assert.match(await dock.locator('[data-design=guide]').innerText(),/Fond général.*1440 × 1000/);
@@ -53,7 +54,7 @@ let stored={available:true,revision:0,theme:{}},reject=false;
  await dock.locator('[data-design=pick]').click();await page.locator('#settingsBtn').click();assert.equal(await dock.locator('[data-design=target]').inputValue(),'id:settingsBtn');assert.equal(await dock.locator('[data-design=pick]').getAttribute('aria-pressed'),'false');
  mkdirSync('artifacts',{recursive:true});await page.screenshot({path:'artifacts/personal-design-mode.png'});
  await dock.locator('[data-design=exit]').click();assert.equal(await dock.isVisible(),false);
- await page.setViewportSize({width:1280,height:720});await page.locator('#personalDesignStart').click();assert.ok((await dock.boundingBox()).width<1280);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.setViewportSize({width:1280,height:720});await page.locator('#personalDesignStart').click();await dock.waitFor({state:'visible'});assert.ok((await dock.boundingBox()).width<1280);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  assert.deepEqual(errors,[]);console.log('PASS personal design: gate, own art drop, controls, save/reload, undo, conflict, export, template, selection and smaller window');
  }catch(e){if(browser){const p=browser.contexts()[0]?.pages()[0];if(p){console.log('FAIL STATE',await p.evaluate(()=>({status:document.querySelector('[data-design=status]')?.textContent,asset:document.querySelector('[data-design=asset]')?.textContent,selected:document.querySelector('[data-design=target]')?.value,rules:document.querySelector('#personalDesignRules')?.textContent.slice(0,250)})));mkdirSync('artifacts',{recursive:true});await p.screenshot({path:'artifacts/personal-design-failure.png'})}}throw e;}finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('exit',r));rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
