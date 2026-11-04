@@ -25,12 +25,16 @@ def bounds(node):
     return values if len(values)==4 else [0,0,0,0]
 
 def find(label,scroll=True):
-    for attempt in range(9 if scroll else 1):
+    for attempt in range(9 if scroll else 10):
         tree=nodes()
         candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and bounds(n)[3]>bounds(n)[1]]
         if candidates:return candidates[0]
         if scroll:adb('shell','input','swipe','520','1650','520','450','350')
-    Path('artifacts').mkdir(exist_ok=True);Path('artifacts/android-utility-ui.xml').write_text(ET.tostring(tree,encoding='unicode'))
+        else:time.sleep(1)
+    Path('artifacts').mkdir(exist_ok=True)
+    shot=subprocess.run(['adb','exec-out','screencap','-p'],capture_output=True,timeout=15)
+    Path('artifacts/android-utility-ui.png').write_bytes(shot.stdout)
+    Path('artifacts/android-utility-ui.xml').write_text(ET.tostring(tree,encoding='unicode'))
     raise AssertionError('Control not found: '+label+'; visible labels: '+str([n.attrib.get('text') or n.attrib.get('content-desc') for n in tree.iter('node') if n.attrib.get('text') or n.attrib.get('content-desc')])[-1500:])
 
 def tap(label,scroll=True):
