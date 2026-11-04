@@ -37,7 +37,13 @@ def bounds(node):
 def find(label,scroll=True):
     for attempt in range(9 if scroll else 10):
         tree=nodes()
-        candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and bounds(n)[3]>bounds(n)[1]]
+        screen_bottom=max(bounds(n)[3] for n in tree.iter('node'))
+        def visible(node):
+            x1,y1,x2,y2=bounds(node)
+            center=(y1+y2)//2
+            # WebView accessibility includes nodes underneath the fixed bottom tabs.
+            return x2>x1 and y2>y1 and (270 if scroll else 20)<center<screen_bottom-(280 if scroll else 70)
+        candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and visible(n)]
         if candidates:return candidates[0]
         # The old release WebView exposes empty EditText accessibility labels.
         # Locate the fields in their observed named section and DOM order.
@@ -59,7 +65,7 @@ def find(label,scroll=True):
     raise AssertionError('Control not found: '+label+'; visible labels: '+str([n.attrib.get('text') or n.attrib.get('content-desc') for n in tree.iter('node') if n.attrib.get('text') or n.attrib.get('content-desc')])[-1500:])
 
 def tap(label,scroll=True):
-    x1,y1,x2,y2=bounds(find(label,scroll));adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+    x1,y1,x2,y2=bounds(find(label,scroll));print('Tap:',label,(x1,y1,x2,y2),flush=True);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
 
 def text(label,value):
     for _ in range(2):adb('shell','input','swipe','520','420','520','1900','200')
