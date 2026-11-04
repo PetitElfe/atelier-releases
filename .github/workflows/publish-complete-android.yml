@@ -1,0 +1,49 @@
+name: Publish reviewed Android utility completion TEST
+on:
+  push:
+    branches: [test/utility-complete-android-20261104]
+    paths: ['.github/workflows/publish-complete-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify immutable tested candidate and download it
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=41831846513
+          expected=49c17dd1a81bc58bb465d2c32193550c9adad124
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Utility_014_Candidate --dir candidate
+          cd candidate
+          sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256
+      - name: Publish only a TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/utility-notes.md <<'NOTES'
+          Goblin Android 0.1.14 TEST — mise à jour signée de la 0.1.13, sans désinstallation.
+
+          Installe cet APK par-dessus Goblin existant et accepte la confirmation Android. Identifiant et certificat conservés, versionCode 113 vers 114. Ne désinstalle pas l’application : la mise à jour sur émulateur a conservé une note existante.
+
+          Nouveau : rappels natifs des tâches et rendez-vous copiés du PC. Dans Paramètres, active les rappels du PC, autorise les notifications et les alarmes précises, puis utilise le test de 30 secondes. Une connexion Tailscale au PC Windows TEST utilitaire complet est nécessaire pour actualiser la copie. Les rappels déjà copiés peuvent ensuite sonner PC éteint.
+
+          Terminer, reporter de 10 ou 30 minutes ou d’une heure, annuler : les actions hors ligne restent enregistrées puis sont envoyées dans l’ordre. Android peut limiter les boutons visibles dans une notification ; toutes les actions sont accessibles dans Goblin. Un rappel modifié sur le PC produit un conflit à revoir, sans remplacement silencieux.
+
+          Synchronisation avec file persistante, protection contre les doublons, cache et brouillons conservés. Sauvegarde privée enrichie des rappels et du véritable son de cuisine importé. Les minuteurs nommés indépendants restent disponibles avec alarmes natives en arrière-plan. Importe ton véritable Miam Miam pour leur son.
+
+          Validé automatiquement : signature permanente, mise à jour réelle 0.1.13 vers 0.1.14 avec conservation d’une note sur émulateur, rappel général et deux minuteurs écran éteint, synchronisation avec coupure, réponse perdue et conflit avec l’API PC réelle. La recette sur le téléphone et le Tailscale de Léo reste nécessaire. Les autorisations et restrictions Android influencent la livraison ; un arrêt forcé suspend les alarmes jusqu’à réouverture. Aucune promotion stable ni installation sur appareil réel.
+          NOTES
+          if gh release view android-test-v0.1.14 >/dev/null 2>&1; then
+            echo 'Existing TEST release preserved; no replacement performed.'
+            exit 0
+          fi
+          gh release create android-test-v0.1.14 candidate/* --prerelease --target 49c17dd1a81bc58bb465d2c32193550c9adad124 --title 'Android TEST 0.1.14 — Rappels natifs et finition utilitaire' --notes-file /tmp/utility-notes.md
