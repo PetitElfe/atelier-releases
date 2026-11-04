@@ -1568,6 +1568,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({'error':'Rendez-vous introuvable.'},404)
                 raw_archive=body.get('archived',bool(row['archived']))
                 if type(raw_archive) is not bool:return self._json({'error':'Archivage invalide.'},400)
+                if len(str(body.get('notes',row['notes'])))>8000:return self._json({'error':'Notes limitées à 8 000 caractères ; le brouillon reste disponible.'},400)
                 c.execute('UPDATE admin_documents SET title=?,category=?,due_date=?,status=?,notes=?,event_id=?,archived=?,updated_at=? WHERE id=?',
                     (title,str(body.get('category',row['category']))[:80],due,status,str(body.get('notes',row['notes']))[:8000],event_id,int(raw_archive),ts,doc_id))
                 c.commit();return self._json({'ok':True})

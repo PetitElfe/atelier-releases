@@ -17,7 +17,7 @@
     },
     {
       "path": "admin_docs.py",
-      "sha256": "3af1656d20a19d48dd7c671037d0f79cc6b57896585fcc6bf5b638885b4cd0a1"
+      "sha256": "ab09d95f3321882b2808ce4df21cf2df7b47507f14401df607870eff924b54bb"
     },
     {
       "path": "app.py",
@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "0893243dcf0aac70d88467b2efd1301b5872c8dd354bc8ef2ec6ff0b04ef21c4"
+      "sha256": "8ad9a6f1bfb994e061fd6965848c51a0ba42a9833ee87a400ec66abd5dc998bb"
     },
     {
       "path": "app_part3.py",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "ff6dced5247ff4f716f122ace4dd0bbf0af4c94561636a24b46a3108694ce9b0"
+      "sha256": "cfc4be57210a312e0fc338d472396851d3588534aa9447766ab624e3987e0c5b"
     },
     {
       "path": "public/interface_reference.css",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "a144416b9e58651923493cba8a66408b51103d789a2f8b40f2bdf283cbf2a36c"
+      "sha256": "ee1846a46267275551ef89a7b24dd384660c15af689289bf05e90dbba1e33526"
     },
     {
       "path": "public/mental-health.html",
@@ -201,7 +201,7 @@
     },
     {
       "path": "public/personal_design.css",
-      "sha256": "c91ce65d4157f8d06bfbcd85b72a377689ca6b13a48faa478e2ad42cc540e7fd"
+      "sha256": "cb3a0e3092cd7e9ed81eed195ce78fae635107879da1dc0aba4c7a75017bb089"
     },
     {
       "path": "public/personal_design.js",
@@ -313,11 +313,15 @@
     },
     {
       "path": "utility_details.py",
-      "sha256": "6acb306bc249bb245bb3b4e2eb2d9ab6a70c294ba8746dfd9394039e99845ffa"
+      "sha256": "ee09ed31195b05a52750e6ce78c536aade158445b3d16297ecf5fafa206a60bb"
     },
     {
       "path": "public/utility_details.js",
       "sha256": "f53db8c10a631a50fca066892721384f9ddf524672908a90cbfff31b628275ca"
+    },
+    {
+      "path": "public/budget_support.js",
+      "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
