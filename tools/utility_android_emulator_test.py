@@ -69,7 +69,10 @@ def tap(label,scroll=True):
 
 def hide_keyboard():
     info=adb('shell','dumpsys','input_method')
-    if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true',info):
+    # Only the first/current state counts; dumpsys also includes old shown=true history.
+    shown=re.search(r'\b(?:mInputShown|mIsInputViewShown|isInputViewShown)=(true|false)',info)
+    print('Current keyboard:',shown.group(0) if shown else 'not reported',flush=True)
+    if shown and shown.group(1)=='true':
         adb('shell','input','keyevent','4');time.sleep(.7)
 
 def text(label,value):
