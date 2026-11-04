@@ -59,6 +59,16 @@ class CompleteSafetyTests(unittest.TestCase):
         with sqlite3.connect(self.root/'atelier.db') as c:self.assertEqual(c.execute('SELECT title FROM tasks').fetchone()[0],'Ancien texte à conserver')
         self.assertIn('interrompue',json.loads((self.root/'safety-status.json').read_text())['error'])
 
+    def test_tampered_prepared_backup_does_not_block_startup_or_change_data(self):
+        item=safety.snapshot(self.root,'0.18.0',8876)
+        prepared=safety.prepare_restore(self.root,item,17,8876)
+        safety.atomic(self.root/'recovery'/'pending.json',{'token':prepared['token'],'phase':'prepared'})
+        (self.root/'recovery'/(prepared['token']+'.json')).write_text('broken')
+        safety.apply_pending(self.root,'0.18.0',17,8876)
+        self.assertFalse((self.root/'recovery'/'pending.json').exists())
+        with sqlite3.connect(self.root/'atelier.db') as c:self.assertEqual(c.execute('SELECT title FROM tasks').fetchone()[0],'Ancien texte à conserver')
+        self.assertIn('annulée',json.loads((self.root/'safety-status.json').read_text())['error'])
+
     def test_operational_files_and_backups_are_not_recursively_exported(self):
         (self.root/'server.pid').write_text('12345');(self.root/'updater-worker.log').write_text('private paths');(self.root/'windows-test-channel.json').write_text('keep live channel')
         _,item=safety.save_snapshot(self.root,'0.18.0',8876,self.browser)

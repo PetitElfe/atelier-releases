@@ -25,7 +25,7 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "fc8b95772a4ed38600ff4c6ef590c1e3fcddeb7f65f5afe3967bc544ab7b751e"
+      "sha256": "1ddc6c6e12b0ae07e3c34cc66ca9c3044c3f7dbde3e90558274f8603189b9b5d"
     },
     {
       "path": "app_part2.py",
@@ -81,7 +81,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c9c83f00949923df546748fa64b7e415995fc1052f460b34fdbdd59dba30dd70"
+      "sha256": "0b29061cbe30bdd788d490b1600fe085e7eef9e3dde5d0139c0afd3a21d04ec2"
     },
     {
       "path": "public/big_refonte.css",
@@ -177,7 +177,7 @@
     },
     {
       "path": "public/mental-health.html",
-      "sha256": "128203be682817434a004aa156e9b5f7ef8bb01580a66420fae9d3e57545782a"
+      "sha256": "58ece7d7b9e1e6d980c924714a17cb3f82dbe1da6620935b974f028104e6ea8a"
     },
     {
       "path": "public/mental_drafts.js",
@@ -249,7 +249,7 @@
     },
     {
       "path": "public/utility_notes.js",
-      "sha256": "5dbf7a6545f05ba5e9ef25cc4714cb30f52c9c6d242c9e4675e7c7af89c6ec7b"
+      "sha256": "0d422b17d9eb4bbd5a18147cdcc3fbbdbc351ba7bb8e3b5ebf0a2688429fd58e"
     },
     {
       "path": "public/utility_safety.js",
@@ -277,7 +277,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "d955ad830bada3f4b6a23058ba23ea4983c16085cfb2757df5d6ebd1a916da42"
+      "sha256": "24670db225ddb209c0f4ddfc31ea87f5c14d9d5125f445a73ef4caf5ec920106"
     },
     {
       "path": "utility_notes.py",
@@ -285,7 +285,7 @@
     },
     {
       "path": "utility_safety.py",
-      "sha256": "c42ac1afdea3d8e639edbebea01d9efba9b3ce05efe8a4e6985d7101f0c3d416"
+      "sha256": "cb8b2d9fc4ecc5fbec4861790452fb79d4e33bb73a626cee27ec8c7324b68eda"
     },
     {
       "path": "utility_sync.py",
@@ -296,5 +296,6 @@
       "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
     }
   ],
-  "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé."
+  "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
+  "build_sequence": 2026110401
 }

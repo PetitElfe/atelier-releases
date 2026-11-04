@@ -25,7 +25,7 @@ async function ready(){for(let i=0;i<150;i++){try{if((await fetch(base+'/api/run
  await assert.rejects(()=>api('/api/tasks/'+task.id,'PUT',{title:'Version ancienne',_sync:{id:'browser-conflict-0001',base:{title:current.title}}}),e=>e.status===409);
  assert.equal((await api('/api/tasks')).find(x=>x.id===task.id).title,'Autre fenêtre');
  // Private health drafts survive reload and a failed write without duplicating entries.
- await page.goto(base+'/public/mental-health.html');await page.getByPlaceholder('Titre de ma page').waitFor();
+ await page.goto(base+'/mental-health.html');await page.getByPlaceholder('Titre de ma page').waitFor();
  await page.getByPlaceholder('Titre de ma page').fill('Brouillon privé');await page.getByPlaceholder('Tout ce que tu souhaites écrire…').fill('Texte conservé après coupure');await page.reload();
  await page.getByPlaceholder('Tout ce que tu souhaites écrire…').waitFor();assert.equal(await page.getByPlaceholder('Tout ce que tu souhaites écrire…').inputValue(),'Texte conservé après coupure');
  await page.route('**/api/mobile/mental',route=>route.request().method()==='POST'?route.abort():route.continue());

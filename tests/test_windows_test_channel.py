@@ -26,6 +26,13 @@ class WindowsTestChannelTests(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
 
+    def test_stale_channel_cannot_offer_a_downgrade(self):
+        updater._prevent_downgrade({}, {'build_sequence':2026110401})
+        updater._prevent_downgrade({'build_sequence':2026110401}, {'build_sequence':2026110402})
+        for stale in ({}, {'build_sequence':2026110301}):
+            with self.assertRaises(RuntimeError):updater._prevent_downgrade({'build_sequence':2026110401}, stale)
+        with self.assertRaises(RuntimeError):updater._prevent_downgrade({}, {'build_sequence':'bad'})
+
     def test_only_explicit_local_candidate_opt_in_changes_the_default(self):
         self.assertEqual(updater._selected_branch(), updater.BRANCH)
         config = self.data / 'windows-test-channel.json'

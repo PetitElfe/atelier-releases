@@ -407,7 +407,9 @@ def _backup_db_before_migration():
         source.backup(destination)
         original=backup_dir/'atelier-original-before-first-migration.db'
         if not original.exists():
-            with sqlite3.connect(original) as first:source.backup(first)
+            temporary=original.with_suffix('.db.tmp')
+            with sqlite3.connect(temporary) as first:source.backup(first)
+            os.replace(temporary,original)
     finally:
         destination.close()
         source.close()

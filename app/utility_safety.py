@@ -186,11 +186,16 @@ def apply_pending(data,version,schema,port):
             if rollback.parent.resolve()!=(root/'backups'/'complete').resolve():raise ValueError('Copie de secours hors installation.')
             _apply(root,json.loads(rollback.read_text(encoding='utf-8')))
             pending.unlink();atomic(root/'safety-status.json',{'error':'Une restauration interrompue a été annulée. Les données précédentes ont été récupérées.'});return
-        payload=json.loads((root/'recovery'/(token+'.json')).read_text(encoding='utf-8'))
-        approval=json.loads((root/'recovery'/(token+'.approval.json')).read_text()) if (root/'recovery'/(token+'.approval.json')).exists() else {}
-        allow_new=bool(approval.get('allow_new') and approval.get('installation_id')==identity(root))
-        if allow_new and not is_fresh(root):raise ValueError('Cette installation n’est plus vide. La restauration a été arrêtée.')
-        validate(payload,root,schema,port,same_installation=not allow_new)
+        try:
+            payload=json.loads((root/'recovery'/(token+'.json')).read_text(encoding='utf-8'))
+            approval=json.loads((root/'recovery'/(token+'.approval.json')).read_text()) if (root/'recovery'/(token+'.approval.json')).exists() else {}
+            allow_new=bool(approval.get('allow_new') and approval.get('installation_id')==identity(root))
+            if allow_new and not is_fresh(root):raise ValueError('Cette installation n’est plus vide. La restauration a été arrêtée.')
+            validate(payload,root,schema,port,same_installation=not allow_new)
+        except (OSError,ValueError,KeyError,TypeError,sqlite3.Error):
+            pending.unlink(missing_ok=True)
+            atomic(root/'safety-status.json',{'error':'La copie préparée est devenue invalide. Restauration annulée ; les données présentes sont conservées. Vérifie à nouveau le fichier de sauvegarde.'})
+            return
         backup,_=save_snapshot(root,version,port,reason='before-restore')
         atomic(pending,{'token':token,'phase':'applying','rollback':str(backup)})
         try:
