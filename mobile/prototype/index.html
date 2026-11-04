@@ -116,6 +116,7 @@ function goblinRestoreBackup(raw){
  }
  try{
   for(const [key,value] of Object.entries(entries))localStorage.setItem(key,value);
+  if(parsed.kitchenAudio&&window.goblinRestoreAudio){window.goblinRestoreAudio(parsed.kitchenAudio).then(()=>location.reload()).catch(()=>alert('Le son n’a pas pu être restauré. Les autres données sont conservées ; garde la copie de secours.'));return;}
   location.reload();
  }catch(e){alert('Restauration incomplète. Restaure la sauvegarde de sécurité depuis Paramètres.')}
 }
@@ -126,7 +127,7 @@ const names={habits:'Mes habitudes',tasks:'Mes tâches',notes:'Mes pensées',sho
 const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 if(!Array.isArray(state.events))state.events=[];
 const el=(tag,attrs={},text='')=>{const n=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k==='class')n.className=v;else n.setAttribute(k,v)}n.textContent=text;return n};
-function list(parent,kind){const rows=state[kind];rows.forEach((entry,i)=>{const line=el('label',{class:'item'+(entry.done?' done':'')});const cb=el('input',{type:'checkbox'});cb.checked=!!entry.done;cb.onchange=()=>{entry.done=cb.checked;save();render()};line.append(cb,el('span',{},entry.text));parent.append(line)});const input=el('input',{type:'text',placeholder:kind==='shopping'?'Ajouter une course…':'Ajouter un élément…'});const btn=el('button',{class:'action'},'Ajouter');btn.onclick=()=>{if(input.value.trim()){rows.push({text:input.value.trim(),done:false});save();render()}};parent.append(input,btn)}
+function list(parent,kind){const rows=state[kind];rows.forEach((entry,i)=>{const line=el('label',{class:'item'+(entry.done?' done':'')});const cb=el('input',{type:'checkbox'});cb.checked=!!entry.done;cb.onchange=()=>{entry.done=cb.checked;save();render()};line.append(cb,el('span',{},entry.text));parent.append(line)});const input=el('input',{type:'text',placeholder:kind==='shopping'?'Ajouter une course…':'Ajouter un élément…'});const btn=el('button',{class:'action'},'Ajouter');btn.onclick=()=>{if(input.value.trim()){rows.push({text:input.value.trim(),done:false});window.atelierDrafts?.clearContainer(parent);save();render()}};parent.append(input,btn)}
 function panel(parent,title){const p=el('section',{class:'panel'});p.append(el('h2',{},title));parent.append(p);return p}
 function render(){const root=document.getElementById('content');root.replaceChildren();const page=state.page;document.getElementById('title').textContent={journal:'Mon journal',tasks:'Mes tâches',shopping:'Mes courses',calendar:'Calendrier',capture:'Note rapide',settings:'Paramètres'}[page];document.getElementById('subtitle').textContent=page==='journal'?'Chaque petite chose a sa place.':'Mon petit espace tranquille 🌿';
 if(page==='journal'){state.sections.filter(k=>state.visible[k]).forEach(k=>section(root,k))}
@@ -261,7 +262,7 @@ function updatePcSyncStamp(){const el=document.getElementById('pcSyncStamp');if(
 window.__atelierSyncResponse=(id,code,raw)=>{
  const x=requests.get(id);if(!x)return;requests.delete(id);clearTimeout(x.timeout);
  let body;try{body=JSON.parse(raw)}catch(e){body={error:'Réponse illisible'}};
- if(code>=200&&code<300)x.resolve(body);else x.reject(Error(body.error||'Connexion indisponible'));
+ if(code>=200&&code<300)x.resolve(body);else x.reject(Object.assign(Error(body.error||'Connexion indisponible'),{status:code}));
 };
 function callPc(method,path,data,base=pcUrl){
  return new Promise((resolve,reject)=>{
@@ -374,7 +375,7 @@ function connectedView(root){
  if(online&&error)p.append(el('p',{class:'muted'},'⚠ '+error));
  const refresh=el('button',{class:'action'},'↻ Actualiser');refresh.onclick=syncPull;p.append(refresh);
  if(online)p.append(el('p',{class:'muted'},'Actualisation automatique toutes les 25 secondes pendant que cet écran est ouvert.'));
- if(!online){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
+ if(!online&&!window.atelierOffline?.hasCache){const set=el('button',{class:'action'},'Configurer l’accès au PC');set.onclick=()=>{state.page='settings';save();render()};p.append(set);return;}
  const tabs=el('div',{class:'connected-tabs',role:'group','aria-label':'Rubriques synchronisées'});
  [['calendar','Calendrier'],['tasks','To-Do'],['shopping','Courses'],['recipes','Recettes'],['notes','Notes']].forEach(([key,title])=>{
   const btn=el('button',{type:'button',class:tab===key?'active':''},title);
@@ -400,9 +401,9 @@ function connectedView(root){
   const draw=()=>{results.replaceChildren();pc.recipes.filter(x=>(x.title||'').toLowerCase().includes(search.value.toLowerCase())).slice(0,100).forEach(x=>{const d=el('details',{class:'panel'});d.append(el('summary',{},x.title),el('p',{},x.recipe||x.notes||'Recette enregistrée dans L’Atelier'));results.append(d)})};search.oninput=draw;draw();
  }else if(tab==='notes'){
   const title=el('input',{type:'text',placeholder:'Titre de ma note'}),cat=el('select');
-  ['JDR','Journal','Général','Communication'].forEach(x=>cat.append(el('option',{value:x},x)));
+  ['Général','Journal','Communication','Anglais','Cuisine'].forEach(x=>cat.append(el('option',{value:x},x)));
   const body=el('textarea',{placeholder:'Une idée que je pourrai copier et envoyer…'}),btn=el('button',{class:'action'},'Enregistrer sur mon PC');
-  btn.onclick=async()=>{if(!body.value.trim())return;try{const latest=await callPc('GET','/api/mobile/notes');if(JSON.stringify(latest)!==JSON.stringify(pc.notes)){pc.notes=latest;render();alert('Les notes ont changé sur un autre appareil. Vérifie les nouveautés avant de réenregistrer.');return;}const note={id:'apk-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Sans titre',category:cat.value,content:body.value,updated:new Date().toISOString()};await callPc('POST','/api/mobile/notes',{notes:[...latest,note]});await syncPull()}catch(e){alert('Enregistrement non confirmé : '+e.message)}};
+  btn.onclick=async()=>{if(!body.value.trim())return;try{const latest=await callPc('GET','/api/mobile/notes');if(JSON.stringify(latest)!==JSON.stringify(pc.notes)){pc.notes=latest;render();alert('Les notes ont changé sur un autre appareil. Vérifie les nouveautés avant de réenregistrer.');return;}const note={id:'apk-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Sans titre',category:cat.value,content:body.value,updated:new Date().toISOString()};await callPc('POST','/api/mobile/notes',{notes:[...latest,note]});window.atelierDrafts?.clearCurrent();await syncPull()}catch(e){alert('Enregistrement non confirmé : '+e.message)}};
   p.append(title,cat,body,btn);
   pc.notes.slice().reverse().forEach(n=>{const d=el('details',{class:'panel'}),text=el('p',{},n.content);text.style.userSelect='text';d.append(el('summary',{},'['+n.category+'] '+n.title),text);p.append(d)});
  }else if(tab==='calendar'){
@@ -417,7 +418,7 @@ function connectedView(root){
    if(calendarView==='month')return d.startsWith(a.slice(0,7));
    const date=new Date(d+'T12:00:00'),begin=new Date(selected);begin.setDate(begin.getDate()-(begin.getDay()+6)%7);begin.setHours(0,0,0,0);const end=new Date(begin);end.setDate(end.getDate()+7);return date>=begin&&date<end;
   });
-  events.sort((a,b)=>String(a.instance_date||a.event_date).localeCompare(String(b.instance_date||b.event_date))).forEach(e=>p.append(el('div',{class:'item'},(e.instance_date||e.event_date)+' — '+(e.start_time||'')+' '+e.title)));
+  events.sort((a,b)=>String(a.instance_date||a.event_date).localeCompare(String(b.instance_date||b.event_date))).forEach(e=>{const row=el('div',{class:'item'});row.append(el('span',{},(e.instance_date||e.event_date)+' — '+(e.start_time||'')+' '+e.title));const edit=el('button',{class:'action'},'Modifier');edit.onclick=()=>window.atelierOffline?.editEvent(e);row.append(edit);p.append(row)});
   if(!events.length)p.append(el('p',{class:'muted'},'Aucun rendez-vous pour cette période.'));
   const date=el('input',{type:'date'});date.value=isoDay(selected);const title=el('input',{type:'text',placeholder:'Nouveau rendez-vous'}),btn=el('button',{class:'action'},'Ajouter au calendrier du PC');
   btn.onclick=()=>{if(title.value.trim()&&date.value)syncWrite('POST','/api/events',{title:title.value.trim(),event_date:date.value})};
@@ -468,15 +469,16 @@ function backupSettings(root){
  restoreLast.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.latestSnapshot?.()||'');
  p.append(restoreLast);
  const restoreInitial=el('button',{class:'action',type:'button'},'Retrouver ma copie avant la première mise à jour');
- restoreInitial.onclick=()=>goblinRestoreBackup(window.AtelierAutoBackup?.originalSnapshot?.()||'');
+ restoreInitial.onclick=()=>{let raw=window.AtelierAutoBackup?.originalSnapshot?.()||'';try{const original=JSON.parse(raw),audio=window.AtelierTimers?.originalAudio?.();if(audio){original.kitchenAudio={base64:audio,type:'audio/wav',name:'Beast-Miam-Miam.wav'};raw=JSON.stringify(original)}}catch(_){}goblinRestoreBackup(raw)};
  p.append(restoreInitial);
  p.append(el('p',{class:'muted'},'Important : ces copies automatiques sont privées et restent dans Goblin. Elles sont supprimées si tu désinstalles l’application ou effaces ses données. Pour une protection indépendante, exporte aussi une copie dans Fichiers ou Drive et conserve-la en lieu sûr.'));
  const button=el('button',{class:'action',type:'button'},'Exporter une copie externe (JSON)');
- button.onclick=()=>{
+ button.onclick=async()=>{
   const entries=Object.create(null);
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k!==null)entries[k]=localStorage.getItem(k)}
   const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||'',allLocalStorage:entries};
   payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';
+  if(window.goblinBackupAudio)payload.kitchenAudio=window.goblinBackupAudio;
   const json=JSON.stringify(payload);
   if(window.AtelierBackup?.exportBackup){window.AtelierBackup.exportBackup(json)}
   else{const ta=el('textarea');ta.value=json;p.append(ta);ta.focus();ta.select();alert('Export natif absent : copie ce texte et conserve-le dans un fichier JSON privé.')}
@@ -486,7 +488,7 @@ function backupSettings(root){
  const importFile=el('input',{type:'file',accept:'.json,application/json','aria-label':'Choisir une sauvegarde externe'});
  importFile.onchange=async()=>{
   const file=importFile.files?.[0];if(!file)return;
-  if(file.size>12*1024*1024){alert('Fichier trop volumineux pour être restauré.');return}
+  if(file.size>48*1024*1024){alert('Fichier trop volumineux pour être restauré.');return}
   try{goblinRestoreBackup(await file.text())}catch(e){alert('Lecture de la sauvegarde impossible.')}
   importFile.value='';
  };
@@ -535,7 +537,7 @@ function jdrView(root){
   const now=new Date().toISOString();
   const note={id:editing?.id||'jdr-'+Date.now()+'-'+Math.random().toString(36).slice(2),title:title.value.trim()||'Note sans titre',tags:noteTags(tags.value+' '+title.value+' '+content.value),content:content.value.trim(),created:editing?.created||now,updated:now};
   if(editing)jdrNotes=jdrNotes.map(n=>n.id===editing.id?note:n);else jdrNotes.unshift(note);
-  storeJdr();jdrEdit=null;render();
+  window.atelierDrafts?.clearContainer(editor);storeJdr();jdrEdit=null;render();
  };
  editor.append(title,tags,content,saveBtn);
  if(editing){const cancel=el('button',{type:'button',class:'action'},'Annuler');cancel.onclick=()=>{jdrEdit=null;render()};editor.append(cancel)}
@@ -583,7 +585,7 @@ function jdrView(root){
 /* Offline local timers, Windows-synced recipes. Each countdown has an absolute end time. */
 const kitchenTimerKey='goblin-mobile-kitchen-timers-v1';
 let kitchenTimers=[];try{const v=JSON.parse(localStorage.getItem(kitchenTimerKey)||'[]');if(Array.isArray(v))kitchenTimers=v.filter(t=>t&&Number.isFinite(t.end)&&typeof t.label==='string').slice(0,16)}catch(e){}
-let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=true,kitchenClipAudio=null;
+let recipeFilter='',openedRecipeId=null,recipeBook='',kitchenSoundEnabled=localStorage.getItem('goblin-kitchen-sound-enabled-v1')!=='0',kitchenClipAudio=null;
 function timerSave(){localStorage.setItem(kitchenTimerKey,JSON.stringify(kitchenTimers))}
 function clockTime(ms){const n=Math.max(0,Math.ceil(ms/1000));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(v=>String(v).padStart(2,'0')).join(':')}
 
@@ -731,7 +733,7 @@ function grimoireView(root){
   if(kitchenTimers.length>=16){alert('Maximum 16 minuteurs. Supprime un minuteur terminé.');return}
   const now=Date.now();
   kitchenTimers.push({id:'cook-'+now+'-'+Math.random().toString(36).slice(2),label:label.value.trim().slice(0,80)||'Cuisson',end:now+duration,remaining:duration,running:true,ringing:false});
-  timerSave();render();
+  window.atelierDrafts?.clearContainer(timers);timerSave();render();
   if(openedRecipeId)document.getElementById('kitchenRecipe')?.scrollIntoView({block:'start'});
  };
  timers.append(label,presets,row,add);
@@ -756,7 +758,7 @@ function grimoireView(root){
  };
  timers.append(importer);
  const mute=el('button',{class:'action'},kitchenSoundEnabled?'🔊 Beast Miam Miam activé':'🔇 Son désactivé');
- mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;if(!kitchenSoundEnabled)kitchenStopMiam();render()};
+ mute.onclick=()=>{kitchenSoundEnabled=!kitchenSoundEnabled;localStorage.setItem('goblin-kitchen-sound-enabled-v1',kitchenSoundEnabled?'1':'0');if(!kitchenSoundEnabled)kitchenStopMiam();timerSave();render()};
  timers.append(mute);
  const testMiam=el('button',{class:'action',type:'button'},'▶ Écouter le vrai Miam Miam');
  testMiam.onclick=async()=>{
@@ -766,7 +768,7 @@ function grimoireView(root){
    'Impossible de lire le vrai son : importe d’abord le fichier WAV/MP3, puis vérifie le volume multimédia.';
  };
  timers.append(testMiam);
- timers.append(el('p',{class:'jdr-hint'},'Le fichier audio reste privé sur ce téléphone. Le son est joué dans Goblin quand le minuteur termine ; les alertes natives écran verrouillé sont encore à développer.'));
+ timers.append(el('p',{class:'jdr-hint'},'Le fichier audio reste privé sur ce téléphone. Les alarmes natives demandent les autorisations Android indiquées dans ce panneau.'));
  const alerts=el('p',{id:'kitchenAlerts',class:'jdr-hint'},'');timers.append(alerts);
  kitchenTimers.forEach(t=>{
   const row=el('div',{class:'tool-card'});row.append(el('h3',{},t.label));
@@ -776,7 +778,7 @@ function grimoireView(root){
   const del=el('button',{class:'action'},'Supprimer');del.onclick=()=>{if(t.ringing)kitchenStopMiam();kitchenTimers=kitchenTimers.filter(x=>x.id!==t.id);timerSave();render()};
   row.append(toggle,del);timers.append(row);
  });
- timers.append(el('p',{class:'jdr-hint'},'Important : laisse Goblin ouvert au premier plan pour entendre l’alerte. En arrière-plan ou écran verrouillé, Android peut suspendre le son et les scripts. Le temps restant est recalculé lorsque tu reviens.'));
+ timers.append(el('p',{class:'jdr-hint'},'Vérifie les autorisations ci-dessus puis teste une courte alarme écran verrouillé. Une application arrêtée de force par Android doit être rouverte pour reprendre ses alarmes.'));
  kitchenTick();
 }
 
@@ -858,18 +860,18 @@ function mentalEntries(root,section){
  if(section==='journal'){
  const title=el('input',{type:'text',placeholder:'Titre facultatif'}),ta=mentalTextArea('Tout ce que tu veux déposer ici…');
  const saveBtn=el('button',{class:'action'},'Enregistrer dans mon carnet');
- saveBtn.onclick=()=>{if(!ta.value.trim())return;mentalData.journal.unshift({id:mentalId(),title:title.value.trim(),text:ta.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};panelNode.append(title,ta,saveBtn)
+ saveBtn.onclick=()=>{if(!ta.value.trim())return;mentalData.journal.unshift({id:mentalId(),title:title.value.trim(),text:ta.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});window.atelierDrafts?.clearContainer(panelNode);mentalSave();mentalRefresh()};panelNode.append(title,ta,saveBtn)
  }else{
  const presets=mentalDefault[section].map(([title,prompt],i)=>({id:section+'-'+i,title,prompt,section,default:true}));
  const custom=mentalData.cards.filter(c=>c.section===section);
  const existing=[...presets.map(card=>custom.find(x=>x.id===card.id)||card).filter(c=>!c.deletedAt),
  ...custom.filter(c=>!presets.some(d=>d.id===c.id)&&!c.deletedAt)];
  for(const card of existing){
- const block=el('div',{class:'mental-card'});block.append(el('h3',{},card.title),el('p',{},card.prompt));
+ const block=el('div',{class:'mental-card','data-mental-card':card.id});block.append(el('h3',{},card.title),el('p',{},card.prompt));
  const answers=mentalData.answers.filter(a=>a.cardId===card.id&&!a.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
  const input=mentalTextArea('Ma réponse, juste pour moi…');
  const add=el('button',{class:'action'},'Garder ma réponse');
- add.onclick=()=>{if(!input.value.trim())return;mentalData.answers.unshift({id:mentalId(),cardId:card.id,section,text:input.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});mentalSave();mentalRefresh()};
+ add.onclick=()=>{if(!input.value.trim())return;mentalData.answers.unshift({id:mentalId(),cardId:card.id,section,text:input.value,createdAt:mentalStamp(),updatedAt:mentalStamp()});window.atelierDrafts?.clearContainer(block);mentalSave();mentalRefresh()};
  block.append(input,add);
  {const edit=el('button',{class:'action'},'Modifier la carte'),del=el('button',{class:'action'},'Supprimer la carte');
  const ensure=()=>{let entry=mentalData.cards.find(c=>c.id===card.id);if(!entry){entry={...card,default:false,createdAt:mentalStamp()};mentalData.cards.push(entry)}return entry};
@@ -1090,4 +1092,94 @@ updateUi();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')goblinSnapshot('background')});
 setTimeout(autoCheckGoblin,1800);
 
+/* UTILITY_SYNC_EXTENSION_START */
+/* Durable edits: commit the outbox before clearing a form, then replay with receipts. */
+(()=>{'use strict';
+ const storeKey='goblin-sync-outbox-v2',cacheKey='goblin-sync-cache-v2';let jobs=[],cached=false,draining=false,identity=null,protocol=0;
+ const network=callPc;let noteVersion=null;
+ function load(){try{jobs=JSON.parse(localStorage.getItem(storeKey)||'[]');if(!Array.isArray(jobs))jobs=[]}catch(_){jobs=[]}try{const cache=JSON.parse(localStorage.getItem(cacheKey)||'null');if(cache?.base===pcUrl&&cache.pc){pc=cache.pc;identity=cache.identity||null;cached=true}}catch(_){}}
+ function saveJobs(){const raw=JSON.stringify(jobs);if(raw.length>1500000)throw Error('Les modifications en attente sont trop volumineuses. Reconnecte le PC ou exporte une sauvegarde avant de continuer.');localStorage.setItem(storeKey,raw)}
+ function id(){return 'sync-'+crypto.randomUUID()}
+ function overlay(){for(const key of ['tasks','shopping','events','recipes']){pc[key]=(pc[key]||[]).filter(x=>!String(x.id).startsWith('local-'));for(const row of pc[key])delete row._pending}for(const job of jobs){if(job.base!==pcUrl||job.conflict)continue;const m=job.path.match(/^\/api\/(tasks|shopping|events|recipes)(?:\/(\d+))?$/);if(!m)continue;const rows=pc[m[1]]||[];if(job.method==='POST'){const temp='local-'+job.id;if(!rows.some(x=>x.id===temp))rows.push({...job.data,id:temp,_pending:true})}else{const row=rows.find(x=>String(x.id)===m[2]);if(row)Object.assign(row,job.data,{_pending:true})}}for(const key of ['tasks','shopping','events','recipes'])pc[key]=(pc[key]||[]).filter(x=>!x.archived)}
+ function cache(){try{const clean=JSON.parse(JSON.stringify(pc));for(const key of ['tasks','shopping','events','recipes'])clean[key]=(clean[key]||[]).filter(x=>!String(x.id).startsWith('local-'));localStorage.setItem(cacheKey,JSON.stringify({base:pcUrl,pc:clean,identity}));cached=true}catch(e){error='Cache hors ligne non enregistré : exporte une sauvegarde et libère un peu de place.'}}
+ async function capabilities(){const c=await network('GET','/api/sync/capabilities');if(c.protocol!==2||!c.idempotent_writes||!c.field_conflicts)throw Error('Mets L’Atelier Windows à jour pour envoyer ces modifications en sécurité.');protocol=2;if(identity&&c.installation_id&&identity!==c.installation_id)throw Error('Cette adresse correspond à une autre installation. Les modifications en attente sont conservées.');identity=c.installation_id||identity;return c}
+ async function drain(){if(draining||!pcUrl||!jobs.some(j=>j.base===pcUrl&&!j.conflict))return;draining=true;try{await capabilities();for(const job of [...jobs]){if(job.base!==pcUrl||job.conflict)continue;try{await network(job.method,job.path,{...job.data,_sync:{id:job.id,...(job.method==='PUT'?{base:job.original}:{})}});jobs=jobs.filter(x=>x.id!==job.id);saveJobs()}catch(e){if(e.status===409){job.conflict=e.message;saveJobs();continue}error='Modifications gardées sur ce téléphone : '+e.message;online=false;break}}}catch(e){error=e.message}finally{draining=false;overlay();if(state.page==='connected'&&!syncEditorActive())render()}}
+ callPc=async function(method,path,data,base=pcUrl){
+   if(base===pcUrl&&path==='/api/mobile/notes'){
+     if(method==='GET'){noteVersion=await network('GET','/api/mobile/notes-v2',undefined,base);return noteVersion.notes.filter(n=>!n.deleted_at)}
+     if(method==='POST'){
+       if(!noteVersion)throw Error('Actualise les notes avant de les envoyer. Ton brouillon reste sur le téléphone.');
+       const incoming=data?.notes;if(!Array.isArray(incoming))throw Error('Notes invalides.');
+       const ids=new Set(incoming.map(n=>n.id)),combined=[...incoming,...noteVersion.notes.filter(n=>!ids.has(n.id))];
+       for(const note of incoming)if(noteVersion.notes.some(n=>n.id===note.id&&n.deleted_at)&&!note.deleted_at)throw Error('Cette note est archivée sur le PC. Restaure-la avant de la modifier.');
+       noteVersion=await network('POST','/api/mobile/notes-v2',{revision:noteVersion.revision,notes:combined},base);return {ok:true,count:noteVersion.notes.length};
+     }
+   }
+
+   if(!['POST','PUT'].includes(method)||!/^\/api\/(tasks|shopping|events|recipes)(?:\/\d+)?$/.test(path)||base!==pcUrl)return network(method,path,data,base);
+   if(!pcUrl)throw Error('Configure d’abord ton PC.');
+   const m=path.match(/^\/api\/([^/]+)(?:\/(\d+))?$/),row=m[2]?(pc[m[1]]||[]).find(x=>String(x.id)===m[2]):null,original={};
+   if(method==='PUT'){if(!row)throw Error('Actualise cet élément avant de le modifier.');for(const key of Object.keys(data||{})){if(!(key in row))throw Error('Actualise cet élément avant de modifier '+key+'.');original[key]=row[key]}}
+   const job={id:id(),method,path,data:JSON.parse(JSON.stringify(data||{})),original,base:pcUrl,createdAt:new Date().toISOString()};jobs.push(job);try{saveJobs()}catch(e){jobs.pop();throw e}overlay();error='Modification conservée sur le téléphone, en attente de confirmation du PC.';drain();return {queued:true,id:'local-'+job.id};
+ };
+ const previousPull=syncPull;syncPull=async function(options={}){if(options.quiet&&(document.visibilityState==='hidden'||syncEditorActive()))return;await previousPull(options);if(online){try{await capabilities()}catch(e){error=e.message}cache();overlay();await drain()}else overlay();if(!options.quiet&&!syncEditorActive())render()};
+ async function editEvent(item){if(String(item.id).startsWith('local-')){alert('Cette création doit d’abord être confirmée par le PC.');return}if(item.recurrence&&item.recurrence!=='none'){alert('Modifie cette série ou son occurrence depuis le calendrier Windows pour conserver ses règles de répétition.');return}const title=prompt('Titre du rendez-vous',item.title||'');if(title===null)return;const date=prompt('Date (AAAA-MM-JJ)',item.event_date||item.instance_date||'');if(date===null)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('Date invalide.');return}const time=prompt('Heure (HH:MM), vide si sans horaire',item.start_time||'');if(time===null)return;if(time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){alert('Heure invalide.');return}try{await callPc('PUT','/api/events/'+item.id,{title:title.trim()||item.title,event_date:date,start_time:time||null});render()}catch(e){alert(e.message)}}
+ const previousConnected=connectedView;
+ connectedView=function(root){previousConnected(root);const box=panel(root,'Modifications conservées sur ce téléphone');box.id='syncOutboxPanel';const pending=jobs.filter(j=>j.base===pcUrl);box.append(el('p',{class:'muted'},pending.length?pending.length+' modification(s) en attente ou en conflit.':'Toutes les modifications envoyées ont été confirmées par le PC.'));
+   const retry=el('button',{class:'action'},'Réessayer la synchronisation');retry.onclick=async()=>{await drain();await syncPull()};box.append(retry);
+   for(const job of pending){const line=el('div',{class:'panel'});line.append(el('strong',{},job.data.title||job.data.name||job.path),el('p',{class:'muted'},job.conflict||'En attente de connexion.'));
+    if(job.conflict){const keepPc=el('button',{class:'action'},'Garder la version du PC');keepPc.onclick=()=>{if(!confirm('Abandonner cette modification locale et garder la version du PC ?'))return;jobs=jobs.filter(x=>x.id!==job.id);saveJobs();syncPull()};const keepMine=el('button',{class:'action'},'Revoir et envoyer ma version');keepMine.onclick=async()=>{if(!confirm('Relire la version du PC puis envoyer les champs de ta version locale ?'))return;try{await previousPull();const m=job.path.match(/^\/api\/([^/]+)\/(\d+)$/),current=(pc[m[1]]||[]).find(x=>String(x.id)===m[2]);if(!current)throw Error('L’élément n’existe plus sur le PC. Exporte ta sauvegarde pour garder le texte.');job.original=Object.fromEntries(Object.keys(job.data).map(k=>[k,current[k]]));job.id=id();delete job.conflict;saveJobs();await drain();await syncPull()}catch(e){alert(e.message)}};line.append(keepPc,keepMine)}box.append(line)}
+   for(const [index,label] of [...root.querySelectorAll('label.item')].entries()){
+     const item=(pc[tab]||[])[index];if(!item||!['tasks','shopping'].includes(tab))continue;const checkbox=label.querySelector('input[type=checkbox]');
+     if(String(item.id).startsWith('local-')){checkbox.disabled=true;label.append(el('small',{},' · création en attente'));continue}
+     const edit=el('button',{type:'button',class:'action'},'Modifier');edit.onclick=async event=>{event.preventDefault();event.stopPropagation();const text=prompt(tab==='tasks'?'Nom de la tâche':'Nom de l’article',item.title||item.name||'');if(text===null||!text.trim())return;const data=tab==='tasks'?{title:text.trim()}:{name:text.trim()};if(tab==='shopping'){const quantity=prompt('Quantité',item.quantity||'');if(quantity===null)return;data.quantity=quantity}try{await callPc('PUT','/api/'+tab+'/'+item.id,data);render()}catch(e){alert(e.message)}};
+     const remove=el('button',{type:'button',class:'action'},'Archiver');remove.onclick=async event=>{event.preventDefault();event.stopPropagation();if(!confirm('Archiver cet élément sur le PC ?'))return;try{await callPc('PUT','/api/'+tab+'/'+item.id,{archived:true});render()}catch(e){alert(e.message)}};label.append(edit,remove);
+   }
+
+ };
+ const previousGrimoire=grimoireView;grimoireView=function(root){previousGrimoire(root);const active=pc.recipes.find(x=>String(x.id)===openedRecipeId);if(active){const edit=el('button',{class:'action'},'Modifier cette recette');edit.onclick=async()=>{const title=prompt('Nom de la recette',active.title||'');if(title===null)return;const recipe=prompt('Préparation',active.recipe||'');if(recipe===null)return;try{await callPc('PUT','/api/recipes/'+active.id,{title:title.trim()||active.title,recipe});render()}catch(e){alert(e.message)}};root.querySelector('#kitchenRecipe')?.append(edit)}};
+ document.addEventListener('click',event=>{const button=event.target.closest?.('[data-page]');if(!pcUrl||!button||!['tasks','shopping','calendar'].includes(button.dataset.page))return;event.preventDefault();event.stopImmediatePropagation();tab=button.dataset.page;state.page='connected';save();render();syncPull({quiet:true})},true);
+ window.atelierOffline={editEvent,get hasCache(){return cached},get pending(){return jobs},apply:overlay,drain};load();overlay();
+ window.addEventListener('online',()=>{drain();syncPull({quiet:true})});setInterval(()=>{if(document.visibilityState==='visible'&&!syncEditorActive())drain()},15000);
+ if(pcUrl){syncPull({quiet:true})}render();
+})();
+
+/* UTILITY_SYNC_EXTENSION_END */
+/* UTILITY_TIMERS_EXTENSION_START */
+(()=>{'use strict';
+ const native=window.AtelierTimers;let nativeStatus={exact:false,notifications:false,audio:false};
+ const read=()=>{try{nativeStatus=native?JSON.parse(native.status()):nativeStatus}catch(_){}};read();
+ function syncNative(){if(!native)return;try{const result=JSON.parse(native.sync(JSON.stringify(kitchenTimers.map(t=>({...t,sound:kitchenSoundEnabled})))));if(result.error)nativeStatus.error=result.error;else nativeStatus=result}catch(_){nativeStatus.error='Alarme native indisponible.'}}
+ const previousSave=timerSave;timerSave=function(){previousSave();syncNative()};
+ const previousPlay=kitchenPlayMiam;kitchenPlayMiam=async function(preview=false){read();if(!preview&&nativeStatus.exact&&nativeStatus.audio)return true;const played=await previousPlay(preview);if(played&&!preview&&native)for(const t of kitchenTimers.filter(t=>t.ringing))native.acknowledge(t.id,t.end);return played};
+ function bytes(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
+ async function captureAudio(){try{const clip=await kitchenStoredMiam();if(clip?.blob){const base64=await bytes(clip.blob);window.goblinBackupAudio={base64,type:clip.blob.type||'audio/wav',name:clip.name||'Beast Miam Miam'};if(native&&!native.saveAudio(base64))throw Error('Copie native du son refusée.');read();goblinSnapshot('manual')}}catch(e){nativeStatus.error='La copie du son reste à vérifier : '+e.message}}
+ window.goblinRestoreAudio=async function(audio){if(!audio?.base64||audio.base64.length>17000000)throw Error('Fichier audio de sauvegarde invalide.');const raw=Uint8Array.from(atob(audio.base64),c=>c.charCodeAt(0)),file=new File([raw],audio.name||'Beast-Miam-Miam.wav',{type:audio.type||'audio/wav'});await kitchenImportMiam(file);if(native&&!native.saveAudio(audio.base64))throw Error('Restauration du son natif impossible.');window.goblinBackupAudio=audio};
+ const previousImport=kitchenImportMiam;kitchenImportMiam=async function(file){const result=await previousImport(file);await captureAudio();return result};
+ const previousView=grimoireView;grimoireView=function(root){previousView(root);const panel=document.getElementById('kitchenTimerPanel');if(!panel)return;read();const status=el('p',{id:'nativeTimerStatus',class:'jdr-hint',role:'status'});status.textContent=!native?'Cette édition utilise le minuteur au premier plan.':nativeStatus.error||((nativeStatus.exact?'Alarmes précises Android activées. ':'Autorise les alarmes précises pour être avertie écran verrouillé. ')+(nativeStatus.notifications?'Notifications activées. ':'Autorise les notifications Android. ')+(nativeStatus.audio?'Le vrai Miam Miam est disponible pour l’alarme native.':'Importe le vrai Miam Miam pour avoir son alerte sonore.'));panel.prepend(status);
+   if(native&&!nativeStatus.exact){const allow=el('button',{class:'action'},'Autoriser les alarmes précises Android');allow.onclick=()=>native.requestExactPermission();panel.prepend(allow)}if(native&&!nativeStatus.notifications){const allow=el('button',{class:'action'},'Autoriser les notifications');allow.onclick=()=>window.AtelierUpdates?.enableUpdateNotifications?.();panel.prepend(allow)}
+ };
+ window.atelierNativeTimersResume=()=>{read();syncNative();if(state.page==='grimoire'&&!syncEditorActive())render()};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')window.atelierNativeTimersResume()});
+ captureAudio();syncNative();
+})();
+
+/* UTILITY_TIMERS_EXTENSION_END */
+/* UTILITY_DRAFTS_EXTENSION_START */
+/* Unsubmitted text is a local draft, not an implicit synchronization. */
+(()=>{'use strict';const key='goblin-editor-drafts-v1';let drafts={};try{drafts=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){}
+ const context=()=>JSON.stringify([state.page,state.page==='connected'?tab:'',state.page==='jdr'&&typeof jdrEdit==='string'?jdrEdit:'',state.page==='mental'?mentalCategory:'',state.page==='grimoire'&&typeof openedRecipeId==='string'?openedRecipeId:'']);
+ const fields=root=>[...root.querySelectorAll('input,textarea,select')].filter(n=>!['file','password','checkbox','radio','button','submit','search'].includes(n.type));
+ function signature(node){const card=node.closest('[data-mental-card]')?.dataset.mentalCard||'',name=node.getAttribute('aria-label')||node.getAttribute('placeholder')||node.name||node.id||node.type;const peers=fields(node.closest('[data-mental-card]')||document.getElementById('content')).filter(n=>(n.getAttribute('aria-label')||n.getAttribute('placeholder')||n.name||n.id||n.type)===name);return card+'|'+name+'|'+peers.indexOf(node)}
+ function persist(){try{localStorage.setItem(key,JSON.stringify(drafts))}catch(_){const subtitle=document.getElementById('subtitle');if(subtitle)subtitle.textContent='Le brouillon ne peut pas être enregistré. Garde cette page ouverte et copie ton texte.'}}
+ function restore(){const root=document.getElementById('content'),saved=drafts[context()]||{};if(!root)return;let count=0;for(const node of fields(root)){const value=saved[signature(node)];if(typeof value==='string'){node.value=value;count++}}if(count&&!root.querySelector('#editorDraftNotice')){const box=el('div',{class:'panel',id:'editorDraftNotice',role:'status'});box.append(el('p',{class:'muted'},'Brouillon local retrouvé. Tes champs ne sont partagés qu’après leur enregistrement.'));const clear=el('button',{class:'action'},'Effacer le brouillon de cette page');clear.onclick=()=>{if(!confirm('Effacer les champs non enregistrés de cette page ?'))return;delete drafts[context()];persist();render()};box.append(clear);root.prepend(box)}
+   const others=Object.keys(drafts).filter(k=>k!==context()&&Object.keys(drafts[k]||{}).length).filter(k=>{try{return JSON.parse(k)[0]===state.page||state.page==='settings'}catch(_){return false}});
+   if(others.length){const box=el('div',{class:'panel'});box.append(el('p',{class:'muted'},'D’autres brouillons sont conservés sur ce téléphone.'));for(const k of others.slice(0,15)){const data=JSON.parse(k),button=el('button',{class:'action'},'Reprendre un brouillon · '+({jdr:'Notes',mental:'Carnet personnel',connected:'Atelier synchronisé',grimoire:'Cuisine'}[data[0]]||data[0]));button.onclick=()=>{state.page=data[0];if(data[1])tab=data[1];jdrEdit=data[2]||null;if(data[3])mentalCategory=data[3];openedRecipeId=data[4]||null;save();render()};box.append(button)}root.prepend(box)}
+ }
+
+ document.addEventListener('input',e=>{const node=e.target;if(!node.closest?.('#content')||!fields(node.closest('#content')).includes(node))return;(drafts[context()]||=Object.create(null))[signature(node)]=node.value;persist()},true);
+ window.atelierDrafts={clearCurrent(){delete drafts[context()];persist()},clearContainer(root){const saved=drafts[context()];if(!saved||!root)return;for(const node of fields(root))delete saved[signature(node)];if(!Object.keys(saved).length)delete drafts[context()];persist()}};
+ const previous=render;render=function(){previous();restore()};restore();
+})();
+
+/* UTILITY_DRAFTS_EXTENSION_END */
 </script></body></html>

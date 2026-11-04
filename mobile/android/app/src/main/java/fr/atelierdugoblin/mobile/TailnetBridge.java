@@ -36,12 +36,12 @@ public final class TailnetBridge {
                 uri.getRawQuery() != null || uri.getRawFragment() != null) return false;
             if (!method.equals("GET") && !method.equals("POST") && !method.equals("PUT")) return false;
             if (path.contains("..") || path.contains("//") || path.contains("#")) return false;
-            if (method.equals("GET")) return path.equals("/api/tasks") || path.equals("/api/shopping") ||
-                path.equals("/api/mobile/notes") || path.equals("/api/mobile/mental") || path.equals("/api/recipes") ||
+            if (method.equals("GET")) return path.equals("/api/sync/capabilities") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
+                path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/recipes") ||
                 path.matches("^/api/events\\?start=[0-9]{4}-[0-9]{2}-[0-9]{2}&end=[0-9]{4}-[0-9]{2}-[0-9]{2}$");
             if (method.equals("POST")) return path.equals("/api/tasks") || path.equals("/api/shopping") ||
-                path.equals("/api/mobile/notes") || path.equals("/api/mobile/mental") || path.equals("/api/events");
-            return path.matches("^/api/(tasks|shopping)/[0-9]+$");
+                path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/events");
+            return path.matches("^/api/(tasks|shopping|events|recipes)/[0-9]+$");
         } catch (Exception e) { return false; }
     }
 
@@ -49,7 +49,7 @@ public final class TailnetBridge {
         try (InputStream input = stream; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buf = new byte[4096]; int n;
             while ((n = input.read(buf)) != -1) {
-                if (out.size() + n > 2000000) throw new IllegalStateException("Réponse trop grande");
+                if (out.size() + n > 8000000) throw new IllegalStateException("Réponse trop grande");
                 out.write(buf, 0, n);
             }
             return out.toString("UTF-8");
