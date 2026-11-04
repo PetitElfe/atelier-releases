@@ -1,7 +1,7 @@
 name: Utility data safety and conflict protection TEST
 on:
   push:
-    branches: [test/utility-finish-20261104]
+    branches: [test/utility-complete-20261104]
 permissions:
   contents: read
 jobs:

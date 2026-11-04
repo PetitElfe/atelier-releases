@@ -86,7 +86,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const reminders=Array.isArray(e?.reminders)
     ? e.reminders
     : e?.id
-      ? state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(e.id)&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at||'').slice(0,16)}))
+      ? (state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(e.id)&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at||'').slice(0,16)}))
       : [];
   // Une occurrence de série affiche les rappels à sa date effective,
   // sans modifier les rappels modèles de la série.

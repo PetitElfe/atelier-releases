@@ -76,7 +76,7 @@ function bindCalendarDropTarget(cell,date,time=null){
       const base=new Date(`${event.event_date}T${event.start_time||'00:00'}`);
       const shiftedBase=new Date(base.getTime()+delta);
       const localDateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      const shifted=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+      const shifted=(state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
         .map(r=>({title:r.title||'',remind_at:localDateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
       const result=await runUiAction('Impossible de déplacer la série',()=>api(`/api/events/${event.id}`,{
         method:'PUT',body:JSON.stringify({event_date:ymd(shiftedBase),start_time:pad(shiftedBase.getHours())+':'+pad(shiftedBase.getMinutes()),reminders:shifted})
@@ -91,7 +91,7 @@ function bindCalendarDropTarget(cell,date,time=null){
       const nextDate=new Date(`${date}T${allDay?'00:00':newTime}`);
       const delta=nextDate.getTime()-oldDate.getTime();
       const dateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      const remind=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+      const remind=(state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
         .map(r=>({title:r.title||'',remind_at:dateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
       let endTime=event.end_time||null;
       if(!allDay&&event.end_time){

@@ -13,6 +13,7 @@ from urllib.parse import urlparse,parse_qs
 import xml.etree.ElementTree as ET
 import updater
 import utility_safety
+import reminder_occurrences
 
 DATA=updater.DATA
 SCRIPT=Path(__file__).with_name('native_toasts.ps1')
@@ -89,7 +90,8 @@ def send(title,token,*,test=False):
 
 
 def due_rows(c,now):
-    return c.execute("SELECT r.* FROM reminders r LEFT JOIN native_reminder_delivery d ON d.reminder_id=r.id AND d.due_key=COALESCE(r.snoozed_until,r.remind_at) WHERE r.status='pending' AND COALESCE(r.snoozed_until,r.remind_at)<=? AND d.sent_at IS NULL ORDER BY COALESCE(r.snoozed_until,r.remind_at) LIMIT 100",(now,)).fetchall()
+    rows=reminder_occurrences.all_reminders(c,datetime.fromisoformat(now))
+    return [r for r in rows if (r.get('snoozed_until') or r['remind_at'])<=now and not c.execute('SELECT 1 FROM native_reminder_delivery WHERE reminder_id=? AND due_key=? AND sent_at IS NOT NULL',(r['id'],r.get('snoozed_until') or r['remind_at'])).fetchone()]
 
 
 def maintenance(data):
@@ -141,20 +143,13 @@ def activate(data,uri):
     with _connect(data) as c:
         c.execute('BEGIN IMMEDIATE');delivery=c.execute('SELECT * FROM native_reminder_delivery WHERE token=?',(token,)).fetchone()
         if not delivery or delivery['used']:return False
-        r=c.execute('SELECT * FROM reminders WHERE id=?',(delivery['reminder_id'],)).fetchone()
+        r=reminder_occurrences.get(c,delivery['reminder_id'])
         if not r or r['status']!='pending' or (r['snoozed_until'] or r['remind_at'])!=delivery['due_key']:return False
         c.execute('UPDATE native_reminder_delivery SET used=1 WHERE token=?',(token,))
         now=datetime.now().isoformat(timespec='seconds')
-        if action in ('10','30','60'):c.execute("UPDATE reminders SET snoozed_until=?,status='pending' WHERE id=?",((datetime.now()+timedelta(minutes=int(action))).isoformat(timespec='seconds'),r['id']))
-        else:
-            if action=='finish' and r['entity_type']=='task':
-                c.execute('UPDATE tasks SET completed=1,updated_at=? WHERE id=?',(now,r['entity_id']))
-                import progression,objective_maps
-                progression.award(c,source_kind='task',source_id=r['entity_id']);objective_maps.reconcile_automatic(c,progression,now)
-            elif action=='finish' and r['entity_type']=='event':
-                # Never finish an entire recurring series from an old notification.
-                c.execute("UPDATE events SET status='done',updated_at=? WHERE id=? AND recurrence='none'",(now,r['entity_id']))
-            c.execute("UPDATE reminders SET status='done' WHERE id=?",(r['id'],))
+        if action in ('10','30','60'):
+            reminder_occurrences.update(c,r['id'],'snooze',when=(datetime.now()+timedelta(minutes=int(action))).isoformat(timespec='seconds'))
+        else:reminder_occurrences.update(c,r['id'],'finish' if action=='finish' else 'done')
     return True
 
 

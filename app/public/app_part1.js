@@ -67,6 +67,7 @@ async function refresh(){
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
     ['tasks',api('/api/tasks')],
     ['reminders',api('/api/reminders')],
+    ['reminderRules',api('/api/reminders?templates=1')],
     ['preparationsUpcoming',api('/api/preparations/upcoming')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],

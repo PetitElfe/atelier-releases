@@ -283,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
         if p == '/api/sync/capabilities':
-            return self._json({'protocol':2,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
+            return self._json({'protocol':2,'reminder_occurrences':True,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
         if p == '/api/native-reminders/status':
             return self._json(native_reminders.status(DATA))
         if p == '/api/safety/status':
@@ -630,45 +630,31 @@ class Handler(BaseHTTPRequestHandler):
                                     WHERE r.archived=0
                                     ORDER BY m.created_at DESC,m.id DESC''').fetchall()
                 return self._json([dict(r) for r in rows])
-            if p == '/api/reminders':
-                rows = c.execute('''
-                    SELECT * FROM reminders
-                    WHERE status != 'done'
-                    ORDER BY COALESCE(snoozed_until,remind_at),id
-                ''').fetchall()
-                data=[]
-                for row in rows:
-                    item=dict(row); item['entity_title']=''
-                    if item['entity_type']=='event':
-                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
-                        item['entity_title']=linked['title'] if linked else ''
-                    elif item['entity_type']=='task':
-                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
-                        item['entity_title']=linked['title'] if linked else ''
-                    data.append(item)
-                return self._json(data)
-            if p == '/api/reminders/due':
-                now = q.get('now', [now_iso()])[0]
-                rows = c.execute('''
-                    SELECT * FROM reminders
-                    WHERE status='pending' AND COALESCE(snoozed_until,remind_at) <= ?
-                    ORDER BY COALESCE(snoozed_until,remind_at), id
-                ''', (now,)).fetchall()
-                data=[]
-                for row in rows:
-                    item=dict(row); item['entity_title']=''
-                    if item['entity_type']=='event':
-                        linked=c.execute('SELECT title FROM events WHERE id=?',(item['entity_id'],)).fetchone()
-                        item['entity_title']=linked['title'] if linked else ''
-                    elif item['entity_type']=='task':
-                        linked=c.execute('SELECT title FROM tasks WHERE id=?',(item['entity_id'],)).fetchone()
-                        item['entity_title']=linked['title'] if linked else ''
-                    data.append(item)
-                return self._json(data)
+            if p in ('/api/reminders','/api/reminders/due'):
+                if q.get('templates',['0'])[0]=='1':
+                    return self._json([dict(r) for r in c.execute("SELECT * FROM reminders WHERE status!='done'")])
+                try:
+                    moment=datetime.fromisoformat(q.get('now',[now_iso()])[0])
+                    if moment.tzinfo is not None:raise ValueError()
+                    rows=reminder_occurrences.all_reminders(c,moment);c.commit()
+                    for row in rows:row['trigger_at_ms']=int(datetime.fromisoformat(row.get('snoozed_until') or row['remind_at']).timestamp()*1000)
+                    if p.endswith('/due'):rows=[r for r in rows if (r.get('snoozed_until') or r['remind_at'])<=moment.isoformat(timespec='seconds')]
+                    return self._json(rows)
+                except (ValueError,TypeError):return self._json({'error':'Date de rappel invalide.'},400)
         return self._json({'error':'not found'},404)
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if p == '/api/reminders/mobile-action':
+            origin=self.headers.get('Origin','')
+            if origin and origin!=f'http://{HOST}:{PORT}':return self._json({'error':'Origine refusée'},403)
+            try:
+                body=self._body()
+                with conn() as c:
+                    c.execute('BEGIN IMMEDIATE');result=reminder_occurrences.mobile_action(c,body);c.commit()
+                return self._json(result)
+            except LookupError as exc:return self._json({'error':str(exc),'conflict':True},409)
+            except (ValueError,TypeError,OverflowError) as exc:return self._json({'error':str(exc)},400)
         if p in ('/api/native-reminders/enable','/api/native-reminders/test'):
             if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Native')!='1':return self._json({'error':'Ouvre ces réglages depuis les Paramètres de cette installation.'},403)
             try:
@@ -2094,34 +2080,16 @@ class Handler(BaseHTTPRequestHandler):
                           (d['title'],book_id,d.get('notes',''),d.get('recipe',''),max(1,int_or_none(d.get('base_servings')) or 1),
                            d.get('ingredients_json','[]'),d.get('image_data',''),d.get('source_url',''),1 if d.get('archived') else 0,ts,iid))
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
-            if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
-                rid=int(parts[2])
-                rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
-                if not rem: return self._json({'error':'Rappel introuvable.'},404)
-                title=(body.get('title') or '').strip()
-                remind_at=(body.get('remind_at') or '').strip()
-                if rem['entity_type']=='standalone' and not title:
-                    return self._json({'error':'Le titre du rappel est requis.'},400)
-                if not remind_at: return self._json({'error':'La date et l’heure du rappel sont requises.'},400)
-                c.execute("UPDATE reminders SET title=?,remind_at=?,snoozed_until=NULL,status='pending' WHERE id=?",(title,remind_at,rid))
-                utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
-            if len(parts)==4 and parts[0]=='api' and parts[1]=='reminders':
-                rid=int(parts[2]); action=parts[3]
-                if action=='done':
-                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,)); utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
-                if action=='finish':
-                    rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
-                    if not rem: return self._json({'error':'not found'},404)
-                    if rem['entity_type']=='task':
-                        c.execute("UPDATE tasks SET completed=1,updated_at=? WHERE id=?",(ts,rem['entity_id']))
-                    elif rem['entity_type']=='event':
-                        c.execute("UPDATE events SET status='done',updated_at=? WHERE id=?",(ts,rem['entity_id']))
-                    c.execute("UPDATE reminders SET status='done' WHERE id=?",(rid,))
-                    utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
-                if action=='snooze':
-                    val=body.get('snoozed_until')
-                    if not val: return self._json({'error':'snoozed_until required'},400)
-                    c.execute("UPDATE reminders SET status='pending',snoozed_until=? WHERE id=?",(val,rid)); utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
+            if len(parts) in (3,4) and parts[0]=='api' and parts[1]=='reminders':
+                try:
+                    rid=int(parts[2]);action=parts[3] if len(parts)==4 else 'edit'
+                    title=(body.get('title') or '').strip()
+                    rem=reminder_occurrences.get(c,rid)
+                    if not rem:return self._json({'error':'Rappel introuvable.'},404)
+                    if action=='edit' and rem['entity_type']=='standalone' and not title:return self._json({'error':'Le titre du rappel est requis.'},400)
+                    reminder_occurrences.update(c,rid,action,when=body.get('snoozed_until') if action=='snooze' else body.get('remind_at'),title=title)
+                    utility_sync.record(c,sync_lease);c.commit();return self._json({'ok':True})
+                except (ValueError,TypeError) as exc:return self._json({'error':str(exc)},400)
         return self._json({'error':'not found'},404)
 
 
@@ -2219,9 +2187,10 @@ class Handler(BaseHTTPRequestHandler):
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='reminders':
                 rid=int(parts[2])
-                rem=c.execute('SELECT * FROM reminders WHERE id=?',(rid,)).fetchone()
+                rem=reminder_occurrences.get(c,rid)
                 if not rem: return self._json({'error':'Rappel introuvable.'},404)
-                c.execute('DELETE FROM reminders WHERE id=?',(rid,))
+                if rid<0:reminder_occurrences.update(c,rid,'done')
+                else:c.execute('DELETE FROM reminders WHERE id=?',(rid,))
                 c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='meal-ideas':
                 iid=int(parts[2])

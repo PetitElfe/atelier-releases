@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "1668f53bf1d6c8d0b562db89e8de8002a98294ee70375e2be2c5ff9b2804dc79"
+      "sha256": "a723f2562f82b16075060bbf60cbb7d8c3b884ed67acac796b0cbd35c6205878"
     },
     {
       "path": "app_part2.py",
-      "sha256": "54218ff624227d246725e165d750a6801c003d7bacade92d65dea82e88984c54"
+      "sha256": "92c638c03e33d824896661f6fd6ae2306c47ddf24532c39412e94b05b8f61eca"
     },
     {
       "path": "app_part3.py",
@@ -53,7 +53,7 @@
     },
     {
       "path": "native_reminders.py",
-      "sha256": "cddbd6a6a16b27ddc278cf8221902f8c7871be7724c3abd1e25357c4c468249c"
+      "sha256": "06077ce7b423b02f740047e78a2d1f0290285619f951d0d35a733ec30f80e9b4"
     },
     {
       "path": "native_toasts.ps1",
@@ -73,15 +73,15 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "e1b8836b7ec9be7c8fffc224ca84e45c6264989471167349f9f2da65d37ea651"
+      "sha256": "603896da9dbdb0d4fa2888bbefb9028676d78d854d1148b5ff4c7d06bfcfb732"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "7265e162b93e54738dea4f1243b27458e16fd1a99a5a02057c8b7a2193217a48"
+      "sha256": "51050b16b38d4cd6b6c0a058d51e39306815aa6a03df18a40f31569c47dc28bf"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "0b29061cbe30bdd788d490b1600fe085e7eef9e3dde5d0139c0afd3a21d04ec2"
+      "sha256": "132add6bf93131c4d6255c8398957cf5f3bf21c19f1b5cf12381c5d7f94b50de"
     },
     {
       "path": "public/big_refonte.css",
@@ -298,8 +298,12 @@
     {
       "path": "public/kitchen_timers.js",
       "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
+    },
+    {
+      "path": "reminder_occurrences.py",
+      "sha256": "f89bf095a611b25911ab6b9819dbe364ed44bdc25be8e7f259fe31d53c40a5b4"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
-  "build_sequence": 2026110401
+  "build_sequence": 2026110402
 }
