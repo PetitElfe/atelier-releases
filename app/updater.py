@@ -118,12 +118,21 @@ def _latest_revision():
         except Exception as exc:reasons.append('Git : '+str(exc))
     raise RuntimeError('Révision GitHub indisponible : '+'; '.join(reasons)[:230])
 
+def _prevent_downgrade(installed,target):
+    previous=installed.get('build_sequence',0);incoming=target.get('build_sequence',0)
+    if type(previous) is not int or type(incoming) is not int or previous<0 or incoming<0:
+        raise RuntimeError('Numéro de livraison invalide.')
+    if incoming<previous:
+        raise RuntimeError('GitHub propose une livraison plus ancienne que celle installée. Aucune mise à jour appliquée ; réessaie lorsque le canal TEST sera actualisé.')
+
+
 def check():
     guard()
     revision=_latest_revision()
     remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
     local_manifest=(CODE/'manifest.json').read_bytes()
     installed=_manifest(local_manifest)
+    _prevent_downgrade(installed,remote)
     installed_build=_sha(local_manifest.replace(b'\r\n',b'\n'))[:8]
     old={x['path']:x['sha256'] for x in installed['files']}
     new={x['path']:x['sha256'] for x in remote['files']}
@@ -141,6 +150,7 @@ def _stage(revision):
         target=_manifest(data)
         remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
         if target!=remote: raise RuntimeError('Manifeste distant différent.')
+        _prevent_downgrade(_manifest((CODE/'manifest.json').read_bytes()),target)
         files={};total=0
         for entry in target['files']:
             rel=entry['path'];info=z.getinfo(prefix+'app/'+rel)

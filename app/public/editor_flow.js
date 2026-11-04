@@ -6,6 +6,8 @@
       if(modal.classList.contains('hidden'))return;
       requestAnimationFrame(()=>{
         const field=modal.querySelector('#modalBody input:not([type=hidden]):not([type=checkbox]):not([type=file]), #modalBody textarea');
+        // A user may already have selected another field before this frame.
+        if(modal.contains(document.activeElement)&&document.activeElement.matches('input,textarea,select,[contenteditable=true]'))return;
         if(field&&!field.disabled&&field.getClientRects().length)field.focus({preventScroll:true});
       });
     }).observe(modal,{attributes:true,attributeFilter:['class']});

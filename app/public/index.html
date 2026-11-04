@@ -64,7 +64,7 @@
       <button data-view="trackers">Trackers</button>
       <button type="button" id="openMentalNotebook" onclick="window.open('/mental-health.html','_blank','noopener')">Carnet de santé mentale</button>
       <button data-view="admin">Administratif</button>
-      <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
+      <button data-view="captures">Notes et captures <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -447,7 +447,7 @@
       </section>
     </section>
     <section id="capturesView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
+      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Notes et captures</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
       <div id="captureInbox" class="life-card-list"></div>
     </section>
     <section id="settingsView" class="view settings-view">
@@ -557,6 +557,7 @@
               <span>Notifications Brave / Windows</span>
               <strong id="settingsNotificationStatus">—</strong>
             </div>
+            <div id="nativeReminderControls"><p id="nativeReminderStatus" role="status">Vérification des rappels natifs…</p><button id="nativeReminderEnable" type="button">Activer les rappels Windows via le compagnon</button><button id="nativeReminderTest" type="button">Tester une notification Windows</button></div>
             <button id="settingsNotificationPermission" type="button">Autoriser les notifications</button>
             <label class="settings-toggle">
               <input id="settingsNotificationPersistent" type="checkbox">
@@ -584,6 +585,14 @@
               <span class="settings-card-icon">✦</span>
               <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
             </div>
+          </section>
+          <section class="settings-card" id="settingsSafetyCard">
+            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">↺</span><div><h3>Sauvegardes et diagnostic</h3><p>Conserver une copie complète et récupérer ses données.</p></div></div>
+            <p>Une copie automatique est créée au démarrage. La première copie complète est conservée ; les copies récentes et une copie par jour sur 30 jours sont gardées.</p>
+            <div class="safety-actions"><button id="safetyExport" type="button">Exporter toutes mes données</button><button id="safetySnapshot" type="button">Sauvegarder maintenant</button><button id="safetyChoose" type="button">Vérifier une sauvegarde à restaurer</button><input hidden type="file" accept="application/json,.json" id="safetyFile"></div>
+            <p>Le fichier exporté contient aussi tes documents et carnets privés. Garde-le dans un emplacement personnel, sur un autre support si possible.</p>
+            <label><input type="checkbox" id="safetyNewProfile"> Cette installation est nouvelle et vide : autoriser la récupération d’une ancienne copie de la même édition.</label><div id="safetyRestorePreview" hidden></div><p id="safetyMessage" role="status" aria-live="polite"></p>
+            <button type="button" id="safetyRefresh">Actualiser le diagnostic</button><button type="button" id="safetyExportDiagnostics">Exporter le diagnostic sans mes contenus</button><button type="button" id="safetyRestart">Redémarrer l’application</button><pre id="safetyDiagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
           </section>
           <section class="settings-card" id="settingsPersonalDesignCard">
             <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">✎</span><div><h3>Mes dessins</h3><p>Habille L’Atelier avec tes propres créations.</p></div></div>
@@ -655,6 +664,7 @@
     <div class="quick-capture-foot"><span id="quickCaptureDestination">Destination : Carnet</span><button id="quickCaptureSend" type="button" class="primary">Envoyer</button></div>
     </div>
   </div>
+  <script src="/safety_boot.js"></script>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/postits.js"></script>
@@ -673,5 +683,10 @@
   <script src="/calendar_decor.js"></script>
   <script src="/personal_design.js"></script>
   <script src="/recipe_shelves.js"></script>
+  <script src="/kitchen_timers.js"></script>
+  <script src="/utility_safety.js"></script>
+  <script src="/utility_notes.js"></script>
+  <script src="/utility_live.js"></script>
+  <script src="/native_reminders.js"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import tempfile
 import time
 import unittest
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -120,7 +121,16 @@ class WindowsDeliveryInstallTests(unittest.TestCase):
                 self.assertTrue((backups[0] / 'data/atelier.db').is_file())
                 self.assertTrue((backups[0] / 'code_avant/manifest.json').is_file())
                 # Check through the running application: no downgrade to the shared channel.
-                check = api('/api/update/check')
+                try:check = api('/api/update/check')
+                except HTTPError as error:
+                    # The isolated candidate may intentionally be newer than the
+                    # personal delivery branch until its reviewed merge.
+                    detail=json.load(error)
+                    self.assertEqual(error.code,403)
+                    self.assertGreater(manifest.get('build_sequence',0),0)
+                    self.assertIn('plus ancienne',detail.get('error',''))
+                    print('PASS: upgrade preserved data; installed newer candidate refuses older channel')
+                    return
                 # Compare the immutable revision actually returned by the updater. A
                 # branch URL may still be cached at its pre-merge contents.
                 self.assertRegex(check['revision'],r'^[a-f0-9]{40}$')

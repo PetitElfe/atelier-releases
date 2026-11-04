@@ -3,6 +3,7 @@
  const card=document.querySelector('#settingsPersonalDesignCard'),start=document.querySelector('#personalDesignStart');
  if(!card||!start)return;
  let theme={},saved={},revision=0,active=false,picking=false,selected='app',busy=false,history=[],targets=new Map(),dirty=false,pendingImage=0;
+ window.atelierPersonalDesignHasDraft=()=>dirty;
  const style=document.createElement('style');style.id='personalDesignRules';document.head.append(style);
  const dock=document.createElement('aside');dock.id='personalDesignDock';dock.hidden=true;dock.setAttribute('aria-label','Mode création personnel');
  dock.innerHTML=`<div class="design-heading"><strong>Mes dessins · aperçu</strong><button type="button" data-design="exit" aria-label="Fermer le mode création">Fermer</button></div>

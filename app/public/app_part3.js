@@ -330,7 +330,7 @@ function openSnooze(r){
       submit.disabled=false; submit.textContent='Reporter';
       return;
     }
-    shown.delete(r.id);
+    shown.delete(deliveryKey);
     closeModal();await refresh();
   };
 }
@@ -340,6 +340,8 @@ function localIsoSeconds(d=new Date()){
 }
 async function checkDue(){
   try{
+    const native=await api('/api/native-reminders/status');
+    if(native.available&&native.enabled&&!native.error)return;
     const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`);
     due.forEach(r=>notifyReminder(r));
   }catch(e){
@@ -348,7 +350,8 @@ async function checkDue(){
 }
 const shown=new Set();
 function notifyReminder(r){
-  if(shown.has(r.id))return;
+  const deliveryKey=r.id+':'+(r.snoozed_until||r.remind_at);
+  if(shown.has(deliveryKey))return;
   if(typeof lifeReminderChime==='function')lifeReminderChime();
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
@@ -375,10 +378,10 @@ function notifyReminder(r){
   const t=document.createElement('div');
   t.className='toast';
   t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div><div class="task-actions"><button class="finish reminder-icon-action" title="Fini" aria-label="Fini">✓</button><button class="later reminder-icon-action" title="Reporter" aria-label="Reporter">↪</button></div>`;
-  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(r.id);t.remove();await refresh()};
-  t.querySelector('.later').onclick=()=>{shown.delete(r.id);t.remove();openSnooze(r)};
+  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(deliveryKey);t.remove();await refresh()};
+  t.querySelector('.later').onclick=()=>{shown.delete(deliveryKey);t.remove();openSnooze(r)};
   $('#toastArea').appendChild(t);
-  shown.add(r.id);
+  shown.add(deliveryKey);
 }
 
 async function checkRuntimeCompatibility(){
@@ -802,6 +805,7 @@ $('#settingsInstallUpdate').onclick=async()=>{
   button.disabled=true;check.disabled=true;
   message.textContent='Démarrage de l’assistant de mise à jour…';
   try{
+    if(window.atelierSafety){await window.atelierSafety.flush();await window.atelierSafety.request('snapshot',{browser:await window.atelierSafety.browserCopy()})}
     await atelierUpdateRequest('/api/update/start',{
       method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Update':'1'},
       body:JSON.stringify({revision:atelierUpdateCandidate})
