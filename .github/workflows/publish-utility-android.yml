@@ -1,0 +1,47 @@
+name: Publish reviewed Android utility TEST
+on:
+  push:
+    branches: [test/utility-android-20261104]
+    paths: ['.github/workflows/publish-utility-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify immutable tested candidate and download it
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=41745665889
+          expected=14d7c79bb15f356369b7a16ffb12eaaa4994d2e2
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Utility_013_Candidate --dir candidate
+          cd candidate
+          sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256
+      - name: Publish only a TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/utility-notes.md <<'NOTES'
+          Goblin Android 0.1.13 TEST — mise à jour signée de la 0.1.12, sans désinstallation.
+
+          File locale des modifications PC, reconnexion sans double création, conflits visibles et brouillons conservés. Notes à hashtags multiples, envoi volontaire. Nécessite la préversion Windows utilitaire du 4 novembre pour le nouveau protocole de synchronisation.
+
+          Cuisine : plusieurs minuteurs nommés via les alarmes Android, même application en arrière-plan. Autorise les notifications et les alarmes précises depuis les boutons de Cuisine. Importe le véritable Miam Miam pour son alerte sonore ; aucun son de remplacement artificiel. Le système Android peut limiter les alarmes après un arrêt forcé ou selon ses restrictions de batterie.
+
+          Export de sauvegarde enrichi du son importé. Identifiant de paquet et certificat identiques à 0.1.12, versionCode 112 vers 113. La mise à jour conserve la confirmation d’installation Android.
+
+          Validé automatiquement : signature, remplacement réel sur émulateur avec conservation d’une note, deux notifications de minuteurs distincts écran éteint, coupure/rejeu/conflit avec l’API PC. Essais sur le téléphone et le Tailscale de Léo encore nécessaires. Les rappels généraux de rendez-vous et tâches en arrière-plan ne sont pas ajoutés dans ce lot. Aucune promotion stable.
+          NOTES
+          if gh release view android-test-v0.1.13 >/dev/null 2>&1; then
+            echo 'Existing TEST release preserved; no replacement performed.'
+            exit 0
+          fi
+          gh release create android-test-v0.1.13 candidate/* --prerelease --target 14d7c79bb15f356369b7a16ffb12eaaa4994d2e2 --title 'Android TEST 0.1.13 — Synchronisation et minuteurs' --notes-file /tmp/utility-notes.md
