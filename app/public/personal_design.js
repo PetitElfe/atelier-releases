@@ -21,6 +21,9 @@
  <div class="design-line"><button type="button" data-design="save">Enregistrer le thème</button><button type="button" data-design="revert">Revenir au thème enregistré</button></div>
  <div class="design-line"><button type="button" data-design="export">Exporter</button><button type="button" data-design="import">Importer un thème</button></div>
  <input hidden type="file" accept="application/json,.json" data-design="json">
+ <label>Mes thèmes enregistrés<select data-design="presets"><option value="">Choisir un thème</option></select></label>
+ <div class="design-line"><button type="button" data-design="presetSave">Garder sous un nouveau nom</button><button type="button" data-design="presetLoad">Prévisualiser ce thème</button><button type="button" data-design="presetRemove">Retirer ce thème</button></div>
+ <button type="button" data-design="default">Revenir aux dessins par défaut</button>
  <p data-design="status" role="status" aria-live="polite"></p>`;
  document.body.append(dock);
  const $=name=>dock.querySelector('[data-design="'+name+'"]');
@@ -130,6 +133,13 @@
      if(ticket!==pendingImage||busy)return;remember();theme=copy(data.theme);change();status('Thème importé en aperçu. Enregistre-le pour le garder.');
    }catch(e){status(e.message||'Fichier illisible.')}
  };
+ async function presetsRequest(body,id){const response=await fetch('/api/personal-design/presets'+(id?'?id='+encodeURIComponent(id):''),body?{method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Design':'1'},body:JSON.stringify(body)}:{cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error||'Thèmes indisponibles.');return data}
+ async function refreshPresets(){const list=await presetsRequest();$('presets').replaceChildren(new Option('Choisir un thème',''));for(const item of list)$('presets').append(new Option(item.name,item.id))}
+ $('presets').onfocus=()=>{if($('presets').options.length===1)refreshPresets().catch(e=>status(e.message))};
+ $('presetSave').onclick=async()=>{const name=prompt('Nom de ce thème');if(!name?.trim())return;try{await presetsRequest({action:'save',name:name.trim(),theme});await refreshPresets();status('Thème conservé sous son nom. Les dessins actifs restent inchangés.')}catch(e){status(e.message)}};
+ $('presetLoad').onclick=async()=>{const id=$('presets').value;if(!id)return;try{const item=await presetsRequest(null,id);pendingImage++;remember();theme=copy(item.theme);change();status('Aperçu de « '+item.name+' ». Enregistre pour appliquer ce thème.')}catch(e){status(e.message)}};
+ $('presetRemove').onclick=async()=>{const id=$('presets').value;if(!id||!confirm('Retirer ce thème enregistré ? Les six derniers thèmes retirés restent dans les fichiers de récupération.'))return;try{await presetsRequest({action:'remove',id});await refreshPresets();status('Thème retiré de la liste ; copie de récupération conservée.')}catch(e){status(e.message)}};
+ $('default').onclick=()=>{if(!confirm('Prévisualiser l’apparence par défaut, sans tes dessins ? Tu pourras annuler ou enregistrer ce choix.'))return;pendingImage++;remember();theme={};change()};
  $('template').onclick=()=>{
    const t=targets.get(selected),r=t.el.getBoundingClientRect(),w=Math.max(1,Math.min(8192,Math.round((selected==='app'?innerWidth:r.width)*2))),h=Math.max(1,Math.min(8192,Math.round((selected==='app'?innerHeight:r.height)*2)));
    const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.strokeStyle='#908470';ctx.lineWidth=2;ctx.setLineDash([12,8]);ctx.strokeRect(w*.1,h*.1,w*.8,h*.8);ctx.fillStyle='#908470';ctx.font=Math.min(28,Math.max(10,h/8))+'px sans-serif';ctx.fillText('Repères : à masquer avant export',w*.12,h*.5);

@@ -282,6 +282,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/sync/capabilities':
             return self._json({'protocol':2,'reminder_occurrences':True,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
         if p == '/api/native-reminders/status':
@@ -340,6 +341,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static(p)
         if p == '/api/version':
             return self._json({'version': atelier_version()})
+        if p in ('/api/creator-access','/api/personal-design/presets'):
+            if not personal_design.available():return self._json({'error':'Mode personnel Windows TEST uniquement.'},403)
+            token=self.headers.get('X-Atelier-Creator','')
+            try:
+                if p=='/api/creator-access':return self._json(creator_access.status(DATA,token))
+                if not creator_access.allowed(DATA,token):return self._json({'error':'Déverrouille le mode création.'},403)
+                return self._json(creator_access.presets(DATA,q.get('id',[None])[0]))
+            except (OSError,ValueError):return self._json({'error':'Les thèmes enregistrés sont indisponibles ; les fichiers sont conservés.'},400)
         if p == '/api/personal-design':
             if not personal_design.available():
                 return self._json({'available':False})
@@ -645,6 +654,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
+        if p in ('/api/creator-access','/api/personal-design/presets'):
+            if not personal_design.available():return self._json({'error':'Mode personnel Windows TEST uniquement.'},403)
+            if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Design')!='1':return self._json({'error':'Ouvre ces réglages depuis cette installation.'},403)
+            try:
+                size=int(self.headers.get('Content-Length','0'))
+                if not 2<=size<=personal_design.MAX_BYTES+100000:return self._json({'error':'Thème limité à 24 Mo.'},413)
+                body=self._body();token=self.headers.get('X-Atelier-Creator','')
+                if p=='/api/creator-access':return self._json(creator_access.authenticate(DATA,body.get('action'),body.get('password',''),token))
+                if not creator_access.allowed(DATA,token):raise PermissionError('Déverrouille le mode création.')
+                if body.get('action')=='save':return self._json(creator_access.save_preset(DATA,body.get('name'),body.get('theme')))
+                if body.get('action')=='remove':return self._json(creator_access.remove_preset(DATA,body.get('id')))
+                raise ValueError('Action inconnue.')
+            except PermissionError as exc:return self._json({'error':str(exc)},403)
+            except (ValueError,TypeError,OSError,KeyError) as exc:return self._json({'error':str(exc)},400)
         if p == '/api/reminders/mobile-action':
             origin=self.headers.get('Origin','')
             if origin and origin!=f'http://{HOST}:{PORT}':return self._json({'error':'Origine refusée'},403)
@@ -1255,6 +1279,8 @@ class Handler(BaseHTTPRequestHandler):
                     if isinstance(ra, str): ra = {'remind_at': ra, 'title': ''}
                     when = (ra or {}).get('remind_at')
                     if when: c.execute('INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES(?,?,?,?,?,?)',('task',tid,(ra or {}).get('title',''),when,'pending',ts))
+                try:utility_details.save_task(c,tid,body.get('utility_details'))
+                except (ValueError,TypeError,LookupError) as ex:c.rollback();return self._json({'error':str(ex)},409)
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':tid},201)
             if p == '/api/shopping':
                 name=body.get('name','').strip()
@@ -1309,11 +1335,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/personal-design':
             if not personal_design.available():
                 return self._json({'error':'Mode réservé à l’installation Windows TEST de Léo.'},403)
             if self.headers.get('Origin') != f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Design') != '1':
                 return self._json({'error':'Ouvre le mode depuis les Paramètres de cette installation.'},403)
+            if not creator_access.allowed(DATA,self.headers.get('X-Atelier-Creator','')):return self._json({'error':'Déverrouille le mode création avec ton mot de passe.'},403)
             try:
                 size=int(self.headers.get('Content-Length','0'))
                 if not 2 <= size <= personal_design.MAX_BYTES + 100000:
@@ -1523,6 +1551,7 @@ class Handler(BaseHTTPRequestHandler):
             try:doc_id=int(parts[2])
             except ValueError:return self._json({'error':'Identifiant invalide.'},400)
             with conn() as c:
+                c.execute('BEGIN IMMEDIATE')
                 row=c.execute('SELECT * FROM admin_documents WHERE id=?',(doc_id,)).fetchone()
                 if not row:return self._json({'error':'Démarche introuvable.'},404)
                 status=str(body.get('status',row['status']))
@@ -2036,6 +2065,8 @@ class Handler(BaseHTTPRequestHandler):
                 objective_maps.reconcile_automatic(c,progression,ts)
                 if d.get('completed') and not old['completed']:
                     progression.award(c,source_kind='task',source_id=tid)
+                try:utility_details.save_task(c,tid,body.get('utility_details'))
+                except (ValueError,TypeError,LookupError) as ex:c.rollback();return self._json({'error':str(ex)},409)
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1]=='shopping' and parts[2]=='validate':
                 rows=c.execute('SELECT * FROM shopping_items WHERE archived=0 AND checked=1 ORDER BY id').fetchall()
@@ -2095,6 +2126,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        if utility_details.serve(self,'DELETE',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/objective-map/edges':
             q=parse_qs(u.query)
             try:

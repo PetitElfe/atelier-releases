@@ -22,6 +22,7 @@ jobs:
       - run: npm install --no-save playwright
       - run: npx playwright install --only-shell chromium
       - run: node tools/utility_safety_browser_test.cjs
+      - run: node tools/utility_complete_browser_test.cjs
       - run: node tools/recipe_shelves_browser_test.cjs
       - run: node tools/personal_design_browser_test.cjs
       - run: node tools/library_browser_test.cjs

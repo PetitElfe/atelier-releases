@@ -33,5 +33,11 @@ class OccurrenceTests(unittest.TestCase):
   first=engine.mobile_action(self.c,body);self.assertEqual(first,engine.mobile_action(self.c,body));self.assertEqual(self.c.execute('SELECT count(*) FROM event_completions').fetchone()[0],1)
   with self.assertRaises(LookupError):engine.mobile_action(self.c,{**body,'operation_id':'other-device-0000001'})
   with self.assertRaises(ValueError):engine.mobile_action(self.c,{**body,'action':'done'})
+ def test_offline_snooze_then_finish_keeps_action_order(self):
+  row=engine.all_reminders(self.c,datetime(2026,1,31,8))[0];epoch=int(datetime.fromisoformat(row['remind_at']).timestamp()*1000);later=epoch+600000
+  common={'reminder_id':row['id'],'due_key':row['remind_at']}
+  engine.mobile_action(self.c,{**common,'operation_id':'offline-snooze-000001','action':'10','expected_epoch_ms':epoch,'snooze_epoch_ms':later})
+  engine.mobile_action(self.c,{**common,'operation_id':'offline-finish-000002','action':'finish','expected_epoch_ms':later})
+  self.assertEqual(engine.get(self.c,row['id'])['status'],'done')
 
 if __name__=='__main__':unittest.main()

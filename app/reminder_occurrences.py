@@ -118,7 +118,10 @@ def mobile_action(c,body):
         if previous['payload_hash']!=signature:raise ValueError('Identifiant réutilisé pour une autre action.')
         return json.loads(previous['response_json'])
     item=get(c,rid)
-    if not item or item['status']!='pending' or (item.get('snoozed_until') or item['remind_at'])!=expected:
+    matches=bool(item and (item.get('snoozed_until') or item['remind_at'])==expected)
+    if item and type(body.get('expected_epoch_ms')) is int:
+        matches=int(datetime.fromisoformat(item.get('snoozed_until') or item['remind_at']).timestamp()*1000)==body['expected_epoch_ms']
+    if not item or item['status']!='pending' or not matches:
         raise LookupError('Ce rappel a changé sur le PC. L’action locale reste conservée pour vérification.')
     when=None
     if action in ('10','30','60'):

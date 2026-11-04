@@ -23,6 +23,7 @@ let stored={available:true,revision:0,theme:{}},reject=false;
   }
   await route.fulfill({json:stored});
  });
+ await page.route('**/api/creator-access',route=>route.fulfill({json:{configured:false,unlocked:true}}));
  await page.goto(base);await page.locator('#personalDesignStart:not([disabled])').waitFor({state:'attached'});await page.locator('#settingsBtn').click();await page.locator('.atelier-settings-nav [data-target=settingsPersonalDesignCard]').click();
  await page.locator('#personalDesignStart').click();const dock=page.locator('#personalDesignDock');await dock.waitFor();
  assert.match(await dock.locator('[data-design=guide]').innerText(),/Fond général.*1440 × 1000/);

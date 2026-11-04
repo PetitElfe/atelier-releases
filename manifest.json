@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "a723f2562f82b16075060bbf60cbb7d8c3b884ed67acac796b0cbd35c6205878"
+      "sha256": "40ed0e872ee684f9d9aeb2fa732d6dc6ade69ea962dfdb44b7fb34874aec31f9"
     },
     {
       "path": "app_part2.py",
-      "sha256": "92c638c03e33d824896661f6fd6ae2306c47ddf24532c39412e94b05b8f61eca"
+      "sha256": "0893243dcf0aac70d88467b2efd1301b5872c8dd354bc8ef2ec6ff0b04ef21c4"
     },
     {
       "path": "app_part3.py",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "785cb48642974a4569a80325a0200eedf5db539cc40a690263dc1994e5194072"
+      "sha256": "ff6dced5247ff4f716f122ace4dd0bbf0af4c94561636a24b46a3108694ce9b0"
     },
     {
       "path": "public/interface_reference.css",
@@ -205,7 +205,7 @@
     },
     {
       "path": "public/personal_design.js",
-      "sha256": "129e6550a7dd1b80e412833fb56cbfa029c2999803ab92160df74ba677981ab4"
+      "sha256": "9ed2734f0f6c8714e0167382db7a1e6ea50d11b40df215a4a4def10038532dee"
     },
     {
       "path": "public/postits.js",
@@ -301,7 +301,23 @@
     },
     {
       "path": "reminder_occurrences.py",
-      "sha256": "f89bf095a611b25911ab6b9819dbe364ed44bdc25be8e7f259fe31d53c40a5b4"
+      "sha256": "a9cad55e09f154afde8c416d8a28a95ba579d6ca0f7e24b18205ea45b8776455"
+    },
+    {
+      "path": "creator_access.py",
+      "sha256": "2284267db32833ee534adf44b7c14cff59589f55de99f0e50352e30cbd22953f"
+    },
+    {
+      "path": "public/creator_access.js",
+      "sha256": "d9cb5e94cba056c458f0d093f22bd43aa6aa38855839e4fb4ddfba4dd4f9242f"
+    },
+    {
+      "path": "utility_details.py",
+      "sha256": "6acb306bc249bb245bb3b4e2eb2d9ab6a70c294ba8746dfd9394039e99845ffa"
+    },
+    {
+      "path": "public/utility_details.js",
+      "sha256": "f53db8c10a631a50fca066892721384f9ddf524672908a90cbfff31b628275ca"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
