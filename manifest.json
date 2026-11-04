@@ -53,7 +53,7 @@
     },
     {
       "path": "native_reminders.py",
-      "sha256": "bfdda97c46cc0e4baa89d626ae3f73b9786cf1f01eb518386895f3edebdc2276"
+      "sha256": "cddbd6a6a16b27ddc278cf8221902f8c7871be7724c3abd1e25357c4c468249c"
     },
     {
       "path": "native_toasts.ps1",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "18fa5f0388af1a2213dd2c7e90db6e31c06d4e9d4c1f1d1903a2011dd711eb67"
+      "sha256": "785cb48642974a4569a80325a0200eedf5db539cc40a690263dc1994e5194072"
     },
     {
       "path": "public/interface_reference.css",
@@ -289,11 +289,15 @@
     },
     {
       "path": "utility_sync.py",
-      "sha256": "6aeaeaf35c93e5746cf20d661945b3e1cf79015d45ed60bdf72978021b8d528e"
+      "sha256": "487ce0ac69b5c88f965fdf61cb40260df82a616c342aa120b7c2ff48ca465f5c"
     },
     {
       "path": "windows_tray.py",
       "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
+    },
+    {
+      "path": "public/kitchen_timers.js",
+      "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
     }
   ],
   "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",

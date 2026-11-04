@@ -3,7 +3,7 @@ import hashlib
 import json
 import re
 
-TABLES={'tasks','shopping','events','recipes'}
+TABLES={'tasks','shopping','events','recipes','reminders'}
 DB_TABLE={'shopping':'shopping_items'}
 
 
@@ -20,7 +20,7 @@ def initialise(c):
 def begin(c,method,path,body):
     if not isinstance(body,dict) or '_sync' not in body:return None,None
     metadata=body.pop('_sync')
-    match=re.fullmatch(r'/api/(tasks|shopping|events|recipes)(?:/([0-9]+))?',path)
+    match=re.fullmatch(r'/api/(tasks|shopping|events|recipes|reminders)(?:/([0-9]+))?',path)
     if not match or method not in ('POST','PUT') or bool(match[2])!=(method=='PUT'):raise ValueError('Synchronisation non prise en charge pour cette action.')
     if not isinstance(metadata,dict) or not re.fullmatch(r'[A-Za-z0-9_-]{16,100}',str(metadata.get('id',''))):raise ValueError('Identifiant de modification invalide.')
     op=metadata['id'];fingerprint=hashlib.sha256(json.dumps([method,path,body,metadata.get('base')],sort_keys=True,ensure_ascii=False).encode()).hexdigest()

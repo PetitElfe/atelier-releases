@@ -25,6 +25,16 @@ class NativeReminderTests(unittest.TestCase):
             self.assertFalse(reminders.activate(folder,'goblin-test-reminder://activate/once?a=60'))
             with sqlite3.connect(Path(folder)/'atelier.db') as c:self.assertEqual(c.execute('SELECT snoozed_until FROM reminders').fetchone()[0],first)
             with self.assertRaises(ValueError):reminders.activate(folder,'https://example.com/once?a=finish')
+    def test_unacknowledged_sent_reminders_do_not_starve_later_due_reminders(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with sqlite3.connect(Path(folder)/'atelier.db') as c:
+                c.row_factory=sqlite3.Row
+                c.execute('CREATE TABLE reminders(id INTEGER PRIMARY KEY,entity_type TEXT,entity_id INTEGER,title TEXT,remind_at TEXT,snoozed_until TEXT,status TEXT)');reminders.initialise(c)
+                for number in range(1,8):
+                    c.execute("INSERT INTO reminders VALUES(?,'standalone',0,'Timer','2026-11-04T08:00',NULL,'pending')",(number,))
+                    if number<=6:c.execute("INSERT INTO native_reminder_delivery(reminder_id,due_key,token,sent_at) VALUES(?,'2026-11-04T08:00',?,'2026-11-04T08:01')",(number,'token-'+str(number)))
+                self.assertEqual([r['id'] for r in reminders.due_rows(c,'2026-11-04T09:00')],[7])
+
     def test_changed_reminder_is_not_overwritten_by_stale_notification(self):
         with tempfile.TemporaryDirectory() as folder:
             with sqlite3.connect(Path(folder)/'atelier.db') as c:

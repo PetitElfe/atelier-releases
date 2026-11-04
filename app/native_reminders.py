@@ -88,6 +88,10 @@ def send(title,token,*,test=False):
     finally:path.unlink(missing_ok=True)
 
 
+def due_rows(c,now):
+    return c.execute("SELECT r.* FROM reminders r LEFT JOIN native_reminder_delivery d ON d.reminder_id=r.id AND d.due_key=COALESCE(r.snoozed_until,r.remind_at) WHERE r.status='pending' AND COALESCE(r.snoozed_until,r.remind_at)<=? AND d.sent_at IS NULL ORDER BY COALESCE(r.snoozed_until,r.remind_at) LIMIT 100",(now,)).fetchall()
+
+
 def maintenance(data):
     if (Path(data)/'safety-maintenance.json').exists():return True
     try:return json.loads((Path(data)/'updater-state.json').read_text()).get('phase') in ('starting','download','stopping','backup','installing')
@@ -102,9 +106,10 @@ def tick():
             now=datetime.now().isoformat(timespec='seconds')
             with _connect(DATA) as c:
                 initialise(c)
-                rows=c.execute("SELECT * FROM reminders WHERE status='pending' AND COALESCE(snoozed_until,remind_at)<=? ORDER BY COALESCE(snoozed_until,remind_at) LIMIT 6",(now,)).fetchall()
+                rows=due_rows(c,now)
+                sent=0
                 for row in rows:
-                    if maintenance(DATA):return
+                    if maintenance(DATA) or sent>=6:return
                     if row['entity_type'] in ('task','event'):
                         table='tasks' if row['entity_type']=='task' else 'events'
                         linked=c.execute('SELECT * FROM '+table+' WHERE id=?',(row['entity_id'],)).fetchone()
@@ -117,7 +122,7 @@ def tick():
                     title=row['title']
                     if not title and row['entity_type'] in ('task','event'):
                         table='tasks' if row['entity_type']=='task' else 'events';linked=c.execute('SELECT title FROM '+table+' WHERE id=?',(row['entity_id'],)).fetchone();title=linked['title'] if linked else 'Rappel'
-                    send(title or 'Rappel',token)
+                    send(title or 'Rappel',token);sent+=1
                     c.execute('UPDATE native_reminder_delivery SET sent_at=? WHERE reminder_id=? AND due_key=?',(now,row['id'],due));c.commit()
                     cfg=config();cfg.update(last_sent=now,error='');utility_safety.atomic(DATA/'native-reminders.json',cfg)
         except Exception:
