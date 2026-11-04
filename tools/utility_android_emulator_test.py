@@ -50,10 +50,19 @@ def menu(label):
 
 def launch():
     adb('shell','am','start','-n',PKG+'/.MainActivity');time.sleep(6)
-    # Android shows its own first-use immersive-mode tutorial above the app.
-    for node in nodes().iter('node'):
-        if node.attrib.get('text') in ('Got it','Compris','OK'):
-            x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(1);break
+    # Wait for first WebView startup. Dismiss only OS help and launcher ANR,
+    # never an application ANR (which must remain a failing product test).
+    for _ in range(15):
+        tree=nodes();labels=[n.attrib.get('text','') for n in tree.iter('node')]
+        if any(n.attrib.get('content-desc')=='Ouvrir le menu' for n in tree.iter('node')):return
+        dismiss=['Got it','Compris','OK']
+        if any('Quickstep' in label and 'responding' in label for label in labels):dismiss.append('Close app')
+        for n in tree.iter('node'):
+            if n.attrib.get('text') in dismiss:
+                x1,y1,x2,y2=bounds(n);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+                if n.attrib.get('text')=='Close app':adb('shell','am','start','-n',PKG+'/.MainActivity')
+                break
+        time.sleep(2)
 
 Path('artifacts').mkdir(exist_ok=True)
 adb('install','-r',str(OLD));launch();menu('Notes')
