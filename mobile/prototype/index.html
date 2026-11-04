@@ -96,7 +96,7 @@ function goblinSnapshot(reason='manual'){
   }
   if(!Object.keys(entries).length)return false;
   return !!window.AtelierAutoBackup.snapshot(JSON.stringify({
-   format:'goblin-localstorage-v1',savedAt:new Date().toISOString(),entries
+   format:'goblin-localstorage-v1',savedAt:new Date().toISOString(),entries,...(window.goblinBackupAudio?{kitchenAudio:window.goblinBackupAudio}:{}),...(window.AtelierReminders?.backup?{nativeReminders:JSON.parse(window.AtelierReminders.backup())}:{})
   }),reason);
  }catch(e){return false}
 }
@@ -115,6 +115,7 @@ function goblinRestoreBackup(raw){
   alert('Impossible de sauvegarder les données actuelles avant restauration. Opération annulée.');return;
  }
  try{
+  if(parsed.nativeReminders&&window.AtelierReminders&&!window.AtelierReminders.restore(JSON.stringify(parsed.nativeReminders)))throw Error('Les rappels n’ont pas pu être restaurés.');
   for(const [key,value] of Object.entries(entries))localStorage.setItem(key,value);
   if(parsed.kitchenAudio&&window.goblinRestoreAudio){window.goblinRestoreAudio(parsed.kitchenAudio).then(()=>location.reload()).catch(()=>alert('Le son n’a pas pu être restauré. Les autres données sont conservées ; garde la copie de secours.'));return;}
   location.reload();
@@ -477,6 +478,7 @@ function backupSettings(root){
   const entries=Object.create(null);
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k!==null)entries[k]=localStorage.getItem(k)}
   const payload={format:'atelier-goblin-android-backup-v2',createdAt:new Date().toISOString(),state,personalCards:localStorage.getItem(personalCardKey)||'[]',theme:localStorage.getItem(themeKey)||'dark',jdrNotes:localStorage.getItem('goblin-mobile-jdr-notes-v1')||'[]',kitchenTimers:localStorage.getItem('goblin-mobile-kitchen-timers-v1')||'[]',pcUrl:localStorage.getItem('atelier-private-pc-url-v1')||'',allLocalStorage:entries};
+  if(window.AtelierReminders?.backup)payload.nativeReminders=JSON.parse(window.AtelierReminders.backup());
   payload.mentalHealth=localStorage.getItem('goblin-mobile-mental-v1')||'{}';
   if(window.goblinBackupAudio)payload.kitchenAudio=window.goblinBackupAudio;
   const json=JSON.stringify(payload);
@@ -1182,4 +1184,15 @@ setTimeout(autoCheckGoblin,1800);
 })();
 
 /* UTILITY_DRAFTS_EXTENSION_END */
+/* UTILITY_REMINDERS_EXTENSION_START */
+(()=>{'use strict';
+ const native=window.AtelierReminders;if(!native)return;let busy=false,last=0,error='',lastBase=pcUrl;const conflictKey='goblin-reminder-conflicts-v1';let conflicts={};try{conflicts=JSON.parse(localStorage.getItem(conflictKey)||'{}')}catch{}
+ const status=()=>{try{return JSON.parse(native.status())}catch{return {}}},actions=()=>{try{return JSON.parse(native.actions())}catch{return []}};
+ async function pull(force=false){if(busy||!pcUrl||document.hidden||(!force&&Date.now()-last<15000))return;busy=true;last=Date.now();try{const caps=await callPc('GET','/api/sync/capabilities');if(!caps.reminder_occurrences)throw Error('Mets Windows à jour pour recevoir ses rappels sur ce téléphone.');for(const a of actions()){if(a.base!==pcUrl||a.identity!==caps.installation_id||conflicts[a.operation_id])continue;const body={operation_id:a.operation_id,reminder_id:a.reminder_id,due_key:a.due_key,action:a.action,...(a.snooze_epoch_ms?{snooze_epoch_ms:a.snooze_epoch_ms}:{})};try{await callPc('POST','/api/reminders/mobile-action',body);native.acknowledge(a.operation_id)}catch(e){if(e.status===409){conflicts[a.operation_id]=e.message;localStorage.setItem(conflictKey,JSON.stringify(conflicts));continue}throw e}}if(status().enabled){const rows=await callPc('GET','/api/reminders');if(!native.sync(pcUrl,caps.installation_id,JSON.stringify(rows)))throw Error('La copie native des rappels reste à vérifier.')}error=''}catch(e){error=e.message||'PC indisponible : les rappels déjà reçus restent conservés.'}finally{busy=false;drawStatus()}}
+ function drawStatus(){const label=document.getElementById('phoneReminderStatus'),s=status();if(label)label.textContent=(s.enabled?'Rappels du PC activés. ':'Rappels du PC désactivés. ')+(s.exact?'Horaires précis autorisés. ':'Horaires approximatifs tant que les alarmes précises ne sont pas autorisées. ')+(s.last_sync?'Dernière copie : '+new Date(s.last_sync).toLocaleString()+'. ':'')+(s.pending?s.pending+' action(s) à transmettre au PC. ':'')+(error||s.error||'');}
+ const previousRender=render;render=function(){previousRender();if(lastBase!==pcUrl){native.disconnect();lastBase=pcUrl}if(state.page!=='settings'&&state.page!=='connected')return;const root=document.getElementById('content'),p=panel(root,'Rappels du PC sur mon téléphone');p.append(el('p',{class:'muted'},'Cette copie locale avertit même lorsque Goblin est en arrière-plan. Elle s’actualise quand le PC et Tailscale sont accessibles. Les changements faits sur un PC éteint ne peuvent pas être reçus.'));p.append(el('p',{id:'phoneReminderStatus',role:'status'}));const toggle=el('button',{class:'action'},status().enabled?'Désactiver les rappels du PC':'Activer les rappels du PC');toggle.onclick=async()=>{native.enable(!status().enabled);await pull(true);render()};const refresh=el('button',{class:'action'},'Actualiser la copie des rappels');refresh.onclick=()=>pull(true);const exact=el('button',{class:'action'},'Autoriser les alarmes précises');exact.onclick=()=>window.AtelierTimers?.requestExactPermission();const notify=el('button',{class:'action'},'Autoriser les notifications de rappel');notify.onclick=()=>window.AtelierUpdates?.enableUpdateNotifications?.();const test=el('button',{class:'action'},'Tester un rappel Android (30 s)');test.onclick=()=>{if(!native.test())alert('Active d’abord les rappels du PC et vérifie les autorisations Android.');else alert('Un rappel de test est prévu dans 30 secondes. Tu peux réduire Goblin et éteindre l’écran.');};p.append(toggle,refresh,exact,notify,test);for(const a of actions()){const note=el('p',{class:'muted'},conflicts[a.operation_id]||'Action conservée sur le téléphone : '+a.action);p.append(note);if(conflicts[a.operation_id]||a.base!==pcUrl){const discard=el('button',{class:'action'},'Abandonner cette action locale');discard.onclick=()=>{if(!confirm('Abandonner cette action locale sans modifier le rappel sur le PC ?'))return;native.acknowledge(a.operation_id);delete conflicts[a.operation_id];localStorage.setItem(conflictKey,JSON.stringify(conflicts));render()};p.append(discard)}}drawStatus()};
+ const previousPull=syncPull;syncPull=async function(options={}){await previousPull(options);await pull()};window.atelierReminderRefresh=()=>pull(true);setInterval(pull,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(true)});render();pull(true);
+})();
+
+/* UTILITY_REMINDERS_EXTENSION_END */
 </script></body></html>

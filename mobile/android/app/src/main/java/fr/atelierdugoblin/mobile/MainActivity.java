@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
         tailnet = new TailnetBridge(this, webView);
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new KitchenTimerBridge(this), "AtelierTimers");
+        webView.addJavascriptInterface(new ReminderBridge(this), "AtelierReminders");
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
                 if(json==null || json.length()>48*1024*1024)return;
@@ -185,6 +186,7 @@ public class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         KitchenTimerBridge.resume(this);
+        ReminderBridge.resume(this);
         // On returning from the background, refresh remote PC lists only.
         // Existing local WebView data and the offline journal remain untouched.
         if (webView != null) webView.evaluateJavascript(

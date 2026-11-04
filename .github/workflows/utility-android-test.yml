@@ -1,7 +1,7 @@
 name: Utility Android signed candidate tests
 on:
   push:
-    branches: [test/utility-android-20261104]
+    branches: [test/utility-complete-android-20261104]
 permissions:
   contents: read
   actions: read
@@ -68,10 +68,10 @@ jobs:
           test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || exit 1
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/atelier-release.jks"
           echo "ATELIER_SIGNING_FILE=$RUNNER_TEMP/atelier-release.jks" >> "$GITHUB_ENV"
-      - name: Build Android TEST 0.1.13 signed with the permanent certificate
+      - name: Build Android TEST 0.1.14 signed with the permanent certificate
         working-directory: mobile/android
         env:
-          RELEASE_VERSION: '0.1.13'
+          RELEASE_VERSION: '0.1.14'
           ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
           ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
           ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
@@ -87,18 +87,18 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
-          "$AAPT" dump badging "$APK" | grep -q "versionCode='113'"
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='114'"
           unzip -p "$APK" assets/index.html | grep -q 'goblinUpdateChannel'
-          echo 'APK 0.1.13 signed, correctly packaged, and contains the channel selector.'
-      - name: Download prior signed 0.1.12 TEST APK
+          echo 'APK 0.1.14 signed, correctly packaged, and contains the channel selector.'
+      - name: Download prior signed 0.1.13 TEST APK
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/old-022"
-          gh run download 41540833715 --repo "${{ github.repository }}" --name LAtelierDuGoblin_Android_022_Signed_TEST --dir "$RUNNER_TEMP/old-022"
+          gh run download 41745665889 --repo "${{ github.repository }}" --name Goblin_Android_Utility_013_Candidate --dir "$RUNNER_TEMP/old-022"
           test -s "$RUNNER_TEMP/old-022/LAtelierDuGoblin-Mobile.apk"
-      - name: Match Android identity, signer, and 0.1.12 to 0.1.13 upgrade
+      - name: Match Android identity, signer, and 0.1.13 to 0.1.14 upgrade
         shell: bash
         run: |
           set -euo pipefail
@@ -111,9 +111,9 @@ jobs:
           old_cert=$("$APKSIGNER" verify --print-certs "$OLD" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
           new_cert=$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
           test -n "$old_cert" && test "$old_cert" = "$new_cert"
-          "$AAPT" dump badging "$OLD" | grep -q "versionCode='112'"
-          "$AAPT" dump badging "$NEW" | grep -q "versionCode='113'"
-          echo "PASS: same signer, versionCode 112 -> 113, and stable application ID."
+          "$AAPT" dump badging "$OLD" | grep -q "versionCode='113'"
+          "$AAPT" dump badging "$NEW" | grep -q "versionCode='114'"
+          echo "PASS: same signer, versionCode 113 -> 114, and stable application ID."
       - name: Enable Android emulator acceleration
         shell: bash
         run: |
@@ -133,7 +133,7 @@ jobs:
           sha256sum LAtelierDuGoblin-Mobile.apk > LAtelierDuGoblin-Mobile.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: Goblin_Android_Utility_013_Candidate
+          name: Goblin_Android_Utility_014_Candidate
           path: |
             LAtelierDuGoblin-Mobile.apk
             LAtelierDuGoblin-Mobile.apk.sha256
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: test/utility-finish-20261104
+          ref: test/utility-complete-20261104
           path: pc
       - uses: actions/setup-python@v5
         with:

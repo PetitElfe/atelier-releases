@@ -83,6 +83,14 @@ assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode')
 adb('shell','am','force-stop',PKG);adb('install','-r',str(NEW));launch()
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode'),'Existing WebView note lost after signed replacement'
 adb('shell','pm','grant',PKG,'android.permission.POST_NOTIFICATIONS');adb('shell','appops','set',PKG,'SCHEDULE_EXACT_ALARM','allow')
+# Native general reminder test, separate from cooking alarms.
+menu('Paramètres')
+tap('Activer les rappels du PC');tap('Tester un rappel Android (30 s)');tap('OK',False)
+adb('shell','input','keyevent','3');adb('shell','input','keyevent','223')
+for _ in range(8):time.sleep(5)
+notice=adb('shell','dumpsys','notification','--noredact')
+assert 'Rappel de test Android' in notice,'General native reminder must fire with screen off'
+adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
 menu('Grimoire de recettes')
 for label,seconds in [('Utility_timer_A','40'),('Utility_timer_B','55')]:
     text('Nom du minuteur',label);text('Minutes','0');text('Secondes',seconds);tap('＋ Démarrer ce minuteur');time.sleep(1)
