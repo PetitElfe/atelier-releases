@@ -720,8 +720,8 @@ function renderLifeAdmin(){
     const noteHeading=lifeNode('label','life-admin-notes-title','Notes et prochaine action');
     const notes=lifeNode('textarea','life-admin-notes');
     notes.setAttribute('aria-label','Notes et prochaine action de '+item.title);
-    let adminDrafts={};try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}notes.value=adminDrafts[item.id]??item.notes??'';notes.oninput=()=>{adminDrafts[item.id]=notes.value;try{localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}catch{}};notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
-    const save=lifeButton('Enregistrer les notes',async()=>{const ok=await lifeAction('Enregistrer les notes',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})}));if(ok){delete adminDrafts[item.id];localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}});
+    let adminDrafts={};try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}notes.value=adminDrafts[item.id]??item.notes??'';notes.oninput=()=>{try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}adminDrafts[item.id]=notes.value;try{localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}catch{}};notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
+    const save=lifeButton('Enregistrer les notes',async()=>{const ok=await lifeAction('Enregistrer les notes',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})}));if(ok){try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}delete adminDrafts[item.id];localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}});
     const eventPanel=lifeNode('div','life-admin-link-panel');
     const eventLabel=lifeNode('label','life-admin-link-label','Rendez-vous associé (facultatif)');
     const eventSelect=lifeNode('select','life-admin-event-select');

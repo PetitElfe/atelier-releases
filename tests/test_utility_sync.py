@@ -26,4 +26,12 @@ class SyncTests(unittest.TestCase):
         lease,_=sync.begin(self.c,'PUT','/api/tasks/1',{'completed':True,'_sync':{'id':'operation-00000004','base':{'completed':0}}});sync.record(self.c,lease);self.c.commit()
         with self.assertRaises(sync.Conflict):sync.begin(self.c,'PUT','/api/tasks/1',{'completed':False,'_sync':{'id':'operation-00000004','base':{'completed':1}}})
 
+class FormMergeTests(unittest.TestCase):
+    def test_unchanged_form_fields_preserve_other_device_changes(self):
+        c=sqlite3.connect(':memory:');c.row_factory=sqlite3.Row;c.execute('CREATE TABLE tasks(id INTEGER PRIMARY KEY,title TEXT,notes TEXT,due_date TEXT,objective_node_id INTEGER)');c.execute("INSERT INTO tasks VALUES(1,'Titre récent','Note initiale',NULL,NULL)");c.commit()
+        body={'title':'Ancien titre','notes':'Note modifiée','due_date':'','objective_node_id':'','_utility_base':{'fields':{'title':'Ancien titre','notes':'Note initiale','due_date':None,'objective_node_id':None}}}
+        sync.merge_form(c,'/api/tasks/1',body);self.assertNotIn('title',body);self.assertNotIn('due_date',body);self.assertEqual(body['notes'],'Note modifiée');c.rollback()
+        with self.assertRaises(sync.Conflict):sync.merge_form(c,'/api/tasks/1',{'title':'Autre titre','_utility_base':{'fields':{'title':'Ancien titre'}}})
+        c.close()
+
 if __name__=='__main__':unittest.main()

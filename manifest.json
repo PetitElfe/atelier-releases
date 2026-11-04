@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "8ad9a6f1bfb994e061fd6965848c51a0ba42a9833ee87a400ec66abd5dc998bb"
+      "sha256": "5a1d2b082f056c066908d147794a4aa144b64330dfffc00fa0e575121f090a50"
     },
     {
       "path": "app_part3.py",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "ee1846a46267275551ef89a7b24dd384660c15af689289bf05e90dbba1e33526"
+      "sha256": "10e2afea0a09a36a5f3b20bc223f1d144699f552f534bdc38bd53f69c16a35a3"
     },
     {
       "path": "public/mental-health.html",
@@ -289,7 +289,7 @@
     },
     {
       "path": "utility_sync.py",
-      "sha256": "487ce0ac69b5c88f965fdf61cb40260df82a616c342aa120b7c2ff48ca465f5c"
+      "sha256": "fbb7efbfa7b697506854bd25a6086326d07bf269970f46ace5a430aad5c252f7"
     },
     {
       "path": "windows_tray.py",
@@ -309,7 +309,7 @@
     },
     {
       "path": "public/creator_access.js",
-      "sha256": "d9cb5e94cba056c458f0d093f22bd43aa6aa38855839e4fb4ddfba4dd4f9242f"
+      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
     },
     {
       "path": "utility_details.py",
@@ -317,7 +317,7 @@
     },
     {
       "path": "public/utility_details.js",
-      "sha256": "f53db8c10a631a50fca066892721384f9ddf524672908a90cbfff31b628275ca"
+      "sha256": "1d06313dab29b6098548255c8650b5a5d7877732221f0c3b8767d22a0611a64e"
     },
     {
       "path": "public/budget_support.js",

@@ -48,3 +48,35 @@ def record(c,lease):
     response={'ok':True}
     if lease['method']=='POST':response={'id':c.execute('SELECT MAX(id) FROM '+lease['table']).fetchone()[0]}
     c.execute('INSERT INTO sync_receipts(operation_id,payload_hash,response_json) VALUES(?,?,?)',(lease['id'],lease['hash'],json.dumps(response)))
+
+def merge_form(c,path,body):
+    """Whole editors send only their actual changes, with optimistic conflict checks."""
+    raw=body.pop('_utility_base',None)
+    if raw is None:return
+    match=re.fullmatch(r'/api/(tasks|events|recipes)/([0-9]+)',path)
+    if not match:return
+    metadata=json.loads(raw) if isinstance(raw,str) else raw
+    if not isinstance(metadata,dict) or not isinstance(metadata.get('fields'),dict):raise ValueError('Version initiale du formulaire invalide.')
+    if not c.in_transaction:c.execute('BEGIN IMMEDIATE')
+    row=c.execute('SELECT * FROM '+match[1]+' WHERE id=?',(int(match[2]),)).fetchone()
+    if not row:raise Conflict('Cet élément n’existe plus. Ton formulaire reste conservé.')
+    base=metadata['fields']
+    def normalize(key,value):
+        if key in ('due_date','due_time','start_time','end_time') and value=='':return None
+        if key=='objective_node_id':
+            try:return int(value) if value else None
+            except (TypeError,ValueError):return None
+        return value
+    for key in list(body):
+        if key not in row.keys() or key not in base or key in ('id','created_at','updated_at'):continue
+        incoming=normalize(key,body[key]);original=normalize(key,base[key]);latest=normalize(key,row[key])
+        if incoming==original:body.pop(key)
+        elif latest!=original and latest!=incoming:raise Conflict('Modifié sur un autre appareil : '+key+'. Ton formulaire reste ouvert.')
+    if 'reminders' in body and 'reminders' in metadata and match[1] in ('tasks','events'):
+        if not all(isinstance(items,list) and all(isinstance(r,dict) for r in items) for items in (body['reminders'],metadata['reminders'])):raise ValueError('Liste de rappels invalide.')
+        def clean(items):return sorted((str(r.get('title') or ''),str(r.get('remind_at') or '')[:16]) for r in items)
+        original=clean(metadata['reminders']);incoming=clean(body['reminders'])
+        if original==incoming:body.pop('reminders')
+        else:
+            rows=c.execute("SELECT title,COALESCE(snoozed_until,remind_at) AS remind_at FROM reminders WHERE entity_type=? AND entity_id=? AND status!='done'",('task' if match[1]=='tasks' else 'event',int(match[2]))).fetchall()
+            if clean([dict(r) for r in rows])!=original:raise Conflict('Les rappels ont changé ailleurs. Vérifie-les avant de les remplacer.')

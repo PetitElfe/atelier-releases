@@ -1712,6 +1712,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sync_lease,replay=utility_sync.begin(c,'PUT',p,body)
                 if replay is not None:return self._json(replay)
+                utility_sync.merge_form(c,p,body)
             except utility_sync.Conflict as exc:return self._json({'error':str(exc),'conflict':True},409)
             except (ValueError,TypeError) as exc:return self._json({'error':str(exc)},400)
             if len(parts)==3 and parts[0]=='api' and parts[1]=='recipe-books':
