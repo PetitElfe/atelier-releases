@@ -34,4 +34,13 @@ class FormMergeTests(unittest.TestCase):
         with self.assertRaises(sync.Conflict):sync.merge_form(c,'/api/tasks/1',{'title':'Autre titre','_utility_base':{'fields':{'title':'Ancien titre'}}})
         c.close()
 
+class PreparationFormMergeTests(unittest.TestCase):
+    def test_unchanged_preparations_preserve_new_items_from_another_window(self):
+        c=sqlite3.connect(':memory:');c.row_factory=sqlite3.Row
+        c.executescript("CREATE TABLE events(id INTEGER PRIMARY KEY,title TEXT);CREATE TABLE event_preparations(id INTEGER PRIMARY KEY,event_id INTEGER,title TEXT,position INTEGER);INSERT INTO events VALUES(1,'RDV');INSERT INTO event_preparations VALUES(1,1,'Original',0);INSERT INTO event_preparations VALUES(2,1,'Ajout récent',1);")
+        original=[{'id':1,'title':'Original'}];body={'title':'RDV','preparations':original.copy(),'_utility_base':{'fields':{'title':'RDV'},'preparations':original}}
+        sync.merge_form(c,'/api/events/1',body);self.assertNotIn('preparations',body);c.rollback()
+        with self.assertRaises(sync.Conflict):sync.merge_form(c,'/api/events/1',{'preparations':[{'id':1,'title':'Correction'}],'_utility_base':{'fields':{},'preparations':original}})
+        c.close()
+
 if __name__=='__main__':unittest.main()

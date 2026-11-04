@@ -289,7 +289,7 @@
     },
     {
       "path": "utility_sync.py",
-      "sha256": "fbb7efbfa7b697506854bd25a6086326d07bf269970f46ace5a430aad5c252f7"
+      "sha256": "5e19197ba399ac17e63e962bc7a6e5449bbea01be2a23a9efc0a66ccd141e9bd"
     },
     {
       "path": "windows_tray.py",
@@ -317,7 +317,7 @@
     },
     {
       "path": "public/utility_details.js",
-      "sha256": "1d06313dab29b6098548255c8650b5a5d7877732221f0c3b8767d22a0611a64e"
+      "sha256": "3036a5006414b874205ef730d5ee80e7856f09493dc1e72c4497b467f1df4da9"
     },
     {
       "path": "public/budget_support.js",

@@ -80,3 +80,11 @@ def merge_form(c,path,body):
         else:
             rows=c.execute("SELECT title,COALESCE(snoozed_until,remind_at) AS remind_at FROM reminders WHERE entity_type=? AND entity_id=? AND status!='done'",('task' if match[1]=='tasks' else 'event',int(match[2]))).fetchall()
             if clean([dict(r) for r in rows])!=original:raise Conflict('Les rappels ont changé ailleurs. Vérifie-les avant de les remplacer.')
+
+    if match[1]=='events' and 'preparations' in body and 'preparations' in metadata:
+        original=metadata['preparations'];incoming=body['preparations']
+        if not all(isinstance(items,list) and all(isinstance(r,dict) for r in items) for items in (original,incoming)):raise ValueError('Préparatifs invalides.')
+        if original==incoming:body.pop('preparations')
+        else:
+            latest=[dict(r) for r in c.execute('SELECT id,title FROM event_preparations WHERE event_id=? ORDER BY position,id',(int(match[2]),))]
+            if original!=latest:raise Conflict('Les préparatifs ont changé ailleurs. Ton formulaire reste ouvert.')

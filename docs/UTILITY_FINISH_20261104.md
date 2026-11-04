@@ -36,14 +36,23 @@ Les bibliothèques de carnets, moodboards par domaine, cartes d’objectifs, rec
 
 Les commandes désignent les fichiers tools/*_browser_test.cjs. Le résultat exact, la révision et les journaux Actions font foi ; un fichier de test seul n’est pas une preuve de réussite.
 
-## Reste ouvert avant de pouvoir annoncer « version utilitaire terminée »
+## Compléments de finition développés le 4 novembre
 
-1. Recette sur le vrai PC et le vrai téléphone, remplacement sans désinstallation, Play Protect, raccourcis/zone de notification, réglages des sons, notifications écran verrouillé et pendant un jeu. Aucune case correspondante validée ici.
-2. Vérification Tailscale réel, PC éteint, reprise réseau réelle et comparaison des anciens carnets. Les simulations automatiques ne prouvent pas la configuration du réseau personnel.
-3. Rappels Android généraux (rendez-vous/tâches/échéances) en arrière-plan : les alarmes natives de ce lot concernent la cuisine. Le suivi complet des rappels récurrents Windows et leurs occurrences reste à terminer ; ne pas l’annoncer terminé.
-4. Audit fonctionnel point par point des modules P1 : deadlines enrichies, liens projets/documents, annotations/corrections et réorganisation de certaines vues. Les fonctions déjà présentes et leurs tests ne suffisent pas à fermer chaque demande précise de la liste.
-5. Thèmes nommés multiples et restrictions individuelles du mode créatrice à renforcer si plusieurs personnes utilisent la même session Windows. Le contrôle actuel est celui de l’installation personnelle TEST, sans authentification propre à une personne. Pas de chiffrement applicatif ajouté aux notes de santé ; leur confidentialité dépend des accès au PC, à la session, aux sauvegardes et au réseau privé.
-6. Livraison stable : aucune promotion vers main ni vers le canal de Nathan. Rester en TEST jusqu’à la recette réelle et l’accord explicite.
+- Rappels récurrents : état séparé pour chaque date, correction des mois courts, reports et complétions sans arrêter une série. Les occurrences annulées ou déplacées sont exclues des alertes. Le compagnon Windows utilise ces mêmes états.
+- Android 0.1.14 TEST : copie locale des rappels du PC, alarmes natives en arrière-plan, actions Terminer / 10 min / 30 min / 1 heure / Annuler depuis Goblin et depuis les notifications selon les commandes affichées par Android. Les actions hors ligne restent en attente et sont rejouées dans l’ordre ; un rappel modifié ailleurs produit un conflit visible. La copie doit être activée par l’utilisatrice et actualisée lorsque PC et Tailscale sont accessibles. Les rappels déjà copiés n’exigent pas que le PC reste allumé.
+- Tâches avec échéance : liens utiles, sous-tâches à cocher, documents PDF/PNG/JPEG/TXT de 4 Mo, conservation dans les sauvegardes. Les formulaires complets protègent les changements récents d’un autre appareil, y compris les préparatifs de rendez-vous.
+- Carnets : annotations d’un passage et corrections proposées, conservées séparément du texte original ; brouillons locaux et état traité/rouvert.
+- Budget : plafonds mensuels par catégorie, suivi confirmé/présumé et prévu, correction d’une seule opération sans double création, justificatifs joints à cette opération.
+- Administratif : états Vierge / Complété / Envoyé / En attente / Valide / Expiré ; renommage et rangement vers une démarche avec historique. Le nom initial et les octets originaux sont conservés. Brouillons des notes administratives et protection des mises à jour simultanées.
+- Création : six thèmes nommés, aperçu avant application, retour aux dessins par défaut et copie des derniers thèmes retirés. Mot de passe personnel à définir dans Paramètres → Mes dessins ; une session déverrouillée expire et n’est pas exportée. Cette protection limite les modifications dans l’interface, sans remplacer la sécurité de la session Windows ni chiffrer les fichiers de données.
+
+## Validation encore nécessaire avant une version stable
+
+La liste originale n’est pas cochée automatiquement : elle exige une recette sur les appareils de Léo. Les scénarios logiciels, les essais sur runner Windows et l’émulateur Android sont distingués de ces validations réelles.
+
+Reste à effectuer sur le PC et le téléphone : installation sans désinstallation, conservation des anciens carnets et sons, réglages Play Protect et autorisations, écran verrouillé, notifications pendant un jeu, volume des véritables sons importés, Tailscale réel et PC éteint, sauvegarde indépendante et restauration d’une copie de démonstration, ergonomie avec la police et la résolution habituelles.
+
+Les neuf extensions expressément hors version restent facultatives. Ne pas publier de version stable ni promouvoir vers main ou le canal de Nathan sans recette réelle et accord explicite.
 
 ## Liste originale conservée pour la recette
 
