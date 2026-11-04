@@ -25,6 +25,11 @@
     #journalBook .journal-primary-content,#journalBook .journal-secondary-content{min-height:0;max-height:none!important;flex:1 1 auto;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:14px}
     @media(max-width:1250px){.top-brand{gap:6px;flex-wrap:wrap}#topXpLevel{font-size:12px}}
   </style>
+  <link rel="stylesheet" href="/library_refresh.css" />
+  <link rel="stylesheet" href="/library_moodboard.css" />
+  <link rel="stylesheet" href="/calendar_decor.css" />
+  <link rel="stylesheet" href="/personal_design.css" />
+  <link rel="stylesheet" href="/recipe_shelves.css" />
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -49,9 +54,6 @@
 
   <nav id="sideNav" class="tabs side-nav side-nav-right" aria-label="Navigation principale">
     <div id="sideNavDragHandle" class="side-nav-drag-handle" title="Glisser pour déplacer le menu" aria-label="Glisser pour déplacer le menu">⋮⋮</div>
-    <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Masquer le menu" title="Masquer le menu">
-      <span class="side-nav-arrow">›</span>
-    </button>
     <div class="side-nav-links">
       <button data-view="home" class="active">Accueil</button>
       <button data-view="calendar">Calendrier</button>
@@ -62,7 +64,7 @@
       <button data-view="trackers">Trackers</button>
       <button type="button" id="openMentalNotebook" onclick="window.open('/mental-health.html','_blank','noopener')">Carnet de santé mentale</button>
       <button data-view="admin">Administratif</button>
-      <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
+      <button data-view="captures">Notes et captures <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
@@ -95,7 +97,7 @@
       </div>
 
       <div id="journalBook" data-home-module="journal" class="journal-book" aria-label="Journal de l’Atelier">
-        <section class="journal-page journal-left">
+        <section id="journalLeftArt" class="journal-page journal-left" aria-label="Page gauche du journal">
           <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
 
@@ -116,7 +118,7 @@
           <div class="journal-secondary-content"><div class="journal-heading">Mes démarches</div><div id="journalAdminSummary"></div></div>
         </section>
 
-        <section class="journal-page journal-right">
+        <section id="journalRightArt" class="journal-page journal-right" aria-label="Page droite du journal">
           <div class="journal-primary-content">
           <div class="journal-section">
             <div class="journal-title-row"><button type="button" id="homeAllObjectives" class="journal-heading journal-heading-button home-heading-button" title="Ouvrir les objectifs dans la Bibliothèque">Activité</button></div>
@@ -376,7 +378,7 @@
         </div>
         <div class="cuisine-library-actions">
           <button id="importRecipe" type="button">Importer une recette</button>
-          <button id="addRecipeBook" type="button">+ Livre</button>
+          <button id="addRecipeBook" type="button">+ Rayon</button>
           <button id="addRecipe" class="primary" type="button">+ Recette</button>
         </div>
       </div>
@@ -384,8 +386,8 @@
       <div class="cuisine-library">
         <aside class="recipe-library-sidebar">
           <label for="recipeSearch">Rechercher</label>
-          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Nom, livre, note…">
-          <div class="recipe-books-title">Livres</div>
+          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Titre, rayon, ingrédient…">
+          <div class="recipe-books-title">Rayons</div>
           <div id="recipeBookShelf" class="recipe-book-shelf"></div>
         </aside>
         <section class="recipe-library-content">
@@ -445,7 +447,7 @@
       </section>
     </section>
     <section id="capturesView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
+      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Notes et captures</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
       <div id="captureInbox" class="life-card-list"></div>
     </section>
     <section id="settingsView" class="view settings-view">
@@ -460,6 +462,7 @@
         </div>
 
         <div class="settings-grid">
+
 
           <section class="settings-card" id="settingsUpdatesCard">
             <div class="settings-card-title">
@@ -554,6 +557,7 @@
               <span>Notifications Brave / Windows</span>
               <strong id="settingsNotificationStatus">—</strong>
             </div>
+            <div id="nativeReminderControls"><p id="nativeReminderStatus" role="status">Vérification des rappels natifs…</p><button id="nativeReminderEnable" type="button">Activer les rappels Windows via le compagnon</button><button id="nativeReminderTest" type="button">Tester une notification Windows</button></div>
             <button id="settingsNotificationPermission" type="button">Autoriser les notifications</button>
             <label class="settings-toggle">
               <input id="settingsNotificationPersistent" type="checkbox">
@@ -581,6 +585,26 @@
               <span class="settings-card-icon">✦</span>
               <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
             </div>
+          </section>
+          <section class="settings-card" id="settingsSafetyCard">
+            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">↺</span><div><h3>Sauvegardes et diagnostic</h3><p>Conserver une copie complète et récupérer ses données.</p></div></div>
+            <p>Une copie automatique est créée au démarrage. La première copie complète est conservée ; les copies récentes et une copie par jour sur 30 jours sont gardées.</p>
+            <div class="safety-actions"><button id="safetyExport" type="button">Exporter toutes mes données</button><button id="safetySnapshot" type="button">Sauvegarder maintenant</button><button id="safetyChoose" type="button">Vérifier une sauvegarde à restaurer</button><input hidden type="file" accept="application/json,.json" id="safetyFile"></div>
+            <p>Le fichier exporté contient aussi tes documents et carnets privés. Garde-le dans un emplacement personnel, sur un autre support si possible.</p>
+            <label><input type="checkbox" id="safetyNewProfile"> Cette installation est nouvelle et vide : autoriser la récupération d’une ancienne copie de la même édition.</label><div id="safetyRestorePreview" hidden></div><p id="safetyMessage" role="status" aria-live="polite"></p>
+            <button type="button" id="safetyRefresh">Actualiser le diagnostic</button><button type="button" id="safetyExportDiagnostics">Exporter le diagnostic sans mes contenus</button><button type="button" id="safetyRestart">Redémarrer l’application</button><pre id="safetyDiagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+          </section>
+          <section class="settings-card" id="settingsPersonalDesignCard">
+            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">✎</span><div><h3>Mes dessins</h3><p>Habille L’Atelier avec tes propres créations.</p></div></div>
+            <p id="personalDesignAvailability">Vérification de ton installation TEST…</p>
+            <button type="button" id="personalDesignStart" disabled>Ouvrir le mode création</button>
+            <p>Choisis une zone, glisse ton dessin dessus, ajuste le rendu puis enregistre ton thème. Les boutons gardent leur fonction.</p>
+            <p>Ce mode est réservé à l’installation Windows TEST de Léo (8876). Il n’est pas protégé par un mot de passe sur cet ordinateur.</p>
+            <details><summary>Préparer mes dessins dans Clip Studio Paint</summary>
+              <p>Garde ton original en .clip avec ses calques. Pour l’application, utilise Fichier → Exporter (calque simple) → PNG. Pour les contours transparents, masque le calque Papier et active l’export de la transparence.</p>
+              <p>Les dimensions sont données en pixels pour chaque zone. Dessiner à deux fois la taille affichée aide à garder des contours nets ; les ppp ne changent pas la taille à l’écran. Pour un bouton, garde le centre lisible. Pour un fond, évite les détails forts derrière les textes.</p>
+              <a href="https://help.clip-studio.com/fr-fr/manual_fr/210_file/Exporter_des_fichiers.htm" target="_blank" rel="noopener noreferrer">Guide officiel d’export Clip Studio Paint</a>
+            </details>
           </section>
         </div>
       </div>
@@ -640,6 +664,7 @@
     <div class="quick-capture-foot"><span id="quickCaptureDestination">Destination : Carnet</span><button id="quickCaptureSend" type="button" class="primary">Envoyer</button></div>
     </div>
   </div>
+  <script src="/safety_boot.js"></script>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/postits.js"></script>
@@ -653,5 +678,18 @@
   <script src="/tracker_ritual_ui.js"></script>
   <script src="/editor_flow.js"></script>
   <script src="/interface_reference.js"></script>
+  <script src="/library_moodboard.js"></script>
+  <script src="/library_refresh.js"></script>
+  <script src="/utility_details.js"></script>
+  <script src="/budget_support.js"></script>
+  <script src="/calendar_decor.js"></script>
+  <script src="/personal_design.js"></script>
+  <script src="/creator_access.js"></script>
+  <script src="/recipe_shelves.js"></script>
+  <script src="/kitchen_timers.js"></script>
+  <script src="/utility_safety.js"></script>
+  <script src="/utility_notes.js"></script>
+  <script src="/utility_live.js"></script>
+  <script src="/native_reminders.js"></script>
 </body>
 </html>

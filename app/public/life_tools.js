@@ -720,9 +720,8 @@ function renderLifeAdmin(){
     const noteHeading=lifeNode('label','life-admin-notes-title','Notes et prochaine action');
     const notes=lifeNode('textarea','life-admin-notes');
     notes.setAttribute('aria-label','Notes et prochaine action de '+item.title);
-    notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
-    const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi(
-      '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
+    let adminDrafts={};try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}notes.value=adminDrafts[item.id]??item.notes??'';notes.oninput=()=>{try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}adminDrafts[item.id]=notes.value;try{localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}catch{}};notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
+    const save=lifeButton('Enregistrer les notes',async()=>{const ok=await lifeAction('Enregistrer les notes',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})}));if(ok){try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}delete adminDrafts[item.id];localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}});
     const eventPanel=lifeNode('div','life-admin-link-panel');
     const eventLabel=lifeNode('label','life-admin-link-label','Rendez-vous associé (facultatif)');
     const eventSelect=lifeNode('select','life-admin-event-select');
@@ -768,7 +767,10 @@ function renderLifeAdmin(){
         if(ok)await lifeAction('Supprimer le document',()=>lifeApi(
           '/api/admin/'+item.id+'/attachments/'+file.id,{method:'DELETE'}));
       },'life-danger');
-      line.append(link,remove);fileList.append(line);
+      const rename=lifeButton('Renommer',async()=>{const value=prompt('Nouveau nom du document (garde son extension)',file.filename);if(!value||value===file.filename)return;await lifeAction('Renommer le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,filename:value})}))});
+      const documentState=lifeNode('select','life-document-state');documentState.setAttribute('aria-label','État du document '+file.filename);for(const [value,label] of Object.entries({blank:'Vierge',completed:'Complété',sent:'Envoyé',waiting:'En attente',valid:'Valide',expired:'Expiré'})){const option=lifeNode('option','',label);option.value=value;documentState.append(option)}documentState.value=file.document_state||'blank';documentState.onchange=()=>lifeAction('Classer le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,document_state:documentState.value})}));
+      const move=lifeNode('select','life-document-move');move.setAttribute('aria-label','Ranger le document '+file.filename);for(const destination of lifeAdmin){const option=lifeNode('option','',destination.title);option.value=destination.id;move.append(option)}move.value=String(item.id);move.onchange=async()=>{const destination=Number(move.value);if(destination===item.id)return;if(!confirm('Déplacer ce document dans cette démarche ? Son contenu original et un historique du rangement seront conservés.')){move.value=String(item.id);return}await lifeAction('Ranger le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,admin_id:destination})}))};
+      link.title+=' · Original : '+(file.original_filename||file.filename);line.append(link,rename,documentState,move,remove);fileList.append(line);
     }
     if(!(item.attachments||[]).length)fileList.append(lifeNode('small','life-muted','Aucun document joint.'));
     files.append(fileList);

@@ -70,6 +70,7 @@ def _db(db_path=DB):
 
 
 def _update_in_progress():
+    if (DATA/'safety-maintenance.json').exists():return True
     try:
         status = json.loads((DATA / "updater-state.json").read_text(encoding="utf-8"))
         return status.get("phase") in (
@@ -708,6 +709,10 @@ def _run_gui():
         if _update_in_progress():
             root.after(1700, sync)
             return
+        try:
+            import native_reminders
+            native_reminders.tick()
+        except (ImportError,OSError,RuntimeError):pass
         try:
             current_wake = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
             if current_wake != wake_value:

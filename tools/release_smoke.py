@@ -147,9 +147,11 @@ def check_frontend_contract() -> None:
     version = (APP / "VERSION").read_text(encoding="utf-8").strip()
     if f"ALPHA {version}" not in index.upper():
         fail(f"La version affichée dans index.html ne correspond pas à VERSION={version}.")
-    for required in ('id="sideNav"', 'id="sideNavToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"', 'id="libraryNotebookPageList"', 'id="addLibraryPageSmall"'):
+    for required in ('id="sideNav"', 'id="sideNavHeaderToggle"', 'id="sideNavDragHandle"', 'id="addStandaloneReminder"', 'id="settingsBtn"', 'id="settingsView"', 'id="settingsDateFormat"', 'id="settingsNotificationPersistent"', 'id="settingsNotificationPermission"', 'id="settingsNavReset"', 'id="jumpDateLabel"', 'id="libraryView"', 'id="libraryHubPanel"', 'id="libraryDomainShelf"', 'id="addLibraryDomain"', 'id="libraryDomainPanel"', 'id="libraryNotebookList"', 'id="libraryProgressPanel"', 'id="libraryDomainMain"', 'id="libraryNotebookPageList"', 'id="addLibraryPageSmall"'):
         if required not in index:
             fail(f"Élément frontend obligatoire absent : {required}")
+    if 'id="sideNavToggle"' in index or 'side-nav-arrow' in index:
+        fail("L’ancienne flèche du tiroir doit être absente.")
     if 'id="todayBtn"' in index:
         fail("Le bouton Aujourd’hui ne doit plus être présent.")
     if "Rappel :" not in js or "Clique pour ouvrir L’Atelier." not in js:
@@ -458,8 +460,11 @@ def check_server(version: str) -> None:
 
         db = data / "atelier.db"
         with sqlite3.connect(db) as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] != 16:
+            if c.execute("PRAGMA user_version").fetchone()[0] != 20:
                 fail("PRAGMA user_version n'a pas été appliqué.")
+            mood_cols={row[1] for row in c.execute("PRAGMA table_info(library_moodboards)")}
+            if not {"domain_id", "revision", "items_json"}.issubset(mood_cols):
+                fail("Le stockage du moodboard manque à la migration.")
             admin_cols={row[1] for row in c.execute("PRAGMA table_info(admin_documents)")}
             if "archived" not in admin_cols:
                 fail("La colonne des archives administratives manque à la migration.")

@@ -1,0 +1,24 @@
+#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 24px!important;border-radius:0}
+#monthGrid .calendar-decoration{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;pointer-events:none;z-index:-1}
+#monthGrid .calendar-cycle-band{position:absolute;left:4px;right:4px;bottom:4px;min-height:16px;padding:1px 5px;box-sizing:border-box;border-radius:4px;background:#b9756b;color:#211715;font:600 10px/14px sans-serif;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+#monthGrid .cycle-forecast .calendar-cycle-band{background:#d6a3b3;border:1px dashed #714e55}
+#atelierRelativeDateFloat{transform:translateX(-50%);text-align:center}
+.calendar-decor-dialog{width:min(440px,90vw);max-height:90vh;overflow:auto;background:#292d26;color:#eee5d4;border:1px solid #8ca083;border-radius:14px;padding:22px}
+.calendar-decor-dialog::backdrop{background:#0009}
+.calendar-decor-dialog form{display:grid;gap:12px}
+.calendar-decor-dialog h3,.calendar-decor-dialog p{margin:0}
+.calendar-decor-dialog label{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.calendar-decor-dialog input[type=range]{width:100%}
+.calendar-decor-dialog input[type=color]{width:48px;height:32px;padding:2px}
+.calendar-decor-preview{height:110px;position:relative;border:1px dashed #8ca083;border-radius:8px;overflow:hidden;background:#f1e8d2}
+.calendar-decor-preview img{width:100%;height:100%;object-fit:cover}
+.calendar-decor-actions{display:flex;gap:8px;flex-wrap:wrap}
+.calendar-decor-status{font-size:12px;color:#e2c995}
+.calendar-jump-date{display:inline-flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap}
+.calendar-jump-date input{max-width:145px}
+
+/* La classe générique .cycle-forecast était un panneau avec une marge de 12 px. */
+#monthGrid .day-cell.cycle-forecast{border-left:0}
+#weekGrid .cycle-forecast{margin:0;border-radius:0}
+#weekGrid .week-slot.cycle-forecast{padding:0;border-left:0}
+@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 24px!important}}

@@ -24,29 +24,12 @@ function renderCycleHeader(){
   root.hidden=!cycleShowInfoPreference();
   if(root.hidden)return;
   const prediction=cycleEstimate();
-  const label=document.createElement('span');
-  label.className='calendar-cycle-chip';
-  if(!prediction){
-    label.textContent='Règles · estimation indisponible';
-    label.title='Enregistre au moins deux débuts de règles espacés de 21 à 45 jours pour obtenir une estimation.';
-    root.appendChild(label);
-    return;
-  }
-  const days=prediction.approxDays;
-  label.textContent='Règles estimées · J−'+days;
-  label.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+
-    ' · Cycle moyen observé : '+prediction.average+' jours. Estimation indicative.';
-  const goblin=document.createElement('span');
-  goblin.className='calendar-cycle-chip goblin-cycle-chip';
-  const before=days-14;
-  if(before>0){
-    goblin.textContent='Mode Goblin grognon dans J−'+before;
-  }else{
-    goblin.textContent='Mode Goblin grognon · fenêtre estimée';
-    goblin.classList.add('is-goblin-window');
-  }
-  goblin.title='Repère ludique fixé à 14 jours avant les prochaines règles estimées ; ne prédit pas les symptômes.';
-  root.append(label,goblin);
+  const today=ymd(new Date()),recorded=isRecordedCycleDay(today);
+  const chip=document.createElement('span');chip.className='calendar-cycle-chip goblin-cycle-chip';
+  if(recorded){chip.textContent='Goblin grognon · règles en cours';chip.classList.add('is-goblin-window')}
+  else if(prediction){chip.textContent='Goblin grognon · J−'+prediction.approxDays+' avant les règles estimées';chip.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+' · estimation indicative, pas une prédiction des symptômes.'}
+  else {chip.textContent='Goblin grognon · estimation indisponible';chip.title='Enregistre au moins deux débuts de règles espacés de 21 à 45 jours.'}
+  root.append(chip);
 }
 function bindCalendarDateContextMenu(element,day,time=null){
   element.addEventListener('contextmenu',event=>{
@@ -55,7 +38,8 @@ function bindCalendarDateContextMenu(element,day,time=null){
     event.preventDefault();event.stopPropagation();
     showAtelierContextMenu(event,[
       {label:'Nouveau rendez-vous',run:()=>openEventModal(null,day,time)},
-      {label:'Règles',run:()=>openCycleQuickEditor(day,event)}
+      {label:'Règles',run:()=>openCycleQuickEditor(day,event)},
+      ...(typeof openCalendarDecoration==='function'?[{label:'Décorer ce jour / ce mois',run:()=>openCalendarDecoration(day)}]:[])
     ]);
   });
 }

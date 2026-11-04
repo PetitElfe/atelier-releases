@@ -30,7 +30,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.equal(await page.locator('#calendarCycleHint').count(),0);
   assert.equal(await page.locator('.cycle-module').count(),0);
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
-  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles']);
+  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles','Décorer ce jour / ce mois']);
   await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
   await page.locator('#cycleQuickEditor').waitFor({state:'visible'});
   const today=ymd(new Date());
@@ -39,13 +39,13 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   await page.locator('#cycleQuickEditor').waitFor({state:'detached'});
   let periods=await api('/api/cycle-periods');assert.equal(periods.length,1);
   await page.locator('#calendarCycleSummary').waitFor({state:'visible'});
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/estimation indisponible/);
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Goblin grognon · règles en cours/);
   // Deux débuts espacés de 28 jours permettent le calcul du prochain cycle.
   const prev=ymd(add(new Date(),-28));
   await api('/api/cycle-periods','POST',{start_date:prev,end_date:null});
   await page.evaluate(()=>refreshOrganisation());
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/J−28/);
-  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Mode Goblin grognon dans J−14/);
+  assert.equal(await page.locator('#calendarCycleSummary .calendar-cycle-chip').count(),1);
+  assert.match(await page.locator('#calendarCycleSummary').innerText(),/Goblin grognon · règles en cours/);
   assert.equal(await page.locator('#monthGrid .day-cell.today.cycle-recorded').count(),1);
   await page.locator('#settingsBtn').click();
   // Settings is now a single-card sidebar; select the cycle section first.
@@ -83,7 +83,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   periods=await api('/api/cycle-periods');
   assert.equal(periods.length,1);
   assert.deepEqual(errors,[]);
-  console.log('PASS: compact cycle editor, J-28/J-14, independent settings, markers, edit/delete');
+  console.log('PASS: compact cycle editor, single cycle summary, independent settings, markers, edit/delete');
  }finally{
   if(browser)await browser.close();
   server.kill();rmSync(data,{recursive:true,force:true,maxRetries:5,retryDelay:150});

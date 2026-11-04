@@ -1,0 +1,82 @@
+name: Windows TEST isolated delivery
+on:
+  push:
+    branches: [test/windows-library-calendar-20261103]
+    paths:
+      - '.github/workflows/windows-test-delivery.yml'
+      - 'tools/windows_delivery/**'
+      - 'tools/build_windows_test_delivery.py'
+      - 'tests/test_windows_delivery_install.py'
+permissions:
+  contents: read
+jobs:
+  package-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Package pinned Windows TEST launcher
+        shell: pwsh
+        run: |
+          $revision=(Get-Content tools/windows_delivery/revision.json -Raw | ConvertFrom-Json).payload_revision
+          python tools/build_windows_test_delivery.py --revision $revision
+      - name: Test actual upgrade on disposable Windows E drive
+        env:
+          GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+          PYTHONUTF8: '1'
+        run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261104
+          path: |
+            dist/Goblin_MAJ_Windows_TEST_20261104.zip
+            dist/Goblin_MAJ_Windows_TEST_20261104.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: package-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261104
+          path: delivery
+      - name: Publish approved isolated TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/goblin-release-notes.md <<'NOTES'
+          Finition utilitaire Windows TEST — rappels, documents, budget et dessins personnels.
+
+          Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends MISE À JOUR RÉUSSIE puis ouvre ton raccourci TEST habituel. Python et une connexion Internet sont nécessaires.
+
+          Réservé à E:\LATELIER_TEST_0180, port 8876. Sauvegarde automatique avant remplacement, profil et données conservés, canal personnel maintenu. Aucun changement de main, de la version stable ou de Nathan.
+
+          Rappels récurrents avec état par date ; terminer une occurrence ne termine pas la série. Notifications Windows facultatives via le compagnon près de l’horloge. Compatible avec Android 0.1.14 TEST et ses rappels natifs copiés du PC.
+
+          Tâches : liens, sous-tâches et documents. Carnets : annotations et corrections proposées sans réécrire le texte original. Budget : plafonds mensuels par catégorie, correction sans doublon, justificatifs. Administratif : états des documents, renommage et classement avec historique et originaux conservés. Protection des modifications simultanées.
+
+          Mes dessins : six thèmes nommés, aperçu, retour au thème par défaut, mot de passe personnel à définir dans Paramètres. Cette protection de l’interface ne remplace pas la sécurité de la session Windows ni le chiffrement des données.
+
+          Sauvegardes complètes et restauration contrôlée, brouillons, synchronisation avec conflits visibles, livres et moodboards, carte d’objectifs, bibliothèque de recettes sur tranches et minuteurs nommés conservés. L’ancienne flèche du tiroir est retirée.
+
+          Validé : suite automatique complète, navigateurs et installation réelle sur un runner Windows isolé. Les essais sur le PC et le téléphone de Léo restent nécessaires avant une version stable. Aucun appareil réel modifié. Scripts Python/CMD, pas d’EXE signé. Mode d’emploi dans LIRE_MOI.txt.
+          NOTES
+          cd delivery
+          sha256sum -c Goblin_MAJ_Windows_TEST_20261104.zip.sha256
+          cd ..
+          if gh release view windows-test-utilitaire-complet-20261104 >/dev/null 2>&1; then
+            echo 'Existing TEST release preserved; no replacement performed.'
+            exit 0
+          fi
+          gh release create windows-test-utilitaire-complet-20261104 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Finition utilitaire — 04/11/2026" --notes-file /tmp/goblin-release-notes.md
