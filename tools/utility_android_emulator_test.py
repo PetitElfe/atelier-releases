@@ -67,11 +67,17 @@ def find(label,scroll=True):
 def tap(label,scroll=True):
     x1,y1,x2,y2=bounds(find(label,scroll));print('Tap:',label,(x1,y1,x2,y2),flush=True);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
 
+def hide_keyboard():
+    info=adb('shell','dumpsys','input_method')
+    if re.search(r'(?:mInputShown|mIsInputViewShown|isInputViewShown)=true',info):
+        adb('shell','input','keyevent','4');time.sleep(.7)
+
 def text(label,value):
+    hide_keyboard()
     for _ in range(2):adb('shell','input','swipe','520','420','520','1900','200')
-    node=find(label);x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));adb('shell','input','keyevent','123')
+    node=find(label);x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(.7);adb('shell','input','keyevent','123')
     for _ in range(min(30,len(node.attrib.get('text',''))+3)):adb('shell','input','keyevent','67')
-    adb('shell','input','text',value);adb('shell','input','keyevent','4')
+    adb('shell','input','text',value);time.sleep(.4);hide_keyboard()
 
 def menu(label):
     tap('Ouvrir le menu',False);tap(label,False);time.sleep(1)
