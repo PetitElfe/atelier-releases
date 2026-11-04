@@ -16,9 +16,19 @@ def adb(*args):
     return r.stdout
 
 def nodes():
-    adb('shell','uiautomator','dump','/sdcard/goblin-utility.xml')
-    raw=adb('shell','cat','/sdcard/goblin-utility.xml')
-    return ET.fromstring(raw[raw.index('<?xml'):])
+    # Accessibility can be unavailable briefly while the initial WebView starts.
+    # Retry only obtaining the tree; application assertions still fail normally.
+    last_error=None
+    for attempt in range(4):
+        try:
+            adb('shell','rm','-f','/sdcard/goblin-utility.xml')
+            adb('shell','uiautomator','dump','/sdcard/goblin-utility.xml')
+            raw=adb('shell','cat','/sdcard/goblin-utility.xml')
+            return ET.fromstring(raw[raw.index('<?xml'):])
+        except (RuntimeError,ValueError,ET.ParseError) as exc:
+            last_error=exc
+            if attempt<3:time.sleep(2)
+    raise RuntimeError('Android accessibility tree unavailable after four attempts') from last_error
 
 def bounds(node):
     values=list(map(int,re.findall(r'\d+',node.attrib.get('bounds',''))))
