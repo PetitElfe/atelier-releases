@@ -14,14 +14,7 @@ set "GOBLIN_RESULT=%ERRORLEVEL%"
 goto :done
 :try_py
 py -3 -c "import sys; assert sys.version_info >= (3,10)" >nul 2>&1
-if errorlevel 1 goto :incomplete
-echo Le dossier de mise a jour est incomplet.
-echo Ferme cette fenetre, puis clique droit sur le ZIP et choisis Extraire tout.
-echo Ouvre le dossier extrait et relance Installer_la_MAJ_TEST.cmd.
-echo Tous les fichiers doivent rester ensemble. Aucune modification effectuee.
-set "GOBLIN_RESULT=1"
-goto :done
-:missing
+if errorlevel 1 goto :missing
 py -3 -u "%~dp0installer.py"
 set "GOBLIN_RESULT=%ERRORLEVEL%"
 goto :done

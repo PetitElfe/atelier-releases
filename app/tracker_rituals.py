@@ -4,6 +4,7 @@ SQLite partagé uniquement au sein de l'installation TEST/Nathan correspondante.
 """
 from datetime import date, timedelta
 from calendar import monthrange
+import studio
 
 LINK_TABLES={'task':('tasks','title'), 'objective':('objective_nodes','title'),
              'admin':('admin_documents','title')}
@@ -109,7 +110,7 @@ def save_setup(c,row_id,body,ts):
 
 def toggle_step(c,step_id,day,done,ts):
     if type(done) is not bool:raise ValueError('Case incorrecte.')
-    row=c.execute('SELECT r.id,r.weekday,r.mode,s.id step_id,s.weekday step_weekday FROM tracker_row_steps s '
+    row=c.execute('SELECT r.id,r.board_id,r.weekday,r.mode,s.id step_id,s.weekday step_weekday FROM tracker_row_steps s '
                   'JOIN tracker_board_rows r ON r.id=s.row_id '
                   'JOIN tracker_boards b ON b.id=r.board_id '
                   'WHERE s.id=? AND s.active=1 AND r.archived=0 AND b.archived=0',
@@ -119,14 +120,17 @@ def toggle_step(c,step_id,day,done,ts):
     if row['weekday'] is not None and date.fromisoformat(day).weekday()!=row['weekday']:
         raise ValueError('Cette habitude est prévue un autre jour.')
     if row['step_weekday'] is not None and row['step_weekday']!=date.fromisoformat(day).weekday():raise ValueError('Étape prévue un autre jour.')
+    weekday=date.fromisoformat(day).weekday()
+    board=c.execute('SELECT * FROM tracker_boards WHERE id=?',(row['board_id'],)).fetchone()
+    day=studio.period_mark_day(board,date.fromisoformat(day)).isoformat()
     if done:
         c.execute('INSERT OR IGNORE INTO tracker_row_step_checks(step_id,day) VALUES(?,?)',(step_id,day))
     else:
         c.execute('DELETE FROM tracker_row_step_checks WHERE step_id=? AND day=?',(step_id,day))
-    total=c.execute('SELECT count(*) FROM tracker_row_steps WHERE row_id=? AND active=1 AND (weekday IS NULL OR weekday=?)',(row['id'],date.fromisoformat(day).weekday())).fetchone()[0]
+    total=c.execute('SELECT count(*) FROM tracker_row_steps WHERE row_id=? AND active=1 AND (weekday IS NULL OR weekday=?)',(row['id'],weekday)).fetchone()[0]
     checked=c.execute('SELECT count(*) FROM tracker_row_step_checks chk '
                       'JOIN tracker_row_steps st ON st.id=chk.step_id '
-                      'WHERE st.row_id=? AND st.active=1 AND chk.day=? AND (st.weekday IS NULL OR st.weekday=?)',(row['id'],day,date.fromisoformat(day).weekday())).fetchone()[0]
+                      'WHERE st.row_id=? AND st.active=1 AND chk.day=? AND (st.weekday IS NULL OR st.weekday=?)',(row['id'],day,weekday)).fetchone()[0]
     # Check the day if and only if every current step is complete.
     if total>0 and checked==total:
         c.execute('INSERT INTO tracker_board_marks(row_id,day,value,updated_at) VALUES(?,?,?,?) '
@@ -148,22 +152,23 @@ def daily(c,day,tracker_window):
         try:period=tracker_window(board,today=day)
         except (ValueError,OverflowError):continue
         if board['period_unit']=='weeks':continue
-        if period['granularity']!='days' or not period['start']<=day.isoformat()<=period['end']:
-            continue
+        key=studio.period_mark_day(board,day).isoformat()
+        if period['granularity']=='months' and key==day.isoformat():key=day.replace(day=1).isoformat()
+        if not period['start']<=key<=period['end']:continue
         rows=c.execute('SELECT id,title,mode,target_count,weekday,linked_type,linked_id FROM tracker_board_rows '
                        'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],)).fetchall()
         for row in rows:
             if row['weekday'] is not None and row['weekday']!=day.weekday():continue
             if row['mode']=='number' and row['target_count'] is None:continue
             marked=c.execute('SELECT value FROM tracker_board_marks WHERE row_id=? AND day=?',
-                             (row['id'],day.isoformat())).fetchone()
+                             (row['id'],key)).fetchone()
             value=marked['value'] if marked else None
             done,amount=day_progress(row,value)
             result.append({'board_id':board['id'],'board_title':board['title'],
-                           'color':board['color'],'row_id':row['id'],'title':row['title'],
+                           'color':board['color'],'mark_day':key,'row_id':row['id'],'title':row['title'],
                            'mode':row['mode'],'target_count':row['target_count'],
                            'value':amount,'weekday':row['weekday'],'done':done,
-                           'steps':steps_for_row(c,row['id'],day.isoformat(),day.isoformat()),
+                           'steps':steps_for_row(c,row['id'],key,key),
                            'linked_type':row['linked_type'],'linked_id':row['linked_id']})
     return {'day':day.isoformat(),'items':result}
 
@@ -190,7 +195,9 @@ def monthly_archive(c,now,months=60):
                 if row['mode']=='number' and row['target_count'] is None:continue
                 # Monthly-granularity boards store one mark on the first of month.
                 bymonth=(board['period_unit']=='years' or (board['period_unit']=='months' and board['period_count']>=4))
-                eligible=[begin] if bymonth else [
+                unit=board['mark_unit'] if 'mark_unit' in board.keys() else 'auto'
+                boundary=studio.period_mark_day(board,date(yy,mm,1)).isoformat()
+                eligible=([begin] if boundary==begin else []) if unit!='auto' else [begin] if bymonth else [
                     f'{label}-{d:02d}' for d in range(1,days+1)
                     if row['weekday'] is None or date(yy,mm,d).weekday()==row['weekday']]
                 marks={r['day']:r['value'] for r in c.execute(

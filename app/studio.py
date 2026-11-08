@@ -18,6 +18,9 @@ IDENTITY = re.compile(r'^[A-Za-z0-9_-]{1,100}$')
 
 
 def initialise(c):
+    boards = {r[1] for r in c.execute('PRAGMA table_info(tracker_boards)')}
+    if boards and 'mark_unit' not in boards:
+        c.execute("ALTER TABLE tracker_boards ADD COLUMN mark_unit TEXT NOT NULL DEFAULT 'auto'")
     columns = {r[1] for r in c.execute('PRAGMA table_info(tracker_row_steps)')}
     if columns and 'weekday' not in columns:
         c.execute('ALTER TABLE tracker_row_steps ADD COLUMN weekday INTEGER CHECK(weekday IS NULL OR weekday BETWEEN 0 AND 6)')
@@ -67,6 +70,12 @@ def finite(value, low=0, high=10000000):
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
         raise ValueError('Nombre invalide.')
     return value
+
+
+def period_mark_day(board, day):
+    unit=board['mark_unit'] if 'mark_unit' in board.keys() else 'auto'
+    size={'month':1,'quarter':3,'semester':6,'year':12}.get(unit)
+    return day.replace(month=((day.month-1)//size)*size+1,day=1) if size else day
 
 
 def validate(kind, data):
@@ -161,7 +170,10 @@ def sport_contribution(c,oid,data,archived,stamp):
         day=date.fromisoformat(data['date']).isoformat()
     row=c.execute('SELECT * FROM tracker_board_rows WHERE id=? AND archived=0',(rid,)).fetchone()
     if not row:raise ValueError('La ligne de sport est introuvable.')
-    if row['weekday'] is not None and date.fromisoformat(day).weekday()!=row['weekday']:raise ValueError('Cette ligne de tracker est prévue un autre jour.')
+    if not existing and row['weekday'] is not None and date.fromisoformat(day).weekday()!=row['weekday']:raise ValueError('Cette ligne de tracker est prévue un autre jour.')
+    if not existing and 'board_id' in row.keys():
+        board=c.execute('SELECT * FROM tracker_boards WHERE id=?',(row['board_id'],)).fetchone()
+        if board:day=period_mark_day(board,date.fromisoformat(day)).isoformat()
     if c.execute('SELECT 1 FROM tracker_row_steps WHERE row_id=? AND active=1',(rid,)).fetchone():raise ValueError('Pour ce lien automatique, choisis une ligne de sport sans sous-étapes.')
     marked=c.execute('SELECT * FROM tracker_board_marks WHERE row_id=? AND day=?',(rid,day)).fetchone()
     base=c.execute('SELECT * FROM studio_tracker_base WHERE row_id=? AND day=?',(rid,day)).fetchone()
@@ -208,8 +220,10 @@ def tracker_mark(c, body, stamp):
                     'WHERE r.id=? AND r.archived=0 AND b.archived=0', (row_id,)).fetchone()
     if not row:
         raise ValueError('Ligne introuvable.')
+    board=c.execute('SELECT * FROM tracker_boards WHERE id=?',(row['board_id'],)).fetchone()
     if row['weekday'] is not None and date.fromisoformat(day).weekday() != row['weekday']:
         raise ValueError('Cette ligne est prévue un autre jour.')
+    day=period_mark_day(board,date.fromisoformat(day)).isoformat()
     old = c.execute('SELECT value FROM tracker_board_marks WHERE row_id=? AND day=?', (row_id, day)).fetchone()
     current = old['value'] if old else None
     action = body.get('mode', 'set')
@@ -308,9 +322,12 @@ def command(c, body, context):
         result={'ok':True}
     elif action == 'board-period':
         row=c.execute('SELECT * FROM tracker_boards WHERE id=? AND archived=0',(int(data['id']),)).fetchone()
-        if not row or data.get('base')!=[row['period_unit'],row['period_count']]:raise LookupError('Le rythme a changé ailleurs.')
+        if not row or data.get('base')!=[row['period_unit'],row['period_count']] or data.get('base_mark_unit',row['mark_unit'])!=row['mark_unit']:raise LookupError('Le rythme a changé ailleurs.')
         unit,count=context['tracker_period_choice'](data['period_unit'],data['period_count'])
-        c.execute('UPDATE tracker_boards SET period_unit=?,period_count=?,anchor_date=?,updated_at=? WHERE id=?',(unit,count,context['tracker_period_anchor'](unit).isoformat(),stamp,row['id']))
+        mark_unit=data.get('mark_unit','auto')
+        if mark_unit not in ('auto','month','quarter','semester','year'):raise ValueError('Rythme de cases invalide.')
+        if mark_unit!='auto' and (unit!='years' or count!=1):raise ValueError('Ce rythme utilise une feuille annuelle.')
+        c.execute('UPDATE tracker_boards SET period_unit=?,period_count=?,anchor_date=?,mark_unit=?,updated_at=? WHERE id=?',(unit,count,context['tracker_period_anchor'](unit).isoformat(),mark_unit,stamp,row['id']))
         result={'ok':True}
     elif action == 'row-archive':
         c.execute('UPDATE tracker_board_rows SET archived=1,updated_at=? WHERE id=?',(stamp,int(data['row_id'])))
@@ -348,7 +365,9 @@ def command(c, body, context):
         result={'ok':True}
     elif action == 'tracker-step':
         if 'base' in data:
-            current=bool(c.execute('SELECT 1 FROM tracker_row_step_checks WHERE step_id=? AND day=?',(int(data['step_id']),data['day'])).fetchone())
+            board=c.execute('SELECT b.* FROM tracker_boards b JOIN tracker_board_rows r ON r.board_id=b.id JOIN tracker_row_steps s ON s.row_id=r.id WHERE s.id=?',(int(data['step_id']),)).fetchone()
+            key=period_mark_day(board,date.fromisoformat(data['day'])).isoformat() if board else data['day']
+            current=bool(c.execute('SELECT 1 FROM tracker_row_step_checks WHERE step_id=? AND day=?',(int(data['step_id']),key)).fetchone())
             if current!=data['base']:raise LookupError('Cette étape a changé sur un autre appareil.')
         result = context['tracker_rituals'].toggle_step(c, int(data['step_id']), date.fromisoformat(data['day']).isoformat(), data['done'], stamp)
     elif action == 'consume-stock':
@@ -373,7 +392,7 @@ def widget_data(c, context):
     today=date.today();end=today+timedelta(days=90)
     items=[{'title':r['title'],'date':r['due_date'],'kind':'task'} for r in c.execute("SELECT title,due_date FROM tasks WHERE completed=0 AND archived=0 AND due_date IS NOT NULL AND due_date<=? ORDER BY due_date",(end.isoformat(),))]
     completed={(r['event_id'],r['instance_date']) for r in c.execute('SELECT event_id,instance_date FROM event_completions')}
-    closed={(r['event_id'],r['instance_date']) for r in c.execute("SELECT event_id,instance_date FROM event_instance_actions WHERE action IN ('postponed','cancelled')")}
+    closed={(r['event_id'],r['instance_date']) for r in c.execute("SELECT event_id,instance_date FROM event_instance_actions WHERE action IN ('postponed','cancelled','hidden')")}
     events=context['expand_events'](c.execute("SELECT * FROM events WHERE status NOT IN ('cancelled','done')").fetchall(),today.isoformat(),end.isoformat())
     for e in events:
         if (e['id'],e['instance_date']) not in completed|closed:items.append({'title':e['title'],'date':e['instance_date'],'time':e.get('start_time') or '', 'kind':'event'})

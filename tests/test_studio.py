@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'app'))
 import studio
 import tracker_rituals
+from datetime import date
 
 class StudioTests(unittest.TestCase):
  def setUp(self):
@@ -91,5 +92,14 @@ class StudioTests(unittest.TestCase):
   self.assertEqual(self.c.execute('SELECT units_count FROM food_items').fetchone()[0],1)
   body['operation_id']='stale-quantity'
   with self.assertRaises(LookupError):studio.command(self.c,body,{})
+ def test_widget_has_only_dated_tasks_and_open_event_occurrences(self):
+  day=date.today().isoformat()
+  self.c.executescript("CREATE TABLE tasks(title TEXT,due_date TEXT,completed INTEGER,archived INTEGER);CREATE TABLE events(status TEXT);CREATE TABLE event_completions(event_id INTEGER,instance_date TEXT);CREATE TABLE event_instance_actions(event_id INTEGER,instance_date TEXT,action TEXT);CREATE TABLE menstrual_periods(start_date TEXT);")
+  self.c.executemany('INSERT INTO tasks VALUES(?,?,0,0)',[('Échéance',day),('Sans date',None)])
+  self.c.execute('INSERT INTO event_completions VALUES(2,?)',(day,));self.c.execute("INSERT INTO event_instance_actions VALUES(3,?,'hidden')",(day,))
+  events=[{'id':i,'title':'RDV '+str(i),'instance_date':day} for i in (1,2,3)]
+  rows,cycle=studio.widget_data(self.c,{'expand_events':lambda *_:events})
+  self.assertEqual({r['title'] for r in rows},{'Échéance','RDV 1'})
+  self.assertIsNone(cycle)
 
 if __name__=='__main__':unittest.main()

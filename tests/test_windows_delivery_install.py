@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,6 +39,15 @@ def ready():
 @unittest.skipUnless(os.name == 'nt' and os.environ.get('GOBLIN_RUN_ISOLATED_DELIVERY_TEST') == '1',
                      'Requires disposable Windows runner and explicit delivery-test flag')
 class WindowsDeliveryInstallTests(unittest.TestCase):
+    def test_launcher_with_only_cmd_explains_extract_all_before_python(self):
+        with tempfile.TemporaryDirectory() as folder:
+            launcher=Path(folder)/'Installer_la_MAJ_TEST.cmd'
+            shutil.copyfile(ROOT/'tools/windows_delivery/Installer_la_MAJ_TEST.cmd',launcher)
+            result=subprocess.run(['cmd.exe','/d','/c',str(launcher)],input='\n',capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=15)
+            self.assertEqual(result.returncode,1)
+            self.assertIn('Extraire tout',result.stdout)
+            self.assertNotIn("can't open file",result.stderr)
+
     def test_real_upgrade_preserves_data_profile_and_other_channels(self):
         self.assertFalse(Path('E:/').exists(), 'Never map over an existing E: drive')
         with tempfile.TemporaryDirectory() as scratch:
