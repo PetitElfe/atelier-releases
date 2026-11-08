@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "40ed0e872ee684f9d9aeb2fa732d6dc6ade69ea962dfdb44b7fb34874aec31f9"
+      "sha256": "c66916d191ac66b87c1d7092d555bb367f96893eaae9a391013ff578518cf1ec"
     },
     {
       "path": "app_part2.py",
-      "sha256": "5a1d2b082f056c066908d147794a4aa144b64330dfffc00fa0e575121f090a50"
+      "sha256": "a293e81df04855faef0627d9f9cfeffe6b682920e889f82b5692cf8a8701ce2d"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "4bcf12fb9646606d3e309926d408c702f47e1d88b52dd9b9250b33bd510158ab"
+      "sha256": "a14bdb1dbc29b1b78d6974b8dc1078448397f9a232a13e8de7daa2cf72c5b441"
     },
     {
       "path": "desktop_shell.py",
@@ -77,7 +77,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "51050b16b38d4cd6b6c0a058d51e39306815aa6a03df18a40f31569c47dc28bf"
+      "sha256": "605bdc4f6a3b5fa66f5548274c5da3845cd5457cf23dba6fe862f872210ebfe1"
     },
     {
       "path": "public/app_part3.js",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "cfc4be57210a312e0fc338d472396851d3588534aa9447766ab624e3987e0c5b"
+      "sha256": "820f934b884356cd946b2df4603f86a73a49d580cc7b0a704f2471e2b7386d2d"
     },
     {
       "path": "public/interface_reference.css",
@@ -241,7 +241,7 @@
     },
     {
       "path": "public/tracker_ritual_ui.js",
-      "sha256": "ba6cd89c62b54c6c7428cd27e176ef4af11ac74129f7ddf3fdfbdfd7678a293b"
+      "sha256": "94f6f0e5a3f1c2eaa4dad52b5acee1ee9f95bba3c8e09b0fb806a03d97f58ab7"
     },
     {
       "path": "public/utility_live.js",
@@ -273,7 +273,7 @@
     },
     {
       "path": "tracker_rituals.py",
-      "sha256": "6aefc931c9bed98b673884ca9506741f13b1de68badde030af42277627da742e"
+      "sha256": "028ddbd6683554ca1239ef70179c944d750e50f2613458dc59edcba4ceead089"
     },
     {
       "path": "updater.py",
@@ -322,8 +322,36 @@
     {
       "path": "public/budget_support.js",
       "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
+    },
+    {
+      "path": "studio.py",
+      "sha256": "105cc64a9db866c562c0063aa80e4fbe27ef4e589cc4381e0626d380cc14bc97"
+    },
+    {
+      "path": "public/studio_core.js",
+      "sha256": "a61ce94be3102542242c5ecab594bd26c0f02ea317abf364547542815a886f4c"
+    },
+    {
+      "path": "public/studio_trackers.js",
+      "sha256": "5a3ea05a26a18de1940bb25a45736542f13285c05ab37e1236aeba505155a741"
+    },
+    {
+      "path": "public/studio_budget.js",
+      "sha256": "6d440ca3da382806a75db18a11d29083d14716c12dc35ccc6b35ab87fe2995f7"
+    },
+    {
+      "path": "public/studio_album.js",
+      "sha256": "504f83e615f7b99a6b4cd2f8b6b4e7dadfdf243442f9a9c22d68b1df4a923f69"
+    },
+    {
+      "path": "public/studio_tools.js",
+      "sha256": "d07066c47970c6d385b01cb831d78df4c998b8f8fab845325cd597077b4ea4aa"
+    },
+    {
+      "path": "public/studio.css",
+      "sha256": "08b9a0174c89463e9549deed8fc1e08884fdf549d9f6693f7c2352fab5432d69"
     }
   ],
-  "notes": "ALPHA 0.18.0 : le module Préparatifs ajouté par erreur est retiré du tiroir et du Calendrier SANS EFFACEMENT des anciennes listes/étapes (consultables sous Paramètres > Archives). Les Trackers sont des rituels distincts du Journal : sous-étapes optionnelles par ligne, validation automatique à la dernière étape, compteur +1 avec objectif configurable, jour de semaine facultatif avec cases grises les autres jours, liens facultatifs vers tâche/objectif/démarche, historique mensuel terminé « coches valides / occurrences possibles » en lecture dans Paramètres, sans déplacer les grilles actives. Schéma SQLite 12→13 avec sauvegarde avant migration ; aucun changement stable 0.17.0. Reste à développer : pièces jointes/documentation administrative et liens calendaires complets ; QA et validation humaine requises.\nManoir JDR V3: carte et fiches MJ liées à /api/jdr/manoir, ancien JDR conservé.",
-  "build_sequence": 2026110402
+  "notes": "TEST personnel : refonte des tableaux, budget en feuilles et enveloppes, albums et dessin au stylet, cartes personnelles. Recette en cours, aucune promotion stable.",
+  "build_sequence": 2026110801
 }

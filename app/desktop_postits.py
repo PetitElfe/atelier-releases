@@ -356,6 +356,16 @@ def _run_gui():
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
             self.menu.add_command(label="Mes archives…", command=self._show_archives)
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
+            colors_menu=tk.Menu(self.menu,tearoff=0)
+            for color_name in COLORS:
+                colors_menu.add_radiobutton(label=color_name,variable=self.color,value=color_name,command=self._change_color)
+            self.menu.add_cascade(label="Couleur",menu=colors_menu)
+            shapes_menu=tk.Menu(self.menu,tearoff=0)
+            for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210)):
+                shapes_menu.add_command(label=label,command=lambda s=shape,w=width,h=height:self._change_format(s,w,h))
+            self.menu.add_cascade(label="Format",menu=shapes_menu)
+            self.palette.pack_forget()
+            self.delete_button.pack_forget()
             self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
             self.menu.add_command(label="Supprimer définitivement…", command=self._delete)
@@ -415,6 +425,26 @@ def _run_gui():
             self._refresh_lock_button()
             self.hint.config(text="🔒 Position et taille verrouillées" if self.locked
                              else "🔓 Position et taille modifiables")
+
+        def _change_format(self,shape,width,height):
+            if not self._save():return
+            try:
+                if not save_edit(self.note["id"],self.note,self.note["title"],self.note["body"],self.note["color"],shape):
+                    self.hint.config(text="Modifié ailleurs : actualise le Post-it")
+                    return
+                self.note["shape"]=shape
+                if not self.locked:
+                    self.window.geometry(f"{width}x{height}+{self.window.winfo_x()}+{self.window.winfo_y()}")
+                if os.name=="nt":
+                    try:
+                        import ctypes
+                        corner=ctypes.c_int(1 if shape=="square" else 2)
+                        hwnd=ctypes.windll.user32.GetParent(self.window.winfo_id())
+                        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd,33,ctypes.byref(corner),ctypes.sizeof(corner))
+                    except (AttributeError,OSError):pass
+                self.hint.config(text="Format enregistré"+(" · taille verrouillée" if self.locked else ""))
+            except (sqlite3.Error,OSError,ValueError) as error:
+                messagebox.showerror("Post-it",str(error),parent=self.window)
 
         def _new_note(self):
             if _update_in_progress():

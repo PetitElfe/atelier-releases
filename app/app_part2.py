@@ -66,7 +66,15 @@ def tracker_window(board,offset=0,today=None):
     elif unit=='days':cadence=f'{count} jour'+('s' if count>1 else '')
     elif unit=='years':cadence=f'{count} an'+('s' if count>1 else '')
     else:cadence=f'{count} mois'
-    return {'start':start.isoformat(),'end':end.isoformat(),'columns':columns,
+    if unit=='weeks':
+        first=start.isocalendar();last=end.isocalendar()
+        title='sem '+str(first.week)+(('–'+str(last.week)) if count>1 else '')
+        if first.year!=last.year:title+=' · '+str(first.year)+'–'+str(last.year)
+    elif unit=='months' and count==1:title=TRACKER_MONTH_NAMES[start.month-1].capitalize()
+    elif unit=='months':title=TRACKER_MONTH_NAMES[start.month-1].capitalize()+'–'+TRACKER_MONTH_NAMES[end.month-1].capitalize()
+    elif unit=='years':title=str(start.year)+(('–'+str(end.year)) if count>1 else '')
+    else:title=start.strftime('%d %b')+'–'+end.strftime('%d %b')
+    return {'heading':title,'start':start.isoformat(),'end':end.isoformat(),'columns':columns,
             'cadence':cadence,'granularity':'months' if monthly else 'days',
             'label':start.strftime('%d/%m/%Y')+' – '+end.strftime('%d/%m/%Y')}
 
@@ -282,6 +290,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/sync/capabilities':
             return self._json({'protocol':2,'reminder_occurrences':True,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
@@ -654,6 +663,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
         if p in ('/api/creator-access','/api/personal-design/presets'):
             if not personal_design.available():return self._json({'error':'Mode personnel Windows TEST uniquement.'},403)
@@ -1335,6 +1345,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/personal-design':
             if not personal_design.available():
@@ -2128,6 +2139,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'DELETE',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/objective-map/edges':
             q=parse_qs(u.query)
