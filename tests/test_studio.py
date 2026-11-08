@@ -50,18 +50,22 @@ class StudioTests(unittest.TestCase):
   body={'operation_id':'increment','action':'tracker-mark','payload':{'row_id':1,'day':'2026-11-08','mode':'increment','delta':1}}
   self.assertEqual(studio.command(self.c,body,{})['value'],'1');self.assertEqual(studio.command(self.c,body,{})['value'],'1')
   body['operation_id']='second';self.assertEqual(studio.command(self.c,body,{})['value'],'2')
+ def test_increment_preserves_existing_fractional_number_without_goal(self):
+  self.c.executescript("CREATE TABLE tracker_boards(id INTEGER PRIMARY KEY,archived INTEGER);INSERT INTO tracker_boards VALUES(1,0);CREATE TABLE tracker_board_rows(id INTEGER PRIMARY KEY,board_id INTEGER,archived INTEGER,mode TEXT,weekday INTEGER,target_count INTEGER);INSERT INTO tracker_board_rows VALUES(1,1,0,'number',NULL,NULL);CREATE TABLE tracker_board_marks(row_id INTEGER,day TEXT,value TEXT,updated_at TEXT,PRIMARY KEY(row_id,day));INSERT INTO tracker_board_marks VALUES(1,'2026-11-08','7.5','old');")
+  result=studio.command(self.c,{'operation_id':'fractional-counter','action':'tracker-mark','payload':{'row_id':1,'day':'2026-11-08','mode':'increment'}},{})
+  self.assertEqual(result['value'],'8.5')
  def sport_schema(self):
   self.c.executescript("CREATE TABLE tracker_board_rows(id INTEGER PRIMARY KEY,archived INTEGER,mode TEXT,weekday INTEGER,target_count INTEGER);INSERT INTO tracker_board_rows VALUES(1,0,'number',NULL,10);CREATE TABLE tracker_board_marks(row_id INTEGER,day TEXT,value TEXT,updated_at TEXT,PRIMARY KEY(row_id,day));CREATE TABLE tracker_row_steps(id INTEGER PRIMARY KEY,row_id INTEGER,active INTEGER);")
   self.put('exercise','exercise',{'title':'Marche','tracker_row_id':1})
  def test_sports_contributions_retain_manual_baseline_and_undo_independently(self):
-  self.sport_schema();self.c.execute("INSERT INTO tracker_board_marks VALUES(1,'2026-11-08','2','manual')")
+  self.sport_schema();self.c.execute("INSERT INTO tracker_board_marks VALUES(1,'2026-11-08','2.5','manual')")
   session={'exercise_id':'exercise','date':'2026-11-08','done':True}
   self.put('session-a','session',session);self.put('session-b','session',session)
-  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'4')
+  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'4.5')
   self.put('session-a','session',{**session,'done':False},1)
-  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'3')
+  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'3.5')
   self.put('session-b','session',{**session,'done':False},1)
-  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'2')
+  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'2.5')
  def test_sports_undo_refuses_to_erase_a_new_manual_change(self):
   self.sport_schema();session={'exercise_id':'exercise','date':'2026-11-08','done':True}
   self.put('session','session',session);self.c.commit()

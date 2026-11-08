@@ -32,7 +32,7 @@ La colonne Développé ne signifie ni tests réussis ni validation utilisateur. 
 
 ## Preuves et limites
 
-- 132 tests Python exécutés localement, dont 4 contrôles réservés à Windows ignorés sur Linux. Contrôles de release et scripts JavaScript réussis.
+- 133 tests Python exécutés localement, dont 4 contrôles réservés à Windows ignorés sur Linux. Contrôles de release et scripts JavaScript réussis.
 - Essais PC réels sur profil jetable : clic +1, menus, renommage, progression trimestrielle avec 4 cases, lien de l’accueil, classement des charges fixes/crédits/variables, notes mensuelles, bocaux, déplacement et encre des albums, tableaux de carnet persistants.
 - Essais Android avec vrai serveur PC et frontière du pont natif : photo et deux révisions hors connexion, fermeture/réouverture, sauvegarde et restauration IndexedDB, reconnexion, réponse perdue, conflit PC conservé, catégories/prix des courses, calendrier annuel et création, ancienne note et brouillon, appel au minuteur natif de sport, cartes et respiration.
 - Les pages de ménage mensuel/trimestriel/semestriel/annuel proposent 12/4/2/1 cases sur l’année ; les anciennes grilles conservent leur cadence et leurs marques. Semaines ISO 53 puis 1 vérifiées.
@@ -42,3 +42,9 @@ La colonne Développé ne signifie ni tests réussis ni validation utilisateur. 
 À effectuer sur les appareils de Léo : ouverture des anciennes données après extraction complète du ZIP, stylet XP-Pen et son pilote de pression, Post-it du Bureau, ajout/rendu du widget dans le lanceur réel, autorisations Android et sons personnels, connexion Tailscale réelle. Aucun de ces essais manuels n’est coché à distance. Les ambiances demandent un vrai fichier sonore personnel. Le mode Mes dessins reste protégé par le mot de passe local à définir.
 
 Le retrait du stock après un repas propose les aliments dont le nom apparaît dans la note, puis demande les unités exactes et une confirmation. Il n’invente pas une quantité consommée. Les règles alimentaires du document de brouillon ne sont pas activées.
+
+## Vérification complémentaire du 9 novembre
+
+Les régressions de l’ancienne interface sont adaptées aux interactions demandées : menus de duplication, glisser sans poignée, tableaux groupés par onglet, batterie de l’accueil, exclusion hebdomadaire, et anciens réglages du budget toujours accessibles. Les tests de bibliothèque/carnets, journal, dossiers administratifs et pièces jointes, captures, archives/restauration, sons et dimensions de l’accueil passent localement. Une correction conserve la fraction d’une ancienne valeur numérique lors d’un clic +1 ou d’une contribution de sport, y compris après annulation (ex. 7,5 → 8,5 → 7,5).
+
+La première livraison Windows TEST du 8 novembre est conservée ; une livraison de finition datée du 9 novembre ajoute cette correction après vérification.

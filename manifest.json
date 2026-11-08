@@ -325,7 +325,7 @@
     },
     {
       "path": "studio.py",
-      "sha256": "4c258d7674e14a38eb2f74ad5c986a97ba45292116f2b312dcb784f1f544ab14"
+      "sha256": "7e0fa92737d9bdcb4bc3f18759b2ab5d1a35791c1348ed18ffd37967845446d7"
     },
     {
       "path": "public/studio_core.js",
@@ -353,5 +353,5 @@
     }
   ],
   "notes": "TEST personnel : refonte des tableaux, budget en feuilles et enveloppes, albums et dessin au stylet, cartes personnelles. Recette en cours, aucune promotion stable.",
-  "build_sequence": 2026110801
+  "build_sequence": 2026110901
 }

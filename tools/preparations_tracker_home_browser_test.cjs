@@ -44,10 +44,10 @@ async function api(path,method='GET',body){
   await api('/api/tracker-boards/'+fortnight.id+'/rows','POST',{title:'Minutes de ménage',mode:'number'});
   await api('/api/tracker-boards/'+yearly.id+'/rows','POST',{title:'Bilan annuel',mode:'check'});
   const daily=await api('/api/tracker-boards/daily?day='+day);
-  assert.equal(daily.items.length,8,'Seven habits plus cleaning; numeric/yearly are excluded');
-  assert.ok(daily.items.some(x=>x.board_title==='Ménage'&&x.title==='Passer l’aspirateur'));
-  assert.ok(!daily.items.some(x=>x.board_title==='Bilan annuel'));
-  const row=daily.items.find(x=>x.board_title==='Ménage');
+  assert.equal(daily.items.length,8,'Seven habits plus the current monthly cell; purely weekly rows are excluded');
+  assert.ok(!daily.items.some(x=>x.board_title==='Ménage'));
+  assert.ok(daily.items.some(x=>x.board_title==='Bilan annuel'));
+  const row=daily.items.find(x=>x.title==='Rituel 1');
   await api('/api/tracker-board-rows/'+row.row_id+'/mark','PUT',{day,value:true});
   assert.equal((await api('/api/tracker-boards/daily?day='+day)).items.find(x=>x.row_id===row.row_id).done,true);
 
@@ -55,7 +55,7 @@ async function api(path,method='GET',body){
   const page=await browser.newPage({viewport:{width:1600,height:950}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>homeCanvasReady && document.querySelectorAll('#homeDailyTrackersList input[type="checkbox"]').length===8);
+  await page.waitForFunction(()=>homeCanvasReady && document.querySelectorAll('#homeDailyTrackersList button.tracker-day-cell').length===8);
   const widget=page.locator('#homeDailyTrackersWidget');
   assert.ok(await widget.isVisible(),'The new daily tracker card is visible on Home by default');
   const metrics=await widget.evaluate(el=>{
@@ -65,20 +65,20 @@ async function api(path,method='GET',body){
   assert.equal(metrics.total,8);assert.ok(metrics.scroll>metrics.visible+10,'More than five lines must scroll');
   assert.ok(metrics.visible<265,'Only about five lines are shown at once');
   const habit=page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'});
-  await habit.locator('input').check();
+  await habit.locator('button').click();
   const habitId=daily.items.find(x=>x.title==='Rituel 0').row_id;
   await page.waitForFunction(async({id,day})=>
     (await (await fetch('/api/tracker-boards/daily?day='+day)).json()).items.find(x=>x.row_id===id).done,
     {id:habitId,day});
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>homeCanvasReady&&document.querySelectorAll('#homeDailyTrackersList input').length===8);
+  await page.waitForFunction(()=>homeCanvasReady&&document.querySelectorAll('#homeDailyTrackersList button.tracker-day-cell').length===8);
   // La carte Accueil peut afficher un premier rendu avant que la lecture
   // asynchrone des coches sauvegardées soit terminée.
   await page.waitForFunction(()=>[...document.querySelectorAll('#homeDailyTrackersList label')]
-    .find(el=>el.textContent.includes('Rituel 0'))?.querySelector('input')?.checked===true,
+    .find(el=>el.textContent.includes('Rituel 0'))?.querySelector('button')?.getAttribute('aria-pressed')==='true',
     null,{timeout:15000});
-  assert.equal(await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').isChecked(),true);
-  await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('input').uncheck();
+  assert.equal(await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('button').getAttribute('aria-pressed'),'true');
+  await page.locator('#homeDailyTrackersList label').filter({hasText:'Rituel 0'}).locator('button').click();
   await page.waitForFunction(async({id,day})=>
     !(await (await fetch('/api/tracker-boards/daily?day='+day)).json()).items.find(x=>x.row_id===id).done,
     {id:habitId,day});

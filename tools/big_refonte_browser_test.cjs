@@ -45,13 +45,13 @@ const api=async(p,method='GET',body)=>{
   await page.evaluate(()=>showView('admin'));
   assert.ok(await page.locator('#adminSearch').isVisible());
   await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelector('[data-tracker-row-id]'));
-  assert.ok(await page.locator('.tracker-row-duplicate').count()>=2);
-  assert.ok(await page.locator('.tracker-row-grip[draggable=true]').count()>=2);
+  await page.waitForFunction(()=>AtelierStudio.ready&&lifeBoards.length>0);await page.getByRole('tab',{name:'Tableau de copie E2E',exact:true}).click();await page.locator('.studio-tracker-document [data-tracker-row-id]').first().waitFor();
+  assert.equal(await page.locator('.studio-tracker-document .tracker-row-duplicate').count(),0);await page.locator('[data-tracker-row-id="'+a.id+'"]').click({button:'right'});await page.getByRole('menuitem',{name:'Dupliquer',exact:true}).click();await page.waitForFunction(async()=>((await (await fetch('/api/tracker-boards')).json())[0]?.rows.length===4));
+  assert.equal(await page.locator('.studio-tracker-document .tracker-row-grip').count(),0);assert.ok(await page.locator('.studio-tracker-document .tracker-row-label[draggable=true]').count()>=3);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelector('[data-tracker-row-id]'));
+  await page.waitForFunction(()=>AtelierStudio.ready&&lifeBoards.length>0);await page.getByRole('tab',{name:'Tableau de copie E2E',exact:true}).click();await page.locator('.studio-tracker-document [data-tracker-row-id]').first().waitFor();
   assert.deepEqual(errors,[]);
-  console.log('PASS: duplication sans coches, ordre persistant, semainier, admin et poignées');
+  console.log('PASS: duplication sans coches, ordre persistant, semainier, admin et glisser sans poignée');
  }finally{if(browser)await browser.close();server.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});
