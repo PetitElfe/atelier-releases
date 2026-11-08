@@ -204,6 +204,12 @@ async function api(path,method='GET',body){
     .filter({hasText:'Restaurer'}).click();
   await page.waitForFunction(async identity=>
     (await (await fetch('/api/admin')).json()).some(x=>x.id===identity&&x.attachments?.length===1),admin.id);
+  // Observe the completed restore from the independent API client too.
+  // The browser's first active-list result can precede the restore handler.
+  for(let retry=0;retry<40;retry++){
+    if(!(await api('/api/admin?archived=1')).some(x=>x.id===admin.id))break;
+    await new Promise(resolve=>setTimeout(resolve,125));
+  }
   assert.equal((await api('/api/admin?archived=1')).some(x=>x.id===admin.id),false);
   const invalidArchive=await fetch(base+'/api/admin/'+admin.id,{
     method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({archived:'oui'})
