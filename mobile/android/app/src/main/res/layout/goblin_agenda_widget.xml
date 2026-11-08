@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/goblin_widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:background="#263B30">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="À ne pas oublier · Goblin" android:textColor="#EFE5CB" android:textSize="17sp" android:textStyle="bold" android:paddingBottom="8dp"/>
+    <TextView android:id="@+id/goblin_widget_items" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:textColor="#EFE5CB" android:textSize="14sp" android:maxLines="8" android:ellipsize="end"/>
+    <TextView android:id="@+id/goblin_widget_cycle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#BDCCAA" android:textSize="12sp" android:paddingTop="8dp"/>
+</LinearLayout>

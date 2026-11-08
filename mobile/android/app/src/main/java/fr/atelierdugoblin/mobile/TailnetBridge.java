@@ -36,10 +36,10 @@ public final class TailnetBridge {
                 uri.getRawQuery() != null || uri.getRawFragment() != null) return false;
             if (!method.equals("GET") && !method.equals("POST") && !method.equals("PUT")) return false;
             if (path.contains("..") || path.contains("//") || path.contains("#")) return false;
-            if (method.equals("GET")) return path.equals("/api/reminders") || path.equals("/api/sync/capabilities") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
+            if (method.equals("GET")) return path.matches("^/api/studio/snapshot(?:\\?day=[0-9]{4}-[0-9]{2}-[0-9]{2})?$") || path.matches("^/api/studio/assets/[a-f0-9]{64}\\?json=1$") || path.equals("/api/reminders") || path.equals("/api/sync/capabilities") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
                 path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/recipes") ||
                 path.matches("^/api/events\\?start=[0-9]{4}-[0-9]{2}-[0-9]{2}&end=[0-9]{4}-[0-9]{2}-[0-9]{2}$");
-            if (method.equals("POST")) return path.equals("/api/reminders/mobile-action") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
+            if (method.equals("POST")) return path.equals("/api/studio/actions") || path.equals("/api/reminders/mobile-action") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
                 path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/events");
             return path.matches("^/api/(tasks|shopping|events|recipes)/[0-9]+$");
         } catch (Exception e) { return false; }
@@ -76,7 +76,7 @@ public final class TailnetBridge {
                 conn.setRequestProperty("Accept", "application/json");
                 if (!method.equals("GET")) {
                     byte[] bytes = (body == null ? "{}" : body).getBytes(StandardCharsets.UTF_8);
-                    if (bytes.length > 250000) throw new IllegalArgumentException("Données trop volumineuses");
+                    if (bytes.length > (path.equals("/api/studio/actions") ? 6000000 : 250000)) throw new IllegalArgumentException("Données trop volumineuses");
                     conn.setDoOutput(true);
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setFixedLengthStreamingMode(bytes.length);

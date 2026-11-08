@@ -107,6 +107,7 @@ text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode')
 adb('shell','am','force-stop',PKG);adb('install','-r',str(NEW));launch()
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode'),'Existing WebView note lost after signed replacement'
+assert 'AgendaWidgetProvider' in adb('shell','dumpsys','appwidget'),'Agenda widget provider must be registered after update'
 adb('shell','pm','grant',PKG,'android.permission.POST_NOTIFICATIONS');adb('shell','appops','set',PKG,'SCHEDULE_EXACT_ALARM','allow')
 # Native general reminder test, separate from cooking alarms.
 menu('Paramètres')
