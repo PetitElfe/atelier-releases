@@ -1,0 +1,51 @@
+name: Publish verified Android studio TEST
+on:
+  push:
+    branches: [test/publish-studio-android-20261109]
+    paths: ['.github/workflows/publish-studio-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Require the exact tested APK and verify its digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=42536174307
+          expected=530dae29953e43273de25bcab6062da2a6f2aeab
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Studio_015_Candidate --dir candidate
+          cd candidate
+          sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256
+      - name: Publish a distinct immutable TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/studio-notes.md <<'NOTES'
+          Goblin Android 0.1.15 TEST — albums, trackers, calendrier et outils personnels.
+
+          Installe l’APK par-dessus Goblin existant, avec la confirmation Android. Ne désinstalle pas Goblin. Le paquet et le certificat permanent sont conservés (versionCode 114 vers 115) ; une note de la version précédente a été retrouvée après la mise à jour sur émulateur.
+
+          Albums personnels éditables page par page : photos, légendes de Polaroid, scotchs, textes, dessins et cadrage. Après un premier appairage avec Windows TEST, la file IndexedDB garde photos et révisions hors connexion. Reconnexion sans doublon ; conflit visible si le PC a modifié la même page. Les photos et la file rejoignent les exports et sauvegardes privés.
+
+          To-do et trackers par semaine, onglets, appui long, sous-tâches, cases progressives et compteurs au clic. Grilles mensuelles/trimestrielles/semestrielles/annuelles copiées du PC. Courses : catégories colorées, boîtes/unités, prix et total. Notes dans une zone de texte avec hashtags et envoi volontaire vers une destination choisie sur le PC.
+
+          Calendrier ouvert sur aujourd’hui, semaine/mois/année, rendez-vous du PC et création/modification. Recette flottante pendant la navigation. Sport : consignes, répétitions, minuteur natif et séance liée au tracker. Outils : activités, cartes recto/verso avec images, journal privé conservé, respiration cercle ou barre/étoile, phrases et vrais sons personnels à importer.
+
+          Widget Android « À ne pas oublier » : dernière copie des rendez-vous, tâches avec échéance et estimation du cycle. Ajoute-le depuis les widgets de l’écran d’accueil. Rappels natifs et plusieurs minuteurs écran éteint conservés ; active les notifications et les alarmes précises dans Paramètres. Importe ton véritable Miam Miam pour le son de cuisine.
+
+          Validé : compilation, certificat permanent, remplacement signé sur émulateur avec ancienne note, widget enregistré, rappel et deux minuteurs en arrière-plan/écran éteint. Essais navigateur avec vrai serveur PC : coupure, photo/révisions, sauvegarde/restauration, réponse perdue, conflit, calendrier, courses et sport. Les essais du téléphone réel, des sons et de Tailscale restent nécessaires. Compatible avec la refonte Windows TEST des 8–9 novembre ; aucun appareil réel ou canal stable modifié.
+          NOTES
+          if gh release view android-test-v0.1.15 >/dev/null 2>&1; then
+            echo 'Existing release preserved.'
+            exit 0
+          fi
+          gh release create android-test-v0.1.15 candidate/* --prerelease --target 530dae29953e43273de25bcab6062da2a6f2aeab --title 'Android TEST 0.1.15 — Albums, trackers et outils' --notes-file /tmp/studio-notes.md
