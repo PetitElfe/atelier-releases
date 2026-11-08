@@ -8,6 +8,7 @@ import time
 import xml.etree.ElementTree as ET
 
 PKG='fr.atelierdugoblin.mobile'
+APP_PIDS=set()
 OLD=Path(os.environ['GOBLIN_OLD_APK']);NEW=Path('mobile/android/app/build/outputs/apk/release/app-release.apk')
 
 def adb(*args):
@@ -88,6 +89,7 @@ def menu(label):
 
 def launch():
     adb('shell','am','start','-n',PKG+'/.MainActivity');time.sleep(6)
+    APP_PIDS.update(adb('shell','pidof',PKG).split())
     # Wait for first WebView startup. Dismiss only OS help and launcher ANR,
     # never an application ANR (which must remain a failing product test).
     for _ in range(15):
@@ -129,5 +131,8 @@ Path('artifacts/android-native-notifications.txt').write_text(notifications,enco
 assert 'Utility_timer_A' in notifications and 'Utility_timer_B' in notifications,'Both named native timer notifications must appear while the WebView is backgrounded'
 adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
 crashes=adb('logcat','-d','-s','AndroidRuntime:E');Path('artifacts/android-runtime.txt').write_text(crashes)
-assert 'FATAL EXCEPTION' not in crashes,'Unexpected Android runtime crash'
+# UiAutomator runs in its own process; an accessibility dump can fail
+# without the application crashing. Keep all logs, but test Goblin's PIDs.
+app_fatals=[line for line in crashes.splitlines() if 'FATAL EXCEPTION' in line and any(re.search(r'\s'+re.escape(pid)+r'\s+\d+\s+E AndroidRuntime:',line) for pid in APP_PIDS)]
+assert not app_fatals,'Unexpected Goblin runtime crash: '+str(app_fatals)
 print('PASS: actual signed replacement preserves legacy note; two independent native alarm notifications fire with app backgrounded and screen off')
