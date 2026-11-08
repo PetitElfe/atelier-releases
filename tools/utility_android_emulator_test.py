@@ -38,11 +38,12 @@ def find(label,scroll=True):
     for attempt in range(9 if scroll else 10):
         tree=nodes()
         screen_bottom=max(bounds(n)[3] for n in tree.iter('node'))
+        drawer_open=any(n.attrib.get('text')=='NAVIGATION' for n in tree.iter('node'))
         def visible(node):
             x1,y1,x2,y2=bounds(node)
             center=(y1+y2)//2
             # WebView accessibility includes nodes underneath the fixed bottom tabs.
-            return x2>x1 and y2>y1 and (270 if scroll else 20)<center<screen_bottom-(280 if scroll else 70)
+            return x2>x1 and y2>y1 and (70 if drawer_open else 270 if scroll else 20)<center<screen_bottom-(70 if drawer_open else 280 if scroll else 70)
         candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and visible(n)]
         if candidates:return candidates[0]
         # The old release WebView exposes empty EditText accessibility labels.
