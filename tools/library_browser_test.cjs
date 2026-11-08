@@ -659,7 +659,7 @@ async function api(path,method='GET',body){
   assert.equal(await page.locator('#calendarCycleHint').count(),0);
   assert.equal(await page.locator('.cycle-module').count(),0);
   // ALPHA 0.15.0 — Budget : récurrences, confirmations, solde, dettes et historique.
-  await page.evaluate(()=>showView('budget'));
+  await page.evaluate(()=>showView('budget'));await page.getByRole('tab',{name:'Réglages',exact:true}).click();
   await page.locator('#budgetView').waitFor({state:'visible'});
   await page.locator('#budgetBalance').waitFor({state:'visible'});
   const budgetMonth=new Date().toISOString().slice(0,7);
@@ -698,7 +698,7 @@ async function api(path,method='GET',body){
   await page.locator('#budgetEntries').getByText('Revenu récurrent E2E').waitFor();
   assert.ok((await page.locator('#budgetBalance').innerText()).includes('€'),'Dashboard must show balance');
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.evaluate(()=>showView('budget'));
+  await page.evaluate(()=>showView('budget'));await page.getByRole('tab',{name:'Réglages',exact:true}).click();
   await page.locator('#budgetEntries').getByText('Achat prévu E2E').waitFor();
   assert.equal(await page.locator('#budgetNotes').inputValue(),'Mes notes E2E','Budget note survives reload');
   // L'éditeur de confirmation interne doit proposer le montant et la date.
@@ -734,7 +734,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('home'));
   await page.locator('#homeBudgetWidget').waitFor({state:'visible'});
   // ALPHA 0.15.1 — Un seul éditeur : dépense immédiate, revenu récurrent différé.
-  await page.evaluate(()=>showView('budget'));
+  await page.evaluate(()=>showView('budget'));await page.getByRole('tab',{name:'Réglages',exact:true}).click();
   await page.locator('#budgetAddOperation').click();
   await page.locator('#budgetUnifiedForm').waitFor({state:'visible'});
   await page.locator('#budgetUnifiedForm input[name="amount"]').fill('13.40');
@@ -785,7 +785,7 @@ async function api(path,method='GET',body){
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'The module position must be saved');
   await page.locator('#globalLayoutEdit').click();
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.evaluate(()=>showView('budget'));
+  await page.evaluate(()=>showView('budget'));await page.getByRole('tab',{name:'Réglages',exact:true}).click();
   assert.equal((await page.locator('#sideNav [data-view="budget"]').innerText()).trim(),'Mes finances','Drawer rename persists after reload');
   assert.equal(await page.locator('#budgetLedgerPanel > h3').innerText(),'Mon historique','Card title persists after reload');
   assert.ok(await page.evaluate(()=>Math.abs(JSON.parse(localStorage.getItem('atelierModuleLayout_budget_budgetLedgerPanel')).x)>10),'Card position persists after reload');
@@ -1133,7 +1133,7 @@ async function api(path,method='GET',body){
   }
   await page.evaluate(()=>showView('organisation'));
   await page.waitForFunction(()=>document.querySelector('#habitsSummary')?.textContent.length>2);
-  await page.evaluate(()=>showView('budget'));
+  await page.evaluate(()=>showView('budget'));await page.getByRole('tab',{name:'Réglages',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('#budgetMonth')?.value.length===7);
   const originalBudgetMonth=await page.locator('#budgetMonth').inputValue();
   await page.locator('#budgetPrevMonth').click();

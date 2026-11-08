@@ -184,7 +184,7 @@ def sport_contribution(c,oid,data,archived,stamp):
         c.execute('INSERT INTO studio_contributions VALUES(?,?,?,?,?)',(oid,rid,day,value,None));count+=1
     else:
         c.execute('DELETE FROM studio_contributions WHERE source_id=?',(oid,));count-=1
-    written=str(min(row['target_count'] or 1000000,int(float(value or 0))+count)) if row['mode']=='number' else '1' if count else value
+    written=format(min(row['target_count'] or 1000000,float(value or 0)+count),'.8g') if row['mode']=='number' else '1' if count else value
     if written is None:c.execute('DELETE FROM tracker_board_marks WHERE row_id=? AND day=?',(rid,day))
     else:c.execute('INSERT INTO tracker_board_marks VALUES(?,?,?,?) ON CONFLICT(row_id,day) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at',(rid,day,written,stamp))
     c.execute('INSERT INTO studio_tracker_base VALUES(?,?,?,?) ON CONFLICT(row_id,day) DO UPDATE SET base_value=excluded.base_value,last_stamp=excluded.last_stamp',(rid,day,value,stamp if written is not None else ''))
@@ -233,7 +233,7 @@ def tracker_mark(c, body, stamp):
         step = body.get('delta', 1)
         if step not in (-1, 1) or type(step) is not int:
             raise ValueError('Incrément invalide.')
-        value = str(int(max(0, min(row['target_count'] or 1000000, float(current or 0) + step))))
+        value = format(max(0, min(row['target_count'] or 1000000, float(current or 0) + step)), '.8g')
     else:
         if body.get('base') != current:
             raise LookupError('Cette case a changé sur un autre appareil.')

@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Tableaux, budget, albums et outils personnels — 8 novembre 2026
+Tableaux, budget, albums et outils personnels — 9 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -131,3 +131,9 @@ REFONTE DU 8 NOVEMBRE :
 Les points nutrition/assiette restent en brouillon : aucune règle alimentaire
 n'est activée par cette mise à jour. Les essais du stylet XP-Pen, de l'affichage
 Windows réel et des autorisations Android restent à effectuer sur tes appareils.
+
+FINITION DU 9 NOVEMBRE :
+Les anciennes valeurs à décimales des compteurs sont conservées au clic +1
+et lors d’une séance de sport liée, y compris après annulation. Les régressions
+de bibliothèque, budget, journal, dossiers, captures et archives ont été reprises
+avec les nouvelles interactions. Le ZIP du 8 novembre reste disponible.
