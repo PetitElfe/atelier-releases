@@ -32,10 +32,10 @@ jobs:
         run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
       - uses: actions/upload-artifact@v4
         with:
-          name: Goblin_MAJ_Windows_TEST_20261104
+          name: Goblin_MAJ_Windows_TEST_20261108
           path: |
-            dist/Goblin_MAJ_Windows_TEST_20261104.zip
-            dist/Goblin_MAJ_Windows_TEST_20261104.zip.sha256
+            dist/Goblin_MAJ_Windows_TEST_20261108.zip
+            dist/Goblin_MAJ_Windows_TEST_20261108.zip.sha256
           if-no-files-found: error
           retention-days: 30
   publish:
@@ -49,34 +49,34 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Goblin_MAJ_Windows_TEST_20261104
+          name: Goblin_MAJ_Windows_TEST_20261108
           path: delivery
       - name: Publish approved isolated TEST prerelease
         shell: bash
         run: |
           set -euo pipefail
           cat > /tmp/goblin-release-notes.md <<'NOTES'
-          Finition utilitaire Windows TEST — rappels, documents, budget et dessins personnels.
+          Refonte Windows TEST : tableaux, budget, albums et outils personnels.
 
-          Télécharge le ZIP, extrais-le entièrement, ferme L'Atelier TEST puis double-clique sur Installer_la_MAJ_TEST.cmd. Attends MISE À JOUR RÉUSSIE puis ouvre ton raccourci TEST habituel. Python et une connexion Internet sont nécessaires.
+          Télécharge le ZIP et choisis Extraire tout. Ferme L’Atelier TEST, puis double-clique sur Installer_la_MAJ_TEST.cmd dans le dossier extrait. Attends MISE À JOUR RÉUSSIE et ouvre ton raccourci habituel. Python et Internet sont nécessaires ; le lanceur explique si les fichiers du ZIP manquent.
 
-          Réservé à E:\LATELIER_TEST_0180, port 8876. Sauvegarde automatique avant remplacement, profil et données conservés, canal personnel maintenu. Aucun changement de main, de la version stable ou de Nathan.
+          Trackers : tableaux plats, onglets, To-do en premier, plusieurs tableaux par onglet, menus au clic droit, lignes déplaçables sans poignée, compteur au clic, sous-étapes par jour et remplissage progressif. Cases quotidiennes et grilles annuelles à 12/4/2/1 cases, semaines ISO 52/53 ; lien avec l’accueil et les séances de sport.
 
-          Rappels récurrents avec état par date ; terminer une occurrence ne termine pas la série. Notifications Windows facultatives via le compagnon près de l’horloge. Compatible avec Android 0.1.14 TEST et ses rappels natifs copiés du PC.
+          Budget : revenus, charges fixes/variables, crédits, notes mensuelles, enveloppes par catégorie et alertes de dépassement. Bocaux de projets/économies distincts des dépenses, courses avec quantités/prix/total, achats prévus, archives mensuelles et règles récurrentes conservées.
 
-          Tâches : liens, sous-tâches et documents. Carnets : annotations et corrections proposées sans réécrire le texte original. Budget : plafonds mensuels par catégorie, correction sans doublon, justificatifs. Administratif : états des documents, renommage et classement avec historique et originaux conservés. Protection des modifications simultanées.
+          Albums : étagères, photos personnelles, Polaroids, légendes, scotchs, textes/polices/stickers, cadrage, déplacement/redimensionnement, pression du stylet, gomme et annuler/rétablir. Brouillons et versions en conflit conservés. Carnets : tableaux et listes persistants, schémas au stylet, accès au journal privé.
 
-          Mes dessins : six thèmes nommés, aperçu, retour au thème par défaut, mot de passe personnel à définir dans Paramètres. Cette protection de l’interface ne remplace pas la sécurité de la session Windows ni le chiffrement des données.
+          Mes outils : cartes recto/verso, questions/réponses et images, activités et vrais sons personnels à importer, exercices et minuteurs. Post-it du Bureau avec formats contextuels. Recette flottante. Repas : note puis confirmation des unités à déduire du stock. Le brouillon nutrition/assiette reste désactivé.
 
-          Sauvegardes complètes et restauration contrôlée, brouillons, synchronisation avec conflits visibles, livres et moodboards, carte d’objectifs, bibliothèque de recettes sur tranches et minuteurs nommés conservés. L’ancienne flèche du tiroir est retirée.
+          Application vérifiée : d28f526c2b9c5d6972ef9a3bf3d4ec82fbb7247d ; 132 contrôles Python, essais navigateur, installation sur Windows isolé avec reprise des anciennes données. Compatibilité avec Android 0.1.15 TEST. Les essais du vrai PC, du téléphone, du stylet XP-Pen, des Post-it et des autorisations/sons natifs restent à confirmer sur les appareils.
 
-          Validé : suite automatique complète, navigateurs et installation réelle sur un runner Windows isolé. Les essais sur le PC et le téléphone de Léo restent nécessaires avant une version stable. Aucun appareil réel modifié. Scripts Python/CMD, pas d’EXE signé. Mode d’emploi dans LIRE_MOI.txt.
+          Réservé à E:\LATELIER_TEST_0180, port 8876. Sauvegarde automatique avant remplacement et canal personnel conservé. Aucun changement de main, de l’installation stable ni de Nathan. Scripts Python/CMD ; mode d’emploi dans LIRE_MOI.txt. Les anciennes versions publiées restent disponibles.
           NOTES
           cd delivery
-          sha256sum -c Goblin_MAJ_Windows_TEST_20261104.zip.sha256
+          sha256sum -c Goblin_MAJ_Windows_TEST_20261108.zip.sha256
           cd ..
-          if gh release view windows-test-utilitaire-complet-20261104 >/dev/null 2>&1; then
+          if gh release view windows-test-refonte-20261108 >/dev/null 2>&1; then
             echo 'Existing TEST release preserved; no replacement performed.'
             exit 0
           fi
-          gh release create windows-test-utilitaire-complet-20261104 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Finition utilitaire — 04/11/2026" --notes-file /tmp/goblin-release-notes.md
+          gh release create windows-test-refonte-20261108 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Tableaux, budget et albums — 08/11/2026" --notes-file /tmp/goblin-release-notes.md
