@@ -1045,10 +1045,10 @@ class Handler(BaseHTTPRequestHandler):
                     (row['board_id'],copy_title,row['mode'],row['target_count'],row['weekday'],
                      row['linked_type'],row['linked_id'],index,ts,ts)).lastrowid
                 # Les sous-étapes sont une configuration ; les coches restent propres à la ligne source.
-                for step in c.execute('SELECT title,order_index FROM tracker_row_steps '
+                for step in c.execute('SELECT title,order_index,weekday FROM tracker_row_steps '
                                       'WHERE row_id=? AND active=1 ORDER BY order_index,id',(row_id,)).fetchall():
-                    c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,active) VALUES(?,?,?,1)',
-                              (new,step['title'],step['order_index']))
+                    c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,weekday,active) VALUES(?,?,?,?,1)',
+                              (new,step['title'],step['order_index'],step['weekday']))
                 c.commit()
                 return self._json({'id':new,'title':copy_title},201)
         if p.startswith('/api/tracker-boards/') and p.endswith('/rows'):

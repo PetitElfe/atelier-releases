@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "a293e81df04855faef0627d9f9cfeffe6b682920e889f82b5692cf8a8701ce2d"
+      "sha256": "78ae4753f38dcf0ee94ce4cefbb74240f9b56f9b426b148b2bada9a953198ab6"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "a14bdb1dbc29b1b78d6974b8dc1078448397f9a232a13e8de7daa2cf72c5b441"
+      "sha256": "35425de89e0f15d45eeb6415d730761bf92eb75140af4c2fdd4ea7addf07c4e2"
     },
     {
       "path": "desktop_shell.py",
@@ -325,31 +325,31 @@
     },
     {
       "path": "studio.py",
-      "sha256": "105cc64a9db866c562c0063aa80e4fbe27ef4e589cc4381e0626d380cc14bc97"
+      "sha256": "8d424e73707295531a1061f5148e272db053dc0a4784acaeb88e5ce4b0a8aaf9"
     },
     {
       "path": "public/studio_core.js",
-      "sha256": "a61ce94be3102542242c5ecab594bd26c0f02ea317abf364547542815a886f4c"
+      "sha256": "1eb80b37b52a93f93ef7c8b3f82dcdd1b581e39a7d56455af1d296fb40ea61cc"
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "5a3ea05a26a18de1940bb25a45736542f13285c05ab37e1236aeba505155a741"
+      "sha256": "d8f70d6b3448a4ec9f721e1e5e37005c9d67184a4671f017e04f395ba335066a"
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "6d440ca3da382806a75db18a11d29083d14716c12dc35ccc6b35ab87fe2995f7"
+      "sha256": "24c72ef7860598594246dfd66d6955f94a93aca19ac481eb052c95c59be2e761"
     },
     {
       "path": "public/studio_album.js",
-      "sha256": "504f83e615f7b99a6b4cd2f8b6b4e7dadfdf243442f9a9c22d68b1df4a923f69"
+      "sha256": "401ffa160c469b4658225c6b812409490fbbf87c8392a7289d93b762a9c111f7"
     },
     {
       "path": "public/studio_tools.js",
-      "sha256": "d07066c47970c6d385b01cb831d78df4c998b8f8fab845325cd597077b4ea4aa"
+      "sha256": "3715d78c8e0e14dcf49dd50d2d9f3776773f2fa77e3ac28c1d90204f9f1cc0d9"
     },
     {
       "path": "public/studio.css",
-      "sha256": "08b9a0174c89463e9549deed8fc1e08884fdf549d9f6693f7c2352fab5432d69"
+      "sha256": "93389838856ac13a2233cb0235f56e6be9ea716f4e13d87efb009a660d1ef914"
     }
   ],
   "notes": "TEST personnel : refonte des tableaux, budget en feuilles et enveloppes, albums et dessin au stylet, cartes personnelles. Recette en cours, aucune promotion stable.",

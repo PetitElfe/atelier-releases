@@ -792,7 +792,7 @@ def _run_gui():
 def _self_test():
     with tempfile.TemporaryDirectory() as work:
         db = Path(work) / "test.db"
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.executescript("""PRAGMA foreign_keys=ON;
             CREATE TABLE home_postits (
               id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL,
@@ -823,10 +823,10 @@ def _self_test():
         assert len(archived_notes(db))==1
         assert restore_note(2,db)
         assert any(row["id"]==2 for row in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=2")
         # Ancienne base v6 : ajouter une colonne locked sans perte de géométrie.
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("ALTER TABLE desktop_postit_layout RENAME TO old_layout")
             c.execute("""CREATE TABLE desktop_postit_layout(
                 note_id INTEGER PRIMARY KEY,x INTEGER NOT NULL,y INTEGER NOT NULL,
@@ -837,13 +837,13 @@ def _self_test():
         create_layout_table(db)
         assert note_rows(db)[0]["x"]==321 and note_rows(db)[0]["locked"]==0
         assert not any(note["title"] == "Archivée" for note in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
         assert all(note['id'] != 1 for note in note_rows(db))
         assert any(note['id'] == fresh for note in note_rows(db))
         assert delete_note(1,db)
         assert not delete_note(1,db)
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             assert c.execute("SELECT COUNT(*) FROM desktop_postit_layout WHERE note_id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=?", (fresh,)).fetchone()[0]==1

@@ -1,5 +1,5 @@
 L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
-Finition utilitaire, rappels et personnalisation — 4 novembre 2026
+Tableaux, budget, albums et outils personnels — 8 novembre 2026
 
 1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
 2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
@@ -113,3 +113,21 @@ sont réussis. La recette sur ton PC et ton téléphone reste à effectuer avant
 une version stable. Aucune installation réelle, promotion stable ou modification
 du canal de Nathan n’est faite par cette livraison. Les neuf extensions
 facultatives de la checklist restent hors version utilitaire.
+
+REFONTE DU 8 NOVEMBRE :
+- Trackers : onglets, plusieurs tableaux, menu par clic droit, déplacement des lignes,
+  compteurs au clic et sous-étapes par jour avec remplissage progressif.
+- Budget : colonnes mensuelles, catégories/enveloppes, bocaux de projets séparés
+  des dépenses, courses avec quantités/prix et archives des mois.
+- Albums : étagères, photos personnelles, légendes, scotch, textes et dessins,
+  annulation/rétablissement, déplacement, redimensionnement et cadrage.
+- Carnets : tableaux, listes et dessins du stylet ; journal privé conservé.
+- Mes outils : cartes recto/verso, activités, sons personnels à importer et sport.
+- Repas : noter puis confirmer les unités à retirer du stock.
+- Post-it : formats dans le menu contextuel, fenêtres Bureau conservées.
+- Compatible avec Android 0.1.15 TEST : albums modifiables, suivi hebdomadaire,
+  calendrier, widget local, notes par hashtags, sport et respiration.
+
+Les points nutrition/assiette restent en brouillon : aucune règle alimentaire
+n'est activée par cette mise à jour. Les essais du stylet XP-Pen, de l'affichage
+Windows réel et des autorisations Android restent à effectuer sur tes appareils.

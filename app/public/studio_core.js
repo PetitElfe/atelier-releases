@@ -12,7 +12,7 @@
  S.save=async(object)=>{const operation=S.id();const result=await S.command('save',object,operation);const i=S.objects.findIndex(o=>o.id===result.id);if(i>=0)S.objects[i]=result;else S.objects.push(result);return result};
  S.create=(kind,data)=>S.save({id:S.id(),kind,revision:0,data});
  S.archive=async o=>{if(!confirm('Archiver « '+(o.data.title||'cette page')+' » ? Les données sont conservées.'))return false;await S.save({...o,archived:true});window.dispatchEvent(new Event('studio-updated'));return true};
- S.draft=(id,data)=>{try{localStorage.setItem('atelier-studio-draft:'+id,JSON.stringify(data))}catch(e){S.error(new Error('Brouillon local plein : enregistre avant de continuer.'))}};
+ S.draft=(id,data)=>{try{localStorage.setItem('atelier-studio-draft:'+id,JSON.stringify(data));return true}catch(e){S.error(new Error('Brouillon local plein : enregistre avant de continuer.'));return false}};
  S.readDraft=id=>{try{return JSON.parse(localStorage.getItem('atelier-studio-draft:'+id)||'null')}catch{return null}};
  S.clearDraft=id=>localStorage.removeItem('atelier-studio-draft:'+id);
  S.file=async file=>{if(file.size>4200000)throw Error('Photo limitée à 4 Mo.');const data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file)});return S.command('asset',{base64:data.split(',')[1]})};

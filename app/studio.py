@@ -9,7 +9,8 @@ import json
 import math
 import re
 import sqlite3
-from datetime import date, datetime
+from contextlib import closing
+from datetime import date, datetime, timedelta
 
 KINDS = {'album', 'album-page', 'tracker-tab', 'tracker-row', 'card', 'activity',
          'jar', 'jar-operation', 'purchase', 'exercise', 'session', 'meal', 'preferences'}
@@ -254,6 +255,50 @@ def command(c, body, context):
         result = asset(c, data, stamp)
     elif action == 'tracker-mark':
         result = tracker_mark(c, data, stamp)
+    elif action == 'shopping-save':
+        name=str(data.get('name','')).strip()
+        quantity=str(data.get('quantity','')).strip()
+        count=data.get('purchase_count',1);price=data.get('price')
+        category=data.get('category','Alimentation')
+        if not 1<=len(name)<=240 or len(quantity)>120:raise ValueError('Article ou quantité invalide.')
+        if type(count) is not int or not 1<=count<=1000:raise ValueError('Choisis entre 1 et 1000 unités.')
+        if price is not None:finite(price,0,1000000)
+        if category not in ('Alimentation','Entretien','Hygiène','Animaux','Autres'):raise ValueError('Catégorie inconnue.')
+        sid=data.get('shopping_id')
+        if sid:
+            current=c.execute('SELECT * FROM shopping_items WHERE id=? AND archived=0',(int(sid),)).fetchone()
+            if not current or current['updated_at']!=data.get('base_updated_at'):raise LookupError('Cet article a changé sur le PC.')
+            c.execute('UPDATE shopping_items SET name=?,quantity=?,purchase_count=?,price=?,updated_at=? WHERE id=?',(name,quantity,count,price,stamp,sid))
+        else:
+            sid=c.execute('INSERT INTO shopping_items(name,quantity,purchase_count,price,checked,archived,created_at,updated_at) VALUES(?,?,?,?,0,0,?,?)',(name,quantity,count,price,stamp,stamp)).lastrowid
+        previous=c.execute('SELECT * FROM studio_objects WHERE id=?',('shopping-'+str(sid),)).fetchone()
+        appearance=save(c,{'id':'shopping-'+str(sid),'kind':'purchase','revision':previous['revision'] if previous else 0,'data':{'title':name,'shopping_id':sid,'category':category}},stamp)
+        result={'id':sid,'appearance':appearance,'item':dict(c.execute('SELECT * FROM shopping_items WHERE id=?',(sid,)).fetchone())}
+    elif action == 'shopping-check':
+        sid=int(data['shopping_id'])
+        row=c.execute('SELECT checked FROM shopping_items WHERE id=? AND archived=0',(sid,)).fetchone()
+        if not row or bool(row['checked'])!=data.get('base'):raise LookupError('Cet article a changé sur le PC.')
+        if type(data.get('checked')) is not bool:raise ValueError('Case invalide.')
+        c.execute('UPDATE shopping_items SET checked=?,updated_at=? WHERE id=?',(int(data['checked']),stamp,sid))
+        result={'ok':True}
+    elif action == 'capture':
+        text=str(data.get('text','')).strip();target=data.get('destination','carnet')
+        if not 1<=len(text)<=10000:raise ValueError('Note vide ou trop longue.')
+        if target=='postit':
+            shape=data.get('shape','rounded')
+            if shape not in ('square','rounded','pill'):raise ValueError('Format de Post-it invalide.')
+            if c.execute('SELECT count(*) FROM home_postits WHERE archived=0').fetchone()[0]>=100:raise ValueError('Archive quelques Post-it avant d’en ajouter.')
+            cur=c.execute("INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,'gold',?,0,?,?)",(text.splitlines()[0][:120],text,shape,stamp,stamp))
+        elif target=='taches':
+            cur=c.execute("INSERT INTO tasks(title,notes,completed,archived,important,order_index,created_at,updated_at) VALUES(?,?,0,0,0,0,?,?)",(text.splitlines()[0][:120],text,stamp,stamp))
+        elif target=='courses':
+            cur=c.execute("INSERT INTO shopping_items(name,quantity,purchase_count,checked,archived,created_at,updated_at) VALUES(?,'',1,0,0,?,?)",(text[:120],stamp,stamp))
+        elif target=='administratif':
+            cur=c.execute("INSERT INTO admin_documents(title,category,notes,created_at,updated_at) VALUES(?,'Général',?,?,?)",(text.splitlines()[0][:180],text,stamp,stamp))
+        elif target in ('carnet','rappels','tracker','budget','sport','album'):
+            cur=c.execute('INSERT INTO quick_captures(destination,body,created_at) VALUES(?,?,?)',(target if target in ('carnet','rappels','tracker') else 'carnet','#'+target+' '+text,stamp))
+        else:raise ValueError('Destination inconnue.')
+        result={'id':cur.lastrowid,'destination':target}
     elif action == 'board-title':
         row=c.execute('SELECT title FROM tracker_boards WHERE id=? AND archived=0',(int(data['id']),)).fetchone()
         if not row or row['title']!=data.get('base'):raise LookupError('Ce tableau a changé ailleurs.')
@@ -261,6 +306,28 @@ def command(c, body, context):
         if not 1<=len(title)<=100:raise ValueError('Nom du tableau requis.')
         c.execute('UPDATE tracker_boards SET title=?,updated_at=? WHERE id=?',(title,stamp,int(data['id'])))
         result={'ok':True}
+    elif action == 'board-period':
+        row=c.execute('SELECT * FROM tracker_boards WHERE id=? AND archived=0',(int(data['id']),)).fetchone()
+        if not row or data.get('base')!=[row['period_unit'],row['period_count']]:raise LookupError('Le rythme a changé ailleurs.')
+        unit,count=context['tracker_period_choice'](data['period_unit'],data['period_count'])
+        c.execute('UPDATE tracker_boards SET period_unit=?,period_count=?,anchor_date=?,updated_at=? WHERE id=?',(unit,count,context['tracker_period_anchor'](unit).isoformat(),stamp,row['id']))
+        result={'ok':True}
+    elif action == 'row-archive':
+        c.execute('UPDATE tracker_board_rows SET archived=1,updated_at=? WHERE id=?',(stamp,int(data['row_id'])))
+        result={'ok':True}
+    elif action == 'row-duplicate':
+        row=c.execute('SELECT * FROM tracker_board_rows WHERE id=? AND archived=0',(int(data['row_id']),)).fetchone()
+        if not row:raise ValueError('Ligne introuvable.')
+        if c.execute('SELECT count(*) FROM tracker_board_rows WHERE board_id=? AND archived=0',(row['board_id'],)).fetchone()[0]>=80:raise ValueError('Limite de lignes atteinte.')
+        fields=['board_id','title','mode','target_count','weekday','linked_type','linked_id','order_index','created_at','updated_at']
+        values=[row['board_id'],(row['title']+' (copie)')[:100],row['mode'],row['target_count'],row['weekday'],row['linked_type'],row['linked_id'],100000,stamp,stamp]
+        new=c.execute('INSERT INTO tracker_board_rows('+','.join(fields)+') VALUES('+','.join('?'*len(fields))+')',values).lastrowid
+        for step in c.execute('SELECT * FROM tracker_row_steps WHERE row_id=? AND active=1 ORDER BY order_index,id',(row['id'],)).fetchall():c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,weekday,active) VALUES(?,?,?,?,1)',(new,step['title'],step['order_index'],step['weekday']))
+        appearance=c.execute("SELECT * FROM studio_objects WHERE id=?",('tracker-row-'+str(row['id']),)).fetchone()
+        if appearance:
+            app=json.loads(appearance['data_json']);app['row_id']=new;app['title']=values[1]
+            save(c,{'id':'tracker-row-'+str(new),'kind':'tracker-row','revision':0,'data':app},stamp)
+        result={'id':new}
     elif action == 'tracker-setup':
         rid=int(data['row_id'])
         row=c.execute('SELECT * FROM tracker_board_rows WHERE id=? AND archived=0',(rid,)).fetchone()
@@ -272,7 +339,17 @@ def command(c, body, context):
         c.execute('UPDATE tracker_board_rows SET mode=? WHERE id=?',(mode,rid))
         result=context['tracker_rituals'].save_setup(c,rid,data,stamp)
         if data.get('appearance'):save(c,data['appearance'],stamp)
+    elif action=='task-step':
+        task=int(data['task_id']);current=context['utility_details'].extras(c,task)
+        index=int(data['index']);steps=current['data']['checklist']
+        if not 0<=index<len(steps) or steps[index]['text']!=data.get('text') or steps[index]['done']!=data.get('base'):raise LookupError('Cette sous-tâche a changé sur le PC.')
+        if type(data.get('done')) is not bool:raise ValueError('Case invalide.')
+        steps[index]['done']=data['done'];context['utility_details'].save_task(c,task,current)
+        result={'ok':True}
     elif action == 'tracker-step':
+        if 'base' in data:
+            current=bool(c.execute('SELECT 1 FROM tracker_row_step_checks WHERE step_id=? AND day=?',(int(data['step_id']),data['day'])).fetchone())
+            if current!=data['base']:raise LookupError('Cette étape a changé sur un autre appareil.')
         result = context['tracker_rituals'].toggle_step(c, int(data['step_id']), date.fromisoformat(data['day']).isoformat(), data['done'], stamp)
     elif action == 'consume-stock':
         food = c.execute("SELECT * FROM food_items WHERE id=? AND status='active'", (int(data['food_id']),)).fetchone()
@@ -292,24 +369,53 @@ def command(c, body, context):
     return result
 
 
+def widget_data(c, context):
+    today=date.today();end=today+timedelta(days=90)
+    items=[{'title':r['title'],'date':r['due_date'],'kind':'task'} for r in c.execute("SELECT title,due_date FROM tasks WHERE completed=0 AND archived=0 AND due_date IS NOT NULL AND due_date<=? ORDER BY due_date",(end.isoformat(),))]
+    completed={(r['event_id'],r['instance_date']) for r in c.execute('SELECT event_id,instance_date FROM event_completions')}
+    closed={(r['event_id'],r['instance_date']) for r in c.execute("SELECT event_id,instance_date FROM event_instance_actions WHERE action IN ('postponed','cancelled')")}
+    events=context['expand_events'](c.execute("SELECT * FROM events WHERE status NOT IN ('cancelled','done')").fetchall(),today.isoformat(),end.isoformat())
+    for e in events:
+        if (e['id'],e['instance_date']) not in completed|closed:items.append({'title':e['title'],'date':e['instance_date'],'time':e.get('start_time') or '', 'kind':'event'})
+    items=sorted(items,key=lambda x:(x['date'],x.get('time','')))[:8]
+    dates=sorted({date.fromisoformat(r['start_date']) for r in c.execute('SELECT start_date FROM menstrual_periods')})
+    intervals=[(b-a).days for a,b in zip(dates,dates[1:]) if 21<=(b-a).days<=45][-6:]
+    cycle=None
+    if intervals:
+        median=sorted(intervals)[len(intervals)//2]
+        reliable=[v for v in intervals if abs(v-median)<=9] if len(intervals)>=4 else intervals
+        values=reliable if len(reliable)>=2 else intervals
+        average=max(21,min(45,int(sum(v*(i+1) for i,v in enumerate(values))/sum(range(1,len(values)+1))+.5)))
+        next_day=dates[-1]+timedelta(days=average)
+        while next_day<today:next_day+=timedelta(days=average)
+        cycle={'next_date':next_day.isoformat(),'estimated':True}
+    return items,cycle
+
+
 def serve(handler, method, path, q, context):
     if not path.startswith('/api/studio/'):
         return False
     try:
-        with sqlite3.connect(context['DB_PATH'], timeout=20) as c:
+        with closing(sqlite3.connect(context['DB_PATH'], timeout=20)) as c:
             c.row_factory = sqlite3.Row; c.execute('PRAGMA foreign_keys=ON')
             if method == 'GET' and path == '/api/studio/snapshot':
                 # No mental-health journal is mixed into this shared snapshot.
                 result = {'version': 1, 'objects': objects(c), 'day': date.today().isoformat(), 'installation_id':context['utility_safety'].identity(context['DATA'])}
+                reference=date.fromisoformat(q.get('day',[date.today().isoformat()])[0])
+                if abs((reference-date.today()).days)>3660:raise ValueError('Date hors période disponible.')
+                result['view_day']=reference.isoformat()
                 boards = [dict(r) for r in c.execute('SELECT * FROM tracker_boards WHERE archived=0 ORDER BY id')]
                 for board in boards:
-                    board['period'] = context['tracker_window'](board)
+                    board['period'] = context['tracker_window'](board,today=reference)
                     board['rows'] = [dict(r) for r in c.execute('SELECT * FROM tracker_board_rows WHERE board_id=? AND archived=0 ORDER BY order_index,id', (board['id'],))]
                     for row in board['rows']:
-                        row['marks'] = {r['day']: r['value'] for r in c.execute('SELECT * FROM tracker_board_marks WHERE row_id=? AND day BETWEEN ? AND ?', (row['id'], board['period']['start'], board['period']['end']))}
-                        row['steps'] = context['tracker_rituals'].steps_for_row(c, row['id'], board['period']['start'], board['period']['end'])
+                        row['marks'] = {r['day']: r['value'] for r in c.execute('SELECT * FROM tracker_board_marks WHERE row_id=? AND day BETWEEN ? AND ?', (row['id'], min(board['period']['start'],(reference-timedelta(days=reference.weekday())).isoformat()), max(board['period']['end'],(reference+timedelta(days=6-reference.weekday())).isoformat())))}
+                        row['steps'] = context['tracker_rituals'].steps_for_row(c, row['id'], min(board['period']['start'],(reference-timedelta(days=reference.weekday())).isoformat()), max(board['period']['end'],(reference+timedelta(days=6-reference.weekday())).isoformat()))
+                result['urgent'],result['cycle']=widget_data(c,context)
                 result['boards'] = boards
+                result['task_details']=[{'task_id':r['task_id'],'revision':r['revision'],'data':json.loads(r['data_json'])} for r in c.execute('SELECT * FROM task_extras')]
                 result['food'] = [dict(r) for r in c.execute("SELECT * FROM food_items WHERE status='active'")]
+                result['shopping'] = [dict(r) for r in c.execute('SELECT * FROM shopping_items WHERE archived=0 ORDER BY id')]
                 handler._json(result); return True
             if method == 'GET' and path.startswith('/api/studio/assets/'):
                 aid = identity(path.rsplit('/', 1)[1])
