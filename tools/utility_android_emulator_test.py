@@ -83,7 +83,7 @@ def text(label,value):
     adb('shell','input','text',value);time.sleep(.4);hide_keyboard()
 
 def menu(label):
-    tap('Ouvrir le menu',False);tap(label,False);time.sleep(1)
+    tap('Ouvrir le menu',False);tap(label,True);time.sleep(1)
 
 def launch():
     adb('shell','am','start','-n',PKG+'/.MainActivity');time.sleep(6)
