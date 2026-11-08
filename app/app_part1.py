@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
+import studio, utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -434,6 +434,7 @@ with conn() as c:
     native_reminders.initialise(c)
     reminder_occurrences.initialise(c)
     utility_details.initialise(c)
+    studio.initialise(c)
     event_preparations.initialise(c)
     admin_docs.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».

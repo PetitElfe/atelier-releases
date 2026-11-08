@@ -7,7 +7,8 @@ const trackerRitualButton=(label,action,cls='')=>{
   const button=trackerMake('button',cls,label);button.type='button';button.onclick=action;return button;
 };
 function trackerOpenRitual(row,day){
-  const steps=Array.isArray(row.steps)?row.steps:[];
+  const weekday=(new Date(day+'T12:00:00').getDay()+6)%7;
+  const steps=(Array.isArray(row.steps)?row.steps:[]).filter(s=>s.weekday==null||s.weekday===weekday);
   if(!steps.length){trackerConfigureRow(row);return}
   openModal('<h2>Mon petit rituel</h2><div id="trackerRitualModal"></div>');
   const root=document.getElementById('trackerRitualModal');
@@ -145,7 +146,9 @@ async function trackerConfigureRow(row){
     if(step.id)input.dataset.stepId=step.id;
     const remove=trackerRitualButton('×',()=>wrap.remove());
     remove.setAttribute('aria-label','Retirer cette étape (historique conservé)');
-    wrap.append(input,remove);stepFields.append(wrap);
+    const day=document.createElement('select');day.setAttribute('aria-label','Jour de cette étape');
+    [['','Chaque jour'],...trackerRitualDayNames.map((n,i)=>[String(i),n])].forEach(([v,n])=>{const o=document.createElement('option');o.value=v;o.textContent=n;day.append(o)});day.value=step.weekday==null?'':String(step.weekday);
+    wrap.append(input,day,remove);stepFields.append(wrap);
   }
   if(row.mode==='check'){
     for(const step of row.steps||[])newStep(step);
@@ -159,7 +162,7 @@ async function trackerConfigureRow(row){
   form.addEventListener('submit',async event=>{
     event.preventDefault();
     const steps=[...stepFields.querySelectorAll('input')].map(input=>({
-      ...(input.dataset.stepId?{id:Number(input.dataset.stepId)}:{}),title:input.value.trim()
+      ...(input.dataset.stepId?{id:Number(input.dataset.stepId)}:{}),title:input.value.trim(),weekday:input.parentElement.querySelector('select').value===''?null:Number(input.parentElement.querySelector('select').value)
     }));
     const payload={title:title.value.trim(),weekday:weekday.value===''?null:Number(weekday.value),
       target_count:target&&target.value.trim()?Number(target.value):null,

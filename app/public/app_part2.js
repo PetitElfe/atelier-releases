@@ -2085,7 +2085,7 @@ function librarySanitizeHtml(raw){
   const parser=new DOMParser();
   const doc=parser.parseFromString('<div id="atelier-rich-root">'+String(raw||'')+'</div>','text/html');
   const root=doc.querySelector('#atelier-rich-root');
-  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','SUP','SUB','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','HR','FIGURE','IMG']);
+  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','SUP','SUB','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','HR','FIGURE','IMG','TABLE','THEAD','TBODY','TFOOT','TR','TD','TH','CAPTION']);
   [...root.querySelectorAll('*')].forEach(el=>{
     if(!allowed.has(el.tagName)){
       el.replaceWith(...el.childNodes);return;

@@ -356,6 +356,16 @@ def _run_gui():
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
             self.menu.add_command(label="Mes archives…", command=self._show_archives)
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
+            colors_menu=tk.Menu(self.menu,tearoff=0)
+            for color_name in COLORS:
+                colors_menu.add_radiobutton(label=color_name,variable=self.color,value=color_name,command=self._change_color)
+            self.menu.add_cascade(label="Couleur",menu=colors_menu)
+            shapes_menu=tk.Menu(self.menu,tearoff=0)
+            for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210)):
+                shapes_menu.add_command(label=label,command=lambda s=shape,w=width,h=height:self._change_format(s,w,h))
+            self.menu.add_cascade(label="Format",menu=shapes_menu)
+            self.palette.pack_forget()
+            self.delete_button.pack_forget()
             self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
             self.menu.add_command(label="Supprimer définitivement…", command=self._delete)
@@ -415,6 +425,26 @@ def _run_gui():
             self._refresh_lock_button()
             self.hint.config(text="🔒 Position et taille verrouillées" if self.locked
                              else "🔓 Position et taille modifiables")
+
+        def _change_format(self,shape,width,height):
+            if not self._save():return
+            try:
+                if not save_edit(self.note["id"],self.note,self.note["title"],self.note["body"],self.note["color"],shape):
+                    self.hint.config(text="Modifié ailleurs : actualise le Post-it")
+                    return
+                self.note["shape"]=shape
+                if not self.locked:
+                    self.window.geometry(f"{width}x{height}+{self.window.winfo_x()}+{self.window.winfo_y()}")
+                if os.name=="nt":
+                    try:
+                        import ctypes
+                        corner=ctypes.c_int(1 if shape=="square" else 2)
+                        hwnd=ctypes.windll.user32.GetParent(self.window.winfo_id())
+                        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd,33,ctypes.byref(corner),ctypes.sizeof(corner))
+                    except (AttributeError,OSError):pass
+                self.hint.config(text="Format enregistré"+(" · taille verrouillée" if self.locked else ""))
+            except (sqlite3.Error,OSError,ValueError) as error:
+                messagebox.showerror("Post-it",str(error),parent=self.window)
 
         def _new_note(self):
             if _update_in_progress():
@@ -762,7 +792,7 @@ def _run_gui():
 def _self_test():
     with tempfile.TemporaryDirectory() as work:
         db = Path(work) / "test.db"
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.executescript("""PRAGMA foreign_keys=ON;
             CREATE TABLE home_postits (
               id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL,
@@ -793,10 +823,10 @@ def _self_test():
         assert len(archived_notes(db))==1
         assert restore_note(2,db)
         assert any(row["id"]==2 for row in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=2")
         # Ancienne base v6 : ajouter une colonne locked sans perte de géométrie.
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("ALTER TABLE desktop_postit_layout RENAME TO old_layout")
             c.execute("""CREATE TABLE desktop_postit_layout(
                 note_id INTEGER PRIMARY KEY,x INTEGER NOT NULL,y INTEGER NOT NULL,
@@ -807,13 +837,13 @@ def _self_test():
         create_layout_table(db)
         assert note_rows(db)[0]["x"]==321 and note_rows(db)[0]["locked"]==0
         assert not any(note["title"] == "Archivée" for note in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
         assert all(note['id'] != 1 for note in note_rows(db))
         assert any(note['id'] == fresh for note in note_rows(db))
         assert delete_note(1,db)
         assert not delete_note(1,db)
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             assert c.execute("SELECT COUNT(*) FROM desktop_postit_layout WHERE note_id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=?", (fresh,)).fetchone()[0]==1

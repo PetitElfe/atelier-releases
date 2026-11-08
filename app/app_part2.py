@@ -44,15 +44,17 @@ def tracker_window(board,offset=0,today=None):
         start=tracker_month_offset(anchor,(diff//months+offset)*months)
         end=tracker_month_offset(start,months)-timedelta(days=1)
         monthly=months>=4
+    mark_unit=board['mark_unit'] if 'mark_unit' in board.keys() else 'auto'
+    if mark_unit!='auto':monthly=True
     columns=[]
     if monthly:
         cursor=start
         while cursor<=end:
-            label=TRACKER_MONTH_NAMES[cursor.month-1][:3].capitalize()
+            label=('T'+str((cursor.month-1)//3+1) if mark_unit=='quarter' else 'S'+str((cursor.month-1)//6+1) if mark_unit=='semester' else str(cursor.year) if mark_unit=='year' else TRACKER_MONTH_NAMES[cursor.month-1][:3].capitalize())
             columns.append({'day':cursor.isoformat(),'label':label,
                             'secondary':str(cursor.year)[-2:],
                             'title':TRACKER_MONTH_NAMES[cursor.month-1].capitalize()+' '+str(cursor.year)})
-            cursor=tracker_month_offset(cursor,1)
+            cursor=tracker_month_offset(cursor,{'quarter':3,'semester':6,'year':12}.get(mark_unit,1))
     else:
         cursor=start
         weekday=('L','M','M','J','V','S','D')
@@ -66,8 +68,16 @@ def tracker_window(board,offset=0,today=None):
     elif unit=='days':cadence=f'{count} jour'+('s' if count>1 else '')
     elif unit=='years':cadence=f'{count} an'+('s' if count>1 else '')
     else:cadence=f'{count} mois'
-    return {'start':start.isoformat(),'end':end.isoformat(),'columns':columns,
-            'cadence':cadence,'granularity':'months' if monthly else 'days',
+    if unit=='weeks':
+        first=start.isocalendar();last=end.isocalendar()
+        title='sem '+str(first.week)+(('–'+str(last.week)) if count>1 else '')
+        if first.year!=last.year:title+=' · '+str(first.year)+'–'+str(last.year)
+    elif unit=='months' and count==1:title=TRACKER_MONTH_NAMES[start.month-1].capitalize()
+    elif unit=='months':title=TRACKER_MONTH_NAMES[start.month-1].capitalize()+'–'+TRACKER_MONTH_NAMES[end.month-1].capitalize()
+    elif unit=='years':title=str(start.year)+(('–'+str(end.year)) if count>1 else '')
+    else:title=start.strftime('%d %b')+'–'+end.strftime('%d %b')
+    return {'heading':title,'start':start.isoformat(),'end':end.isoformat(),'columns':columns,
+            'cadence':cadence,'granularity':('periods' if mark_unit in ('quarter','semester','year') else 'months') if monthly else 'days',
             'label':start.strftime('%d/%m/%Y')+' – '+end.strftime('%d/%m/%Y')}
 
 # Budget ALPHA 0.15.0 : montants en centimes, aucune connexion bancaire.
@@ -282,6 +292,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/sync/capabilities':
             return self._json({'protocol':2,'reminder_occurrences':True,'installation_id':utility_safety.identity(DATA),'idempotent_writes':True,'field_conflicts':True,'resources':['tasks','shopping','events','recipes']})
@@ -654,6 +665,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
         if p in ('/api/creator-access','/api/personal-design/presets'):
             if not personal_design.available():return self._json({'error':'Mode personnel Windows TEST uniquement.'},403)
@@ -1007,6 +1019,8 @@ class Handler(BaseHTTPRequestHandler):
                 unit,count=tracker_period_choice(
                     body.get('period_unit','months'),body.get('period_count',1))
             except ValueError as ex:return self._json({'error':str(ex)},400)
+            mark_unit=body.get('mark_unit','auto')
+            if mark_unit not in ('auto','month','quarter','semester','year') or mark_unit!='auto' and (unit!='years' or count!=1):return self._json({'error':'Rythme de cases invalide.'},400)
             anchor=tracker_period_anchor(unit).isoformat()
             with conn() as c:
                 if c.execute('SELECT COUNT(*) FROM tracker_boards WHERE archived=0').fetchone()[0]>=48:
@@ -1014,6 +1028,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('INSERT INTO tracker_boards(title,color,period_unit,period_count,anchor_date,'
                               'created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
                               (title,color,unit,count,anchor,ts,ts))
+                c.execute('UPDATE tracker_boards SET mark_unit=? WHERE id=?',(mark_unit,cur.lastrowid))
                 c.commit();return self._json({'id':cur.lastrowid},201)
         if len(parts)==4 and parts[:2]==['api','tracker-board-rows'] and parts[3]=='duplicate':
             try:row_id=int(parts[2])
@@ -1035,10 +1050,10 @@ class Handler(BaseHTTPRequestHandler):
                     (row['board_id'],copy_title,row['mode'],row['target_count'],row['weekday'],
                      row['linked_type'],row['linked_id'],index,ts,ts)).lastrowid
                 # Les sous-étapes sont une configuration ; les coches restent propres à la ligne source.
-                for step in c.execute('SELECT title,order_index FROM tracker_row_steps '
+                for step in c.execute('SELECT title,order_index,weekday FROM tracker_row_steps '
                                       'WHERE row_id=? AND active=1 ORDER BY order_index,id',(row_id,)).fetchall():
-                    c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,active) VALUES(?,?,?,1)',
-                              (new,step['title'],step['order_index']))
+                    c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,weekday,active) VALUES(?,?,?,?,1)',
+                              (new,step['title'],step['order_index'],step['weekday']))
                 c.commit()
                 return self._json({'id':new,'title':copy_title},201)
         if p.startswith('/api/tracker-boards/') and p.endswith('/rows'):
@@ -1335,6 +1350,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/personal-design':
             if not personal_design.available():
@@ -1484,12 +1500,13 @@ class Handler(BaseHTTPRequestHandler):
                 value=body.get('value')
             except (ValueError,TypeError,KeyError):return self._json({'error':'Jour invalide.'},400)
             with conn() as c:
-                row=c.execute('SELECT r.mode,r.weekday,r.target_count FROM tracker_board_rows r '
+                row=c.execute('SELECT r.mode,r.weekday,r.target_count,b.mark_unit FROM tracker_board_rows r '
                               'JOIN tracker_boards b ON r.board_id=b.id '
                               'WHERE r.id=? AND r.archived=0 AND b.archived=0',(row_id,)).fetchone()
                 if not row:return self._json({'error':'Ligne introuvable ou archivée.'},404)
                 if row['weekday'] is not None and date.fromisoformat(when).weekday()!=row['weekday']:
                     return self._json({'error':'Cette ligne est prévue un autre jour de la semaine.'},409)
+                when=studio.period_mark_day(row,date.fromisoformat(when)).isoformat()
                 if row['mode']=='check' and value is not None and c.execute(
                       'SELECT 1 FROM tracker_row_steps WHERE row_id=? AND active=1 LIMIT 1',(row_id,)).fetchone():
                     return self._json({'error':'Termine les étapes de la liste pour valider cette habitude.'},409)
@@ -2128,6 +2145,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'DELETE',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/objective-map/edges':
             q=parse_qs(u.query)

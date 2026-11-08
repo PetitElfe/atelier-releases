@@ -55,7 +55,7 @@ def main():
     temp = updater.DATA / ('windows-test-channel-' + str(os.getpid()) + '.tmp')
     temp.write_text(json.dumps({'branch': updater.CANDIDATE_BRANCH, 'installed_revision': revision}, indent=2) + '\n', encoding='utf-8')
     os.replace(temp, channel)
-    print('MISE À JOUR RÉUSSIE — finition utilitaire installée.', flush=True)
+    print('MISE À JOUR RÉUSSIE — tableaux, budget et albums installés.', flush=True)
     print('Les données et la sauvegarde sont conservées dans ton dossier Windows TEST.', flush=True)
     print('Ouvre maintenant ton raccourci habituel L’Atelier TEST.', flush=True)
     return 0
