@@ -968,7 +968,10 @@ function lifeSuggestions(){
     button.setAttribute('role','option');root.append(button);
   });
 }
+let lifeCaptureSession=0;
 function lifeOpenCapture(){
+  lifeCaptureSession++;
+  $('#quickCaptureSend').disabled=false;
   const overlay=$('#quickCaptureOverlay');overlay.classList.remove('hidden');
   lifeCaptureChoice='carnet';lifeSetText('#quickCaptureDestination','Destination : Carnet / boîte de réception');
   $('#quickCaptureText').value='';$('#quickCaptureSuggestions').classList.add('hidden');
@@ -983,6 +986,7 @@ $('#quickCaptureText')?.addEventListener('input',()=>{
   lifeSetText('#quickCaptureDestination','Destination : '+(dest?.label||'Carnet'));
 });
 $('#quickCaptureSend')?.addEventListener('click',async()=>{
+  const session=lifeCaptureSession;
   const {destination,body}=lifeParseCapture();
   if(!body){$('#quickCaptureText').focus();return}
   const btn=$('#quickCaptureSend');btn.disabled=true;
@@ -998,7 +1002,8 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
     }else{
       await lifeApi('/api/captures',{method:'POST',body:JSON.stringify({destination,body})});
     }
-    lifeCloseCapture();await loadLifeTools();await refresh();
+    if(session===lifeCaptureSession)lifeCloseCapture();
+    await loadLifeTools();await refresh();
     const toast=lifeNode('div','toast');
     const pending=['carnet','rappels','tracker'].includes(destination);
     const pendingText=destination==='rappels'?'À planifier dans la boîte de réception ; aucun rappel daté n’a été créé.':
@@ -1009,7 +1014,7 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
         'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination)));
     $('#toastArea').append(toast);setTimeout(()=>toast.remove(),4500);
   }catch(err){showUiError(err,'Impossible de ranger la note')}
-  finally{btn.disabled=false}
+  finally{if(session===lifeCaptureSession)btn.disabled=false}
 });
 function lifeShortcut(){return localStorage.getItem('atelierQuickCaptureShortcut')||'Ctrl+Shift+Space'}
 function lifeShortcutFromEvent(e){

@@ -41,6 +41,47 @@ COLORS = {
 }
 
 
+def note_corner_radius(shape, width, height):
+    """Round the real window on Windows 10 as well as Windows 11."""
+    if shape == 'square':
+        return 0
+    if shape == 'pill':
+        return max(0, min(44, int(width) // 4, int(height) // 2))
+    return max(0, min(20, int(width) // 4, int(height) // 4))
+
+
+def apply_note_shape(window, shape):
+    if os.name != 'nt':
+        return False
+    import ctypes
+    from ctypes import wintypes
+    user, gdi = ctypes.windll.user32, ctypes.windll.gdi32
+    user.GetParent.argtypes = [wintypes.HWND]
+    user.GetParent.restype = wintypes.HWND
+    user.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    gdi.CreateRoundRectRgn.argtypes = [ctypes.c_int] * 6
+    gdi.CreateRoundRectRgn.restype = wintypes.HANDLE
+    gdi.CreateRectRgn.argtypes = [ctypes.c_int] * 4
+    gdi.CreateRectRgn.restype = wintypes.HANDLE
+    gdi.DeleteObject.argtypes = [wintypes.HANDLE]
+    user.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HANDLE, wintypes.BOOL]
+    hwnd = user.GetParent(window.winfo_id()) or window.winfo_id()
+    bounds = wintypes.RECT()
+    if not user.GetWindowRect(hwnd, ctypes.byref(bounds)):
+        return False
+    width, height = bounds.right-bounds.left, bounds.bottom-bounds.top
+    radius = note_corner_radius(shape, width, height)
+    region = (gdi.CreateRoundRectRgn(0, 0, width+1, height+1, radius*2, radius*2)
+              if radius else gdi.CreateRectRgn(0, 0, width, height))
+    if not region:
+        return False
+    if not user.SetWindowRgn(hwnd, region, True):
+        gdi.DeleteObject(region)
+        return False
+    # Windows owns the region after SetWindowRgn succeeds.
+    return True
+
+
 def _guard():
     if os.name != "nt" or Path(__file__).resolve() != SCRIPT.resolve():
         raise RuntimeError("Post-it Windows réservés à l'installation TEST.")
@@ -292,8 +333,12 @@ def _run_gui():
             self.pending = None
             self.geo_pending = None
             self.lock_restore_pending = None
+            self.shape_pending = None
+            self.last_shaped_size = None
+            self.drag_origin = None
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             self.window = tk.Toplevel(root)
+            self.window.overrideredirect(tray is not None)
             if tray is not None:
                 # WS_EX_TOOLWINDOW removes a note from taskbar and Alt+Tab.
                 self.window.wm_attributes("-toolwindow", True)
@@ -312,6 +357,13 @@ def _run_gui():
             self.window.resizable(not self.locked, not self.locked)
             self.header = tk.Frame(self.window, bg=paper)
             self.header.pack(fill="x", padx=10, pady=(9, 1))
+            self.drag_handle = tk.Label(self.header, text="⠿", bg=paper, fg=ink,
+                                        font=("Segoe UI", 13), width=2, cursor="fleur")
+            self.drag_handle.pack(side="left")
+            for widget in (self.header, self.drag_handle):
+                widget.bind('<ButtonPress-1>', self._drag_start)
+                widget.bind('<B1-Motion>', self._drag_move)
+                widget.bind('<ButtonRelease-1>', self._drag_end)
             self.title = tk.Entry(self.header, relief="flat", bg=paper, fg=ink,
                                   font=("Segoe UI", 12, "bold"), insertbackground=ink)
             self.title.pack(side="left", fill="x", expand=True)
@@ -319,12 +371,10 @@ def _run_gui():
             self.new_button = tk.Button(self.header, text="＋", relief="flat",
                                         font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
                                         padx=8,pady=5,command=self._new_note, cursor="hand2")
-            self.new_button.pack(side="right", padx=(5, 0))
             self.lock_button = tk.Button(self.header, relief="flat",
                                         bg=paper, fg=ink, cursor="hand2",
                                         font=("Segoe UI",12),padx=9,pady=6,
                                         command=self._toggle_lock)
-            self.lock_button.pack(side="right", padx=(5, 0))
             self._refresh_lock_button()
             self.color = tk.StringVar(value=note["color"])
             self.palette = tk.OptionMenu(self.header, self.color, *COLORS.keys(),
@@ -343,15 +393,20 @@ def _run_gui():
             self.ok_button = tk.Button(self.footer, text="✓ OK", bg=paper, fg=ink,
                                        relief="groove", font=("Segoe UI", 11, "bold"),
                                        padx=12,pady=6,command=self._close, cursor="hand2")
-            self.ok_button.pack(side="right")
             self.delete_button = tk.Button(self.footer, text="Supprimer", bg=paper, fg=ink,
                                            relief="flat", font=("Segoe UI", 10),
                                            padx=9,pady=6,command=self._delete, cursor="hand2")
             self.delete_button.pack(side="left")
+            self.resize_grip = tk.Label(self.footer, text="↘", bg=paper, fg=ink,
+                                        font=("Segoe UI", 12), cursor="size_nw_se", padx=9, pady=3)
+            self.resize_grip.pack(side="right", padx=(0, 7))
+            self.resize_grip.bind('<ButtonPress-1>', self._resize_start)
+            self.resize_grip.bind('<B1-Motion>', self._resize_move)
+            self.resize_grip.bind('<ButtonRelease-1>', self._drag_end)
             self.hint = tk.Label(self.window, text="● Enregistré · Post-it indépendant",
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
                                  anchor="w", padx=10)
-            self.hint.pack(fill="x", pady=(0, 5))
+            self.hint.pack(fill="x", padx=12, pady=(0, 9))
             self.menu = tk.Menu(self.window, tearoff=0)
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
             self.menu.add_command(label="Mes archives…", command=self._show_archives)
@@ -370,6 +425,10 @@ def _run_gui():
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
             self.menu.add_command(label="Supprimer définitivement…", command=self._delete)
             self.menu.add_command(label="✓ OK · Enregistrer et fermer", command=self._close)
+            self.menu_button = tk.Button(self.header, text="···", relief="flat",
+                                         font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
+                                         padx=9, pady=3, cursor="hand2", command=self._open_menu)
+            self.menu_button.pack(side="right")
             self.window.bind("<Button-3>", self._menu)
             self.title.bind("<Button-3>", self._menu)
             self.body.bind("<Button-3>", self._menu)
@@ -382,6 +441,48 @@ def _run_gui():
             self.body.edit_modified(False)
             self.window.bind("<Configure>", self._geometry_changed)
             self.window.protocol("WM_DELETE_WINDOW", self._close)
+            self.window.bind('<Alt-F4>', lambda _: self._close())
+            root.after_idle(self._apply_shape)
+
+        def _open_menu(self):
+            try:
+                self.menu.tk_popup(self.menu_button.winfo_rootx(),
+                                   self.menu_button.winfo_rooty()+self.menu_button.winfo_height())
+            finally:
+                self.menu.grab_release()
+
+        def _drag_start(self, event):
+            if self.locked:
+                self.hint.config(text="Position verrouillée · options dans ···")
+                return 'break'
+            self.drag_origin=(event.x_root,event.y_root,self.window.winfo_x(),self.window.winfo_y())
+
+        def _drag_move(self, event):
+            if self.locked or not self.drag_origin:return 'break'
+            px,py,x,y=self.drag_origin
+            self.window.geometry(f'+{max(0,x+event.x_root-px)}+{max(0,y+event.y_root-py)}')
+
+        def _resize_start(self, event):
+            if not self.locked:
+                self.drag_origin=(event.x_root,event.y_root,self.window.winfo_width(),self.window.winfo_height())
+
+        def _resize_move(self, event):
+            if self.locked or not self.drag_origin:return 'break'
+            px,py,w,h=self.drag_origin
+            self.window.geometry(f'{max(240,w+event.x_root-px)}x{max(175,h+event.y_root-py)}')
+
+        def _drag_end(self, _):
+            self.drag_origin=None
+            self._save_geometry()
+
+        def _apply_shape(self):
+            self.shape_pending=None
+            if not self.window.winfo_exists():return
+            size=(self.window.winfo_width(),self.window.winfo_height(),self.note['shape'])
+            if size==self.last_shaped_size:return
+            try:
+                if apply_note_shape(self.window,self.note['shape']):self.last_shaped_size=size
+            except (AttributeError,OSError):pass
 
         def _refresh_lock_button(self):
             self.lock_button.configure(text="🔒" if self.locked else "🔓")
@@ -435,13 +536,7 @@ def _run_gui():
                 self.note["shape"]=shape
                 if not self.locked:
                     self.window.geometry(f"{width}x{height}+{self.window.winfo_x()}+{self.window.winfo_y()}")
-                if os.name=="nt":
-                    try:
-                        import ctypes
-                        corner=ctypes.c_int(1 if shape=="square" else 2)
-                        hwnd=ctypes.windll.user32.GetParent(self.window.winfo_id())
-                        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd,33,ctypes.byref(corner),ctypes.sizeof(corner))
-                    except (AttributeError,OSError):pass
+                root.after_idle(self._apply_shape)
                 self.hint.config(text="Format enregistré"+(" · taille verrouillée" if self.locked else ""))
             except (sqlite3.Error,OSError,ValueError) as error:
                 messagebox.showerror("Post-it",str(error),parent=self.window)
@@ -485,7 +580,7 @@ def _run_gui():
 
         def _change_color(self):
             paper, ink = COLORS[self.color.get()]
-            for item in (self.window, self.header, self.title, self.palette,
+            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -542,7 +637,7 @@ def _run_gui():
             self.body.edit_modified(False)
             self.color.set(note["color"])
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
-            for item in (self.window, self.header, self.title, self.palette,
+            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -550,10 +645,13 @@ def _run_gui():
             self.body.config(fg=ink, insertbackground=ink)
             self.hint.config(fg=ink)
             self.window.title("L'Atelier du Goblin · " + note["title"])
+            root.after_idle(self._apply_shape)
 
         def _geometry_changed(self, event):
             if event.widget != self.window or self.window.state() != "normal":
                 return
+            if self.shape_pending:root.after_cancel(self.shape_pending)
+            self.shape_pending=root.after(80,self._apply_shape)
             if self.locked:
                 # Ne pas repositionner à chaque événement Configure : cela fait
                 # trembler la fenêtre lorsque Windows termine un glisser.

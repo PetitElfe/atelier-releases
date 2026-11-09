@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "35425de89e0f15d45eeb6415d730761bf92eb75140af4c2fdd4ea7addf07c4e2"
+      "sha256": "928cfba13537e5291c2aea3843f9be58b5293bb2bf90b524e53731f686a466be"
     },
     {
       "path": "desktop_shell.py",
@@ -81,7 +81,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "6f418e350ade827f135b893867ceeac4fd1fc1776baff127ef95805e806efc0d"
+      "sha256": "c9bf0e71a2a23fd5285fa9a8ddd44988aa50f8d2fe6738d212313124572002e9"
     },
     {
       "path": "public/big_refonte.css",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "10e2afea0a09a36a5f3b20bc223f1d144699f552f534bdc38bd53f69c16a35a3"
+      "sha256": "f41f291fc7d702efb05154e3e342fca52922902ce55766353a16c5511e84f2f6"
     },
     {
       "path": "public/mental-health.html",
@@ -277,7 +277,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "96123583f858bd9d92b850510605b1280bcae44ff7c71b604eac5191e816205c"
+      "sha256": "9168bf2663de4388ebbec41683e0ac5e14c682c14f74829d125fecc1b637d857"
     },
     {
       "path": "utility_notes.py",
@@ -352,6 +352,6 @@
       "sha256": "2066c6bbf357bf0b3999a256f0582c95281e7bd39c1f636c6b133bdbc3f78c0a"
     }
   ],
-  "notes": "TEST : budget plus clair, suppression et restauration de lignes, actions visibles ; J centrés au zoom et estimation du cycle discrète. Essais matériels encore à valider.",
-  "build_sequence": 2026110905
+  "notes": "TEST : Post-it Windows aux formes réelles, options au clic droit et réouverture fidèle ; vérification des fichiers installés et affichage clair du build ; capture rapide protégée.",
+  "build_sequence": 2026110906
 }

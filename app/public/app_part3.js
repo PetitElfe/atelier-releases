@@ -713,8 +713,8 @@ async function atelierCheckForUpdates({automatic=false}={}){
     }
     if(message){
       message.textContent=result.available
-        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
-        : 'L’Atelier '+atelierEditionChannel()+' est à jour ('+result.revision.slice(0,8)+').';
+        ? (result.repair_required?'Des fichiers de cette installation sont incomplets ou modifiés. Réinstaller la livraison TEST réparera l’application. ':'Nouvelle livraison '+(result.latest_build?'build '+result.latest_build:'0.18.0')+' disponible. ')+ 'Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
+        : 'L’Atelier '+atelierEditionChannel()+' est à jour · build '+(result.installed_build||'inconnu')+'. Référence de livraison : '+result.revision.slice(0,8)+'.';
     }
   }catch(error){
     // No false "update available" claim when GitHub cannot be contacted.

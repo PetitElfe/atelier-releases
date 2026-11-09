@@ -130,15 +130,25 @@ def _prevent_downgrade(installed,target):
 def check():
     guard()
     revision=_latest_revision()
-    remote=_manifest(_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000))
+    remote_bytes=_get('https://raw.githubusercontent.com/'+REPO+'/'+revision+'/manifest.json',200000)
+    remote=_manifest(remote_bytes)
     local_manifest=(CODE/'manifest.json').read_bytes()
     installed=_manifest(local_manifest)
     _prevent_downgrade(installed,remote)
     installed_build=_sha(local_manifest.replace(b'\r\n',b'\n'))[:8]
     old={x['path']:x['sha256'] for x in installed['files']}
     new={x['path']:x['sha256'] for x in remote['files']}
+    damaged=[]
+    for item in installed['files']:
+        try:
+            if _sha((CODE/'app'/item['path']).read_bytes())!=item['sha256']:
+                damaged.append(item['path'])
+        except OSError:
+            damaged.append(item['path'])
     return {'version':'0.18.0','channel':'TEST','revision':revision,
-            'available':old!=new,'installed_version':installed['version'],
+            'available':old!=new or bool(damaged),'repair_required':bool(damaged),
+            'damaged_files':damaged,'latest_build':_sha(remote_bytes.replace(b'\r\n',b'\n'))[:8],
+            'installed_version':installed['version'],
             'installed_build':installed_build,'source_branch':_selected_branch()}
 
 def _stage(revision):
