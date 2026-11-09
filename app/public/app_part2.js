@@ -166,7 +166,30 @@ function atelierRelativeDateLabel(date){
   const duration=months?('M'+(ahead?'+':'-')+months+(days?', J'+(ahead?'+':'-')+days:'')):'J'+(ahead?'+':'-')+days;
   return duration+(ahead?' · dans le futur':' · dans le passé');
 }
+// Position in viewport space, including the app's CSS zoom and browser zoom.
+let atelierRelativeDateOwner=null;
+function atelierHideRelativeDate(){
+  const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true;
+  atelierRelativeDateOwner=null;
+}
+function atelierShowRelativeDate(cell){
+  let tip=document.getElementById('atelierRelativeDateFloat');
+  if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';tip.setAttribute('role','tooltip');document.body.append(tip)}
+  tip.textContent=cell.dataset.relativeDate;tip.hidden=false;atelierRelativeDateOwner=cell;
+  // A fixed child's CSS coordinates also inherit zoom. Measure its actual unit
+  // instead of applying viewport coordinates as unscaled CSS pixels.
+  tip.style.left='0px';tip.style.top='0px';const origin=tip.getBoundingClientRect();
+  tip.style.left='100px';tip.style.top='100px';const probe=tip.getBoundingClientRect();
+  const scaleX=(probe.left-origin.left)/100||1,scaleY=(probe.top-origin.top)/100||1;
+  const bounds=cell.getBoundingClientRect(),width=origin.width,height=origin.height;
+  const left=Math.max(8,Math.min(window.innerWidth-width-8,bounds.left+(bounds.width-width)/2));
+  const below=bounds.bottom+5,top=below+height<=window.innerHeight-8?below:Math.max(8,bounds.top-height-5);
+  tip.style.left=(left-origin.left)/scaleX+'px';tip.style.top=(top-origin.top)/scaleY+'px';
+}
+window.addEventListener('resize',atelierHideRelativeDate);
+window.addEventListener('scroll',atelierHideRelativeDate,true);
 function renderMonth(){
+  atelierHideRelativeDate();
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
@@ -175,19 +198,10 @@ function renderMonth(){
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
     cell.dataset.relativeDate=atelierRelativeDateLabel(d);
-    // Une infobulle attachée au document évite l'empilement sous la ligne du dessus.
-    cell.addEventListener('mouseenter',()=>{
-      let tip=document.getElementById('atelierRelativeDateFloat');
-      if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';document.body.append(tip)}
-      tip.textContent=cell.dataset.relativeDate;
-      const bounds=cell.getBoundingClientRect();
-      tip.hidden=false;
-      const half=tip.getBoundingClientRect().width/2;
-      tip.style.left=Math.max(8+half,Math.min(window.innerWidth-8-half,bounds.left+bounds.width/2))+'px';
-      tip.style.top=Math.min(window.innerHeight-tip.offsetHeight-8,bounds.bottom+5)+'px';
-    });
-    cell.addEventListener('mouseleave',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
-    cell.addEventListener('focusout',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
+    cell.addEventListener('mouseenter',()=>atelierShowRelativeDate(cell));
+    cell.addEventListener('focusin',()=>atelierShowRelativeDate(cell));
+    cell.addEventListener('mouseleave',atelierHideRelativeDate);
+    cell.addEventListener('focusout',atelierHideRelativeDate);
 
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<button class="day-number day-list-toggle" type="button"

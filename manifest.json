@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "c66916d191ac66b87c1d7092d555bb367f96893eaae9a391013ff578518cf1ec"
+      "sha256": "9386cce01f41f3c8d3a454e2c2cc5bb127754196564ef78f3c8ad2a86ddeee9e"
     },
     {
       "path": "app_part2.py",
-      "sha256": "e0c275add8b083c481106bde8f983052a647e46c2983cd6bf929962735ad968e"
+      "sha256": "18ab21137c5502d9ccbe87ee809718af2fd4b50dca915f78cf78113fea7ec06c"
     },
     {
       "path": "app_part3.py",
@@ -77,11 +77,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "605bdc4f6a3b5fa66f5548274c5da3845cd5457cf23dba6fe862f872210ebfe1"
+      "sha256": "5f50f0ce63d7f69a59b523539309eed4a37bdae5ae048feb5eda2643d393e420"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "132add6bf93131c4d6255c8398957cf5f3bf21c19f1b5cf12381c5d7f94b50de"
+      "sha256": "6f418e350ade827f135b893867ceeac4fd1fc1776baff127ef95805e806efc0d"
     },
     {
       "path": "public/big_refonte.css",
@@ -97,11 +97,11 @@
     },
     {
       "path": "public/calendar_decor.css",
-      "sha256": "705c06f6f9ed60d69669574bf7ebc9d0bfd66f45c7cd90fe80191a86219d59d0"
+      "sha256": "b32ee47db49aa1a8457824076cb997be96f5d4110f4f062c41c19b5bcf39af5b"
     },
     {
       "path": "public/calendar_decor.js",
-      "sha256": "d940ebc4a9ec850cc4221d556162e1d4639561eb7afc504640bb00a4a956c1d2"
+      "sha256": "adcd5ddba990a6397c420984ace155cc3b84f48ac6e28c8013b0d7e6163b5f05"
     },
     {
       "path": "public/editor_flow.js",
@@ -313,7 +313,7 @@
     },
     {
       "path": "utility_details.py",
-      "sha256": "ee09ed31195b05a52750e6ce78c536aade158445b3d16297ecf5fafa206a60bb"
+      "sha256": "013b0a34566ce2691897c0585a270b3938ab44f825d8014024c48da9c93103ef"
     },
     {
       "path": "public/utility_details.js",
@@ -337,7 +337,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "e45ac1133e17770a904d5a436b5761ada8aba99222415999d1f733f68de4701d"
+      "sha256": "59bc6d37291137a50982d4878db1227ae2fed7f700ebefa4bf91a664e5ff465f"
     },
     {
       "path": "public/studio_album.js",
@@ -349,9 +349,9 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "9cd0c8cbf3cac2a9cb283cc77dd74d6cbc4b5f63837b7a9f081a8f3a66ea3b5a"
+      "sha256": "2066c6bbf357bf0b3999a256f0582c95281e7bd39c1f636c6b133bdbc3f78c0a"
     }
   ],
-  "notes": "TEST personnel : habitudes et listes du jour harmonisées, grille de suivi continue, jours non prévus en fond sombre sans quadrillage. Couleurs, compteurs, étapes et anciennes coches conservés. Aucune promotion stable.",
-  "build_sequence": 2026110904
+  "notes": "TEST : budget plus clair, suppression et restauration de lignes, actions visibles ; J centrés au zoom et estimation du cycle discrète. Essais matériels encore à valider.",
+  "build_sequence": 2026110905
 }

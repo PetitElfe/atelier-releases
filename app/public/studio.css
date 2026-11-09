@@ -42,3 +42,25 @@
 #trackersView .studio-todo-list input[type=checkbox]:focus-visible{outline:1px solid #b8c8a6;outline-offset:2px}
 #homeView #homeDailyTrackersWidget .tracker-day-cell[data-tracker-mode=check],
 #trackersView .studio-todo-list .tracker-day-cell[data-tracker-mode=check]{background:linear-gradient(to top,var(--cell-color,#94af8d) var(--cell-fill,0%),#d5c6aa var(--cell-fill,0%))!important;border-color:#9c8b74;box-shadow:inset 0 1px 2px #5e50321f}
+
+/* Budget: sheet layout, explicit actions and recoverable removed rows. */
+#studioBudget .studio-budget-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+#studioBudget .studio-budget-summary section{display:grid;gap:4px;padding:12px;border:1px solid #80917677;border-radius:7px;background:#80917610}
+#studioBudget .studio-budget-summary strong{font-size:21px;font-variant-numeric:tabular-nums}
+#studioBudget .studio-budget-summary small,#studioBudget .studio-budget-help{font-size:12px;line-height:1.5}
+#studioBudget .studio-ledger-scroll{overflow-x:auto}
+#studioBudget .studio-ledger{font-size:12px;line-height:1.4}
+#studioBudget .studio-ledger th,#studioBudget .studio-ledger td{padding:7px 5px;vertical-align:top}
+#studioBudget .studio-budget-name{min-width:90px;overflow-wrap:anywhere}
+#studioBudget .studio-budget-name small{display:block;font-size:10px;margin-top:3px}
+#studioBudget .studio-budget-amount{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+#studioBudget .studio-ledger .studio-row-actions{white-space:normal;min-width:100px}
+#studioBudget .studio-row-actions button,#studioBudget .studio-budget-state button,#studioBudget .studio-budget-removed button{font-size:11px;min-height:28px;padding:4px 6px;border-radius:4px;margin:0 3px 3px 0}
+#studioBudget .studio-budget-state button{display:block;margin-top:4px}
+#studioBudget .studio-budget-more{font-size:10px;margin-top:3px}
+#studioBudget .studio-budget-more summary{cursor:pointer;padding:3px 0}
+#studioBudget .studio-budget-more button{display:block}
+#studioBudget .studio-budget-removed{margin:22px 0;padding:12px;border:1px solid #80917677;border-radius:6px}
+#studioBudget .studio-budget-removed summary{cursor:pointer;font-size:14px}
+#studioBudget .studio-budget-removed-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #80917644;font-size:12px}
+@media(max-width:600px){#studioBudget .studio-budget-summary{grid-template-columns:1fr}}

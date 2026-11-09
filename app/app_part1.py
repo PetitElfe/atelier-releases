@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -237,6 +237,7 @@ CREATE TABLE IF NOT EXISTS budget_entries (
  status TEXT NOT NULL CHECK(status IN ('pending','presumed','confirmed','skipped')),
  source TEXT NOT NULL CHECK(source IN ('scheduled','manual')),
  actual_date TEXT, notes TEXT DEFAULT '', created_at TEXT NOT NULL,
+ archived INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 1, occurrence_date TEXT,
  UNIQUE(rule_id, scheduled_date), UNIQUE(debt_id, scheduled_date)
 );
 CREATE TABLE IF NOT EXISTS budget_month_notes (
@@ -574,6 +575,17 @@ with conn() as c:
     ):
         if column not in row_columns:
             c.execute(f'ALTER TABLE tracker_board_rows ADD COLUMN {column} {definition}')
+    # Recoverable budget deletion keeps original dates, state and receipts.
+    budget_cols = {r['name'] for r in c.execute('PRAGMA table_info(budget_entries)')}
+    for column in ('archived', 'revision'):
+        if column not in budget_cols:
+            default = 0 if column == 'archived' else 1
+            c.execute(f'ALTER TABLE budget_entries ADD COLUMN {column} INTEGER NOT NULL DEFAULT {default}')
+    if 'occurrence_date' not in budget_cols:
+        c.execute('ALTER TABLE budget_entries ADD COLUMN occurrence_date TEXT')
+    c.execute("UPDATE budget_entries SET occurrence_date=scheduled_date WHERE occurrence_date IS NULL AND source='scheduled'")
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_budget_rule_occurrence ON budget_entries(rule_id,occurrence_date)')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_budget_debt_occurrence ON budget_entries(debt_id,occurrence_date)')
     admin_cols = {r['name'] for r in c.execute('PRAGMA table_info(admin_documents)')}
     if 'event_id' not in admin_cols:
         c.execute('ALTER TABLE admin_documents ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE SET NULL')

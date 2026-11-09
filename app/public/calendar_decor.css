@@ -1,8 +1,15 @@
-#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 24px!important;border-radius:0}
+#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 12px!important;border-radius:0}
 #monthGrid .calendar-decoration{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;pointer-events:none;z-index:-1}
-#monthGrid .calendar-cycle-band{position:absolute;left:4px;right:4px;bottom:4px;min-height:16px;padding:1px 5px;box-sizing:border-box;border-radius:4px;background:#b9756b;color:#211715;font:600 10px/14px sans-serif;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-#monthGrid .cycle-forecast .calendar-cycle-band{background:#d6a3b3;border:1px dashed #714e55}
-#atelierRelativeDateFloat{transform:translateX(-50%);text-align:center}
+/* One discreet mark: solid = recorded, dashed = estimate. */
+#monthGrid .calendar-cycle-band{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:26px;height:4px;min-height:0;padding:0;box-sizing:border-box;border-radius:2px;background:#b97583;pointer-events:auto}
+#monthGrid .cycle-forecast .calendar-cycle-band{width:22px;height:3px;background:transparent;border:0;border-bottom:2px dashed #b5929d;opacity:.65;border-radius:0}
+#monthGrid .day-cell.cycle-forecast,#monthGrid .day-cell.cycle-forecast-start{background:var(--panel);box-shadow:none;border-top:0}
+#monthGrid .day-cell.cycle-recorded{background:var(--panel);box-shadow:none}
+#weekGrid .week-slot.cycle-forecast{background-color:#25211e}
+#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:#2a2923}
+#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:#231d19;border-bottom:1px solid #605744}
+#weekGrid .week-head.cycle-forecast::after{content:'';position:absolute;width:22px;left:50%;bottom:3px;transform:translateX(-50%);border-bottom:2px dashed #b5929d;opacity:.65;pointer-events:none}
+#atelierRelativeDateFloat{transform:none;text-align:center;white-space:nowrap}
 .calendar-decor-dialog{width:min(440px,90vw);max-height:90vh;overflow:auto;background:#292d26;color:#eee5d4;border:1px solid #8ca083;border-radius:14px;padding:22px}
 .calendar-decor-dialog::backdrop{background:#0009}
 .calendar-decor-dialog form{display:grid;gap:12px}
@@ -21,4 +28,4 @@
 #monthGrid .day-cell.cycle-forecast{border-left:0}
 #weekGrid .cycle-forecast{margin:0;border-radius:0}
 #weekGrid .week-slot.cycle-forecast{padding:0;border-left:0}
-@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 24px!important}}
+@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 12px!important}}

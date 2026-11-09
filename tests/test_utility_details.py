@@ -13,9 +13,9 @@ class TaskDetailsTests(unittest.TestCase):
   self.assertEqual(details.extras(self.c,1),saved)
   with self.assertRaises(ValueError):details.save_task(self.c,1,{'revision':1,'data':{'links':['javascript:alert(1)'],'checklist':[]}})
  def test_category_limits_and_expense_correction_do_not_duplicate_entries(self):
-  self.c.execute('CREATE TABLE budget_entries(id INTEGER PRIMARY KEY,title TEXT,category TEXT,kind TEXT,amount_cents INTEGER,status TEXT,scheduled_date TEXT,actual_date TEXT,notes TEXT)')
-  self.c.execute("INSERT INTO budget_entries VALUES(1,'Courses','Alimentation','expense',1234,'confirmed','2026-11-04','2026-11-04','')")
-  self.c.execute("INSERT INTO budget_entries VALUES(2,'À venir','Alimentation','expense',6000,'pending','2026-11-12',NULL,'')");self.c.commit()
+  self.c.execute('CREATE TABLE budget_entries(id INTEGER PRIMARY KEY,title TEXT,category TEXT,kind TEXT,amount_cents INTEGER,status TEXT,scheduled_date TEXT,actual_date TEXT,notes TEXT,archived INTEGER NOT NULL DEFAULT 0,revision INTEGER NOT NULL DEFAULT 1)')
+  self.c.execute("INSERT INTO budget_entries VALUES(1,'Courses','Alimentation','expense',1234,'confirmed','2026-11-04','2026-11-04','',0,1)")
+  self.c.execute("INSERT INTO budget_entries VALUES(2,'À venir','Alimentation','expense',6000,'pending','2026-11-12',NULL,'',0,1)");self.c.commit()
   details.budget_support(self.c,'PUT',['api','budget','category-limits'],{}, {'month':'2026-11','category':'Alimentation','amount':'100','revision':0});self.c.commit()
   limits=details.budget_support(self.c,'GET',['api','budget','category-limits'],{'month':['2026-11']},{})
   self.assertEqual(limits[0]['spent_cents'],1234);self.assertEqual(limits[0]['planned_cents'],7234)

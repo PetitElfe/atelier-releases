@@ -101,9 +101,16 @@ def _amount(value):
 def budget_support(c,method,parts,q,body):
  from datetime import date
  if parts[:2]==['api','budget-entries']:
-  if method!='PUT':raise ValueError('Action invalide.')
+  if method not in ('PUT','DELETE'):raise ValueError('Action invalide.')
   c.execute('BEGIN IMMEDIATE');row=c.execute('SELECT * FROM budget_entries WHERE id=?',(int(parts[2]),)).fetchone()
   if not row:raise ValueError('Opération introuvable.')
+  if method=='DELETE' or 'archived' in body:
+   if method=='PUT' and body.get('archived') is not False:raise ValueError('Restauration invalide.')
+   if type(body.get('revision')) is not int or body['revision']!=row['revision']:raise LookupError('Cette ligne a changé. Actualise le budget avant de réessayer.')
+   archived=int(method=='DELETE')
+   c.execute('UPDATE budget_entries SET archived=?,revision=revision+1 WHERE id=?',(archived,row['id']))
+   return {'ok':True,'id':row['id'],'archived':bool(archived)}
+  if row['archived']:raise LookupError('Cette ligne a été supprimée. Actualise le budget avant de la modifier.')
   if not isinstance(body.get('base'),dict):raise ValueError('Version d’origine requise.')
   values={}
   for key in ('title','category','notes','scheduled_date','actual_date'):
@@ -118,14 +125,14 @@ def budget_support(c,method,parts,q,body):
   for key,value in values.items():
    if key not in body['base'] or (row[key]!=body['base'][key] and row[key]!=value):raise LookupError('Opération modifiée ailleurs. Tes corrections restent dans le formulaire.')
   if not values:raise ValueError('Aucune correction à enregistrer.')
-  c.execute('UPDATE budget_entries SET '+','.join(k+'=?' for k in values)+' WHERE id=?',(*values.values(),row['id']))
+  c.execute('UPDATE budget_entries SET '+','.join(k+'=?' for k in values)+',revision=revision+1 WHERE id=?',(*values.values(),row['id']))
   return {'ok':True,'id':row['id']}
  month=body.get('month') or q.get('month',[''])[0]
  if not isinstance(month,str) or len(month)!=7:raise ValueError('Mois invalide.')
  date.fromisoformat(month+'-01')
  if method=='GET':
   result=[]
-  entries=c.execute("SELECT category,amount_cents,status FROM budget_entries WHERE kind='expense' AND substr(COALESCE(actual_date,scheduled_date),1,7)=? AND status!='skipped'",(month,)).fetchall()
+  entries=c.execute("SELECT category,amount_cents,status FROM budget_entries WHERE archived=0 AND kind='expense' AND substr(COALESCE(actual_date,scheduled_date),1,7)=? AND status!='skipped'",(month,)).fetchall()
   for row in c.execute('SELECT * FROM budget_category_limits WHERE month=? ORDER BY category',(month,)):
    item=dict(row);matching=[e for e in entries if e['category'].strip().casefold()==item['category'].casefold()];item['spent_cents']=sum(e['amount_cents'] for e in matching if e['status'] in ('confirmed','presumed'));item['planned_cents']=sum(e['amount_cents'] for e in matching);result.append(item)
   return result

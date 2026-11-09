@@ -2142,11 +2142,11 @@ function budgetRow(entry){
     const confirm=document.createElement('button');confirm.textContent='Confirmer';confirm.onclick=async()=>{
       const value=await askBudgetPaymentAmount(entry);
       if(value===null)return;
-      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',...value},'Confirmation impossible');
+      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',revision:entry.revision,...value},'Confirmation impossible');
     };row.appendChild(confirm);
   }
   if(entry.status==='pending'||entry.status==='presumed'){
-    const skip=document.createElement('button');skip.textContent='Non effectué';skip.onclick=()=>budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'skipped'},'Modification impossible');row.appendChild(skip);
+    const skip=document.createElement('button');skip.textContent='Non effectué';skip.onclick=()=>budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'skipped',revision:entry.revision},'Modification impossible');row.appendChild(skip);
   }
   return row;
 }

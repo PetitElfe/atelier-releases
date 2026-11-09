@@ -117,30 +117,30 @@ def budget_materialize(c,month,ts):
         if not due:continue
         status='presumed' if rule['kind']=='fixed' and due<=today else 'pending'
         c.execute("""INSERT OR IGNORE INTO budget_entries
-          (rule_id,scheduled_date,title,kind,category,amount_cents,status,source,actual_date,created_at)
-          VALUES(?,?,?,?,?,?,?,?,?,?)""",
+          (rule_id,scheduled_date,title,kind,category,amount_cents,status,source,actual_date,created_at,occurrence_date)
+          VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
           (rule['id'],due,rule['title'],'income' if rule['kind']=='income' else 'expense',
-           rule['category'],rule['amount_cents'],status,'scheduled',due if status=='presumed' else None,ts))
+           rule['category'],rule['amount_cents'],status,'scheduled',due if status=='presumed' else None,ts,due))
     # Une charge consultée à l'avance devient « présumée payée » à échéance,
     # sans jamais transformer un revenu en revenu confirmé.
     c.execute("""UPDATE budget_entries
-      SET status='presumed', actual_date=scheduled_date
-      WHERE source='scheduled' AND status='pending' AND scheduled_date<=?
+      SET status='presumed', actual_date=scheduled_date, revision=revision+1
+      WHERE archived=0 AND source='scheduled' AND status='pending' AND scheduled_date<=?
       AND rule_id IN (SELECT id FROM budget_rules WHERE kind='fixed')""",(today,))
     for debt in c.execute('SELECT * FROM budget_debts WHERE archived=0').fetchall():
         due=budget_due_in_month(debt,month)
         if not due:continue
         repaid=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
-          WHERE debt_id=? AND status='confirmed'""",(debt['id'],)).fetchone()[0])
+          WHERE archived=0 AND debt_id=? AND status='confirmed'""",(debt['id'],)).fetchone()[0])
         planned=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
-          WHERE debt_id=? AND scheduled_date<? AND status!='skipped'""",(debt['id'],due)).fetchone()[0])
+          WHERE archived=0 AND debt_id=? AND scheduled_date<? AND status!='skipped'""",(debt['id'],due)).fetchone()[0])
         remaining_plan=max(0,debt['total_cents']-planned)
         installment=min(debt['monthly_cents'],remaining_plan)
         if installment==0:continue
         c.execute("""INSERT OR IGNORE INTO budget_entries
-          (debt_id,scheduled_date,title,kind,category,amount_cents,status,source,created_at)
-          VALUES(?,? ,?,'expense','Crédits / dettes',?,'pending','scheduled',?)""",
-          (debt['id'],due,debt['title'],installment,ts))
+          (debt_id,scheduled_date,title,kind,category,amount_cents,status,source,created_at,occurrence_date)
+          VALUES(?,? ,?,'expense','Crédits / dettes',?,'pending','scheduled',?,?)""",
+          (debt['id'],due,debt['title'],installment,ts,due))
     c.commit()
 
 def budget_snapshot(c,month,ts):
@@ -160,14 +160,16 @@ def budget_snapshot(c,month,ts):
         cursor=date(cursor.year+1,1,1) if cursor.month==12 else date(cursor.year,cursor.month+1,1)
     first=month.isoformat();last=month.replace(day=budget_last_day(month.year,month.month)).isoformat()
     entries=[dict(x) for x in c.execute(
-      'SELECT * FROM budget_entries WHERE scheduled_date BETWEEN ? AND ? ORDER BY scheduled_date,id',(first,last))]
+      'SELECT * FROM budget_entries WHERE archived=0 AND scheduled_date BETWEEN ? AND ? ORDER BY scheduled_date,id',(first,last))]
+    removed=[dict(x) for x in c.execute(
+      'SELECT * FROM budget_entries WHERE archived=1 AND scheduled_date BETWEEN ? AND ? ORDER BY scheduled_date,id',(first,last))]
     settings=c.execute('SELECT * FROM budget_settings WHERE id=1').fetchone()
     opening=int(settings['opening_balance_cents']) if settings else 0
     start=settings['opening_date'] if settings else '2026-01-01'
     # Le solde courant suit les confirmations et les charges présumées jusqu'à aujourd'hui.
     today=min(date.today().isoformat(),last)
     movement=c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
-      FROM budget_entries WHERE status IN ('confirmed','presumed') AND COALESCE(actual_date,scheduled_date)<=?
+      FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed') AND COALESCE(actual_date,scheduled_date)<=?
        AND COALESCE(actual_date,scheduled_date)>=?""",(today,start)).fetchone()[0]
     balance=opening+int(movement)
     pending=[x for x in entries if x['status']=='pending']
@@ -175,7 +177,7 @@ def budget_snapshot(c,month,ts):
     # initial et la fin du mois sélectionné, pas seulement du mois affiché.
     forecast=int(opening+c.execute("""SELECT COALESCE(SUM(
        CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
-       FROM budget_entries WHERE status IN ('confirmed','presumed','pending')
+       FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed','pending')
        AND COALESCE(actual_date,scheduled_date)>=?
        AND COALESCE(actual_date,scheduled_date)<=?""",(start,last)).fetchone()[0])
     notes=c.execute('SELECT notes FROM budget_month_notes WHERE month=?',(first[:7],)).fetchone()
@@ -183,9 +185,9 @@ def budget_snapshot(c,month,ts):
     for item in c.execute('SELECT * FROM budget_debts ORDER BY archived,id DESC'):
         debt=dict(item)
         paid=int(c.execute("""SELECT COALESCE(SUM(amount_cents),0) FROM budget_entries
-        WHERE debt_id=? AND status='confirmed'""",(item['id'],)).fetchone()[0])
+        WHERE archived=0 AND debt_id=? AND status='confirmed'""",(item['id'],)).fetchone()[0])
         debt['repaid_cents']=paid;debt['remaining_cents']=max(0,debt['total_cents']-paid);debts.append(debt)
-    return {'month':first[:7],'entries':entries,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
+    return {'month':first[:7],'entries':entries,'removed_entries':removed,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
      'debts':debts,'opening_balance_cents':opening,'opening_date':start,'balance_cents':balance,
      'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
      'income_cents':sum(x['amount_cents'] for x in entries if x['kind']=='income' and x['status']!='skipped'),
@@ -1680,12 +1682,14 @@ class Handler(BaseHTTPRequestHandler):
                 eid=int(parts[2]); status=str(body.get('status',''))
                 if status not in ('confirmed','presumed','pending','skipped'):raise ValueError('Statut invalide.')
                 with conn() as c:
+                    c.execute('BEGIN IMMEDIATE')
                     old=c.execute('SELECT * FROM budget_entries WHERE id=?',(eid,)).fetchone()
                     if not old:return self._json({'error':'Opération introuvable.'},404)
+                    if old['archived'] or ('revision' in body and body['revision']!=old['revision']):return self._json({'error':'Cette ligne a changé. Actualise le budget avant de réessayer.'},409)
                     amount=budget_amount(body.get('amount')) if body.get('amount') not in (None,'') else old['amount_cents']
                     # Corriger des montants uniquement si explicitement demandé ; amount est en euros.
                     actual=budget_date(body.get('actual_date')) if status=='confirmed' and body.get('actual_date') else date.today().isoformat() if status=='confirmed' else old['scheduled_date'] if status=='presumed' else None
-                    c.execute('UPDATE budget_entries SET status=?,amount_cents=?,actual_date=? WHERE id=?',(status,amount,actual,eid))
+                    c.execute('UPDATE budget_entries SET status=?,amount_cents=?,actual_date=?,revision=revision+1 WHERE id=?',(status,amount,actual,eid))
                     c.commit()
                 return self._json({'ok':True})
             except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
@@ -1698,8 +1702,8 @@ class Handler(BaseHTTPRequestHandler):
                     value=1 if table=='budget_debts' else 0
                     c.execute(f'UPDATE {table} SET {field}=? WHERE id=?',(value,rid))
                     reference='debt_id' if table=='budget_debts' else 'rule_id'
-                    c.execute(f"""UPDATE budget_entries SET status='skipped'
-                         WHERE {reference}=? AND scheduled_date>? AND status='pending'""",(rid,date.today().isoformat()))
+                    c.execute(f"""UPDATE budget_entries SET status='skipped',revision=revision+1
+                         WHERE archived=0 AND {reference}=? AND scheduled_date>? AND status='pending'""",(rid,date.today().isoformat()))
                     c.commit()
                 return self._json({'ok':True})
             except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
