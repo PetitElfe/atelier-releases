@@ -1,0 +1,31 @@
+name: Hardware observation harness TEST only
+on:
+  push:
+    branches: [test/hardware-checks-20261109]
+permissions:
+  contents: read
+jobs:
+  harness:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s tests -p test_hardware_observations.py -v
+      - run: python tools/hardware_checks/verification.py --collect-only --output artifacts/harness-not-device-results
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check tools/hardware_checks/checks.js
+      - run: node --check tools/hardware_checks/ink.js
+      - if: runner.os == 'Linux'
+        run: npm install --no-save playwright@1.62.1
+      - if: runner.os == 'Linux'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: runner.os == 'Linux'
+        run: node tools/hardware_checks/browser_test.cjs
