@@ -1,5 +1,6 @@
 """L'Atelier: safe in-place updates for the isolated Windows TEST copy only."""
 import hashlib, io, json, os, re, shutil, socket, sqlite3, subprocess, sys, time
+from contextlib import closing
 from pathlib import Path, PurePosixPath
 from datetime import datetime
 from urllib.parse import quote
@@ -224,7 +225,7 @@ def _backup(backup):
         if not saved.is_file() or _sha(item.read_bytes())!=_sha(saved.read_bytes()):
             raise RuntimeError('Sauvegarde non conforme : '+str(item))
     for item in (backup/'data').rglob('*.db'):
-        with sqlite3.connect(item) as c:
+        with closing(sqlite3.connect(item)) as c:
             if c.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
                 raise RuntimeError('Base sauvegardée invalide.')
 

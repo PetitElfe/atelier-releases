@@ -1,5 +1,6 @@
 """Private complete snapshots, validated recovery and content-free diagnostics."""
 import base64
+from contextlib import closing
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -75,7 +76,9 @@ def snapshot(data, version, port, browser=None):
     root=Path(data)
     with LOCK,tempfile.TemporaryDirectory(prefix='goblin-snapshot-') as folder:
         destination=Path(folder)/'copy.db'
-        with sqlite3.connect(root/'atelier.db',timeout=20) as source,sqlite3.connect(destination) as backup:
+        # Connection.__exit__ ends a transaction, but never closes the file.
+        # Close both handles before TemporaryDirectory removes copy.db on Windows.
+        with closing(sqlite3.connect(root/'atelier.db',timeout=20)) as source,closing(sqlite3.connect(destination)) as backup:
             source.backup(backup)
             if backup.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('La base ne passe pas le contrôle d’intégrité.')
             schema=backup.execute('PRAGMA user_version').fetchone()[0]
@@ -109,7 +112,7 @@ def validate(payload, data, schema, port, *, same_installation=True):
     if total>MAX_BYTES:raise ValueError('Sauvegarde trop volumineuse.')
     with tempfile.TemporaryDirectory(prefix='goblin-verify-') as folder:
         db=Path(folder)/'verify.db';db.write_bytes(database)
-        with sqlite3.connect(db) as c:
+        with closing(sqlite3.connect(db)) as c:
             c.execute('PRAGMA trusted_schema=OFF')
             if c.execute('PRAGMA integrity_check').fetchone()[0]!='ok' or c.execute('PRAGMA foreign_key_check').fetchall():raise ValueError('La sauvegarde ne passe pas le contrôle de la base.')
             if c.execute('PRAGMA user_version').fetchone()[0]!=payload['schema']:raise ValueError('Version de base incohérente.')
@@ -144,7 +147,7 @@ def save_snapshot(data,version,port,browser=None,reason='manual'):
 
 def is_fresh(data):
     root=Path(data)
-    with sqlite3.connect(root/'atelier.db') as c:
+    with closing(sqlite3.connect(root/'atelier.db')) as c:
         names={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for name in ('tasks','events','recipes','objective_nodes','objective_library_entries','admin_items','home_postits','journal_entries','emotion_entries','fitness_sessions'):
             if name in names and c.execute('SELECT count(*) FROM '+name).fetchone()[0]:return False
@@ -165,7 +168,7 @@ def _apply(data,payload):
     # Use SQLite's backup protocol rather than replacing an open SQLite file.
     with tempfile.TemporaryDirectory(prefix='goblin-apply-') as folder:
         source=Path(folder)/'copy.db';source.write_bytes(decode(payload['database']))
-        with sqlite3.connect(source) as src,sqlite3.connect(root/'atelier.db',timeout=30) as dst:src.backup(dst)
+        with closing(sqlite3.connect(source)) as src,closing(sqlite3.connect(root/'atelier.db',timeout=30)) as dst:src.backup(dst)
     current=dict(user_files(root))
     for rel,value in payload['files'].items():
         dest=root/rel;dest.parent.mkdir(parents=True,exist_ok=True)
@@ -224,7 +227,7 @@ def diagnostics(data,version,schema,port):
     status={}
     try:status=json.loads((root/'safety-status.json').read_text())
     except (OSError,ValueError):pass
-    with sqlite3.connect(root/'atelier.db',timeout=8) as c:
+    with closing(sqlite3.connect(root/'atelier.db',timeout=8)) as c:
         integrity=c.execute('PRAGMA quick_check').fetchone()[0]
         tables=c.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
     return {'version':version,'schema':schema,'port':port,'installation_id':identity(root),'integrity':integrity,

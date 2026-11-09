@@ -277,7 +277,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "24670db225ddb209c0f4ddfc31ea87f5c14d9d5125f445a73ef4caf5ec920106"
+      "sha256": "96123583f858bd9d92b850510605b1280bcae44ff7c71b604eac5191e816205c"
     },
     {
       "path": "utility_notes.py",
@@ -285,7 +285,7 @@
     },
     {
       "path": "utility_safety.py",
-      "sha256": "cb8b2d9fc4ecc5fbec4861790452fb79d4e33bb73a626cee27ec8c7324b68eda"
+      "sha256": "ab038883b699362fa0bc4df9dbaaa005be69fa04dde81045f0fb4680c66b2f99"
     },
     {
       "path": "utility_sync.py",
@@ -352,6 +352,6 @@
       "sha256": "93389838856ac13a2233cb0235f56e6be9ea716f4e13d87efb009a660d1ef914"
     }
   ],
-  "notes": "TEST personnel : refonte des tableaux, budget en feuilles et enveloppes, albums et dessin au stylet, cartes personnelles. Recette en cours, aucune promotion stable.",
-  "build_sequence": 2026110901
+  "notes": "TEST personnel : correction des connexions SQLite de sauvegarde, vérification et restauration sous Windows. Recette matérielle en attente ; aucune promotion stable.",
+  "build_sequence": 2026110902
 }
