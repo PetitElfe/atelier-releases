@@ -33,27 +33,32 @@ const fixtures=[['Semaine','weeks',1],['Deux semaines','weeks',2],['Trois jours'
  await page.evaluate(()=>showView('trackers'));
  await page.waitForFunction(()=>document.querySelectorAll('.studio-tracker-document').length===15);
  fs.mkdirSync('artifacts',{recursive:true});
- await page.locator('[data-tracker-board-id="'+boards[0].id+'"]').screenshot({path:'artifacts/tracker-layout-week.png'});
- await page.locator('[data-tracker-board-id="'+boards[3].id+'"]').screenshot({path:'artifacts/tracker-layout-month.png'});
+ for(const [id,name] of [[boards[0].id,'week'],[boards[3].id,'month']]){
+  const section=page.locator('[data-tracker-board-id="'+id+'"]');
+  await section.evaluate(el=>window.scrollBy(0,el.getBoundingClientRect().top-160));
+  await section.screenshot({path:'artifacts/tracker-layout-'+name+'.png'});
+ }
  for(const [width,zoom] of [[1862,1],[1280,1],[840,1],[620,1],[1280,1.25]]){
   await page.setViewportSize({width,height:1050});await page.evaluate(z=>document.body.style.zoom=String(z),zoom);
   const measured=await page.evaluate(()=>[...document.querySelectorAll('.studio-tracker-document')].map(section=>{
    const board=lifeBoards.find(b=>b.id===Number(section.dataset.trackerBoardId)),head=[...section.querySelectorAll('.tracker-grid-day')];
    return {id:board.id,granularity:board.period.granularity,columns:board.period.columns,rows:[...section.querySelectorAll('[data-tracker-row-id]')].map(line=>{
     const row=board.rows.find(r=>r.id===Number(line.dataset.trackerRowId));
-    return {id:row.id,weekday:row.weekday,steps:row.steps,height:line.getBoundingClientRect().height,
-     cells:[...line.querySelectorAll('.tracker-day-cell')].map(cell=>{const box=cell.getBoundingClientRect(),i=board.period.columns.findIndex(c=>c.day===cell.dataset.trackerDay),h=head[i].getBoundingClientRect();return {day:cell.dataset.trackerDay,width:box.width,height:box.height,aligned:Math.abs((box.x+box.width/2)-(h.x+h.width/2))<1}}),
+    return {id:row.id,weekday:row.weekday,steps:row.steps,top:line.getBoundingClientRect().top,bottom:line.getBoundingClientRect().bottom,border:getComputedStyle(line).borderBottomWidth,height:line.getBoundingClientRect().height,
+     cells:[...line.querySelectorAll('.tracker-day-cell')].map(cell=>{const box=cell.getBoundingClientRect(),i=board.period.columns.findIndex(c=>c.day===cell.dataset.trackerDay),h=head[i].getBoundingClientRect();return {day:cell.dataset.trackerDay,width:box.width,height:box.height,aligned:Math.abs((box.x+box.width/2)-(h.x+h.width/2))<1,top:box.y,bottom:box.bottom,left:box.x,right:box.right,radius:getComputedStyle(cell).borderRadius}}),
      bands:[...line.querySelectorAll('.tracker-day-inactive')].map(b=>{const s=getComputedStyle(b);return {span:Number(b.style.gridColumn.split(' ')[1]),border:s.borderWidth,background:s.backgroundImage,tab:b.hasAttribute('tabindex')}})};
     }),scroll:section.querySelector('.tracker-board-scroll').getBoundingClientRect().width,section:section.getBoundingClientRect().width};
   }));
   for(const board of measured){
    assert.ok(board.scroll<=board.section+1,`${width}: table stays inside its section`);
-   for(const row of board.rows){
-    assert.ok(row.height/zoom<=42,`${width}: row ${row.id} must remain compact`);
+   for(let index=0;index<board.rows.length;index++){const row=board.rows[index];
+    if(index)assert.ok(Math.abs(row.top-board.rows[index-1].bottom)<1,'Rows join into a continuous grid');
+    assert.equal(row.border,'0px','No line across the inactive bands');
+    assert.ok(Math.abs(row.height/zoom-28)<1,`${width}: row ${row.id} must remain compact`);
     const applicable=board.columns.filter(col=>{if(board.granularity!=='days')return true;const weekday=(new Date(col.day+'T12:00:00').getDay()+6)%7;return (row.weekday==null||row.weekday===weekday)&&(!row.steps.length||row.steps.some(s=>s.weekday==null||s.weekday===weekday))});
     assert.deepEqual(row.cells.map(c=>c.day),applicable.map(c=>c.day),'Only scheduled days have controls');
     assert.equal(row.cells.length+row.bands.reduce((n,b)=>n+b.span,0),board.columns.length,'Merged bands preserve date alignment');
-    for(const cell of row.cells){assert.ok(Math.abs(cell.width/zoom-32)<1&&Math.abs(cell.height/zoom-32)<1,'Cells keep their size');assert.ok(cell.aligned,'Cell is centered below its day')}
+    for(const cell of row.cells){assert.ok(Math.abs(cell.width/zoom-28)<1&&Math.abs(cell.height/zoom-28)<1,'Cells keep their size');assert.ok(cell.aligned,'Cell is centered below its day');assert.equal(cell.radius,'0px');assert.ok(Math.abs(cell.top-row.top)<1&&Math.abs(cell.bottom-row.bottom)<1,'Cells fill the complete row without gaps')}
     for(const band of row.bands){assert.equal(band.border,'0px');assert.equal(band.background,'none');assert.equal(band.tab,false)}
    }
   }
@@ -77,6 +82,6 @@ const fixtures=[['Semaine','weeks',1],['Deux semaines','weeks',2],['Trois jours'
  snapshot=await api('/api/studio/snapshot');
  assert.equal(snapshot.boards.find(b=>b.id===boards[0].id).rows.find(r=>r.id===boards[0].ids.fixed).marks[historical],'1','Historical mark is preserved behind the inactive area');
  assert.deepEqual(errors,[]);
- console.log('PASS: 15 rhythms × 5 viewport/zoom settings; compact cells, scheduled-day bands, alignment, ritual/counter, reload and historical marks');
+ console.log('PASS: 15 rhythms × 5 viewport/zoom settings; continuous grid, solid unscheduled bands, alignment, ritual/counter, reload and historical marks');
  }finally{await browser?.close();try{await api('/api/shutdown','POST',{})}catch{}proc.kill();fs.rmSync(folder,{recursive:true,force:true})}
 })().catch(e=>{console.error(e);process.exitCode=1});

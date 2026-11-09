@@ -333,7 +333,7 @@
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "06cbe9f9c9a9041234c8ac80fbd494cc13a9aa6aa96d3e81d28fbf39371643a1"
+      "sha256": "4e6c16ed11c689ac00dd9ee181c4067e7bb0897f7388ebb695390ebcdebaff4a"
     },
     {
       "path": "public/studio_budget.js",
@@ -349,9 +349,9 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "787a174ab09faf3fe682bc706cc6f4c0106d3b80310ad34e183280b7c09bd422"
+      "sha256": "9cd0c8cbf3cac2a9cb283cc77dd74d6cbc4b5f63837b7a9f081a8f3a66ea3b5a"
     }
   ],
-  "notes": "TEST personnel : tableaux de suivi compacts, jours non prévus en bandes sombres sans quadrillage, choix des jours et anciennes coches conservés. Aucune promotion stable.",
-  "build_sequence": 2026110903
+  "notes": "TEST personnel : habitudes et listes du jour harmonisées, grille de suivi continue, jours non prévus en fond sombre sans quadrillage. Couleurs, compteurs, étapes et anciennes coches conservés. Aucune promotion stable.",
+  "build_sequence": 2026110904
 }
