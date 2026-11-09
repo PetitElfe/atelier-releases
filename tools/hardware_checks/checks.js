@@ -59,7 +59,7 @@ document.getElementById('refresh').onclick = async () => {
     if (!hydrated) {
       const saved = report.participant;
       if (saved && Object.keys(saved).length) {
-        samples = saved.pen_samples || 0; minimum = saved.pen_min || 0;
+        samples = saved.pen_samples || 0; minimum = samples ? saved.pen_min : 1;
         maximum = saved.pen_max || 0; priorStrokes = saved.strokes || 0;
         document.getElementById('xp_pen_used').checked = saved.xp_pen_used === true;
         for (const input of document.querySelectorAll('[data-check]'))

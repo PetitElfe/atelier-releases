@@ -55,13 +55,28 @@ const {chromium} = require('playwright');
     await page.reload();
     await page.waitForFunction(() => document.querySelector('[data-check=pc_sound]').value === 'pass');
     assert.equal(await page.locator('[data-check=windows_notification_minimized]').inputValue(), 'fail');
+    // CDP emulates pressure for the harness regression only. It is not hardware evidence.
+    await page.locator('canvas').scrollIntoViewIfNeeded();
+    const box = await page.locator('canvas').boundingBox();
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchMouseEvent', {type: 'mousePressed', x: box.x + 25, y: box.y + 25,
+      button: 'left', buttons: 1, clickCount: 1, pointerType: 'pen', force: .2});
+    await cdp.send('Input.dispatchMouseEvent', {type: 'mouseMoved', x: box.x + 70, y: box.y + 50,
+      button: 'left', buttons: 1, pointerType: 'pen', force: .8});
+    await cdp.send('Input.dispatchMouseEvent', {type: 'mouseReleased', x: box.x + 70, y: box.y + 50,
+      button: 'left', buttons: 0, clickCount: 1, pointerType: 'pen', force: 0});
     await page.locator('#tailnet').fill('http://arbitrary.invalid');
     await page.locator('#configureTailnet').click();
     await page.waitForFunction(() => document.getElementById('status').textContent.startsWith('Opération refusée'));
     await page.locator('#save').click();
     await page.waitForFunction(() => document.getElementById('status').textContent.startsWith('Observations enregistrées'));
     report = JSON.parse(fs.readFileSync(path.join(folder, fs.readdirSync(folder).find(f => f.endsWith('.json'))), 'utf8'));
-    assert.equal(report.participant.strokes, 1);
+    assert.equal(report.participant.strokes, 2);
+    assert.ok(report.participant.pen_samples >= 2);
+    assert.ok(report.participant.pen_min > .19 && report.participant.pen_min < .21);
+    assert.ok(report.participant.pen_max > .79 && report.participant.pen_max < .81);
+    assert.equal(report.participant.checks.pen_pressure, 'not_tested');
+    assert.equal(report.observations.master_update_allowed, false);
     assert.equal(report.review_required, true);
     assert.deepEqual(errors, []);
     console.log('Harness UI/protocol passed. No physical-device acceptance was performed.');

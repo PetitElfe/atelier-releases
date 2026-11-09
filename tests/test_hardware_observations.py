@@ -238,7 +238,8 @@ class WindowsLauncher(unittest.TestCase):
             names = ('verification.py', 'verification.html', 'checks.js', 'ink.js', 'Lancer_les_essais.cmd')
             with zipfile.ZipFile(archive, 'w') as z:
                 for name in names:
-                    z.write(hardware.HERE / name, 'dossier extrait/' + name)
+                    content = (hardware.HERE / name).read_bytes().replace(b'\r\n', b'\n')
+                    z.writestr('dossier extrait/' + name, content)
             with zipfile.ZipFile(archive) as z: z.extractall(root)
             folder = root / 'dossier extrait'
             result = subprocess.run(['cmd.exe', '/d', '/c', 'Lancer_les_essais.cmd --collect-only --output resultats'],
