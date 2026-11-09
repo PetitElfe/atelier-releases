@@ -333,7 +333,7 @@
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "c5920895edf5265b4b56d91b68c57e9daed46515a10f52eb26a093ada2475967"
+      "sha256": "06cbe9f9c9a9041234c8ac80fbd494cc13a9aa6aa96d3e81d28fbf39371643a1"
     },
     {
       "path": "public/studio_budget.js",
@@ -349,9 +349,9 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "93389838856ac13a2233cb0235f56e6be9ea716f4e13d87efb009a660d1ef914"
+      "sha256": "787a174ab09faf3fe682bc706cc6f4c0106d3b80310ad34e183280b7c09bd422"
     }
   ],
-  "notes": "TEST personnel : correction des connexions SQLite de sauvegarde, vérification et restauration sous Windows. Recette matérielle en attente ; aucune promotion stable.",
-  "build_sequence": 2026110902
+  "notes": "TEST personnel : tableaux de suivi compacts, jours non prévus en bandes sombres sans quadrillage, choix des jours et anciennes coches conservés. Aucune promotion stable.",
+  "build_sequence": 2026110903
 }

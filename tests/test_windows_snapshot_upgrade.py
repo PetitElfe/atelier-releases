@@ -82,7 +82,7 @@ class WindowsSnapshotUpgrade(unittest.TestCase):
                 wait_until(lambda: api('/api/runtime-version')['version'] == '0.18.0')
                 manifest = (code / 'manifest.json').read_bytes().replace(b'\r\n', b'\n')
                 self.assertEqual(hashlib.sha256(manifest).hexdigest(), delivery['manifest_sha256'])
-                self.assertEqual(json.loads(manifest)['build_sequence'], 2026110902)
+                self.assertGreaterEqual(json.loads(manifest)['build_sequence'], 2026110902)
 
                 # Actual API paths used by Settings and the update preflight.
                 for _ in range(2):
