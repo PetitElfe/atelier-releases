@@ -82,7 +82,7 @@ def text(label,value):
     for _ in range(2):adb('shell','input','swipe','520','420','520','1900','200')
     node=find(label);x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(.7);adb('shell','input','keyevent','123')
     for _ in range(min(30,len(node.attrib.get('text',''))+3)):adb('shell','input','keyevent','67')
-    adb('shell','input','text',value);time.sleep(.4);hide_keyboard()
+    adb('shell','input','text',value.replace(' ','%s'));time.sleep(.4);hide_keyboard()
 
 def menu(label):
     tap('Ouvrir le menu',False);tap(label,True);time.sleep(1)
@@ -113,6 +113,8 @@ else:
     text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note','Private_text_must_survive');tap('Enregistrer sur mon téléphone')
 time.sleep(1)
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode')
+assert 'Private_text_must_survive' in ET.tostring(nodes(),encoding='unicode'),'The pre-upgrade fixture must contain the whole body'
+Path('artifacts/android-before-upgrade.xml').write_text(ET.tostring(nodes(),encoding='unicode'))
 adb('shell','am','force-stop',PKG);adb('install','-r',str(NEW));launch()
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode'),'Existing WebView note lost after signed replacement'
 assert 'Private_text_must_survive' in ET.tostring(nodes(),encoding='unicode'),'Existing note body hidden after signed replacement'
