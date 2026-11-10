@@ -17,7 +17,8 @@ textarea{min-height:115px;resize:vertical}article{background:#1d2b22;padding:15p
 .book svg{height:54px;width:54px}
 #notice{min-height:32px;color:var(--accent)}#editForm{display:grid;gap:7px}
 @media(max-width:750px){main{grid-template-columns:1fr}aside{position:static}nav{display:grid;grid-template-columns:repeat(2,1fr)}}
-</style></head>
+body.embedded header,body.embedded aside{display:none}body.embedded main{display:block;padding:0;max-width:none}body.embedded .panel{margin:0;border:0;box-shadow:none;padding:12px}body.embedded .panel>h2{font-size:20px}
+</style><link rel="stylesheet" href="/grounding_cards.css"></head>
 <body>
 <header><div><a href="/">← L’Atelier du Goblin</a><h1>Mon carnet de santé mentale</h1><small>Un espace personnel, sans obligation de tout remplir.</small></div><div><button id="reload">Actualiser depuis le PC</button></div></header>
 <main>
@@ -25,17 +26,19 @@ textarea{min-height:115px;resize:vertical}article{background:#1d2b22;padding:15p
 <nav id="nav"></nav><p class="sub">Les notes apparaissent sur ce PC après une synchronisation volontaire depuis ton téléphone. L’accès à ce carnet dépend de l’accès à ce PC.</p></aside>
 <div><section class="panel"><h2 id="heading">Mon journal</h2><div id="notice" role="status"></div><div id="editor"></div><div id="entries"></div></section></div>
 </main>
+<script src="/grounding_cards.js"></script>
 <script>
 'use strict';
+if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embedded');
 const $=id=>document.getElementById(id);
-const groups=[['journal','Journal libre'],['phrases','Petites phrases'],['anxiety',"Crises d'angoisse"],['sadness','Tristesse'],['catastrophe','Pensées catastrophiques'],['stories','Petites histoires'],['self','Moment pour soi']];
+const groups=[['grounding','Ancrage'],['journal','Journal libre'],['phrases','Petites phrases'],['anxiety',"Crises d'angoisse"],['sadness','Tristesse'],['catastrophe','Pensées catastrophiques'],['stories','Petites histoires'],['self','Moment pour soi']];
 const prompts={
 anxiety:[['Mes points d’appui','Regarde autour de toi. Quelles sont trois choses stables ou rassurantes que tu peux voir ?'],['Revenir au présent','Quel contact sens-tu sous tes pieds ou tes mains ?'],['Une chose à la fois','Quel est le plus petit geste que tu peux faire pour être plus à l’aise ?']],
 sadness:[['Me parler avec douceur','Que dirais-tu à quelqu’un que tu aimes dans cette situation ?'],['Ce qui pèse','De quoi aurais-tu besoin aujourd’hui, même très modestement ?']],
 catastrophe:[['Le fait et l’inquiétude','Qu’est-ce que je sais vraiment ? Qu’est-ce que j’imagine ?'],['Une autre possibilité','Quelle explication moins inquiétante serait également possible ?'],['Mon prochain pas','Si ce problème devait arriver, quel soutien pourrais-je demander ?']],
 stories:[['La clé minuscule','Au pied d’un vieux chêne, une clé brillait dans une tasse oubliée…'],['Le courrier des étoiles','Un facteur trouva une lettre adressée à la Lune…'],['Le village des chats','Dans un village où les chats tenaient les boutiques, un colis mystérieux arriva…'],['La petite bibliothèque','Chaque nuit, un nouveau livre apparaissait sur l’étagère la plus haute…'],['Le jardin des nuages','Une graine bleue poussait dans un pot qui ne touchait jamais terre…']],
 self:[['Un peu de douceur','Quelle boisson, couverture ou musique douce me ferait plaisir maintenant ?'],['Mon endroit calme','Quel petit coin confortable pourrais-je aménager ?'],['Une pause sans performance','Quelle activité simple puis-je faire sans objectif ni obligation ?']]};
-let data={cards:[],answers:[],journal:[],phrases:[]},rev=0,category='journal',editing=null;
+let data={cards:[],answers:[],journal:[],phrases:[]},rev=0,category=location.hash==='#grounding'?'grounding':'journal',editing=null;
 function node(tag,txt='',cls=''){const e=document.createElement(tag);e.textContent=txt;if(cls)e.className=cls;return e}
 function button(txt,fn){const b=node('button',txt);b.type='button';b.onclick=fn;return b}
 function announce(text){$('notice').textContent=text}
@@ -51,6 +54,8 @@ function editItem(kind,item){
 function removeItem(kind,item){if(!confirm('Masquer cette entrée ? La suppression sera synchronisée vers le téléphone.'))return;item.deletedAt=stamp();item.updatedAt=item.deletedAt;write().then(ok=>{if(ok)render()})}
 function actionRow(kind,item){const row=node('div','','row');row.append(button('Modifier',()=>editItem(kind,item)),button('Supprimer',()=>removeItem(kind,item)));return row}
 function render(){const nav=$('nav');nav.replaceChildren();for(const [key,label] of groups){const b=button(label,()=>{category=key;editing=null;render()});b.setAttribute('aria-pressed',String(category===key));nav.append(b)}$('heading').textContent=groups.find(x=>x[0]===category)[1];const editor=$('editor'),entries=$('entries');editor.replaceChildren();entries.replaceChildren();
+ if(category==='grounding'){$('heading').textContent='Revenir au présent';$('editor').replaceChildren();$('entries').replaceChildren();AtelierGrounding.render($('editor'),{read:card=>localStorage.getItem('atelier-grounding-draft:'+card.id)??data.answers.filter(a=>a.cardId===card.id&&!a.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]?.text??'',draft:(card,text)=>localStorage.setItem('atelier-grounding-draft:'+card.id,text),save:async(card,text)=>{data.answers.unshift({id:id(),cardId:card.id,section:'grounding',text,createdAt:stamp(),updatedAt:stamp()});if(!await write())throw Error('Actualise le carnet avant de réessayer. Ton brouillon reste conservé.');localStorage.removeItem('atelier-grounding-draft:'+card.id)}});return}
+
  const journal=category==='journal';
  if(journal){const title=node('input');title.placeholder='Titre de ma page';const ta=textArea('','Tout ce que tu souhaites écrire…');const chosen=editing?.kind==='journal'?data.journal.find(x=>x.id===editing.id):null;if(chosen){title.value=chosen.title||'';ta.value=chosen.text||''}const save=button(chosen?'Enregistrer les modifications':'Ajouter une page',async()=>{if(!ta.value.trim()){announce('Écris quelque chose avant de sauvegarder.');return}const item=chosen||{id:id(),createdAt:stamp()};item.title=title.value.trim();item.text=ta.value;item.updatedAt=stamp();if(!chosen)data.journal.unshift(item);if(await write()){editing=null;render()}});editor.append(title,ta,save);
  for(const item of data.journal.filter(x=>!x.deletedAt).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){const box=node('article');box.append(node('h3',item.title||'Une pensée'),node('p',item.text),node('small',new Date(item.updatedAt).toLocaleString('fr-FR')),actionRow('journal',item));entries.append(box)}

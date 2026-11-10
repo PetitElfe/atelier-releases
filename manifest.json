@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "820f934b884356cd946b2df4603f86a73a49d580cc7b0a704f2471e2b7386d2d"
+      "sha256": "a4864f45474efdf5e263dce7084be65fec28e6c73cd17ecdc21871b17f13ad0e"
     },
     {
       "path": "public/interface_reference.css",
@@ -177,7 +177,7 @@
     },
     {
       "path": "public/mental-health.html",
-      "sha256": "58ece7d7b9e1e6d980c924714a17cb3f82dbe1da6620935b974f028104e6ea8a"
+      "sha256": "3ceaffdbbba37c26afb04407e73997625a234ba094dc056a19fdc549ece09561"
     },
     {
       "path": "public/mental_drafts.js",
@@ -345,13 +345,21 @@
     },
     {
       "path": "public/studio_tools.js",
-      "sha256": "d76e29a4784bc3c530dd76b6dc0deda84d049ed3b34e5b6f1711d99474e13f40"
+      "sha256": "5534824941d824bd0470638a78bdf9bb9586df640bcbea783ade16ebf74b8039"
     },
     {
       "path": "public/studio.css",
       "sha256": "2066c6bbf357bf0b3999a256f0582c95281e7bd39c1f636c6b133bdbc3f78c0a"
+    },
+    {
+      "path": "public/grounding_cards.js",
+      "sha256": "7e102a2df72dd5d8be3ef3445f3d287932fa155db7480f91daec91525de0350a"
+    },
+    {
+      "path": "public/grounding_cards.css",
+      "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST : Post-it Windows aux formes réelles, options au clic droit et réouverture fidèle ; vérification des fichiers installés et affichage clair du build ; capture rapide protégée.",
-  "build_sequence": 2026110906
+  "notes": "TEST : cartes Ancrage issues de la fiche fournie, carnet privé synchronisé ; Post-it Windows aux formes réelles et menus discrets ; contrôle des fichiers installés et affichage du build.",
+  "build_sequence": 2026111001
 }
