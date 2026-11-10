@@ -106,14 +106,24 @@ def launch():
 
 Path('artifacts').mkdir(exist_ok=True)
 adb('install','-r',str(OLD));launch();menu('Notes')
-text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note','Private_text_must_survive');tap('Enregistrer sur mon téléphone');time.sleep(1)
+legacy_tree=ET.tostring(nodes(),encoding='unicode')
+if 'Ma note avec hashtags' in legacy_tree:
+    text('Ma note avec hashtags','Legacy_before_utility_update Private_text_must_survive');tap('Conserver sur mon téléphone')
+else:
+    text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note','Private_text_must_survive');tap('Enregistrer sur mon téléphone')
+time.sleep(1)
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode')
 adb('shell','am','force-stop',PKG);adb('install','-r',str(NEW));launch()
 assert 'Legacy_before_utility_update' in ET.tostring(nodes(),encoding='unicode'),'Existing WebView note lost after signed replacement'
+assert 'Private_text_must_survive' in ET.tostring(nodes(),encoding='unicode'),'Existing note body hidden after signed replacement'
 assert 'AgendaWidgetProvider' in adb('shell','dumpsys','appwidget'),'Agenda widget provider must be registered after update'
 adb('shell','pm','grant',PKG,'android.permission.POST_NOTIFICATIONS');adb('shell','appops','set',PKG,'SCHEDULE_EXACT_ALARM','allow')
 # Native general reminder test, separate from cooking alarms.
 menu('Paramètres')
+# Open the native-reminder settings group when the new compact hierarchy is present.
+reminder_tree=ET.tostring(nodes(),encoding='unicode')
+if 'Activer les rappels du PC' not in reminder_tree:
+    tap('Rappels du PC sur mon téléphone')
 tap('Activer les rappels du PC');tap('Tester un rappel Android (30 s)');tap('OK',False)
 adb('shell','input','keyevent','3');adb('shell','input','keyevent','223')
 for _ in range(8):time.sleep(5)
