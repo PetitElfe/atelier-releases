@@ -64,3 +64,26 @@
 #studioBudget .studio-budget-removed summary{cursor:pointer;font-size:14px}
 #studioBudget .studio-budget-removed-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid #80917644;font-size:12px}
 @media(max-width:600px){#studioBudget .studio-budget-summary{grid-template-columns:1fr}}
+
+/* Budget sheets: quiet rows, contextual actions, no repeated button toolbar. */
+#studioBudget .studio-ledger{background:transparent;font-size:13px;line-height:1.35}
+#studioBudget .studio-budget-ledger{border:0;background:transparent}
+#studioBudget .studio-budget-ledger h3{font-size:19px;margin:18px 0 10px}
+#studioBudget .studio-ledger th,#studioBudget .studio-ledger td{vertical-align:middle;padding:7px 8px;border-bottom:1px solid #a1ad9638}
+#studioBudget .studio-ledger thead{background:#91a18416}
+#studioBudget .studio-ledger tr[data-entry-id]:hover,#studioBudget .studio-ledger tr[data-entry-id]:focus-within{background:#a0af9220}
+#studioBudget .studio-ledger tr[data-entry-id]:focus-visible{outline:1px solid #a8b69a;outline-offset:-1px}
+#studioBudget .studio-ledger .studio-row-actions{min-width:28px;width:28px;padding:2px}
+#studioBudget .studio-ledger .studio-budget-options{width:28px;min-height:28px;border:0;background:transparent;padding:0;margin:0;font:600 21px/1 system-ui;color:inherit;border-radius:4px;opacity:.6}
+#studioBudget .studio-budget-options:hover,#studioBudget .studio-budget-options:focus-visible{opacity:1;background:#9aaa8730}
+#studioBudget .studio-budget-state{white-space:nowrap;font-size:11px}
+#studioBudget .studio-budget-name small{font-size:10px;opacity:.7}
+#studioBudget .studio-budget-summary{gap:30px;margin:16px 0 0;border-bottom:1px solid #a1ad9638;padding-bottom:14px}
+#studioBudget .studio-budget-summary section{border:0;border-radius:0;background:transparent;padding:0}
+#studioBudget .studio-budget-summary small{display:none}
+#studioBudget .studio-budget-summary strong{font-size:24px}
+#studioBudget .studio-budget-help{margin:8px 0 20px;opacity:.8}
+#studioBudget .studio-budget-help summary{font-size:12px;cursor:pointer}
+#studioBudget .studio-budget-help p{max-width:80ch}
+#studioBudget .studio-budget-columns{gap:24px 30px}
+#studioBudget .studio-add-line{border:0!important;background:#9ca98c20!important;font-size:20px;line-height:1.1;padding:5px!important;min-height:30px}

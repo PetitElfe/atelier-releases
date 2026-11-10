@@ -1,7 +1,7 @@
-name: Post-its and installation verification TEST
+name: Contextual budget and Windows verification TEST
 on:
   push:
-    branches: [test/mobile-postits-review-20261109]
+    branches: [test/budget-context-20261110]
 permissions:
   contents: read
 jobs:

@@ -337,7 +337,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "59bc6d37291137a50982d4878db1227ae2fed7f700ebefa4bf91a664e5ff465f"
+      "sha256": "f212fe255e3503265d3a3acc96b1294501986a054e3a5a7a61fda36964ebad74"
     },
     {
       "path": "public/studio_album.js",
@@ -349,7 +349,7 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "2066c6bbf357bf0b3999a256f0582c95281e7bd39c1f636c6b133bdbc3f78c0a"
+      "sha256": "72f679915aa30a2f10a897fdc17c2707697a28d6258ff64cf484eca8130efe6a"
     },
     {
       "path": "public/grounding_cards.js",
@@ -360,6 +360,6 @@
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST : cartes Ancrage issues de la fiche fournie, carnet privé synchronisé ; Post-it Windows aux formes réelles et menus discrets ; contrôle des fichiers installés et affichage du build.",
-  "build_sequence": 2026111001
+  "notes": "TEST : budget en feuilles compactes, commandes au clic droit et menu discret ; suppression restaurable, justificatifs et données conservés. Correctifs Post-it et Ancrage maintenus.",
+  "build_sequence": 2026111002
 }
