@@ -200,6 +200,11 @@ body.studio-breathing .studio-breath-word{font-size:19px;line-height:1.4;margin:
 @media(prefers-reduced-motion:reduce){body.studio-breathing .studio-breath-star>span{animation:none}}
 /* Compact year grids must shrink their day columns, including narrow phones. */
 .studio-mobile-calendar{grid-template-columns:repeat(7,minmax(0,1fr))}.studio-mobile-calendar.mini>button{min-width:0;width:100%;max-width:100%;box-sizing:border-box}.mini .studio-calendar-number{width:min(22px,100%)}
+/* Selected dates and primary icons stay legible in both existing themes. */
+.studio-agenda>.studio-tabs button.selected{color:var(--ink);box-shadow:inset 0 -2px currentColor}
+#content .studio-calendar-fab,.studio-calendar-days .today strong,.studio-mobile-calendar .today .studio-calendar-number,#content .studio-breath-controls .primary{color:var(--paper-bg)}
+.studio-calendar-day-column{border-left-color:color-mix(in srgb,var(--ink) 15%,transparent);background:repeating-linear-gradient(to bottom,color-mix(in srgb,var(--ink) 15%,transparent) 0 1px,transparent 1px 60px)}
+body.theme-classic .studio-agenda>.studio-tabs button.selected{color:var(--ink)}
 
 .grounding-viewer{display:grid;gap:14px;max-width:680px;width:100%;margin:0 auto;color:var(--ink,#eee8d8);font:400 15px/1.5 system-ui,sans-serif}
 .grounding-viewer *{box-sizing:border-box;min-width:0}.grounding-viewer p{margin:0}.grounding-intro,.grounding-status{font-size:13px;line-height:1.5;color:var(--muted-ink,#bbc9b6)}
@@ -1565,10 +1570,10 @@ setTimeout(autoCheckGoblin,1800);
   const word=S.node('p','studio-breath-word','À ton rythme'),phrase=S.node('p','studio-breath-phrase','');word.setAttribute('aria-live','polite');host.append(word,phrase);
   const controls=S.node('div','studio-breath-controls');
   const reset=action('Arrêter','reset',()=>{stop();elapsed=0;lastPhase=-1;paint(0);word.textContent='À ton rythme';phrase.textContent='';updatePlay()});
-  const play=action('Commencer','play',()=>{if(running){elapsed+=performance.now()-startedAt;stop();word.textContent='Pause'}else{if(elapsed>=duration*1000)elapsed=0;running=true;startedAt=performance.now();S.playScene(scene).catch(S.error);tick()}updatePlay()},'primary');
+  const play=action('Commencer','play',()=>{if(running){elapsed+=performance.now()-startedAt;stop();word.textContent='Pause'}else{if(elapsed>=duration*1000)elapsed=0;running=true;startedAt=performance.now();word.textContent=Math.floor(elapsed/5000)%2===0?'Inspire doucement':'Expire doucement';S.playScene(scene).catch(S.error);tick()}updatePlay()},'primary');
   const sound=action('Son doux : '+(mentalSound?'activé':'coupé'),mentalSound?'sound':'mute',()=>{mentalSound=!mentalSound;sound.innerHTML=icon(mentalSound?'sound':'mute');sound.setAttribute('aria-label','Son doux : '+(mentalSound?'activé':'coupé'))});controls.append(reset,play,sound);host.append(controls);
   function clock(s){return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}
-  function updatePlay(){play.innerHTML=icon(running?'pause':'play');play.setAttribute('aria-label',running?'Mettre en pause':elapsed?'Reprendre':'Commencer')}
+  function updatePlay(){play.innerHTML=icon(running?'pause':'play');play.title=running?'Mettre en pause':elapsed?'Reprendre':'Commencer';play.setAttribute('aria-label',play.title)}
   function paint(ms){const phase=(ms%10000)/5000,p=phase<=1?(1-Math.cos(Math.PI*phase))/2:(1+Math.cos(Math.PI*(phase-1)))/2;stage.style.setProperty('--breath-progress',p);orbit.style.setProperty('--breath-scale',.85+p*.2);progress.value=ms;passed.textContent=clock(ms/1000)}
   function tick(){if(!running)return;if(!host.isConnected||state.page!=='mental'||!mentalBreath){stop();return}const ms=Math.min(duration*1000,elapsed+performance.now()-startedAt),phase=Math.floor(ms/5000);paint(ms);if(phase!==lastPhase){lastPhase=phase;word.textContent=phase%2===0?'Inspire doucement':'Expire doucement';if(mentalSound)mentalDing();if(phase%2===0){const phrases=[...mentalPhrases,...mentalData.phrases.filter(p=>!p.deletedAt).map(p=>p.text),...S.of('card').filter(c=>c.data.category==='comfort').map(c=>c.data.front)];phrase.textContent=phrases[Math.floor(Math.random()*phrases.length)]||''}}if(ms>=duration*1000){stop();elapsed=ms;word.textContent='Séance terminée';updatePlay();return}frame=requestAnimationFrame(tick)}
   function settings(){
