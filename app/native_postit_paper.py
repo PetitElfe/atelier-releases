@@ -113,7 +113,7 @@ class PaperBackdrop:
         self.old_owner=self.set_owner(self.editor,-8,int(self.hwnd))
         self.dc=self.gdi.CreateCompatibleDC(None);self.bitmap=None;self.previous=None;self.image=None;self.graphics=None;self.buffer=None;self.pixels=None
         self.geometry=(0,0,300,260);self.paint_key=None;self.style=('rounded','#D2AF76',True);self.drag=None;self.destroyed=False
-        self.events=[];self.poll=window.after(16,self._flush_events)
+        self.events=[];self.scheduler=window._root();self.poll=self.scheduler.after(16,self._flush_events)
 
     def _flush_events(self):
         if self.destroyed:return
@@ -122,7 +122,7 @@ class PaperBackdrop:
             if event[0]=='geometry':self.on_geometry(event[1])
             elif event[0]=='end':self.on_end()
             elif event[0]=='menu':self.on_menu(*event[1:])
-        if not self.destroyed:self.poll=self.window.after(16,self._flush_events)
+        if not self.destroyed:self.poll=self.scheduler.after(16,self._flush_events)
 
     @staticmethod
     def _ok(status):
@@ -254,7 +254,7 @@ class PaperBackdrop:
     def destroy(self):
         if self.destroyed:return
         self.destroyed=True
-        try:self.window.after_cancel(self.poll)
+        try:self.scheduler.after_cancel(self.poll)
         except Exception:pass  # The Tk interpreter may already be closing.
         if self.user.IsWindow(self.editor):self.set_owner(self.editor,-8,self.old_owner)
         self._free_bitmap();self.gdi.DeleteDC(self.dc);self.user.DestroyWindow(self.hwnd);self.user.UnregisterClassW(self.name,self.module)

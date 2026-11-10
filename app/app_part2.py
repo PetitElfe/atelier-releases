@@ -156,7 +156,9 @@ def budget_save_month_opening(c,body):
     if current:
         changed=c.execute('UPDATE budget_month_openings SET amount_cents=?,revision=revision+1 WHERE month=? AND revision=?',(amount,month,revision)).rowcount
         if changed!=1:raise LookupError('Ce solde a été modifié ailleurs. Recharge le budget.')
-    else:c.execute('INSERT INTO budget_month_openings(month,amount_cents) VALUES(?,?)',(month,amount))
+    else:
+        changed=c.execute('INSERT OR IGNORE INTO budget_month_openings(month,amount_cents) VALUES(?,?)',(month,amount)).rowcount
+        if changed!=1:raise LookupError('Ce solde a été défini ailleurs. Recharge le budget.')
     return {'ok':True,'revision':revision+1}
 
 def budget_snapshot(c,month,ts):

@@ -319,7 +319,8 @@ class NoteFormatTests(unittest.TestCase):
                     formats.invoke(label);root.update();note._apply_shape();root.update()
                     self.assertEqual(note.note['shape'],shape);self.assertIsNotNone(note.paper)
                     alpha=bytes(note.paper.pixels)[3::4]
-                    self.assertIn(255,alpha);self.assertTrue(any(40<a<250 for a in alpha),'Actual GDI+ edge pixels must be antialiased')
+                    self.assertIn(255,alpha)
+                    if shape!='square':self.assertTrue(any(40<a<250 for a in alpha),'Actual curved GDI+ edge pixels must be antialiased')
                     self.assertEqual(note.body.get('1.0','end-1c'),'Texte conservé')
                     w,h=note.window.winfo_width(),note.window.winfo_height()
                     paper_area=note.paper_area.winfo_width();self.assertGreater(paper_area,100)
@@ -343,6 +344,13 @@ class NoteFormatTests(unittest.TestCase):
                         self.assertTrue(note.window.winfo_ismapped())
                         self.assertTrue(user.IsWindowVisible(note.paper.hwnd),'Paper must stay visible while resizing '+shape)
                         self.assertEqual(note.body.get('1.0','end-1c'),'Texte conservé')
+                    note.menu.invoke('Taille…');pump()
+                    size_dialog=next(w for w in note.window.winfo_children() if isinstance(w,tk.Toplevel))
+                    inputs=[w for w in size_dialog.winfo_children() if isinstance(w,tk.Entry)]
+                    desired=(note.window.winfo_width()+12,note.window.winfo_height()+10)
+                    for entry,value in zip(inputs,desired):entry.delete(0,'end');entry.insert(0,str(value))
+                    next(w for w in size_dialog.winfo_children() if isinstance(w,tk.Button) and w.cget('text')=='Appliquer').invoke();pump()
+                    self.assertEqual((note.window.winfo_width(),note.window.winfo_height()),desired)
                     note.window.withdraw();pump();note.window.deiconify();pump()
                     self.assertTrue(user.IsWindowVisible(note.paper.hwnd),'Paper must return after a map transition')
 
