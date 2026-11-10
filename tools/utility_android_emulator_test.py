@@ -49,7 +49,7 @@ def find(label,scroll=True):
         if candidates:return candidates[0]
         # The old release WebView exposes empty EditText accessibility labels.
         # Locate the fields in their observed named section and DOM order.
-        contexts={'Titre de ma note':('Nouvelle note',0),'Contenu de ma note':('Nouvelle note',2),'Nom du minuteur':('⏲ Mes minuteurs de cuisine',0),'Minutes':('⏲ Mes minuteurs de cuisine',1),'Secondes':('⏲ Mes minuteurs de cuisine',2)}
+        contexts={'Ma note avec hashtags':('Mes notes',0),'Titre de ma note':('Nouvelle note',0),'Contenu de ma note':('Nouvelle note',2),'Nom du minuteur':('⏲ Mes minuteurs de cuisine',0),'Minutes':('⏲ Mes minuteurs de cuisine',1),'Secondes':('⏲ Mes minuteurs de cuisine',2)}
         if label in contexts:
             heading,index=contexts[label]
             for parent in tree.iter('node'):
@@ -107,7 +107,7 @@ def launch():
 Path('artifacts').mkdir(exist_ok=True)
 adb('install','-r',str(OLD));launch();menu('Notes')
 legacy_tree=ET.tostring(nodes(),encoding='unicode')
-if 'Ma note avec hashtags' in legacy_tree:
+if 'Ma note avec hashtags' in legacy_tree or 'Conserver sur mon téléphone' in legacy_tree:
     text('Ma note avec hashtags','Legacy_before_utility_update Private_text_must_survive');tap('Conserver sur mon téléphone')
 else:
     text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note','Private_text_must_survive');tap('Enregistrer sur mon téléphone')

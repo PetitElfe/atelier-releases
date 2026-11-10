@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: df2672b02b22ec094a4db5b291966c57b0ab7e74
+          ref: 6f012c3303e7637c37aa7c539b4175b163d2cbac
           path: pc
       - uses: actions/setup-python@v5
         with:
@@ -166,6 +166,7 @@ jobs:
       - run: npx playwright install --only-shell chromium
       - run: node tools/utility_android_sync_browser_test.cjs
       - run: node tools/studio_mobile_browser_test.cjs
+      - run: cmp mobile/prototype/grounding_cards.js pc/app/public/grounding_cards.js
       - run: node tools/mobile_readability_browser_test.cjs
       - uses: actions/upload-artifact@v4
         if: always()
