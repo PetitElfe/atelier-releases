@@ -419,8 +419,14 @@ class Handler(BaseHTTPRequestHandler):
                 needs_restart=False
                 try:desktop_postits.ensure_current_companion()
                 except RuntimeError:needs_restart=True
+                running=desktop_postits.is_running()
+                try:display=json.loads(desktop_postits.RUNTIME.read_text(encoding='utf-8'))
+                except (OSError,ValueError):display={}
+                if not isinstance(display,dict):display={}
+                visible=display.get('visible_ids',[])
                 return self._json({'available':True,'needs_restart':needs_restart,
-                                   'running':desktop_postits.is_running(),
+                                   'running':running,'display_ready':running and not needs_restart and bool(display.get('ready')),
+                                   'visible_count':len(visible) if isinstance(visible,list) else 0,
                                    'startup':desktop_postits.startup_enabled()})
             except (RuntimeError,OSError) as exc:
                 return self._json({'available':False,'error':str(exc)})
@@ -977,8 +983,8 @@ class Handler(BaseHTTPRequestHandler):
                     desktop_postits._guard()
                     desktop_postits.ensure_current_companion()
                     note_id=desktop_postits.create_note(request_id=body.get('operation_id'))
-                    desktop_postits.launch(note_id)
-                    return self._json({'ok':True,'id':note_id},201)
+                    confirmation=desktop_postits.launch(note_id)
+                    return self._json({'ok':True,'id':note_id,'display_confirmed':confirmation.get('display_confirmed',False)},201)
                 note_id=body.get('note_id')
                 if note_id is not None and (type(note_id) is not int or note_id<1):return self._json({'error':'Post-it incorrect.'},400)
                 return self._json(desktop_postits.launch(note_id,show_all=note_id is None))

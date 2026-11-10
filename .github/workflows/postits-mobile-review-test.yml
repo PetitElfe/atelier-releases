@@ -1,7 +1,7 @@
-name: Calendar and Post-it follow-up Windows TEST
+name: Post-it visible launch Windows TEST
 on:
   push:
-    branches: [test/calendar-postits-followup-20261110]
+    branches: [test/postit-launch-visible-20261110]
 permissions:
   contents: read
 jobs:

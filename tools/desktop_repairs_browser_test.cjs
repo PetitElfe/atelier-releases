@@ -59,7 +59,7 @@ const action=(action,payload,operation_id=crypto.randomUUID())=>api('/api/studio
  // Header creates exactly one note; all-notes reopening is a separate command.
  const requests=[];
  await page.route('**/api/desktop-postits/status',route=>route.fulfill({json:{available:true,running:true,startup:false}}));
- await page.route('**/api/desktop-postits/new',async route=>{requests.push(route.request().postDataJSON());await new Promise(r=>setTimeout(r,200));await route.fulfill({status:201,json:{ok:true,id:99}})});
+ await page.route('**/api/desktop-postits/new',async route=>{requests.push(route.request().postDataJSON());await new Promise(r=>setTimeout(r,200));await route.fulfill({status:201,json:{ok:true,id:99,display_confirmed:true}})});
  await page.evaluate(()=>{const button=document.getElementById('quickPostitsHeader');button.click();button.click();startDesktopPostits(true)});
  await page.waitForFunction(()=>!desktopPostitsBusy&&!document.getElementById('quickPostitsHeader').disabled);
  assert.equal(requests.length,1,'Double click/concurrent controls create only one request');
@@ -67,5 +67,17 @@ const action=(action,payload,operation_id=crypto.randomUUID())=>api('/api/studio
  await page.locator('#quickPostitsHeader').click();await page.waitForFunction(()=>!desktopPostitsBusy);
  assert.equal(requests.length,2,'A later deliberate click creates one additional note');
  assert.notEqual(requests[0].operation_id,requests[1].operation_id);
+ // A startup failure remains visible, including after navigation/reload.
+ await page.unroute('**/api/desktop-postits/new');
+ const retries=[];let fail=true;
+ await page.route('**/api/desktop-postits/new',async route=>{retries.push(route.request().postDataJSON());await route.fulfill({status:fail?409:201,json:fail?{error:'Erreur témoin : le compagnon ne démarre pas.'}:{ok:true,id:100,display_confirmed:true}})});
+ await page.locator('#quickPostitsHeader').click();await page.locator('#desktopPostitLaunchError').waitFor({state:'visible'});
+ assert.match(await page.locator('#desktopPostitLaunchError').innerText(),/Erreur témoin/);
+ assert.equal(await page.locator('#quickPostitsHeader').getAttribute('aria-busy'),null);
+ await page.locator('#desktopPostitLaunchError button').click();
+ await page.reload();await page.waitForFunction(()=>typeof desktopPostitsBusy==='boolean');
+ fail=false;await page.locator('#quickPostitsHeader').click();await page.waitForFunction(()=>!desktopPostitsBusy);
+ assert.equal(retries.length,2);assert.equal(retries[0].operation_id,retries[1].operation_id,'Retry resumes the same persisted intent instead of creating another note');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('atelier-postit-pending-request')),null);
  assert.deepEqual(errors,[]);console.log('PASS: cancel/remove implicit and grouped tabs, identical titles, shared boards, F5 persistence, real archive restore with original marks');
 }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('close',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

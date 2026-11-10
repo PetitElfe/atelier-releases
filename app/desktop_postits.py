@@ -303,15 +303,38 @@ def ensure_current_companion():
 
 
 def wake(note_id=None, show_all=False, note_ids=None):
-    WAKE.write_text(json.dumps({'token':str(time.time_ns()),'note_id':note_id,'show_all':show_all,'note_ids':note_ids or []}), encoding="ascii")
+    value=json.dumps({'token':str(time.time_ns()),'note_id':note_id,'show_all':show_all,'note_ids':note_ids or []})
+    WAKE.write_text(value,encoding='ascii')
+    return value
+
+
+def _wait_for_display(note_id=None, *, process=None, wake_token=None, timeout=8):
+    expected=source_signature()
+    deadline=time.monotonic()+timeout
+    while time.monotonic()<deadline:
+        if process is not None and process.poll() is not None:
+            try:
+                lines=(DATA/'desktop-postits.log').read_text(encoding='utf-8',errors='replace').splitlines()
+                detail=next((line.strip() for line in reversed(lines) if line.strip()),'Arrêt du processus.')[:600]
+            except OSError:detail='Le processus s’est arrêté.'
+            raise RuntimeError('Le compagnon Post-it ne démarre pas : '+detail+' La note reste conservée ; réessaie sans en recréer une.')
+        try:
+            runtime=json.loads(RUNTIME.read_text(encoding='utf-8'))
+            if runtime.get('source')==expected and runtime.get('ready') and (wake_token is None or runtime.get('wake_token')==wake_token):
+                if note_id is not None and note_id in runtime.get('visible_ids',[]):return
+                if note_id is None and (wake_token is None or runtime.get('wake_token')==wake_token):return
+        except (OSError,ValueError):pass
+        time.sleep(.08)
+    raise RuntimeError('Le compagnon n’a pas confirmé l’affichage du Post-it. La note reste conservée. Ferme le compagnon près de l’horloge puis réessaie ; la même demande sera reprise sans doublon.')
 
 
 def launch(note_id=None, *, show_all=False, visible_ids=None):
     _guard()
     ensure_current_companion()
     if is_running():
-        wake(note_id,show_all=show_all,note_ids=visible_ids)
-        return {"ok": True, "running": True, "already_running": True}
+        token=wake(note_id,show_all=show_all,note_ids=visible_ids) if note_id is not None or show_all or visible_ids is not None else None
+        _wait_for_display(note_id,wake_token=token)
+        return {"ok": True, "running": True, "already_running": True, "display_confirmed":True}
     flags = (getattr(subprocess, "CREATE_NO_WINDOW", 0) |
              getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     env = os.environ.copy()
@@ -321,13 +344,14 @@ def launch(note_id=None, *, show_all=False, visible_ids=None):
     # Never hold CODE/app as the working directory: Windows then refuses
     # to rename that folder during updates, even after the server stops.
     try:
-        subprocess.Popen([_pythonw(), str(SCRIPT)]+arguments, cwd=str(DATA),
+        process=subprocess.Popen([_pythonw(), str(SCRIPT)]+arguments, cwd=str(DATA),
                          env=env, stdin=subprocess.DEVNULL,
                          stdout=logfile, stderr=subprocess.STDOUT,
                          close_fds=True, creationflags=flags)
     finally:
         logfile.close()
-    return {"ok": True, "running": True, "already_running": False}
+    _wait_for_display(note_id,process=process)
+    return {"ok": True, "running": True, "already_running": False, "display_confirmed":True}
 
 
 def _run_gui(on_ready=None):
@@ -474,6 +498,17 @@ def _run_gui(on_ready=None):
             self.window.protocol("WM_DELETE_WINDOW", self._delete)
             self.window.bind('<Alt-F4>', lambda _: (self._close(), 'break')[1])
             root.after_idle(self._apply_shape)
+
+        def present(self):
+            self.window.deiconify()
+            # A tool window can otherwise open behind the foreground WebView.
+            # Raise it for this explicit request, then restore ordinary stacking.
+            self.window.attributes('-topmost',True)
+            self.window.lift()
+            self.window.focus_force()
+            def release():
+                if self.window.winfo_exists():self.window.attributes('-topmost',False)
+            root.after(220,release)
 
         def _open_menu(self):
             try:
@@ -824,8 +859,7 @@ def _run_gui(on_ready=None):
         # Closing a note with OK only hides it for this session.
         closed.clear()
         for window in list(windows.values()):
-            window.window.deiconify()
-            window.window.lift()
+            window.present()
         wake()
 
     def create_new():
@@ -867,6 +901,14 @@ def _run_gui(on_ready=None):
         print("Windows tray unavailable:",exc,flush=True)
         tray = None
 
+    def publish_runtime():
+        visible=[note_id for note_id,widget in windows.items() if widget.window.winfo_exists() and widget.window.winfo_viewable()]
+        value={'pid':os.getpid(),'source':loaded_signature,'ready':True,'visible_ids':visible,'wake_token':wake_value}
+        try:
+            pending=RUNTIME.with_suffix('.tmp')
+            pending.write_text(json.dumps(value),encoding='utf-8');pending.replace(RUNTIME)
+        except OSError as exc:print('Post-it display confirmation:',str(exc),flush=True)
+
     def sync():
         nonlocal wake_value,restart_requested
         if _update_in_progress():
@@ -894,7 +936,7 @@ def _run_gui(on_ready=None):
                 closed.difference_update(targets)
                 for note_id,widget in list(windows.items()):
                     if request.get('show_all') or note_id in targets:
-                        widget.window.deiconify();widget.window.lift()
+                        widget.present()
                 wake_value = current_wake
             rows = note_rows()
             ids = {row["id"] for row in rows}
@@ -909,6 +951,8 @@ def _run_gui(on_ready=None):
                     windows[note["id"]].refresh(note)
                 elif note["id"] not in closed:
                     windows[note["id"]] = NoteWindow(note, i)
+                    windows[note["id"]].present()
+            root.after_idle(publish_runtime)
         except (OSError, sqlite3.Error) as exc:
             print("Post-it sync error:", str(exc), flush=True)
         root.after(1700, sync)

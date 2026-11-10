@@ -21,7 +21,7 @@ function displayDesktopPostitsStatus(info){
     status.textContent='Ancien compagnon ouvert : près de l’horloge Windows, choisis Quitter les Post-it, puis rouvre-les ici pour appliquer la mise à jour.';
   }else{
     status.textContent=(info.running
-      ? '✓ Les notes sont ouvertes sur le Bureau Windows.'
+      ? (info.display_ready?'✓ Compagnon prêt · '+(info.visible_count||0)+' Post-it visible(s).':'Compagnon démarré, affichage à confirmer.')
       : 'Les notes sont actuellement fermées.')+
       (info.startup?' Elles reviendront au démarrage de Windows.':'');
   }
@@ -40,6 +40,23 @@ async function desktopPostitsCommand(action,body={}){
     body:JSON.stringify(body)
   });
 }
+function showDesktopPostitLaunchError(error){
+  document.getElementById('desktopPostitLaunchError')?.remove();
+  const dialog=document.createElement('dialog');dialog.id='desktopPostitLaunchError';dialog.className='calendar-decor-dialog';
+  const title=document.createElement('h3');title.textContent='Post-it non affiché';
+  const message=document.createElement('p');message.textContent=error.message||String(error);
+  const hint=document.createElement('p');hint.textContent='Après correction, réessaie avec l’icône : la même demande sera reprise sans ajouter de doublon.';
+  const close=document.createElement('button');close.type='button';close.textContent='Fermer';close.onclick=()=>dialog.close();
+  dialog.append(title,message,hint,close);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+}
+function desktopPostitRequestId(){
+  if(desktopPostitPendingId)return desktopPostitPendingId;
+  try{desktopPostitPendingId=localStorage.getItem('atelier-postit-pending-request')}catch(_){}
+  desktopPostitPendingId=desktopPostitPendingId||crypto.randomUUID();
+  try{localStorage.setItem('atelier-postit-pending-request',desktopPostitPendingId)}catch(_){}
+  return desktopPostitPendingId;
+}
+let desktopPostitPendingId=null;
 let desktopPostitsBusy=false;
 async function startDesktopPostits(create=false){
   if(desktopPostitsBusy)return;
@@ -47,18 +64,22 @@ async function startDesktopPostits(create=false){
   const launch=$('#settingsOpenDesktopPostits'),make=$('#settingsNewDesktopPostit');
   if(launch)launch.disabled=true;
   if(make)make.disabled=true;
+  const header=$('#quickPostitsHeader');header?.setAttribute('aria-busy','true');
   try{
-    await desktopPostitsCommand(create?'new':'start',create?{operation_id:crypto.randomUUID()}:{});
+    const result=await desktopPostitsCommand(create?'new':'start',create?{operation_id:desktopPostitRequestId()}:{});
+    if(!result.display_confirmed)throw new Error('Le compagnon n’a pas confirmé de fenêtre visible. Vérifie la mise à jour de L’Atelier puis réessaie.');
+    if(create){desktopPostitPendingId=null;try{localStorage.removeItem('atelier-postit-pending-request')}catch(_){}}
     const status=$('#settingsDesktopPostitsStatus');
     if(status)status.textContent=create
       ? 'Nouveau Post-it créé sur le Bureau Windows.'
       : 'Affichage des Post-it demandé sur le Bureau Windows.';
     setTimeout(refreshDesktopPostitsStatus,1700);
   }catch(error){
-    showUiError(error,'Post-it Windows');
+    showDesktopPostitLaunchError(error);
     await refreshDesktopPostitsStatus();
   }finally{
     desktopPostitsBusy=false;
+    header?.removeAttribute('aria-busy');
     if(launch)launch.disabled=false;
     if(make)make.disabled=false;
   }

@@ -202,5 +202,84 @@ class NoteFormatTests(unittest.TestCase):
             print('PASS: five saved notes, one targeted window, real cross deletion, one new note, repeated wake without duplicates, safe reload with dirty text preserved')
 
 
+    def test_launch_confirmation_reports_process_failure_instead_of_success(self):
+        import tempfile,json
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            data=Path(directory);script=data/'companion.py';script.write_text('# fixture')
+            (data/'desktop-postits.log').write_text('RuntimeError: Erreur témoin compagnon\n',encoding='utf-8')
+            with patch.multiple(desktop_postits,DATA=data,SCRIPT=script,RUNTIME=data/'runtime'):
+                with self.assertRaisesRegex(RuntimeError,'Erreur témoin compagnon'):
+                    desktop_postits._wait_for_display(1,process=SimpleNamespace(poll=lambda:1),timeout=.1)
+                desktop_postits.RUNTIME.write_text(json.dumps({'source':desktop_postits.source_signature(),'ready':True,'visible_ids':[7]}))
+                desktop_postits._wait_for_display(7,timeout=.1)
+                with self.assertRaisesRegex(RuntimeError,'pas confirmé'):desktop_postits._wait_for_display(8,timeout=.1)
+
+    @unittest.skipUnless(os.name=='nt' and os.environ.get('GOBLIN_NATIVE_POSTIT_TEST')=='1','Requires isolated Windows desktop runner')
+    def test_real_pythonw_process_confirms_visible_note_and_failed_launch(self):
+        import ctypes,shutil,sqlite3,subprocess,tempfile,time,json
+        from ctypes import wintypes
+        from contextlib import closing
+        from unittest.mock import patch
+        source=Path(desktop_postits.__file__)
+        with tempfile.TemporaryDirectory() as directory:
+            base=Path(directory);app=base/'code_0180'/'app';app.mkdir(parents=True);data=base/'data';data.mkdir()
+            script=app/'desktop_postits.py';original=source.read_text(encoding='utf-8')
+            configured=original.replace('BASE = Path(r"E:\\LATELIER_TEST_0180")','BASE = Path('+repr(str(base))+')')
+            self.assertNotEqual(configured,original,'Isolate every native path from the real TEST profile')
+            script.write_text(configured,encoding='utf-8');(app/'VERSION').write_text('0.18.0');(app.parent/'manifest.json').write_text('{}')
+            shutil.copyfile(source.with_name('windows_tray.py'),app/'windows_tray.py')
+            (app/'native_reminders.py').write_text('def tick():pass\n')
+            (app/'quick_capture_native.py').write_text('def install(*a,**k):return None\n')
+            db=data/'atelier.db'
+            with closing(sqlite3.connect(db)) as c,c:c.execute('CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)')
+            desktop_postits.create_layout_table(db)
+            ids=[desktop_postits.create_note(db) for _ in range(5)]
+            import tkinter as tk
+            occluder=tk.Tk();occluder.title('Atelier main window fixture');occluder.geometry('1000x800+0+0');occluder.update();occluder.lift();occluder.focus_force()
+            processes=[];popen=subprocess.Popen
+            def spawn(*a,**k):
+                process=popen(*a,**k);processes.append(process);return process
+            try:
+                with patch.multiple(desktop_postits,BASE=base,CODE=app.parent,DATA=data,DB=db,SCRIPT=script,LOCK=data/'desktop-postits.lock',WAKE=data/'desktop-postits-wake.txt',RUNTIME=data/'desktop-postits-runtime.json',_guard=lambda:None),patch.object(subprocess,'Popen',side_effect=spawn):
+                    result=desktop_postits.launch(ids[2])
+                    self.assertTrue(result['display_confirmed']);self.assertTrue(desktop_postits.is_running())
+                    runtime=json.loads(desktop_postits.RUNTIME.read_text());self.assertEqual(runtime['visible_ids'],[ids[2]])
+                    user=ctypes.windll.user32;handles=[];stacking=[]
+                    user.GetParent.argtypes=[wintypes.HWND];user.GetParent.restype=wintypes.HWND
+                    parent_handle=user.GetParent(occluder.winfo_id()) or occluder.winfo_id()
+                    user.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
+                    user.IsWindowVisible.argtypes=[wintypes.HWND]
+                    user.GetWindowLongW.argtypes=[wintypes.HWND,ctypes.c_int]
+                    callback=ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
+                    def visit(hwnd,_):
+                        pid=wintypes.DWORD();user.GetWindowThreadProcessId(hwnd,ctypes.byref(pid))
+                        if user.IsWindowVisible(hwnd):
+                            stacking.append(hwnd)
+                            if pid.value==processes[0].pid:handles.append(hwnd)
+                        return True
+                    deadline=time.monotonic()+3
+                    while time.monotonic()<deadline:
+                        handles.clear();stacking.clear();user.EnumWindows(callback(visit),0)
+                        if handles and all(not user.GetWindowLongW(h,-20)&8 for h in handles):break
+                        time.sleep(.08)
+                    self.assertTrue(handles,'Actual pythonw process must expose a visible Windows window')
+                    self.assertTrue(all(not user.GetWindowLongW(h,-20)&8 for h in handles),'No permanent always-on-top windows')
+                    self.assertIn(parent_handle,stacking)
+                    self.assertLess(stacking.index(handles[0]),stacking.index(parent_handle),'Requested note must be above the occluding main-window fixture')
+                    again=desktop_postits.launch(ids[2]);self.assertTrue(again['display_confirmed']);self.assertEqual(len(processes),1)
+                    processes[0].terminate();processes[0].wait(timeout=10)
+                    script.write_text("raise RuntimeError('Erreur témoin compagnon')\n",encoding='utf-8')
+                    with self.assertRaisesRegex(RuntimeError,'Erreur témoin compagnon'):desktop_postits.launch(ids[0])
+                    self.assertEqual(len(desktop_postits.note_rows(db)),5,'A failed launch must not erase notes')
+            finally:
+                for process in processes:
+                    if process.poll() is None:process.terminate()
+                    process.wait(timeout=10)
+                occluder.destroy()
+            print('PASS: actual isolated pythonw launch, five saved notes/one visible, reused process, ordinary stacking restored, crash surfaced instead of false success')
+
+
 
 if __name__=='__main__':unittest.main()

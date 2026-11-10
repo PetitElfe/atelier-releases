@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "2b70213bbc9f715932eeb0ff6109556c73d9223c80c489033f3e037311c1be07"
+      "sha256": "5c6a55974427fdf2bfabccc90b5840161e684ae4717e7bdde46108e647bc43da"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "d8577927022ed47fb5b83da02ca7a505111d64904fbfdf1494484b313ee575b8"
+      "sha256": "e3d4c31256a03669683704d85692469c87d5f65762f0633889bf1c6c3bdf6828"
     },
     {
       "path": "desktop_shell.py",
@@ -209,7 +209,7 @@
     },
     {
       "path": "public/postits.js",
-      "sha256": "13b970bf4823e81073fafe9863828c32d76852cb26e70f5195e6b19a189a1e04"
+      "sha256": "43237a4828be77b8dee4ebaae6a04ffa55d9ed794d81997b56f4e4f4169067e2"
     },
     {
       "path": "public/progression_view.js",
@@ -360,6 +360,6 @@
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST PC : rendez-vous de même épaisseur, infobulle dans le jour, cycle en rouge léger sans traits, Goblin grognon raccourci ; création ciblée des Post-it, suppression par la croix et contrôle du compagnon chargé.",
-  "build_sequence": 2026111005
+  "notes": "TEST PC : lancement des Post-it confirmé par une fenêtre visible, note demandée remontée au premier plan sans rester au-dessus, erreur persistante et reprise de la même demande sans doublon.",
+  "build_sequence": 2026111006
 }
