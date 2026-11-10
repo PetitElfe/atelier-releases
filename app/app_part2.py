@@ -1,3 +1,4 @@
+import tracker_schedule
 
 # Tracker boards: each board has its own recurring window. Month/day marks
 # are indexed by ISO dates and are NEVER migrated/deleted on rhythm changes.
@@ -70,7 +71,7 @@ def tracker_window(board,offset=0,today=None):
     else:cadence=f'{count} mois'
     if unit=='weeks':
         first=start.isocalendar();last=end.isocalendar()
-        title='sem '+str(first.week)+(('–'+str(last.week)) if count>1 else '')
+        title=('Semaine '+str(first.week)) if count==1 else ('Deux semaines · '+str(first.week)+'–'+str(last.week))
         if first.year!=last.year:title+=' · '+str(first.year)+'–'+str(last.year)
     elif unit=='months' and count==1:title=TRACKER_MONTH_NAMES[start.month-1].capitalize()
     elif unit=='months':title=TRACKER_MONTH_NAMES[start.month-1].capitalize()+'–'+TRACKER_MONTH_NAMES[end.month-1].capitalize()
@@ -503,7 +504,9 @@ class Handler(BaseHTTPRequestHandler):
                         board['rows']=[dict(row) for row in c.execute(
                             'SELECT id,title,mode,order_index,target_count,weekday,linked_type,linked_id FROM tracker_board_rows '
                             'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],))]
+                        board['custom_title']=board['title'];board['title']=board['title'] or (board['period']['heading'] if view else tracker_window(board)['heading'])
                         for line in board['rows']:
+                            line.update(tracker_schedule.read(c,line))
                             line['steps']=tracker_rituals.steps_for_row(
                                 c,line['id'],board['period']['start'] if view else month+'-01',
                                 board['period']['end'] if view else month+'-31')
@@ -1026,7 +1029,6 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/tracker-boards':
             title=str(body.get('title') or '').strip()[:100]
             color=str(body.get('color') or 'sage')
-            if not title:return self._json({'error':'Nom du tableau requis.'},400)
             if color not in ('sage','rose','mauve','gold','blue','peach'):
                 return self._json({'error':'Couleur de tableau invalide.'},400)
             try:
@@ -1063,6 +1065,7 @@ class Handler(BaseHTTPRequestHandler):
                     'VALUES(?,?,?,?,?,?,?,?,?,?)',
                     (row['board_id'],copy_title,row['mode'],row['target_count'],row['weekday'],
                      row['linked_type'],row['linked_id'],index,ts,ts)).lastrowid
+                tracker_schedule.copy(c,row['id'],new)
                 # Les sous-étapes sont une configuration ; les coches restent propres à la ligne source.
                 for step in c.execute('SELECT title,order_index,weekday FROM tracker_row_steps '
                                       'WHERE row_id=? AND active=1 ORDER BY order_index,id',(row_id,)).fetchall():
@@ -1095,6 +1098,7 @@ class Handler(BaseHTTPRequestHandler):
                               '(board_id,title,mode,target_count,weekday,linked_type,linked_id,order_index,created_at,updated_at) '
                               'VALUES(?,?,?,?,?,?,?,?,?,?)',
                               (board_id,title,mode,target,weekday,link,identity,index,ts,ts))
+                tracker_schedule.save(c,cur.lastrowid,body)
                 c.commit();return self._json({'id':cur.lastrowid},201)
         if p == '/api/trackers':
             title=str(body.get('title') or '').strip()[:120]
@@ -1134,7 +1138,7 @@ class Handler(BaseHTTPRequestHandler):
             colors={'sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'}
             color=str(body.get('color','gold'))
             shape=str(body.get('shape','rounded'))
-            if len(content)>20000 or color not in colors or shape not in ('square','rounded','pill'):
+            if len(content)>20000 or color not in colors or shape not in desktop_postits.SHAPES:
                 return self._json({'error':'Texte, couleur ou forme incorrects.'},400)
             with conn() as c:
                 count=c.execute('SELECT COUNT(*) FROM home_postits WHERE archived=0').fetchone()[0]
@@ -1514,11 +1518,11 @@ class Handler(BaseHTTPRequestHandler):
                 value=body.get('value')
             except (ValueError,TypeError,KeyError):return self._json({'error':'Jour invalide.'},400)
             with conn() as c:
-                row=c.execute('SELECT r.mode,r.weekday,r.target_count,b.mark_unit FROM tracker_board_rows r '
+                row=c.execute('SELECT r.id,r.mode,r.weekday,r.target_count,b.mark_unit FROM tracker_board_rows r '
                               'JOIN tracker_boards b ON r.board_id=b.id '
                               'WHERE r.id=? AND r.archived=0 AND b.archived=0',(row_id,)).fetchone()
                 if not row:return self._json({'error':'Ligne introuvable ou archivée.'},404)
-                if row['weekday'] is not None and date.fromisoformat(when).weekday()!=row['weekday']:
+                if not tracker_schedule.applies(c,row,date.fromisoformat(when)):
                     return self._json({'error':'Cette ligne est prévue un autre jour de la semaine.'},409)
                 when=studio.period_mark_day(row,date.fromisoformat(when)).isoformat()
                 if row['mode']=='check' and value is not None and c.execute(
@@ -1635,7 +1639,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({'error':'Statut d’archivage invalide.'},400)
                 archived=int(raw_archived)
                 colors={'sage','mauve','gold','red','pink','blue','peach','cream','deep-blue','deep-green'}
-                if len(content)>20000 or color not in colors or shape not in ('square','rounded','pill'):
+                if len(content)>20000 or color not in colors or shape not in desktop_postits.SHAPES:
                     return self._json({'error':'Texte, couleur ou forme incorrects.'},400)
                 if old['archived'] and not archived:
                     count=c.execute('SELECT COUNT(*) FROM home_postits WHERE archived=0').fetchone()[0]

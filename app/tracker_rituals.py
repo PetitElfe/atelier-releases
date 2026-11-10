@@ -5,11 +5,13 @@ SQLite partagé uniquement au sein de l'installation TEST/Nathan correspondante.
 from datetime import date, timedelta
 from calendar import monthrange
 import studio
+import tracker_schedule
 
 LINK_TABLES={'task':('tasks','title'), 'objective':('objective_nodes','title'),
              'admin':('admin_documents','title')}
 
 def normalized_row_config(body, mode):
+    tracker_schedule.validate(body)
     target=body.get('target_count')
     if target in ('',None):target=None
     else:
@@ -97,6 +99,7 @@ def save_setup(c,row_id,body,ts):
         valid.append((identifier,name,idx,step_day))
     c.execute('UPDATE tracker_board_rows SET title=?,target_count=?,weekday=?,linked_type=?,linked_id=?,updated_at=? WHERE id=?',
               (title,target,weekday,link,identity,ts,row_id))
+    tracker_schedule.save(c,row_id,body,row)
     # Archiving a step NEVER erases its previously checked days.
     c.execute('UPDATE tracker_row_steps SET active=0 WHERE row_id=?',(row_id,))
     for identifier,name,idx,step_day in valid:
@@ -117,7 +120,7 @@ def toggle_step(c,step_id,day,done,ts):
                   (step_id,)).fetchone()
     if not row:raise LookupError('Étape introuvable.')
     if row['mode']!='check':raise ValueError('Une étape doit être cochable.')
-    if row['weekday'] is not None and date.fromisoformat(day).weekday()!=row['weekday']:
+    if not tracker_schedule.applies(c,row,date.fromisoformat(day)):
         raise ValueError('Cette habitude est prévue un autre jour.')
     if row['step_weekday'] is not None and row['step_weekday']!=date.fromisoformat(day).weekday():raise ValueError('Étape prévue un autre jour.')
     weekday=date.fromisoformat(day).weekday()
@@ -151,14 +154,14 @@ def daily(c,day,tracker_window):
     for board in c.execute('SELECT * FROM tracker_boards WHERE archived=0 ORDER BY id'):
         try:period=tracker_window(board,today=day)
         except (ValueError,OverflowError):continue
-        if board['period_unit']=='weeks':continue
         key=studio.period_mark_day(board,day).isoformat()
         if period['granularity']=='months' and key==day.isoformat():key=day.replace(day=1).isoformat()
         if not period['start']<=key<=period['end']:continue
         rows=c.execute('SELECT id,title,mode,target_count,weekday,linked_type,linked_id FROM tracker_board_rows '
                        'WHERE board_id=? AND archived=0 ORDER BY order_index,id',(board['id'],)).fetchall()
         for row in rows:
-            if row['weekday'] is not None and row['weekday']!=day.weekday():continue
+            if board['period_unit']=='weeks' and not tracker_schedule.read(c,row)['schedule_explicit']:continue
+            if not tracker_schedule.applies(c,row,day):continue
             if row['mode']=='number' and row['target_count'] is None:continue
             marked=c.execute('SELECT value FROM tracker_board_marks WHERE row_id=? AND day=?',
                              (row['id'],key)).fetchone()
@@ -199,7 +202,7 @@ def monthly_archive(c,now,months=60):
                 boundary=studio.period_mark_day(board,date(yy,mm,1)).isoformat()
                 eligible=([begin] if boundary==begin else []) if unit!='auto' else [begin] if bymonth else [
                     f'{label}-{d:02d}' for d in range(1,days+1)
-                    if row['weekday'] is None or date(yy,mm,d).weekday()==row['weekday']]
+                    if tracker_schedule.applies(c,row,date(yy,mm,d))]
                 marks={r['day']:r['value'] for r in c.execute(
                     'SELECT day,value FROM tracker_board_marks WHERE row_id=? AND day BETWEEN ? AND ?',
                     (row['id'],begin,end))}
@@ -237,7 +240,7 @@ def archive_month_summary(c, board):
             continue
         started=max(board_created,date.fromisoformat(str(row['created_at'])[:10]))
         eligible=[d.isoformat() for d in days if d>=started and
-                  (row['weekday'] is None or d.weekday()==row['weekday'])]
+                  tracker_schedule.applies(c,row,d)]
         if not eligible:continue
         marks={r['day']:r['value'] for r in c.execute(
             "SELECT day,value FROM tracker_board_marks "

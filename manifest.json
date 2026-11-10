@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "5c6a55974427fdf2bfabccc90b5840161e684ae4717e7bdde46108e647bc43da"
+      "sha256": "33a4824ba9bed76768e7f81e5da441c7f8e66092522f1c65f5ab0896d6817ec6"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "e3d4c31256a03669683704d85692469c87d5f65762f0633889bf1c6c3bdf6828"
+      "sha256": "4cc6c216ef8116984f194608960ab439afa96cd50b6e172d40066cd88949fecf"
     },
     {
       "path": "desktop_shell.py",
@@ -241,7 +241,7 @@
     },
     {
       "path": "public/tracker_ritual_ui.js",
-      "sha256": "94f6f0e5a3f1c2eaa4dad52b5acee1ee9f95bba3c8e09b0fb806a03d97f58ab7"
+      "sha256": "30953d0f5b91f13768e1eea39fec619381217536ff490e63201e7e50b45da7e5"
     },
     {
       "path": "public/utility_live.js",
@@ -273,7 +273,7 @@
     },
     {
       "path": "tracker_rituals.py",
-      "sha256": "a197df9b86e34719b6bb52f979500602a3c2df36bac4efb524bbd9e9950d93bd"
+      "sha256": "5b58bc8aad4348d7d577564dd54dbc1416e54784c0996138726203367d5c87bc"
     },
     {
       "path": "updater.py",
@@ -325,15 +325,15 @@
     },
     {
       "path": "studio.py",
-      "sha256": "16023660c6eab88c1c6111e71cf09ece64dc9b526b4b2ffc48285af1233ff1ec"
+      "sha256": "cfd260479897f957314d6250dfdbb8b62d5409e9ea68a8ee6ea6d4679cf07ace"
     },
     {
       "path": "public/studio_core.js",
-      "sha256": "ff72684c1a58c9cec9176d2face8d5f58986cb5095a05797cfce4d10d55a551c"
+      "sha256": "0355953a2e91fa3da546af6439c922c3acf55dca6a87bd947c31032a83421438"
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "a738ab55b6991ce4f5b2b716664043b4926080f9dd1578653085f2773395b7cb"
+      "sha256": "5b372d14a3e00c749ffcf14cf6f391038db7a447cc096230e822a3923eb6208b"
     },
     {
       "path": "public/studio_budget.js",
@@ -349,7 +349,7 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "bbd87c2cf1b97f215e98cbeeba906e465ae5bf1aa6196294666b1822279145b2"
+      "sha256": "96eac9c85a62e67dc19f0d2fff440f508507cd89dc1b3a78b2e5c2bcfcbf7f07"
     },
     {
       "path": "public/grounding_cards.js",
@@ -358,8 +358,16 @@
     {
       "path": "public/grounding_cards.css",
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
+    },
+    {
+      "path": "native_postit_paper.py",
+      "sha256": "76c69853e63ee5a3dad3be12cff27568255ae6f457548f8d71b83d794aefb1a6"
+    },
+    {
+      "path": "tracker_schedule.py",
+      "sha256": "b0c5a74a3712dea0fd4933ab36963a0cc5142aee0ded75e75cc715b18a84938f"
     }
   ],
-  "notes": "TEST PC : lancement des Post-it confirmé par une fenêtre visible, note demandée remontée au premier plan sans rester au-dessus, erreur persistante et reprise de la même demande sans doublon.",
-  "build_sequence": 2026111006
+  "notes": "TEST PC : Post-it étoile/cœur/rond, contours lissés, ombre légère, coins et bords redimensionnables ; trackers multi-jours et semaines alternées, titres français automatiques, To-do centrée, onglets/tiroir réordonnables. Calendrier conservé.",
+  "build_sequence": 2026111007
 }

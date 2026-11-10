@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from native_postit_paper import SHAPES,PaperBackdrop,content_rect,minimum_size,TRANSPARENT
 
 BASE = Path(r"E:\LATELIER_TEST_0180")
 CODE = BASE / "code_0180"
@@ -134,13 +135,14 @@ def create_layout_table(db_path=DB):
         columns = {r["name"] for r in c.execute("PRAGMA table_info(desktop_postit_layout)")}
         if "locked" not in columns:
             c.execute("ALTER TABLE desktop_postit_layout ADD COLUMN locked INTEGER NOT NULL DEFAULT 0")
+        if 'corner_rounded' not in columns:c.execute('ALTER TABLE desktop_postit_layout ADD COLUMN corner_rounded INTEGER')
         c.commit()
 
 
 def note_rows(db_path=DB):
     with _db(db_path) as c:
         return [dict(r) for r in c.execute(
-            """SELECT p.*,l.x,l.y,l.width,l.height,l.locked
+            """SELECT p.*,l.x,l.y,l.width,l.height,l.locked,l.corner_rounded
                FROM home_postits p LEFT JOIN desktop_postit_layout l ON p.id=l.note_id
                WHERE p.archived=0 ORDER BY p.id"""
         )]
@@ -148,7 +150,7 @@ def note_rows(db_path=DB):
 
 def save_edit(note_id, prior, title, body, color, shape, db_path=DB):
     """Atomic compare-and-swap: never silently overwrite web editor changes."""
-    if color not in COLORS or shape not in ("square", "rounded", "pill"):
+    if color not in COLORS or shape not in SHAPES:
         raise ValueError("Couleur ou forme incorrecte.")
     title = str(title).strip()[:120] or "Sans titre"
     body = str(body)[:20000]
@@ -165,7 +167,7 @@ def save_edit(note_id, prior, title, body, color, shape, db_path=DB):
 
 def save_layout(note_id, x, y, width, height, db_path=DB):
     x, y = int(x), int(y)
-    width, height = max(220, min(950, int(width))), max(160, min(900, int(height)))
+    width, height = max(240, min(1600, int(width))), max(175, min(1400, int(height)))
     with _db(db_path) as c:
         c.execute(
             """INSERT INTO desktop_postit_layout(note_id,x,y,width,height)
@@ -184,6 +186,12 @@ def set_layout_lock(note_id, locked, db_path=DB):
             (int(bool(locked)), int(note_id)))
         if not changed.rowcount:
             raise ValueError("La position de cette note doit être enregistrée avant verrouillage.")
+
+
+def set_corner_style(note_id,rounded,db_path=DB):
+    with _db(db_path) as c:
+        if not c.execute('UPDATE desktop_postit_layout SET corner_rounded=? WHERE note_id=?',(int(bool(rounded)),int(note_id))).rowcount:
+            raise ValueError('Enregistre la position du Post-it avant ses coins.')
 
 
 def create_note(db_path=DB, request_id=None):
@@ -290,7 +298,9 @@ def is_running():
 
 
 def source_signature():
-    return hashlib.sha256(SCRIPT.read_bytes()).hexdigest()
+    digest=hashlib.sha256(SCRIPT.read_bytes());paper=SCRIPT.with_name('native_postit_paper.py')
+    if paper.exists():digest.update(b'\0native_postit_paper\0'+paper.read_bytes())
+    return digest.hexdigest()
 
 
 def ensure_current_companion():
@@ -389,6 +399,7 @@ def _run_gui(on_ready=None):
             self.shape_pending = None
             self.last_shaped_size = None
             self.drag_origin = None
+            self.paper=None
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             self.window = tk.Toplevel(root)
             self.window.overrideredirect(tray is not None)
@@ -404,11 +415,14 @@ def _run_gui(on_ready=None):
             x, y = max(0, min(int(x), max_x)), max(0, min(int(y), max_y))
             w, h = note["width"] or 300, note["height"] or 260
             self.window.geometry(f"{w}x{h}+{x}+{y}")
-            self.window.minsize(240, 175)
+            self.window.minsize(*minimum_size(note['shape']))
+            self.corners=tk.BooleanVar(value=bool(note.get('corner_rounded')) if note.get('corner_rounded') is not None else note['shape']!='square')
+            self.paper_area=tk.Frame(self.window,bg=paper)
+            self.paper_area.place(x=0,y=0,relwidth=1,relheight=1)
             self.locked = bool(note["locked"])
             self.fixed_geometry = (int(x),int(y),int(w),int(h))
             self.window.resizable(not self.locked, not self.locked)
-            self.header = tk.Frame(self.window, bg=paper)
+            self.header = tk.Frame(self.paper_area, bg=paper)
             self.header.pack(fill="x", padx=10, pady=(9, 1))
             self.drag_handle = tk.Label(self.header, text="⠿", bg=paper, fg=ink,
                                         font=("Segoe UI", 13), width=2, cursor="fleur")
@@ -436,12 +450,12 @@ def _run_gui(on_ready=None):
                                    activebackground=paper, highlightthickness=0,
                                    relief="flat", width=7)
             self.palette.pack(side="right")
-            self.body = tk.Text(self.window, wrap="word", undo=True, relief="flat",
+            self.body = tk.Text(self.paper_area, wrap="word", undo=True, relief="flat",
                                 bg=paper, fg=ink, insertbackground=ink,
                                 font=("Segoe UI", 11), padx=12, pady=10)
             self.body.pack(fill="both", expand=True)
             self.body.insert("1.0", note["body"])
-            self.footer = tk.Frame(self.window, bg=paper)
+            self.footer = tk.Frame(self.paper_area, bg=paper)
             self.footer.pack(fill="x", padx=9, pady=(5, 2))
             self.ok_button = tk.Button(self.footer, text="✓ OK", bg=paper, fg=ink,
                                        relief="groove", font=("Segoe UI", 11, "bold"),
@@ -452,11 +466,11 @@ def _run_gui(on_ready=None):
             self.delete_button.pack(side="left")
             self.resize_grip = tk.Label(self.footer, text="↘", bg=paper, fg=ink,
                                         font=("Segoe UI", 12), cursor="size_nw_se", padx=9, pady=3)
-            self.resize_grip.pack(side="right", padx=(0, 7))
+            # Resize handles live on the native border, not a permanent button.
             self.resize_grip.bind('<ButtonPress-1>', self._resize_start)
             self.resize_grip.bind('<B1-Motion>', self._resize_move)
             self.resize_grip.bind('<ButtonRelease-1>', self._drag_end)
-            self.hint = tk.Label(self.window, text="● Enregistré · Post-it indépendant",
+            self.hint = tk.Label(self.paper_area, text="● Enregistré · Post-it indépendant",
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
                                  anchor="w", padx=10)
             self.hint.pack(fill="x", padx=12, pady=(0, 9))
@@ -469,9 +483,10 @@ def _run_gui(on_ready=None):
                 colors_menu.add_radiobutton(label=color_name,variable=self.color,value=color_name,command=self._change_color)
             self.menu.add_cascade(label="Couleur",menu=colors_menu)
             shapes_menu=tk.Menu(self.menu,tearoff=0)
-            for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210)):
+            for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210),("Étoile","star",540,540),("Cœur","heart",460,440),("Rond","circle",360,360)):
                 shapes_menu.add_command(label=label,command=lambda s=shape,w=width,h=height:self._change_format(s,w,h))
             self.menu.add_cascade(label="Format",menu=shapes_menu)
+            self.menu.add_checkbutton(label='Coins arrondis',variable=self.corners,command=self._change_corners)
             self.palette.pack_forget()
             self.delete_button.pack_forget()
             self.menu.add_separator()
@@ -497,10 +512,35 @@ def _run_gui(on_ready=None):
             self.window.bind("<Configure>", self._geometry_changed)
             self.window.protocol("WM_DELETE_WINDOW", self._delete)
             self.window.bind('<Alt-F4>', lambda _: (self._close(), 'break')[1])
+            self.window.update_idletasks()
+            self.paper=PaperBackdrop(self.window,self._native_geometry,lambda:root.after_idle(self._save_geometry),self._paper_menu,lambda:self.locked)
+            self.window.configure(bg=TRANSPARENT)
+            self.window.attributes('-transparentcolor',TRANSPARENT)
+            self.window.bind('<Destroy>',self._destroy_paper,add='+')
+            self.window.bind('<Unmap>',lambda event:self.paper.hide() if event.widget==self.window and self.paper else None,add='+')
             root.after_idle(self._apply_shape)
+
+        def _paper_menu(self,x,y):
+            from types import SimpleNamespace
+            self._menu(SimpleNamespace(x_root=x,y_root=y))
+
+        def _native_geometry(self,geometry):
+            if self.locked:return
+            x,y,w,h=geometry
+            self.window.geometry(f'{w}x{h}+{x}+{y}')
+
+        def _destroy_paper(self,event):
+            if event.widget==self.window and self.paper:self.paper.destroy();self.paper=None
+
+        def _change_corners(self):
+            self._save_geometry()
+            try:set_corner_style(self.note['id'],self.corners.get());self.note['corner_rounded']=int(self.corners.get())
+            except (sqlite3.Error,OSError,ValueError) as error:messagebox.showerror('Post-it',str(error),parent=self.window)
+            self.last_shaped_size=None;root.after_idle(self._apply_shape)
 
         def present(self):
             self.window.deiconify()
+            if self.paper:self.last_shaped_size=None;self._apply_shape();self.paper.raise_briefly()
             # A tool window can otherwise open behind the foreground WebView.
             # Raise it for this explicit request, then restore ordinary stacking.
             self.window.attributes('-topmost',True)
@@ -544,11 +584,16 @@ def _run_gui(on_ready=None):
         def _apply_shape(self):
             self.shape_pending=None
             if not self.window.winfo_exists():return
-            size=(self.window.winfo_width(),self.window.winfo_height(),self.note['shape'])
+            if self.window.state()!='normal':
+                if self.paper:self.paper.hide()
+                return
+            w,h=self.window.winfo_width(),self.window.winfo_height()
+            size=(w,h,self.note['shape'],self.color.get(),self.corners.get(),self.window.winfo_x(),self.window.winfo_y())
             if size==self.last_shaped_size:return
-            try:
-                if apply_note_shape(self.window,self.note['shape']):self.last_shaped_size=size
-            except (AttributeError,OSError):pass
+            if self.paper:
+                self.paper_area.place(relwidth='',relheight='',x=content_rect(self.note['shape'],w,h)[0],y=content_rect(self.note['shape'],w,h)[1],width=content_rect(self.note['shape'],w,h)[2],height=content_rect(self.note['shape'],w,h)[3])
+                self.paper.update((self.window.winfo_x(),self.window.winfo_y(),w,h),self.note['shape'],COLORS[self.color.get()][0],self.corners.get())
+                self.last_shaped_size=size
 
         def _refresh_lock_button(self):
             self.lock_button.configure(text="🔒" if self.locked else "🔓")
@@ -600,6 +645,9 @@ def _run_gui(on_ready=None):
                     self.hint.config(text="Modifié ailleurs : actualise le Post-it")
                     return
                 self.note["shape"]=shape
+                if self.note.get('corner_rounded') is None:self.corners.set(shape!='square')
+                self.window.minsize(*minimum_size(shape))
+                self.menu.entryconfigure('Coins arrondis',state='disabled' if shape=='circle' else 'normal')
                 if not self.locked:
                     self.window.geometry(f"{width}x{height}+{self.window.winfo_x()}+{self.window.winfo_y()}")
                 root.after_idle(self._apply_shape)
@@ -649,7 +697,7 @@ def _run_gui(on_ready=None):
 
         def _change_color(self):
             paper, ink = COLORS[self.color.get()]
-            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
+            for item in (self.paper_area, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -658,6 +706,7 @@ def _run_gui(on_ready=None):
             self.hint.config(fg=ink)
             self.palette.config(fg=ink, activebackground=paper)
             self._changed()
+            root.after_idle(self._apply_shape)
 
         def _save(self):
             self.pending = None
@@ -706,7 +755,7 @@ def _run_gui(on_ready=None):
             self.body.edit_modified(False)
             self.color.set(note["color"])
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
-            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
+            for item in (self.paper_area, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -720,7 +769,7 @@ def _run_gui(on_ready=None):
             if event.widget != self.window or self.window.state() != "normal":
                 return
             if self.shape_pending:root.after_cancel(self.shape_pending)
-            self.shape_pending=root.after(80,self._apply_shape)
+            self.shape_pending=root.after(16,self._apply_shape)
             if self.locked:
                 # Ne pas repositionner à chaque événement Configure : cela fait
                 # trembler la fenêtre lorsque Windows termine un glisser.

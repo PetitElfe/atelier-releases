@@ -1,7 +1,7 @@
-name: Post-it visible launch Windows TEST
+name: Post-it shapes and tracker schedules Windows TEST
 on:
   push:
-    branches: [test/postit-launch-visible-20261110]
+    branches: [test/postit-shapes-resize-20261110]
 permissions:
   contents: read
 jobs:
@@ -33,6 +33,7 @@ jobs:
       - run: node tools/tracker_ritual_browser_test.cjs
       - run: node tools/studio_browser_test.cjs
       - run: node tools/desktop_repairs_browser_test.cjs
+      - run: node tools/tracker_schedule_order_browser_test.cjs
       - run: node tools/preparations_tracker_home_browser_test.cjs
       - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
       - uses: actions/upload-artifact@v4
@@ -78,7 +79,7 @@ jobs:
       - run: python -m unittest discover -s tests -p test_windows_snapshot_upgrade.py -v
       - run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: Postits_review_windows_${{ matrix.python-version }}_failure
           path: artifacts

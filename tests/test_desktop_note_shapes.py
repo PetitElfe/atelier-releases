@@ -80,7 +80,7 @@ class NoteFormatTests(unittest.TestCase):
             gui=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_run_gui')
             klass=next(n for n in gui.body if isinstance(n,ast.ClassDef) and n.name=='NoteWindow')
             scope={**vars(desktop_postits),'tk':tk,'messagebox':messagebox,'root':root,'tray':object(),'closed':set(),'windows':{}}
-            for name in ('save_edit','save_layout','set_layout_lock','note_rows','delete_note'):
+            for name in ('save_edit','save_layout','set_layout_lock','note_rows','delete_note','set_corner_style'):
                 function=getattr(desktop_postits,name)
                 scope[name]=lambda *a,_fn=function,**k:_fn(*a,db_path=db,**k)
             scope['_update_in_progress']=lambda:False
@@ -145,7 +145,7 @@ class NoteFormatTests(unittest.TestCase):
                 c.execute('CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)')
             desktop_postits.create_layout_table(db)
             ids=[desktop_postits.create_note(db) for _ in range(5)]
-            originals={name:getattr(desktop_postits,name) for name in ('create_layout_table','note_rows','save_edit','save_layout','set_layout_lock','create_note','delete_note')}
+            originals={name:getattr(desktop_postits,name) for name in ('create_layout_table','note_rows','save_edit','save_layout','set_layout_lock','create_note','delete_note','set_corner_style')}
             controls={};errors=[]
             class Tray:
                 def __init__(self,root,on_show,on_new,on_archives,on_quit,*args):controls.update(show=on_show,new=on_new,quit=on_quit)
@@ -230,6 +230,7 @@ class NoteFormatTests(unittest.TestCase):
             self.assertNotEqual(configured,original,'Isolate every native path from the real TEST profile')
             script.write_text(configured,encoding='utf-8');(app/'VERSION').write_text('0.18.0');(app.parent/'manifest.json').write_text('{}')
             shutil.copyfile(source.with_name('windows_tray.py'),app/'windows_tray.py')
+            shutil.copyfile(source.with_name('native_postit_paper.py'),app/'native_postit_paper.py')
             (app/'native_reminders.py').write_text('def tick():pass\n')
             (app/'quick_capture_native.py').write_text('def install(*a,**k):return None\n')
             db=data/'atelier.db'
@@ -279,6 +280,59 @@ class NoteFormatTests(unittest.TestCase):
                     process.wait(timeout=10)
                 occluder.destroy()
             print('PASS: actual isolated pythonw launch, five saved notes/one visible, reused process, ordinary stacking restored, crash surfaced instead of false success')
+
+
+    def test_eight_resize_edges_keep_opposite_corner_and_minimum(self):
+        from native_postit_paper import resize_rectangle,border_at,content_rect
+        initial=(100,100,400,300)
+        self.assertEqual(resize_rectangle(initial,30,20,'nw'),(130,120,370,280))
+        self.assertEqual(resize_rectangle(initial,-30,20,'se'),(100,100,370,320))
+        self.assertEqual(resize_rectangle(initial,1000,1000,'nw'),(260,225,240,175))
+        self.assertEqual({border_at(x,y,424,324) for x,y in [(1,1),(212,1),(423,1),(1,162),(423,162),(1,323),(212,323),(423,323)]},{'nw','n','ne','w','e','sw','s','se'})
+        for shape in ('star','heart','circle'):
+            x,y,w,h=content_rect(shape,540,540);self.assertGreater(w,150);self.assertGreater(h,150);self.assertTrue(x>0 and y>0 and x+w<540 and y+h<540)
+
+    @unittest.skipUnless(os.name=='nt' and os.environ.get('GOBLIN_NATIVE_POSTIT_TEST')=='1','Requires isolated Windows desktop runner')
+    def test_actual_smooth_paper_new_shapes_corners_shadow_and_reopen(self):
+        import tkinter as tk,sqlite3,tempfile
+        from tkinter import messagebox
+        from contextlib import closing
+        from native_postit_paper import MARGIN
+        with tempfile.TemporaryDirectory() as directory:
+            db=Path(directory)/'notes.db'
+            with closing(sqlite3.connect(db)) as c,c:
+                c.execute('CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)')
+                c.execute("INSERT INTO home_postits VALUES(1,'Formes','Texte conservé','mauve','rounded',0,'t','t')")
+            desktop_postits.create_layout_table(db)
+            root=tk.Tk();root.withdraw()
+            tree=ast.parse(Path(desktop_postits.__file__).read_text(encoding='utf-8'));gui=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_run_gui');klass=next(n for n in gui.body if isinstance(n,ast.ClassDef) and n.name=='NoteWindow')
+            scope={**vars(desktop_postits),'tk':tk,'messagebox':messagebox,'root':root,'tray':object(),'closed':set(),'windows':{}}
+            for name in ('save_edit','save_layout','set_layout_lock','note_rows','set_corner_style','delete_note'):
+                fn=getattr(desktop_postits,name);scope[name]=lambda *a,_fn=fn,**k:_fn(*a,db_path=db,**k)
+            scope['_update_in_progress']=lambda:False
+            exec(compile(ast.Module(body=[klass],type_ignores=[]),'<native shapes>','exec'),scope)
+            note=scope['NoteWindow'](desktop_postits.note_rows(db)[0],0)
+            try:
+                root.update();formats=note.menu.nametowidget(note.menu.entrycget('Format','menu'))
+                Path('artifacts').mkdir(exist_ok=True)
+                for label,shape in [('Étoile','star'),('Cœur','heart'),('Rond','circle'),('Feuille arrondie','rounded')]:
+                    formats.invoke(label);root.update();note._apply_shape();root.update()
+                    self.assertEqual(note.note['shape'],shape);self.assertIsNotNone(note.paper)
+                    alpha=bytes(note.paper.pixels)[3::4]
+                    self.assertIn(255,alpha);self.assertTrue(any(2<a<250 for a in alpha),'Actual GDI+ edge pixels must be antialiased')
+                    self.assertEqual(note.body.get('1.0','end-1c'),'Texte conservé')
+                    w,h=note.window.winfo_width(),note.window.winfo_height()
+                    paper_area=note.paper_area.winfo_width();self.assertGreater(paper_area,100)
+                    note.paper.save_png('artifacts/postit-'+shape+'.png')
+                # A real paper edge, with optional square/rounded corners and a faint shadow.
+                note.corners.set(False);note._change_corners();root.update();note._apply_shape()
+                self.assertFalse(note.paper.style[2]);note._save_geometry();note._close();root.update()
+                saved=desktop_postits.note_rows(db)[0];self.assertEqual(saved['corner_rounded'],0)
+                reopened=scope['NoteWindow'](saved,0);root.update();self.assertFalse(reopened.corners.get());reopened._close();root.update()
+            finally:
+                for callback in root.tk.call('after','info'):root.after_cancel(callback)
+                root.destroy()
+            print('PASS: real antialiased star/heart/circle paper, shadow, optional corner style, editable text and persisted reopening')
 
 
 

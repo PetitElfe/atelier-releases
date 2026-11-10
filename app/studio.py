@@ -9,6 +9,7 @@ import json
 import math
 import re
 import sqlite3
+import tracker_schedule
 from contextlib import closing
 from datetime import date, datetime, timedelta
 
@@ -18,6 +19,7 @@ IDENTITY = re.compile(r'^[A-Za-z0-9_-]{1,100}$')
 
 
 def initialise(c):
+    tracker_schedule.initialise(c)
     boards = {r[1] for r in c.execute('PRAGMA table_info(tracker_boards)')}
     if boards and 'mark_unit' not in boards:
         c.execute("ALTER TABLE tracker_boards ADD COLUMN mark_unit TEXT NOT NULL DEFAULT 'auto'")
@@ -170,7 +172,7 @@ def sport_contribution(c,oid,data,archived,stamp):
         day=date.fromisoformat(data['date']).isoformat()
     row=c.execute('SELECT * FROM tracker_board_rows WHERE id=? AND archived=0',(rid,)).fetchone()
     if not row:raise ValueError('La ligne de sport est introuvable.')
-    if not existing and row['weekday'] is not None and date.fromisoformat(day).weekday()!=row['weekday']:raise ValueError('Cette ligne de tracker est prévue un autre jour.')
+    if not existing and not tracker_schedule.applies(c,row,date.fromisoformat(day)):raise ValueError('Cette ligne de tracker est prévue un autre jour.')
     if not existing and 'board_id' in row.keys():
         board=c.execute('SELECT * FROM tracker_boards WHERE id=?',(row['board_id'],)).fetchone()
         if board:day=period_mark_day(board,date.fromisoformat(day)).isoformat()
@@ -221,7 +223,7 @@ def tracker_mark(c, body, stamp):
     if not row:
         raise ValueError('Ligne introuvable.')
     board=c.execute('SELECT * FROM tracker_boards WHERE id=?',(row['board_id'],)).fetchone()
-    if row['weekday'] is not None and date.fromisoformat(day).weekday() != row['weekday']:
+    if not tracker_schedule.applies(c,row,date.fromisoformat(day)):
         raise ValueError('Cette ligne est prévue un autre jour.')
     day=period_mark_day(board,date.fromisoformat(day)).isoformat()
     old = c.execute('SELECT value FROM tracker_board_marks WHERE row_id=? AND day=?', (row_id, day)).fetchone()
@@ -300,7 +302,7 @@ def command(c, body, context):
         if not 1<=len(text)<=10000:raise ValueError('Note vide ou trop longue.')
         if target=='postit':
             shape=data.get('shape','rounded')
-            if shape not in ('square','rounded','pill'):raise ValueError('Format de Post-it invalide.')
+            if shape not in ('square','rounded','pill','star','heart','circle'):raise ValueError('Format de Post-it invalide.')
             if c.execute('SELECT count(*) FROM home_postits WHERE archived=0').fetchone()[0]>=100:raise ValueError('Archive quelques Post-it avant d’en ajouter.')
             cur=c.execute("INSERT INTO home_postits(title,body,color,shape,archived,created_at,updated_at) VALUES(?,?,'gold',?,0,?,?)",(text.splitlines()[0][:120],text,shape,stamp,stamp))
         elif target=='taches':
@@ -339,7 +341,7 @@ def command(c, body, context):
         row=c.execute('SELECT title FROM tracker_boards WHERE id=? AND archived=0',(int(data['id']),)).fetchone()
         if not row or row['title']!=data.get('base'):raise LookupError('Ce tableau a changé ailleurs.')
         title=str(data.get('title','')).strip()
-        if not 1<=len(title)<=100:raise ValueError('Nom du tableau requis.')
+        if len(title)>100:raise ValueError('Nom limité à 100 caractères.')
         c.execute('UPDATE tracker_boards SET title=?,updated_at=? WHERE id=?',(title,stamp,int(data['id'])))
         result={'ok':True}
     elif action == 'board-period':
@@ -362,6 +364,7 @@ def command(c, body, context):
         values=[row['board_id'],(row['title']+' (copie)')[:100],row['mode'],row['target_count'],row['weekday'],row['linked_type'],row['linked_id'],100000,stamp,stamp]
         new=c.execute('INSERT INTO tracker_board_rows('+','.join(fields)+') VALUES('+','.join('?'*len(fields))+')',values).lastrowid
         for step in c.execute('SELECT * FROM tracker_row_steps WHERE row_id=? AND active=1 ORDER BY order_index,id',(row['id'],)).fetchall():c.execute('INSERT INTO tracker_row_steps(row_id,title,order_index,weekday,active) VALUES(?,?,?,?,1)',(new,step['title'],step['order_index'],step['weekday']))
+        tracker_schedule.copy(c,row['id'],new)
         appearance=c.execute("SELECT * FROM studio_objects WHERE id=?",('tracker-row-'+str(row['id']),)).fetchone()
         if appearance:
             app=json.loads(appearance['data_json']);app['row_id']=new;app['title']=values[1]
@@ -373,6 +376,9 @@ def command(c, body, context):
         if not row:raise ValueError('Ligne introuvable.')
         for field in ('title','mode','weekday','target_count'):
             if data.get('base',{}).get(field)!=row[field]:raise LookupError('Cette ligne a changé ailleurs ; actualise avant de modifier sa configuration.')
+        if 'base_schedule' in data:
+            current=tracker_schedule.read(c,row)
+            if data['base_schedule']!={k:current[k] for k in ('weekdays','interval_weeks','anchor_monday')}:raise LookupError('Le rythme de cette ligne a changé ailleurs ; actualise avant de modifier.')
         mode=data.get('mode',row['mode'])
         if mode not in ('check','number'):raise ValueError('Type de ligne invalide.')
         c.execute('UPDATE tracker_board_rows SET mode=? WHERE id=?',(mode,rid))
@@ -448,8 +454,10 @@ def serve(handler, method, path, q, context):
                 boards = [dict(r) for r in c.execute('SELECT * FROM tracker_boards WHERE archived=0 ORDER BY id')]
                 for board in boards:
                     board['period'] = context['tracker_window'](board,today=reference)
+                    board['custom_title']=board['title'];board['title']=board['title'] or board['period']['heading']
                     board['rows'] = [dict(r) for r in c.execute('SELECT * FROM tracker_board_rows WHERE board_id=? AND archived=0 ORDER BY order_index,id', (board['id'],))]
                     for row in board['rows']:
+                        row.update(tracker_schedule.read(c,row))
                         row['marks'] = {r['day']: r['value'] for r in c.execute('SELECT * FROM tracker_board_marks WHERE row_id=? AND day BETWEEN ? AND ?', (row['id'], min(board['period']['start'],(reference-timedelta(days=reference.weekday())).isoformat()), max(board['period']['end'],(reference+timedelta(days=6-reference.weekday())).isoformat())))}
                         row['steps'] = context['tracker_rituals'].steps_for_row(c, row['id'], min(board['period']['start'],(reference-timedelta(days=reference.weekday())).isoformat()), max(board['period']['end'],(reference+timedelta(days=6-reference.weekday())).isoformat()))
                 result['urgent'],result['cycle']=widget_data(c,context)

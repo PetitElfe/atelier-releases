@@ -37,9 +37,9 @@ class PeriodTests(unittest.TestCase):
         last=window('weeks',1,'2020-12-28',today=datetime.date(2021,1,1))
         first=window('weeks',1,'2020-12-28',today=datetime.date(2021,1,4))
         pair=window('weeks',2,'2020-12-28',today=datetime.date(2021,1,1))
-        self.assertEqual(last['heading'],'sem 53')
-        self.assertEqual(first['heading'],'sem 1')
-        self.assertEqual(pair['heading'],'sem 53–1 · 2020–2021')
+        self.assertEqual(last['heading'],'Semaine 53')
+        self.assertEqual(first['heading'],'Semaine 1')
+        self.assertEqual(pair['heading'],'Deux semaines · 53–1 · 2020–2021')
 
     def test_annual_cleaning_schedules_have_12_4_2_or_1_cells(self):
         for unit,count in [('month',12),('quarter',4),('semester',2),('year',1)]:
