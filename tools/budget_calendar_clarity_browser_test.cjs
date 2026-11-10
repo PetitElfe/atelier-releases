@@ -52,6 +52,12 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  await form.locator('[name=repeat]').selectOption('once');await form.locator('[name=title]').fill('Une seule fois');await form.locator('[name=amount]').fill('12.50');await form.locator('[name=status]').selectOption('planned');await form.getByRole('button',{name:'Enregistrer',exact:true}).click();
  await page.waitForFunction(()=>budgetData.entries.some(e=>e.title==='Une seule fois'&&e.status==='pending'));
  fs.mkdirSync('artifacts',{recursive:true});await page.locator('#studioBudget').screenshot({path:'artifacts/budget-clarity.png'});
+ // A date hint must not obscure appointment labels or survive opening a dialog.
+ await api('/api/events','POST',{title:'Événement témoin',event_date:shift(0),start_time:'14:00',end_time:'15:00'});
+ await page.evaluate(async()=>{await refresh();showView('calendar');state.cursor=new Date();setCalendarMode('month')});
+ const current=page.locator('#monthGrid .day-cell.today');await current.locator('.day-number').hover();await page.locator('#atelierRelativeDateFloat').waitFor({state:'visible'});
+ await current.locator('.event-pill').hover();assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),false,'Hovering an event leaves its text clear');
+ await current.locator('.day-number').focus();assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),true);await page.keyboard.press('Escape');assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),false);
  // Predict a future date without altering the estimation algorithm.
  await api('/api/cycle-periods','POST',{start_date:shift(-53),end_date:null});await api('/api/cycle-periods','POST',{start_date:shift(-25),end_date:null});
  await page.evaluate(async()=>{await refreshOrganisation();showView('calendar');state.cursor=parseYMD(cycleEstimate().next);setCalendarMode('month')});
@@ -63,15 +69,16 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
   await page.setViewportSize({width:sample.w,height:1000});
   await page.evaluate(s=>{document.documentElement.style.zoom=String(s.root);document.body.style.zoom=String(s.body);document.querySelector('#calendarView').style.zoom=String(s.view)},sample);
   for(const index of [7,10,13]){
-   const cell=page.locator('#monthGrid .day-cell').nth(index);await cell.hover();
-   const metrics=await cell.evaluate(el=>{const c=el.getBoundingClientRect(),t=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return {actual:t.left+t.width/2,expected:Math.max(8+t.width/2,Math.min(innerWidth-8-t.width/2,c.left+c.width/2)),left:t.left,right:t.right,width:innerWidth}});
-   assert.ok(Math.abs(metrics.actual-metrics.expected)<1,'Centered tooltip '+JSON.stringify({sample,metrics}));assert.ok(metrics.left>=7&&metrics.right<=metrics.width-7,'Tooltip stays within viewport');
+   const cell=page.locator('#monthGrid .day-cell').nth(index);await cell.locator('.day-number').hover();
+   const metrics=await cell.evaluate(el=>{const c=el.getBoundingClientRect(),t=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return {actual:t.left+t.width/2,expected:Math.max(8+t.width/2,Math.min(innerWidth-8-t.width/2,c.left+c.width/2)),left:t.left,right:t.right,width:innerWidth,tipTop:t.top,tipBottom:t.bottom,cellTop:c.top,cellBottom:c.bottom}});
+   assert.ok(Math.abs(metrics.actual-metrics.expected)<1,'Centered tooltip '+JSON.stringify({sample,metrics}));assert.ok(metrics.left>=7&&metrics.right<=metrics.width-7,'Tooltip stays within viewport');assert.ok(metrics.tipBottom<=metrics.cellTop-4||metrics.tipTop>=metrics.cellBottom+4,'Date hint never covers the day or its appointments');
   }
  }
  await page.evaluate(()=>{document.documentElement.style.zoom='1';document.body.style.zoom='1';document.querySelector('#calendarView').style.zoom='1'});await page.setViewportSize({width:1400,height:1000});
- await page.locator('#monthGrid .day-cell').nth(10).hover();await page.keyboard.press('Tab');await page.locator('#monthGrid').screenshot({path:'artifacts/calendar-discreet-forecast.png'});
+ await page.locator('#monthGrid .day-cell').nth(10).locator('.day-number').hover();await page.keyboard.press('Tab');await page.locator('#monthGrid').screenshot({path:'artifacts/calendar-discreet-forecast.png'});
  await page.evaluate(()=>setCalendarMode('week'));
  const week=await page.locator('#weekGrid .week-head.cycle-forecast').first().evaluate(el=>{const pseudo=getComputedStyle(el,'::after');return {width:pseudo.width,border:pseudo.borderBottomStyle}});assert.equal(week.width,'22px');assert.equal(week.border,'dashed');
  const slot=await page.evaluate(()=>{const style=el=>{const s=getComputedStyle(el);return [s.backgroundImage,s.backgroundColor]};return {forecast:style(document.querySelector('#weekGrid .week-slot.cycle-forecast')),ordinary:style(document.querySelector('#weekGrid .week-slot:not(.cycle-forecast):not(.week-current-day)'))}});assert.deepEqual(slot.forecast,slot.ordinary,'Forecast keeps the ordinary hourly grid without a day-long colour wash');
+ await page.evaluate(()=>{state.cursor=new Date(2026,10,17);setCalendarMode('month');renderMonth()});await page.clock.setFixedTime(new Date('2026-11-17T12:00:00'));await page.locator('#monthGrid [data-date="2026-11-13"] .day-number').hover();assert.equal(await page.locator('#atelierRelativeDateFloat').innerText(),'J+4');await page.screenshot({path:'artifacts/calendar-date-hint-fixed.png'});
  assert.deepEqual(errors,[]);console.log('PASS: visible edit/remove/restore, truthful cash/forecast/envelopes, receipts, stale-write guards, recurrence scopes, reload, one-off form and centered J labels at five viewport/zoom combinations; discreet month/week cycle indicators');
 }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('close',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

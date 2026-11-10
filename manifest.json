@@ -77,7 +77,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "5f50f0ce63d7f69a59b523539309eed4a37bdae5ae048feb5eda2643d393e420"
+      "sha256": "99d439a777a22a81eda5b0695ca17c37040393f24ba3aa2f0704849a4a44a0c5"
     },
     {
       "path": "public/app_part3.js",
@@ -97,7 +97,7 @@
     },
     {
       "path": "public/calendar_decor.css",
-      "sha256": "b32ee47db49aa1a8457824076cb997be96f5d4110f4f062c41c19b5bcf39af5b"
+      "sha256": "168798431e14c7165ab1b6cc1d4a5c296778a3d7ce8c58e7110e8806f6277646"
     },
     {
       "path": "public/calendar_decor.js",
@@ -360,6 +360,6 @@
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST : budget en feuilles compactes, commandes au clic droit et menu discret ; suppression restaurable, justificatifs et données conservés. Correctifs Post-it et Ancrage maintenus.",
-  "build_sequence": 2026111002
+  "notes": "TEST : repères J−/J+ cohérents, infobulle discrète sur le numéro du jour sans masquer les rendez-vous ; menus et données conservés.",
+  "build_sequence": 2026111003
 }

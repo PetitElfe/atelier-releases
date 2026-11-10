@@ -29,3 +29,5 @@
 #weekGrid .cycle-forecast{margin:0;border-radius:0}
 #weekGrid .week-slot.cycle-forecast{padding:0;border-left:0}
 @media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 12px!important}}
+
+#atelierRelativeDateFloat{padding:4px 8px;border-radius:5px;font-size:11px;box-shadow:0 2px 8px #0005}

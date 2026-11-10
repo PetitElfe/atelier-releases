@@ -153,29 +153,35 @@ function addCalendarHoverActions(wrapper,event){
 
 /* Relative date badge on month cells: exact calendar months plus remaining days,
    in both directions; calculations use UTC dates to avoid DST discrepancies. */
-function atelierRelativeDateLabel(date){
-  const now=new Date(),a=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
-  const b=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
-  if(a===b)return 'J0 · aujourd’hui';
+function atelierRelativeDateParts(date,now=new Date()){
+  const a=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()),b=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  if(a===b)return {label:'J0',description:'Aujourd’hui'};
   const ahead=b>a,early=new Date(Math.min(a,b)),late=new Date(Math.max(a,b));
   const y=early.getUTCFullYear(),m=early.getUTCMonth(),d=early.getUTCDate();
   let months=(late.getUTCFullYear()-y)*12+late.getUTCMonth()-m;
   const plus=n=>Date.UTC(y,m+n,Math.min(d,new Date(Date.UTC(y,m+n+1,0)).getUTCDate()));
   while(months>0&&plus(months)>late.getTime())months--;
-  const days=Math.round((late.getTime()-plus(months))/86400000);
-  const duration=months?('M'+(ahead?'+':'-')+months+(days?', J'+(ahead?'+':'-')+days:'')):'J'+(ahead?'+':'-')+days;
-  return duration+(ahead?' · dans le futur':' · dans le passé');
+  const days=Math.round((late.getTime()-plus(months))/86400000),sign=ahead?'−':'+';
+  const label=months?'M'+sign+months+(days?' · J'+sign+days:''):'J'+sign+days;
+  const words=[months?months+' mois':'',days?days+' jour'+(days===1?'':'s'):''].filter(Boolean).join(' et ');
+  return {label,description:(ahead?'Dans ':'Il y a ')+words};
 }
+function atelierRelativeDateLabel(date){return atelierRelativeDateParts(date).label}
 // Position in viewport space, including the app's CSS zoom and browser zoom.
 let atelierRelativeDateOwner=null;
 function atelierHideRelativeDate(){
   const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true;
+  atelierRelativeDateOwner?.querySelector('.day-number')?.removeAttribute('aria-describedby');
   atelierRelativeDateOwner=null;
 }
 function atelierShowRelativeDate(cell){
+  if(!cell.isConnected||!cell.getBoundingClientRect().width)return;
+  atelierHideRelativeDate();
+  const relative=atelierRelativeDateParts(parseYMD(cell.dataset.date));cell.dataset.relativeDate=relative.label;cell.dataset.relativeDescription=relative.description;
+  cell.querySelector('.day-number')?.setAttribute('aria-label','Voir les rendez-vous du '+fmtFrenchDate(parseYMD(cell.dataset.date))+' · '+relative.description);
   let tip=document.getElementById('atelierRelativeDateFloat');
   if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';tip.setAttribute('role','tooltip');document.body.append(tip)}
-  tip.textContent=cell.dataset.relativeDate;tip.hidden=false;atelierRelativeDateOwner=cell;
+  tip.textContent=cell.dataset.relativeDate;tip.setAttribute('aria-label',cell.dataset.relativeDescription);tip.hidden=false;atelierRelativeDateOwner=cell;cell.querySelector('.day-number')?.setAttribute('aria-describedby',tip.id);
   // A fixed child's CSS coordinates also inherit zoom. Measure its actual unit
   // instead of applying viewport coordinates as unscaled CSS pixels.
   tip.style.left='0px';tip.style.top='0px';const origin=tip.getBoundingClientRect();
@@ -183,11 +189,13 @@ function atelierShowRelativeDate(cell){
   const scaleX=(probe.left-origin.left)/100||1,scaleY=(probe.top-origin.top)/100||1;
   const bounds=cell.getBoundingClientRect(),width=origin.width,height=origin.height;
   const left=Math.max(8,Math.min(window.innerWidth-width-8,bounds.left+(bounds.width-width)/2));
-  const below=bounds.bottom+5,top=below+height<=window.innerHeight-8?below:Math.max(8,bounds.top-height-5);
+  const above=bounds.top-height-6,top=above>=8?above:Math.min(window.innerHeight-height-8,bounds.bottom+6);
   tip.style.left=(left-origin.left)/scaleX+'px';tip.style.top=(top-origin.top)/scaleY+'px';
 }
 window.addEventListener('resize',atelierHideRelativeDate);
 window.addEventListener('scroll',atelierHideRelativeDate,true);
+document.addEventListener('pointerdown',atelierHideRelativeDate,true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')atelierHideRelativeDate()});
 function renderMonth(){
   atelierHideRelativeDate();
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
@@ -197,16 +205,18 @@ function renderMonth(){
     const forecast=recorded?null:cycleForecastForDay(ds);
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
-    cell.dataset.relativeDate=atelierRelativeDateLabel(d);
-    cell.addEventListener('mouseenter',()=>atelierShowRelativeDate(cell));
-    cell.addEventListener('focusin',()=>atelierShowRelativeDate(cell));
-    cell.addEventListener('mouseleave',atelierHideRelativeDate);
-    cell.addEventListener('focusout',atelierHideRelativeDate);
+    const relative=atelierRelativeDateParts(d);cell.dataset.date=ds;cell.dataset.relativeDate=relative.label;cell.dataset.relativeDescription=relative.description;
 
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<button class="day-number day-list-toggle" type="button"
       title="Voir tous les rendez-vous du ${ds}" aria-label="Voir tous les rendez-vous du ${ds}">${d.getDate()}</button>
       <button class="day-add" type="button" title="Ajouter un rendez-vous">+</button>`;
+    const dateButton=cell.querySelector('.day-number');dateButton.removeAttribute('title');
+    dateButton.setAttribute('aria-label','Voir les rendez-vous du '+fmtFrenchDate(d)+' · '+relative.description);
+    dateButton.addEventListener('mouseenter',()=>atelierShowRelativeDate(cell));
+    dateButton.addEventListener('focus',()=>atelierShowRelativeDate(cell));
+    dateButton.addEventListener('mouseleave',atelierHideRelativeDate);
+    dateButton.addEventListener('blur',atelierHideRelativeDate);
     const allDayEvents=state.events.filter(e=>e.instance_date===ds);
     cell.querySelector('.day-list-toggle').addEventListener('click',()=>openDayList(ds,allDayEvents));
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);bindCalendarDateContextMenu(cell,ds);
@@ -215,7 +225,7 @@ function renderMonth(){
       const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; const wrap=document.createElement('div');wrap.className='calendar-month-event';wrap.appendChild(b);addCalendarHoverActions(wrap,e);cell.appendChild(wrap);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
-    cell.title=forecast?cell.dataset.cycleForecast+' Double-clique pour ajouter un rendez-vous.':'Double-clique pour ajouter un rendez-vous';
+    // Forecast details stay on their own discreet mark; no duplicate native tooltip on the date.
     cell.addEventListener('dblclick',ev=>{ if(ev.target.closest('button')) return; state.cursor=new Date(d); openEventModal(null,ds); });
     grid.appendChild(cell);
   }
