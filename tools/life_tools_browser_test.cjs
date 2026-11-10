@@ -117,6 +117,8 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>showView('settings'));await page.waitForFunction(()=>document.querySelector('#settingsTrackerHistory'));
   await page.evaluate(()=>{const card=document.querySelector('#trackerBoardArchivesToggle').closest('.settings-card');document.querySelector('.atelier-settings-nav button[data-target="'+card.id+'"]')?.click()});
   await page.locator('#trackerBoardArchivesToggle').click();await page.locator('.tracker-archived-entry').filter({hasText:'Bien-être'}).getByRole('button',{name:'Restaurer',exact:true}).click();
+  // The restore click starts an asynchronous request; wait for the restored board, then verify its data.
+  await page.waitForFunction(async id=>(await (await fetch('/api/tracker-boards')).json()).some(b=>b.id===id),wellness.id);
   assert.equal((await api('/api/tracker-boards')).find(b=>b.id===wellness.id).rows.find(r=>r.id===numberRow.id).marks[date],'7.5');
   const specs=[['Ménage 2 semaines','weeks',2,14],['Entretien 2 mois','months',2,null],['Administratif annuel','years',1,12],['Projet 10 jours','days',10,10]];
   for(const [title,unit,count,columns]of specs){const b=await api('/api/tracker-boards','POST',{title,period_unit:unit,period_count:count});const grid=(await api('/api/tracker-boards?periods=1')).find(x=>x.id===b.id).period;if(columns)assert.equal(grid.columns.length,columns);else assert.ok(grid.columns.length>=59&&grid.columns.length<=62);}
