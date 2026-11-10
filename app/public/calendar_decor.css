@@ -3,9 +3,9 @@
 /* One red hue: lighter for estimates; no decorative cycle marks. */
 #monthGrid .day-cell.cycle-forecast,#monthGrid .day-cell.cycle-forecast-start{background:linear-gradient(#bd516116,#bd516116),var(--panel);box-shadow:none;border-top:0}
 #monthGrid .day-cell.cycle-recorded{background:linear-gradient(#bd51612c,#bd51612c),var(--panel);box-shadow:none}
-#weekGrid .week-slot.cycle-forecast{background-color:#302725}
-#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:#352d28}
-#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:#302725;border-bottom:1px solid #605744}
+#weekGrid .week-slot.cycle-forecast{background-color:color-mix(in srgb,#bd5161 8.6%,var(--panel))}
+#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:color-mix(in srgb,#bd5161 8.6%,var(--panel))}
+#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:color-mix(in srgb,#bd5161 8.6%,var(--panel));border-bottom:1px solid #605744}
 #atelierRelativeDateFloat{transform:none;text-align:center;white-space:nowrap}
 .calendar-decor-dialog{width:min(440px,90vw);max-height:90vh;overflow:auto;background:#292d26;color:#eee5d4;border:1px solid #8ca083;border-radius:14px;padding:22px}
 .calendar-decor-dialog::backdrop{background:#0009}
@@ -30,9 +30,9 @@
 #atelierRelativeDateFloat{padding:4px 8px;border-radius:5px;font-size:11px;box-shadow:0 2px 8px #0005}
 
 /* Use background-color in the hourly grid to preserve its half-hour lines. */
-#weekGrid .week-slot.cycle-recorded{background-color:#3d292c;box-shadow:none}
-#weekGrid .week-head.cycle-recorded{background:#3d292c;box-shadow:none}
-#weekGrid .week-slot.cycle-recorded.week-current-day{background-color:#42312e}
+#weekGrid .week-slot.cycle-recorded{background-color:color-mix(in srgb,#bd5161 17.2%,var(--panel));box-shadow:none}
+#weekGrid .week-head.cycle-recorded{background:color-mix(in srgb,#bd5161 17.2%,var(--panel));box-shadow:none}
+#weekGrid .week-slot.cycle-recorded.week-current-day{background-color:color-mix(in srgb,#bd5161 17.2%,var(--panel))}
 /* One separator per boundary, instead of a top and bottom border stacked. */
 #weekGrid .week-slot,#weekGrid .time-label{border-top:0!important;border-bottom:1px solid var(--line)!important}
 #weekGrid .week-slot.cycle-forecast{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.35) 50%,transparent 51%)}
