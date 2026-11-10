@@ -71,7 +71,7 @@ async function api(path,method='GET',body){
   await page.evaluate(()=>{
     state.cursor=new Date();state.calendarMode='month';applyCalendarMode();showView('calendar');renderMonth();
   });
-  const dayToggle=page.locator('#monthGrid .day-list-toggle[aria-label="Voir tous les rendez-vous du '+date+'"]');
+  const dayToggle=page.locator('#monthGrid [data-date="'+date+'"] .day-list-toggle');
   await dayToggle.click();
   assert.ok(await page.locator('#modalBody .calendar-day-list .event-pill').count()>=5);
   await page.locator('#calendarDayAdd').click();
