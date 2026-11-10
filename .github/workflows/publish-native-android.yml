@@ -1,0 +1,55 @@
+name: Publish verified Android mobile layout TEST
+on:
+  push:
+    branches: [test/publish-native-android-20261110]
+    paths: ['.github/workflows/publish-native-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.repository == 'PetitElfe/atelier-releases'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Require the exact successful candidate and verify its digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=42762748746
+          expected=2c1b6ebb1772064f654cb82abe85eef56c0a7c14
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Native_017_Candidate --dir candidate
+          (cd candidate && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+      - name: Publish a distinct immutable TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/native-notes.md <<'NOTES'
+          L’Atelier Android 0.1.17 TEST — respiration centrée et véritable grille d’agenda.
+
+          Installe cet APK par-dessus L’Atelier existant, sans désinstaller : même paquet fr.atelierdugoblin.mobile, même certificat permanent, versionCode 116 → 117. Choisis le canal TEST dans les paramètres pour recevoir les préversions.
+
+          Respiration : écran de séance complet avec grande barre et étoile ou cercle, durée et progression discrètes, démarrer/pause/reprendre, réinitialiser et son. La forme, les ambiances, les durées, les phrases et l’accès Ancrage restent disponibles dans Réglages de respiration. Ces fonctions sont conservées, sans empiler leurs réglages sur la séance.
+
+          Calendrier : vraies vues Jour et Semaine avec grille horaire 24 h, rendez-vous colorés selon leur durée, chevauchements côte à côte, journées entières et repère de l’heure. Toucher une heure pour ajouter un rendez-vous avec date/heure préremplies. Mois avec grille et titres, Année avec ses 12 mois, bouton + et retour Aujourd’hui conservant la vue choisie. Ouverture sur le jour courant.
+
+          Présentation mobile : une barre de titre par rubrique, typographie système, navigation compacte, listes et paramètres sobres, formulaires en panneau depuis le bas. Anciennes notes, hashtags, cartes Ancrage, données privées, brouillons, albums, recettes et options conservés.
+
+          Vérifié : navigateur sur huit rubriques, quatre formats et deux thèmes ; respiration sans débordement en portrait/paysage, pause/reprise et réglages, vues d’agenda et événements simultanés, vrais échanges avec Windows TEST ; certificat, remplacement signé avec note conservée, rappel et deux minuteurs en arrière-plan écran éteint sur émulateur. Compatible avec Windows TEST 2dc092cc qui rétablit les commandes contextuelles du budget.
+
+          Le rendu sur les appareils de Misu, le stylet XP-Pen, le widget réellement placé, les sons entendus et Tailscale restent à valider. Les contrôles techniques ne valent pas acceptation esthétique par Misu. Aucun appareil réel, aucune branche principale et aucun canal stable modifié.
+          NOTES
+          if gh release view android-test-v0.1.17 >/dev/null 2>&1; then
+            mkdir existing
+            gh release download android-test-v0.1.17 --pattern 'LAtelierDuGoblin-Mobile.apk*' --dir existing
+            (cd existing && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+            cmp candidate/LAtelierDuGoblin-Mobile.apk.sha256 existing/LAtelierDuGoblin-Mobile.apk.sha256
+            echo 'Existing immutable release matches the tested candidate.'
+            exit 0
+          fi
+          gh release create android-test-v0.1.17 candidate/* --prerelease --target 2c1b6ebb1772064f654cb82abe85eef56c0a7c14 --title 'Android TEST 0.1.17 — Respiration et véritable agenda' --notes-file /tmp/native-notes.md
