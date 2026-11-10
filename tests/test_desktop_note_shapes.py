@@ -157,7 +157,7 @@ class NoteFormatTests(unittest.TestCase):
             with ExitStack() as stack:
                 stack.enter_context(patch.multiple(desktop_postits,DATA=data,DB=db,SCRIPT=script,LOCK=data/'lock',WAKE=data/'wake',RUNTIME=data/'runtime',_update_in_progress=lambda:False))
                 for name,fn in originals.items():stack.enter_context(patch.object(desktop_postits,name,lambda *a,_fn=fn,**k:_fn(*a,db_path=db,**k)))
-                stack.enter_context(patch.dict(sys.modules,{'windows_tray':SimpleNamespace(WindowsTray=Tray),'native_reminders':SimpleNamespace(tick=lambda:None),'quick_capture_native':SimpleNamespace(install=lambda *a,**k:None)}))
+                stack.enter_context(patch.dict(sys.modules,{'windows_tray':SimpleNamespace(WindowsTray=Tray,WndClass=__import__('windows_tray').WndClass,_WNDPROC=__import__('windows_tray')._WNDPROC),'native_reminders':SimpleNamespace(tick=lambda:None),'quick_capture_native':SimpleNamespace(install=lambda *a,**k:None)}))
                 stack.enter_context(patch('tkinter.messagebox.askyesno',return_value=True))
                 for reload in (False,True):
                     root=tk.Tk();root.withdraw()
@@ -319,7 +319,7 @@ class NoteFormatTests(unittest.TestCase):
                     formats.invoke(label);root.update();note._apply_shape();root.update()
                     self.assertEqual(note.note['shape'],shape);self.assertIsNotNone(note.paper)
                     alpha=bytes(note.paper.pixels)[3::4]
-                    self.assertIn(255,alpha);self.assertTrue(any(2<a<250 for a in alpha),'Actual GDI+ edge pixels must be antialiased')
+                    self.assertIn(255,alpha);self.assertTrue(any(40<a<250 for a in alpha),'Actual GDI+ edge pixels must be antialiased')
                     self.assertEqual(note.body.get('1.0','end-1c'),'Texte conservé')
                     w,h=note.window.winfo_width(),note.window.winfo_height()
                     paper_area=note.paper_area.winfo_width();self.assertGreater(paper_area,100)

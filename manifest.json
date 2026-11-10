@@ -273,7 +273,7 @@
     },
     {
       "path": "tracker_rituals.py",
-      "sha256": "5b58bc8aad4348d7d577564dd54dbc1416e54784c0996138726203367d5c87bc"
+      "sha256": "673f634e67992788379556742e414c870eb9043c684892bafa68440afb7d4b6b"
     },
     {
       "path": "updater.py",

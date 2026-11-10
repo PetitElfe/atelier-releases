@@ -167,12 +167,12 @@ def daily(c,day,tracker_window):
                              (row['id'],key)).fetchone()
             value=marked['value'] if marked else None
             done,amount=day_progress(row,value)
-            result.append({'board_id':board['id'],'board_title':board['title'],
+            result.append({'board_id':board['id'],'board_title':board['title'] or period['heading'],
                            'color':board['color'],'mark_day':key,'row_id':row['id'],'title':row['title'],
                            'mode':row['mode'],'target_count':row['target_count'],
                            'value':amount,'weekday':row['weekday'],'done':done,
                            'steps':steps_for_row(c,row['id'],key,key),
-                           'linked_type':row['linked_type'],'linked_id':row['linked_id']})
+                           'linked_type':row['linked_type'],'linked_id':row['linked_id'],**tracker_schedule.read(c,row)})
     return {'day':day.isoformat(),'items':result}
 
 def monthly_archive(c,now,months=60):
@@ -210,7 +210,7 @@ def monthly_archive(c,now,months=60):
                 completed+=count;available+=len(eligible)
                 details.append({'title':row['title'],'completed':count,'total':len(eligible)})
             if available:
-                results.append({'board_id':board['id'],'board_title':board['title'],
+                results.append({'board_id':board['id'],'board_title':board['title'] or period['heading'],
                                 'archived':bool(board['archived']),'month':label,
                                 'completed':completed,'total':available,'rows':details})
     return results

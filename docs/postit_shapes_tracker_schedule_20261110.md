@@ -1,6 +1,6 @@
 # Post-it et organisation des trackers — 10 novembre 2026
 
-Candidat Windows TEST 75708bc1 ; séquence 2026111007. Calendrier explicitement approuvé par Misu : ne pas modifier sa présentation. Android en pause, main/stable/Nathan protégés.
+Candidat Windows TEST 45cb9901 ; séquence 2026111007. Calendrier explicitement approuvé par Misu : ne pas modifier sa présentation. Android en pause, main/stable/Nathan protégés.
 
 Post-it : étoile, cœur et rond ajoutés aux formats existants. Papier natif en alpha prémultiplié/GDI+ antialiasé, ombre légère décalée en bas à droite ; plus de découpe binaire pour les contours normaux. Texte et commandes Tk restent dans une zone intérieure de la vraie forme. Coins arrondis optionnels et mémorisés dans desktop_postit_layout. Huit zones de redimensionnement accessibles au survol des coins/côtés avec curseurs double flèche ; la poignée permanente est retirée. Position/taille/texte/forme et verrouillage sont conservés. Le verrou bloque aussi le déplacement et les bords natifs. Pas de dessin IA ou de bibliothèque graphique à installer.
 
