@@ -46,13 +46,14 @@ class NoteFormatTests(unittest.TestCase):
     @unittest.skipUnless(os.name=='nt' and os.environ.get('GOBLIN_NATIVE_POSTIT_TEST')=='1','Requires isolated Windows desktop runner')
     def test_real_note_controls_drag_lock_format_save_and_reopen(self):
         import sqlite3
+        from contextlib import closing
         import tempfile
         import tkinter as tk
         from tkinter import messagebox
         from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as directory:
             db=Path(directory)/'notes.db'
-            with sqlite3.connect(db) as c:
+            with closing(sqlite3.connect(db)) as c, c:
                 c.execute("CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)")
                 c.execute("INSERT INTO home_postits VALUES(1,'Note témoin','Ligne un','sage','rounded',0,'fixture','fixture')")
             desktop_postits.create_layout_table(db)

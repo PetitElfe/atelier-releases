@@ -48,6 +48,7 @@ jobs:
           if-no-files-found: ignore
   windows:
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.13', '3.15']
     needs: browser
