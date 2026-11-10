@@ -87,3 +87,8 @@
 #studioBudget .studio-budget-help p{max-width:80ch}
 #studioBudget .studio-budget-columns{gap:24px 30px}
 #studioBudget .studio-add-line{border:0!important;background:#9ca98c20!important;font-size:20px;line-height:1.1;padding:5px!important;min-height:30px}
+
+#studioBudget .studio-jar{position:relative}
+#studioBudget .studio-jar>.studio-budget-options{position:absolute;right:8px;top:8px}
+#studioBudget .studio-budget-options{border:0;background:transparent;color:inherit;font-size:20px;min-width:28px;min-height:28px;padding:0 5px}
+#studioBudget .kitchen-row>.studio-budget-options{margin-left:auto}

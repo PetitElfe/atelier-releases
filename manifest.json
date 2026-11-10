@@ -337,7 +337,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "f212fe255e3503265d3a3acc96b1294501986a054e3a5a7a61fda36964ebad74"
+      "sha256": "71c5468c2daa1e6a81cdc3c2e417478c1047bb94830742e5c1b779fcc844a9de"
     },
     {
       "path": "public/studio_album.js",
@@ -349,7 +349,7 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "72f679915aa30a2f10a897fdc17c2707697a28d6258ff64cf484eca8130efe6a"
+      "sha256": "bbd87c2cf1b97f215e98cbeeba906e465ae5bf1aa6196294666b1822279145b2"
     },
     {
       "path": "public/grounding_cards.js",
