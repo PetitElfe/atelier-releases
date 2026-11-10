@@ -47,6 +47,11 @@ def find(label,scroll=True):
             return x2>x1 and y2>y1 and (70 if drawer_open else 270 if scroll else 20)<center<screen_bottom-(70 if drawer_open else 280 if scroll else 70)
         candidates=[n for n in tree.iter('node') if label in [n.attrib.get('text'),n.attrib.get('content-desc'),n.attrib.get('hint')] and visible(n)]
         if candidates:return candidates[0]
+        # 0.1.17 uses a contextual app-bar title, so its hidden h1 is absent
+        # from accessibility. The visible save command identifies the notes form.
+        if label=='Ma note avec hashtags' and any(n.attrib.get('text')=='Enregistrer la note' for n in tree.iter('node')):
+            fields=sorted([n for n in tree.iter('node') if n.attrib.get('class')=='android.widget.EditText' and visible(n)],key=lambda n:bounds(n)[1])
+            if fields:return fields[0]
         # The old release WebView exposes empty EditText accessibility labels.
         # Locate the fields in their observed named section and DOM order.
         contexts={'Ma note avec hashtags':('Mes notes',0),'Titre de ma note':('Nouvelle note',0),'Contenu de ma note':('Nouvelle note',2),'Nom du minuteur':('⏲ Mes minuteurs de cuisine',0),'Minutes':('⏲ Mes minuteurs de cuisine',1),'Secondes':('⏲ Mes minuteurs de cuisine',2)}
