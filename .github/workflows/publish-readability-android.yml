@@ -1,0 +1,53 @@
+name: Publish verified Android readability TEST
+on:
+  push:
+    branches: [test/publish-readability-android-20261110]
+    paths: ['.github/workflows/publish-readability-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.repository == 'PetitElfe/atelier-releases'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Require the exact successful candidate and verify its digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=42731006039
+          expected=f6d1d04ae8bd640fc58981f2b7be0d8c8e51b6fa
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Readability_016_Candidate --dir candidate
+          (cd candidate && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+      - name: Publish a distinct immutable TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/readability-notes.md <<'NOTES'
+          L’Atelier Android 0.1.16 TEST — interface lisible et cartes Ancrage.
+
+          Installe cet APK par-dessus L’Atelier existant, sans désinstaller : même paquet fr.atelierdugoblin.mobile, même certificat permanent, versionCode 115 → 116. La mise à jour sur émulateur retrouve une ancienne note et son texte entier.
+
+          Interface du téléphone harmonisée : titres et formulaires compacts, champs lisibles, boutons tactiles accessibles, réglages repliables qui restent ouverts pendant leur utilisation, connexion PC dans la bonne rubrique. Notes avec options visibles, hashtags, forme du Post-it uniquement pour la bonne destination ; ancien contenu distinct du titre préservé. Retour Android et brouillons conservés. Calendrier jour/semaine/mois/année et recette épinglée au-dessus de la navigation.
+
+          36 cartes Ancrage dans 8 catégories, adaptées de la fiche fournie par Misu (Dr Igor Thiriez, version 3.1 du 21/11/2021), avec attribution. Lecture, catégories, glissement, réponses facultatives privées et synchronisation volontaire vers le carnet mental Windows TEST. Compatible avec le build Windows e287ec69.
+
+          Validations : 8 écrans × 4 formats × 2 thèmes dans le navigateur ; vraie API Windows pour notes, albums, courses, sport, sauvegarde/restauration, coupure/reconnexion et conflits ; réponses Ancrage exclues du partage générique. Certificat et paquet vérifiés, remplacement signé sur émulateur, rappel et deux minuteurs nommés en arrière-plan avec écran éteint.
+
+          Les essais du stylet XP-Pen réel, du widget réellement placé, des sons entendus, des notifications sur les appareils de Misu et de Tailscale restent à réaliser. Aucun appareil réel ou canal stable modifié. Nutrition/assiette reste en proposition. Checklist actuelle dans le document de Misu.
+          NOTES
+          if gh release view android-test-v0.1.16 >/dev/null 2>&1; then
+            mkdir existing
+            gh release download android-test-v0.1.16 --pattern 'LAtelierDuGoblin-Mobile.apk*' --dir existing
+            (cd existing && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+            cmp candidate/LAtelierDuGoblin-Mobile.apk.sha256 existing/LAtelierDuGoblin-Mobile.apk.sha256
+            echo 'Existing immutable release matches the tested candidate.'
+            exit 0
+          fi
+          gh release create android-test-v0.1.16 candidate/* --prerelease --target f6d1d04ae8bd640fc58981f2b7be0d8c8e51b6fa --title 'Android TEST 0.1.16 — Lisibilité et Ancrage' --notes-file /tmp/readability-notes.md
