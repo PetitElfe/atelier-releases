@@ -1,6 +1,6 @@
 # Post-it et organisation des trackers — 10 novembre 2026
 
-Candidat Windows TEST d3f3dfb1 ; séquence 2026111007. Calendrier explicitement approuvé par Misu : ne pas modifier sa présentation. Android en pause, main/stable/Nathan protégés.
+Candidat Windows TEST 75708bc1 ; séquence 2026111007. Calendrier explicitement approuvé par Misu : ne pas modifier sa présentation. Android en pause, main/stable/Nathan protégés.
 
 Post-it : étoile, cœur et rond ajoutés aux formats existants. Papier natif en alpha prémultiplié/GDI+ antialiasé, ombre légère décalée en bas à droite ; plus de découpe binaire pour les contours normaux. Texte et commandes Tk restent dans une zone intérieure de la vraie forme. Coins arrondis optionnels et mémorisés dans desktop_postit_layout. Huit zones de redimensionnement accessibles au survol des coins/côtés avec curseurs double flèche ; la poignée permanente est retirée. Position/taille/texte/forme et verrouillage sont conservés. Le verrou bloque aussi le déplacement et les bords natifs. Pas de dessin IA ou de bibliothèque graphique à installer.
 
@@ -11,3 +11,5 @@ Jours : plusieurs jours par ligne, par exemple mardi/samedi. Rythme Chaque semai
 Nom du tableau facultatif : valeur vide stockée comme telle, titre affiché automatiquement d’après la période en français (Semaine 46, Deux semaines · 46–47, Novembre…). Le nom personnalisé reste conservé quand il est présent. L’ordre des onglets et du tiroir utilise des identifiants stables, pas leurs titres.
 
 Contrôles exigés : unités calendaires (changement d’année, jours multiples et parité), vraies API + Chromium (création sans titre, deux jours dans la semaine active, passage à chaque semaine sans perte des coches, refus d’un jour inactif, centrage, vrai drag/drop et F5). Windows Python 3.13/3.15 : vrais formats, pixels antialiasés et ombre, coins persistants, menus, sauvegarde/réouverture, lancement pythonw et affichage confirmé. Les images de rendu du papier sont jointes aux artefacts Windows de la CI. Résultats de livraison exacts dans le contexte Drive ; aucun essai sur le vrai écran de Misu n’est déduit de la CI.
+
+Le contrôle de non-régression Budget a aussi révélé une section Lignes supprimées refermée par une actualisation asynchrone : son ouverture est maintenant conservée lors des rafraîchissements, sans changer sa présentation ou ses données. Le kit et les essais de navigateur sont construits séparément afin que les essais Windows puissent commencer sans attendre les scénarios du navigateur ; toute la CI doit réussir avant livraison.

@@ -29,7 +29,7 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  assert.equal((await api('/api/budget/category-limits?month='+month))[0].spent_cents,0);
  assert.equal((await request('/api/budget/entries/'+once.id,'DELETE',{revision:old.revision})).status,409,'Stale deletion is rejected');
  assert.equal((await request('/api/budget/'+once.id+'/status','PUT',{status:'confirmed'})).status,409,'Old status writes cannot resurrect removed lines');
- await page.reload();await page.waitForFunction(()=>AtelierStudio.ready);await page.evaluate(()=>showView('budget'));await page.locator('.studio-budget-removed summary').click();
+ await page.reload();await page.waitForFunction(()=>AtelierStudio.ready);await page.evaluate(()=>showView('budget'));if(!await page.locator('.studio-budget-removed').evaluate(el=>el.open))await page.locator('.studio-budget-removed summary').click();
  await page.locator('.studio-budget-removed').getByRole('button',{name:'Restaurer',exact:true}).click();await row().waitFor();
  const restored=(await api('/api/budget?month='+month)).entries.find(e=>e.id===once.id);
  for(const key of ['status','scheduled_date','actual_date','amount_cents','notes','title'])assert.equal(restored[key],old[key],key+' survives restore');
@@ -42,7 +42,7 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  await page.evaluate(()=>loadBudget());assert.equal(await repeatRow().count(),0,'Deleted recurring occurrence stays removed');
  const future=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1).toLocaleDateString('sv-SE').slice(0,7);
  assert.equal((await api('/api/budget?month='+future)).entries.filter(e=>e.rule_id===rule.id).length,1,'Next month remains scheduled');
- await page.locator('.studio-budget-removed summary').click();await page.locator('.studio-budget-removed-row').filter({hasText:'Abonnement mensuel'}).getByRole('button',{name:'Restaurer'}).click();await repeatRow().waitFor();
+ if(!await page.locator('.studio-budget-removed').evaluate(el=>el.open))await page.locator('.studio-budget-removed summary').click();await page.locator('.studio-budget-removed-row').filter({hasText:'Abonnement mensuel'}).getByRole('button',{name:'Restaurer'}).click();await repeatRow().waitFor();
  await repeatRow().click({button:'right'});await page.getByRole('menuitem',{name:'Supprimer cette ligne',exact:true}).click();await page.locator('#studioFormHost select').selectOption('repeat');await page.getByRole('button',{name:'Arrêter la répétition',exact:true}).click();
  await page.waitForFunction(id=>budgetData.rules.find(r=>r.id===id)?.active===0,rule.id);assert.equal(await repeatRow().count(),1,'Stopping recurrence keeps the current historical row');
  await repeatRow().focus();await page.keyboard.press('Shift+F10');await page.getByRole('menuitem',{name:'Modifier',exact:true}).waitFor();await page.keyboard.press('Escape');

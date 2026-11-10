@@ -35,6 +35,19 @@ jobs:
       - run: node tools/desktop_repairs_browser_test.cjs
       - run: node tools/tracker_schedule_order_browser_test.cjs
       - run: node tools/preparations_tracker_home_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Postits_review_browser_evidence
+          path: artifacts
+          if-no-files-found: ignore
+  kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
       - uses: actions/upload-artifact@v4
         with:
@@ -43,18 +56,12 @@ jobs:
             dist/Goblin_MAJ_Windows_TEST_20261109.zip
             dist/Goblin_MAJ_Windows_TEST_20261109.zip.sha256
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Postits_review_browser_evidence
-          path: artifacts
-          if-no-files-found: ignore
   windows:
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.13', '3.15']
-    needs: browser
+    needs: kit
     runs-on: windows-latest
     timeout-minutes: 12
     env:
@@ -81,6 +88,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Postits_review_windows_${{ matrix.python-version }}_failure
+          name: Postit_shapes_windows_${{ matrix.python-version }}_evidence
           path: artifacts
           if-no-files-found: ignore
