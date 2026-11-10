@@ -12,6 +12,8 @@ async function until(fn){for(let n=0;n<150;n++){if(await fn())return;await new P
  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Paris'}).format(new Date()),board=await api('/api/tracker-boards','POST',{title:'Habitudes téléphone',color:'sage',period_unit:'months',period_count:1}),row=await api('/api/tracker-boards/'+board.id+'/rows','POST',{title:'Séance de marche',mode:'number',target_count:5});
  await api('/api/tasks','POST',{title:'Une tâche datée',due_date:today});await api('/api/tasks','POST',{title:'Une tâche sans échéance'});
  await api('/api/events','POST',{title:'Rendez-vous du jour',event_date:today,start_time:'15:00',end_time:'15:30',category:'general'});
+ await api('/api/events','POST',{title:'Rendez-vous simultané',event_date:today,start_time:'15:10',end_time:'16:00',category:'health'});
+ await api('/api/events','POST',{title:'Repère de journée',event_date:today,category:'personal'});
  const recipe=await api('/api/recipes','POST',{title:'Recette à garder',recipe:'Faire mijoter doucement',ingredients_json:JSON.stringify([{name:'Carotte',quantity:2,unit:'pièces'}])});const quarterly=await api('/api/tracker-boards','POST',{title:'Ménage trimestriel téléphone',color:'sage',period_unit:'years',period_count:1,mark_unit:'quarter'});await api('/api/tracker-boards/'+quarterly.id+'/rows','POST',{title:'Entretien trimestriel',mode:'check'});
  await save('album-phone','album',{title:'Album personnel',category:'Souvenirs',color:'#92ab86'});
  await save('page-phone','album-page',{album_id:'album-phone',title:'Page de départ',order:0,items:[],strokes:[]});
@@ -77,5 +79,23 @@ async function until(fn){for(let n=0;n<150;n++){if(await fn())return;await new P
  await deck.getByRole('combobox').selectOption('senses');assert.ok((await deck.locator('h3').innerText()).includes('Cinq choses'));
  for(const size of [{width:320,height:720},{width:740,height:390}]){await page.setViewportSize(size);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))}
  await page.setViewportSize({width:393,height:850});await page.screenshot({path:'artifacts/readability/grounding-phone.png'});
+ // Calendar layout is a real hourly grid, with overlaps and slot creation.
+ await open('calendar');await page.getByRole('tab',{name:'Semaine',exact:true}).click();
+ assert.equal(await page.locator('.studio-calendar-day-column').count(),7);assert.equal(await page.locator('.studio-calendar-slot').count(),168);const overlaps=await page.locator('.studio-calendar-event.timed').evaluateAll(nodes=>nodes.map(n=>({title:n.getAttribute('aria-label'),left:n.style.left,width:n.style.width})));assert.equal(overlaps.length,2);assert.notEqual(overlaps[0].left,overlaps[1].left,'Concurrent appointments occupy separate columns');assert.ok(overlaps.every(n=>n.width.includes('50%')));assert.equal(await page.locator('.studio-calendar-allday').count(),1);
+ await page.screenshot({path:'artifacts/readability/calendar-week.png'});
+ await page.getByRole('button',{name:'Aujourd’hui',exact:true}).click();assert.equal(await page.getByRole('tab',{name:'Semaine',exact:true}).getAttribute('aria-selected'),'true','Today keeps the chosen view');
+ await page.getByRole('tab',{name:'Mois',exact:true}).click();assert.ok(await page.locator('.studio-calendar-chip').count());await page.screenshot({path:'artifacts/readability/calendar-month.png'});
+ await page.getByRole('tab',{name:'Jour',exact:true}).click();const slot=page.locator('.studio-calendar-slot').nth(9);await slot.click();assert.equal(await page.locator('#studioFormHost [name=start_time]').inputValue(),'09:00');await page.evaluate(()=>window.__atelierHandleAndroidBack());
+ // Focus breathing keeps all settings and both visual modes without putting them on the session screen.
+ await page.evaluate(()=>{state.page='mental';mentalBreath=true;render();scrollTo(0,0)});
+ for(const size of [{width:393,height:850},{width:320,height:720},{width:740,height:390}]){
+  await page.setViewportSize(size);assert.equal(await page.locator('#mobileTabs').isVisible(),false);assert.equal(await page.locator('body>header').isVisible(),false);
+  assert.equal(await page.locator('#content select').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'Breathing has no page scroll');
+  for(const button of await page.locator('#content button').all()){const b=await button.boundingBox();assert.ok(b.x>=0&&b.x+b.width<=size.width+1&&b.y>=0&&b.y+b.height<=size.height+1,'Every session control is reachable')}
+ }
+ await page.setViewportSize({width:393,height:850});await page.getByRole('button',{name:'Commencer',exact:true}).click();await page.waitForTimeout(1200);assert.ok(await page.locator('.studio-breath-timeline progress').evaluate(n=>n.value)>1000);
+ await page.screenshot({path:'artifacts/readability/breathing-focus.png'});await page.getByRole('button',{name:'Mettre en pause',exact:true}).click();const paused=await page.locator('.studio-breath-timeline progress').evaluate(n=>n.value);await page.waitForTimeout(250);assert.equal(await page.locator('.studio-breath-timeline progress').evaluate(n=>n.value),paused);
+ await page.getByRole('button',{name:'Réglages de respiration',exact:true}).click();assert.equal(await page.getByRole('combobox',{name:'Forme de la respiration'}).inputValue(),'bar');await page.getByRole('combobox',{name:'Forme de la respiration'}).selectOption('circle');assert.equal(await page.locator('.mental-breath-stage').count(),1);assert.equal(await page.getByRole('dialog').count(),0);
+ await page.getByRole('button',{name:'Retour aux outils',exact:true}).click();assert.equal(await page.locator('#mobileTabs').isVisible(),true);
  assert.deepEqual(errors,[]);console.log('PASS: 8 screens × 4 viewports × 2 themes; readable fields, fit, real tab taps, structured settings, legacy notes, search, draft/native Back, Post-it destination floating recipe navigation and 36 supplied grounding cards with private phone/PC synchronization');
 }finally{if(browser)await browser.close();server.kill();fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

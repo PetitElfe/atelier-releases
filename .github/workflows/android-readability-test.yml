@@ -1,7 +1,7 @@
-name: Readable Android 0.1.16 signed candidate tests
+name: Mobile layout Android 0.1.17 signed candidate tests
 on:
   push:
-    branches: [test/android-readability-20261109]
+    branches: [test/mobile-native-layout-20261110]
 permissions:
   contents: read
   actions: read
@@ -69,10 +69,10 @@ jobs:
           test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || exit 1
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/atelier-release.jks"
           echo "ATELIER_SIGNING_FILE=$RUNNER_TEMP/atelier-release.jks" >> "$GITHUB_ENV"
-      - name: Build Android TEST 0.1.16 signed with the permanent certificate
+      - name: Build Android TEST 0.1.17 signed with the permanent certificate
         working-directory: mobile/android
         env:
-          RELEASE_VERSION: '0.1.16'
+          RELEASE_VERSION: '0.1.17'
           ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
           ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
           ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
@@ -88,23 +88,23 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           "$APKSIGNER" verify --verbose "$APK"
           "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
-          "$AAPT" dump badging "$APK" | grep -q "versionCode='116'"
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='117'"
           unzip -p "$APK" assets/index.html | grep -q 'goblinUpdateChannel'
-          echo 'APK 0.1.16 signed, correctly packaged, and contains the channel selector.'
-      - name: Download prior signed 0.1.15 TEST APK
+          echo 'APK 0.1.17 signed, correctly packaged, and contains the channel selector.'
+      - name: Download prior signed 0.1.16 TEST APK
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/old-022"
-          gh release download android-test-v0.1.15 --repo "${{ github.repository }}" --pattern "LAtelierDuGoblin-Mobile.apk*" --dir "$RUNNER_TEMP/old-022"
-          (cd "$RUNNER_TEMP/old-022" && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
-          test -s "$RUNNER_TEMP/old-022/LAtelierDuGoblin-Mobile.apk"
-      - name: Match Android identity, signer, and 0.1.15 to 0.1.16 upgrade
+          mkdir -p "$RUNNER_TEMP/old-016"
+          gh release download android-test-v0.1.16 --repo "${{ github.repository }}" --pattern "LAtelierDuGoblin-Mobile.apk*" --dir "$RUNNER_TEMP/old-016"
+          (cd "$RUNNER_TEMP/old-016" && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+          test -s "$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk"
+      - name: Match Android identity, signer, and 0.1.16 to 0.1.17 upgrade
         shell: bash
         run: |
           set -euo pipefail
-          OLD="$RUNNER_TEMP/old-022/LAtelierDuGoblin-Mobile.apk"
+          OLD="$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk"
           NEW=mobile/android/app/build/outputs/apk/release/app-release.apk
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
@@ -113,9 +113,9 @@ jobs:
           old_cert=$("$APKSIGNER" verify --print-certs "$OLD" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
           new_cert=$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
           test -n "$old_cert" && test "$old_cert" = "$new_cert"
-          "$AAPT" dump badging "$OLD" | grep -q "versionCode='115'"
-          "$AAPT" dump badging "$NEW" | grep -q "versionCode='116'"
-          echo "PASS: same signer, versionCode 115 -> 116, and stable application ID."
+          "$AAPT" dump badging "$OLD" | grep -q "versionCode='116'"
+          "$AAPT" dump badging "$NEW" | grep -q "versionCode='117'"
+          echo "PASS: same signer, versionCode 116 -> 117, and stable application ID."
       - name: Enable Android emulator acceleration
         shell: bash
         run: |
@@ -128,14 +128,14 @@ jobs:
           profile: pixel_4
           emulator-boot-timeout: 720
           script: |
-            GOBLIN_OLD_APK="$RUNNER_TEMP/old-022/LAtelierDuGoblin-Mobile.apk" python tools/utility_android_emulator_test.py
+            GOBLIN_OLD_APK="$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk" python tools/utility_android_emulator_test.py
       - name: Prepare reviewed candidate artifact
         run: |
           cp mobile/android/app/build/outputs/apk/release/app-release.apk LAtelierDuGoblin-Mobile.apk
           sha256sum LAtelierDuGoblin-Mobile.apk > LAtelierDuGoblin-Mobile.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: Goblin_Android_Readability_016_Candidate
+          name: Goblin_Android_Native_017_Candidate
           path: |
             LAtelierDuGoblin-Mobile.apk
             LAtelierDuGoblin-Mobile.apk.sha256
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 6f012c3303e7637c37aa7c539b4175b163d2cbac
+          ref: 0c5d179d470eacfa2fbdc16b4bb82b353a13fa6c
           path: pc
       - uses: actions/setup-python@v5
         with:
