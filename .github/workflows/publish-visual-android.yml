@@ -1,0 +1,50 @@
+name: Publish verified visual consistency Android TEST
+on:
+  push:
+    branches: [test/publish-visual-android-20261110]
+    paths: ['.github/workflows/publish-visual-android.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.repository == 'PetitElfe/atelier-releases'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Require the exact successful candidate and verify its digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          run=42859501217
+          expected=39c95cd92378cc1edae45de6dae021ad034bea35
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .head_sha)" = "$expected"
+          test "$(gh api repos/$GH_REPO/actions/runs/$run --jq .conclusion)" = success
+          mkdir candidate
+          gh run download "$run" --name Goblin_Android_Visual_018_Candidate --dir candidate
+          (cd candidate && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+      - name: Publish a distinct immutable TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/visual-notes.md <<'NOTES'
+          L’Atelier Android 0.1.18 TEST — textes lisibles et fenêtres flottantes.
+
+          Installe cet APK par-dessus L’Atelier existant, sans désinstaller : même paquet fr.atelierdugoblin.mobile, même certificat permanent, versionCode 117 → 118. Le canal TEST permet de recevoir cette préversion.
+
+          Les phrases de respiration restent lisibles en entier et disponibles en paysage. La consigne et la phrase partagent une zone qui peut défiler sans cacher les commandes de la séance. Le cercle, la barre, les ambiances, les phrases personnelles et les réglages sont conservés.
+
+          Le bouton + du calendrier se place au-dessus de la recette flottante, y compris quand elle est repliée ou dépliée. Les heures du calendrier ne sont plus coupées en haut de leur ligne. La grille Jour/Semaine, les vues Mois/Année, les menus, les notes et leurs données sont conservés.
+
+          Vérifié : navigateur, quatre tailles et deux thèmes, longue phrase ajoutée depuis le vrai formulaire, portrait/paysage, non-chevauchement recette/+ ; conservation et synchronisation des anciennes données ; signature permanente et remplacement 0.1.17 → 0.1.18 sur émulateur, rappel et deux minuteurs en arrière-plan écran éteint. Les validations sur les appareils réels restent à faire. Aucun appareil réel ni canal stable modifié ; main/master inchangé.
+          NOTES
+          if gh release view android-test-v0.1.18 >/dev/null 2>&1; then
+            mkdir existing
+            gh release download android-test-v0.1.18 --pattern 'LAtelierDuGoblin-Mobile.apk*' --dir existing
+            (cd existing && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+            cmp candidate/LAtelierDuGoblin-Mobile.apk.sha256 existing/LAtelierDuGoblin-Mobile.apk.sha256
+            exit 0
+          fi
+          gh release create android-test-v0.1.18 candidate/* --prerelease --target 39c95cd92378cc1edae45de6dae021ad034bea35 --title 'Android TEST 0.1.18 — Lisibilité et fenêtres flottantes' --notes-file /tmp/visual-notes.md
