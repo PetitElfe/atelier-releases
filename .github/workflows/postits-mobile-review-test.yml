@@ -1,7 +1,7 @@
 name: Post-it shapes and tracker schedules Windows TEST
 on:
   push:
-    branches: [test/postit-shapes-resize-20261110]
+    branches: [test/postit-resize-budget-opening-20261111]
 permissions:
   contents: read
 jobs:
@@ -22,6 +22,7 @@ jobs:
       - run: npm install --no-save playwright@1.62.1
       - run: npx playwright install --only-shell chromium
       - run: node tools/life_tools_browser_test.cjs
+      - run: node tools/budget_opening_browser_test.cjs
       - run: node tools/budget_calendar_clarity_browser_test.cjs
       - run: node tools/cycle_compact_browser_test.cjs
       - run: node tools/week_clarity_forecast_browser_test.cjs

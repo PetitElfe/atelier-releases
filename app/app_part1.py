@@ -214,6 +214,9 @@ CREATE TABLE IF NOT EXISTS budget_settings (
  id INTEGER PRIMARY KEY CHECK(id=1), opening_balance_cents INTEGER NOT NULL DEFAULT 0,
  opening_date TEXT NOT NULL DEFAULT '2026-01-01'
 );
+CREATE TABLE IF NOT EXISTS budget_month_openings (
+ month TEXT PRIMARY KEY, amount_cents INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1
+);
 CREATE TABLE IF NOT EXISTS budget_rules (
  id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL CHECK(kind IN ('income','fixed')),
  title TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Général',

@@ -144,6 +144,21 @@ def budget_materialize(c,month,ts):
           (debt['id'],due,debt['title'],installment,ts,due))
     c.commit()
 
+def budget_save_month_opening(c,body):
+    from decimal import Decimal
+    month=budget_month(body.get('month')).strftime('%Y-%m')
+    value=Decimal(str(body.get('amount','')).replace(',','.'))
+    amount=budget_amount(abs(value))*(-1 if value<0 else 1)
+    revision=body.get('revision')
+    if not isinstance(revision,int) or isinstance(revision,bool) or revision<0:raise ValueError('Révision du solde invalide.')
+    current=c.execute('SELECT revision FROM budget_month_openings WHERE month=?',(month,)).fetchone()
+    if (current['revision'] if current else 0)!=revision:raise LookupError('Ce solde a été modifié ailleurs. Recharge le budget avant de réessayer.')
+    if current:
+        changed=c.execute('UPDATE budget_month_openings SET amount_cents=?,revision=revision+1 WHERE month=? AND revision=?',(amount,month,revision)).rowcount
+        if changed!=1:raise LookupError('Ce solde a été modifié ailleurs. Recharge le budget.')
+    else:c.execute('INSERT INTO budget_month_openings(month,amount_cents) VALUES(?,?)',(month,amount))
+    return {'ok':True,'revision':revision+1}
+
 def budget_snapshot(c,month,ts):
     # Materialiser chronologiquement les mois depuis le solde de départ :
     # sinon un mois antérieur jamais ouvert fausserait le solde actuel.
@@ -167,6 +182,16 @@ def budget_snapshot(c,month,ts):
     settings=c.execute('SELECT * FROM budget_settings WHERE id=1').fetchone()
     opening=int(settings['opening_balance_cents']) if settings else 0
     start=settings['opening_date'] if settings else '2026-01-01'
+    # A monthly checkpoint supersedes earlier cash balances without changing
+    # any transaction or the snapshots of earlier months.
+    checkpoint=c.execute('SELECT * FROM budget_month_openings WHERE month<=? ORDER BY month DESC LIMIT 1',(first[:7],)).fetchone()
+    if checkpoint and (start>last or checkpoint['month']+'-01'>=start):
+        opening=int(checkpoint['amount_cents']);start=checkpoint['month']+'-01'
+    if start>last:opening=0;start=first
+    month_override=c.execute('SELECT * FROM budget_month_openings WHERE month=?',(first[:7],)).fetchone()
+    month_opening=opening+int(c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
+      FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed')
+      AND COALESCE(actual_date,scheduled_date)>=? AND COALESCE(actual_date,scheduled_date)<?""",(start,first)).fetchone()[0])
     # Le solde courant suit les confirmations et les charges présumées jusqu'à aujourd'hui.
     today=min(date.today().isoformat(),last)
     movement=c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
@@ -190,7 +215,8 @@ def budget_snapshot(c,month,ts):
         debt['repaid_cents']=paid;debt['remaining_cents']=max(0,debt['total_cents']-paid);debts.append(debt)
     return {'month':first[:7],'entries':entries,'removed_entries':removed,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
      'debts':debts,'opening_balance_cents':opening,'opening_date':start,'balance_cents':balance,
-     'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
+     'month_opening_balance_cents':month_opening,'month_opening_revision':month_override['revision'] if month_override else 0,
+     'month_opening_override':bool(month_override),'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
      'income_cents':sum(x['amount_cents'] for x in entries if x['kind']=='income' and x['status']!='skipped'),
      'expenses_cents':sum(x['amount_cents'] for x in entries if x['kind']=='expense' and x['status']!='skipped'),
      'pending_income':[x for x in pending if x['kind']=='income'],
@@ -1675,6 +1701,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'ok':True})
             except (KeyError,TypeError,ValueError) as ex:
                 return self._json({'error':str(ex)},400)
+        if p == '/api/budget/opening-balance':
+            try:
+                with conn() as c:
+                    result=budget_save_month_opening(c,body);c.commit()
+                return self._json(result)
+            except LookupError as ex:return self._json({'error':str(ex)},409)
+            except (ValueError,TypeError,ArithmeticError) as ex:return self._json({'error':str(ex)},400)
         if p == '/api/budget/settings':
             try:
                 opening=budget_amount(abs(float(str(body.get('opening_balance','0')).replace(',','.'))))

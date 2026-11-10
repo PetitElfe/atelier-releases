@@ -474,18 +474,21 @@ def _run_gui(on_ready=None):
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
                                  anchor="w", padx=10)
             self.hint.pack(fill="x", padx=12, pady=(0, 9))
-            self.menu = tk.Menu(self.window, tearoff=0)
+            menu_style=dict(tearoff=0,font=('Segoe UI',10),bg='#253128',fg='#ebeadd',activebackground='#455c45',activeforeground='#ffffff',borderwidth=1,relief='solid')
+            self.menu = tk.Menu(self.window, **menu_style)
+            self.menu.add_command(label='Modifier le texte',command=lambda:self.body.focus_set())
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
             self.menu.add_command(label="Mes archives…", command=self._show_archives)
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
-            colors_menu=tk.Menu(self.menu,tearoff=0)
+            colors_menu=tk.Menu(self.menu,**menu_style)
             for color_name in COLORS:
-                colors_menu.add_radiobutton(label=color_name,variable=self.color,value=color_name,command=self._change_color)
+                colors_menu.add_radiobutton(label={'gold':'Doré','sage':'Sauge','mauve':'Mauve','blue':'Bleu','pink':'Rose','red':'Rouge','peach':'Pêche','cream':'Crème','deep-blue':'Bleu profond','deep-green':'Vert profond'}.get(color_name,color_name),variable=self.color,value=color_name,command=self._change_color)
             self.menu.add_cascade(label="Couleur",menu=colors_menu)
-            shapes_menu=tk.Menu(self.menu,tearoff=0)
+            shapes_menu=tk.Menu(self.menu,**menu_style)
             for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210),("Étoile","star",540,540),("Cœur","heart",460,440),("Rond","circle",360,360)):
                 shapes_menu.add_command(label=label,command=lambda s=shape,w=width,h=height:self._change_format(s,w,h))
             self.menu.add_cascade(label="Format",menu=shapes_menu)
+            self.menu.add_command(label='Taille…',command=self._size_dialog)
             self.menu.add_checkbutton(label='Coins arrondis',variable=self.corners,command=self._change_corners)
             self.palette.pack_forget()
             self.delete_button.pack_forget()
@@ -517,7 +520,8 @@ def _run_gui(on_ready=None):
             self.window.configure(bg=TRANSPARENT)
             self.window.attributes('-transparentcolor',TRANSPARENT)
             self.window.bind('<Destroy>',self._destroy_paper,add='+')
-            self.window.bind('<Unmap>',lambda event:self.paper.hide() if event.widget==self.window and self.paper else None,add='+')
+            self.window.bind('<Unmap>',self._mapping_changed,add='+')
+            self.window.bind('<Map>',self._mapping_changed,add='+')
             root.after_idle(self._apply_shape)
 
         def _paper_menu(self,x,y):
@@ -528,6 +532,41 @@ def _run_gui(on_ready=None):
             if self.locked:return
             x,y,w,h=geometry
             self.window.geometry(f'{w}x{h}+{x}+{y}')
+
+        def _mapping_changed(self,event):
+            if event.widget!=self.window:return
+            # Windows/Tk can temporarily unmap the wrapper while resizing it.
+            # Do not hide its owner in the middle of that transition: hiding
+            # the owner would hide the editor too, with no subsequent redraw.
+            self.last_shaped_size=None
+            root.after_idle(self._sync_mapping)
+
+        def _sync_mapping(self):
+            if not self.window.winfo_exists() or not self.paper:return
+            if self.window.state()=='normal' and self.window.winfo_ismapped():self._apply_shape()
+            else:self.paper.hide()
+
+        def _size_dialog(self):
+            if self.locked:
+                self.hint.config(text='Déverrouille la position pour modifier la taille')
+                return
+            dialog=tk.Toplevel(self.window);dialog.title('Taille du Post-it');dialog.resizable(False,False)
+            dialog.transient(self.window)
+            values=[]
+            for row,(label,value) in enumerate([('Largeur (px)',self.window.winfo_width()),('Hauteur (px)',self.window.winfo_height())]):
+                tk.Label(dialog,text=label).grid(row=row,column=0,padx=12,pady=8,sticky='w')
+                entry=tk.Entry(dialog,width=10);entry.insert(0,str(value));entry.grid(row=row,column=1,padx=12,pady=8);values.append(entry)
+            def apply():
+                try:
+                    w,h=[int(e.get()) for e in values];mw,mh=minimum_size(self.note['shape'])
+                    if not(mw<=w<=1600 and mh<=h<=1400):raise ValueError(f'Largeur : {mw} à 1600 px ; hauteur : {mh} à 1400 px.')
+                except ValueError as error:
+                    messagebox.showerror('Taille du Post-it',str(error),parent=dialog);return
+                self._native_geometry((self.window.winfo_x(),self.window.winfo_y(),w,h))
+                self.last_shaped_size=None;root.after_idle(self._apply_shape);root.after_idle(self._save_geometry);dialog.destroy()
+            tk.Button(dialog,text='Annuler',command=dialog.destroy).grid(row=2,column=0,padx=12,pady=12)
+            tk.Button(dialog,text='Appliquer',command=apply).grid(row=2,column=1,padx=12,pady=12)
+            dialog.bind('<Return>',lambda _:apply());dialog.bind('<Escape>',lambda _:dialog.destroy());values[0].focus_set()
 
         def _destroy_paper(self,event):
             if event.widget==self.window and self.paper:self.paper.destroy();self.paper=None

@@ -67,6 +67,7 @@ class PaperBackdrop:
         bind(self.kernel,'GetModuleHandleW',[W.LPCWSTR],W.HMODULE)
         bind(self.user,'GetParent',[W.HWND],W.HWND)
         bind(self.user,'IsWindow',[W.HWND],W.BOOL)
+        bind(self.user,'IsWindowVisible',[W.HWND],W.BOOL)
         bind(self.user,'DefWindowProcW',[W.HWND,W.UINT,W.WPARAM,W.LPARAM],C.c_ssize_t)
         bind(self.user,'RegisterClassW',[C.POINTER(WndClass)],W.ATOM)
         bind(self.user,'CreateWindowExW',[W.DWORD,W.LPCWSTR,W.LPCWSTR,W.DWORD,C.c_int,C.c_int,C.c_int,C.c_int,W.HWND,W.HMENU,W.HINSTANCE,ptr],W.HWND)
@@ -176,13 +177,15 @@ class PaperBackdrop:
             # Almost transparent boundary makes all eight resize targets reachable,
             # including the empty corners around round/star/heart paper.
             for row in range(ch):
-                for col in (range(cw) if row<6 or row>=ch-6 else list(range(6))+list(range(cw-6,cw))):
+                for col in range(cw):
                     index=(row*cw+col)*4
                     if not self.pixels[index+3]:self.pixels[index+3]=1
             self.paint_key=key
         dest=W.POINT(x-MARGIN,y-MARGIN);size=W.SIZE(cw,ch);origin=W.POINT(0,0);blend=Blend(0,0,255,1)
         if not self.user.UpdateLayeredWindow(self.hwnd,None,C.byref(dest),C.byref(size),self.dc,C.byref(origin),0,C.byref(blend),2):raise C.WinError(C.get_last_error())
-        self.user.ShowWindow(self.hwnd,4)
+        # Repeated ShowWindow calls during captured mouse movement send owner
+        # visibility messages back into Tk. Only map a hidden paper once.
+        if not self.user.IsWindowVisible(self.hwnd):self.user.ShowWindow(self.hwnd,4)
 
     def raise_briefly(self):
         if self.destroyed:return

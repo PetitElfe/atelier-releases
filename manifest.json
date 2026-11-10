@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "9386cce01f41f3c8d3a454e2c2cc5bb127754196564ef78f3c8ad2a86ddeee9e"
+      "sha256": "fcccf813c31fdfe79d364f1834178c726dd5a841f9fc94d09b61abefd4852bca"
     },
     {
       "path": "app_part2.py",
-      "sha256": "33a4824ba9bed76768e7f81e5da441c7f8e66092522f1c65f5ab0896d6817ec6"
+      "sha256": "e7618f42cef662a610c589f68335f6a12ec62ff9686dba7a831b188006f41e49"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "4cc6c216ef8116984f194608960ab439afa96cd50b6e172d40066cd88949fecf"
+      "sha256": "6957f1f8c41a726a03d7f179811f0834749d65b7a9b530171de1d1625ac31ea4"
     },
     {
       "path": "desktop_shell.py",
@@ -337,7 +337,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "254a246d58abaaa526170ea559d1675c85c5b58f80402f0402f9799b25cb31f3"
+      "sha256": "7942a7817a582c7420aa9f40fd129ec9ad1f4f18cdd7886f9d3fee7fcc53fe09"
     },
     {
       "path": "public/studio_album.js",
@@ -349,7 +349,7 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "96eac9c85a62e67dc19f0d2fff440f508507cd89dc1b3a78b2e5c2bcfcbf7f07"
+      "sha256": "ff5fc6815b5a5915eff4faee63abcacc46ef78009039d09b1a2babd87da38d19"
     },
     {
       "path": "public/grounding_cards.js",
@@ -361,7 +361,7 @@
     },
     {
       "path": "native_postit_paper.py",
-      "sha256": "76c69853e63ee5a3dad3be12cff27568255ae6f457548f8d71b83d794aefb1a6"
+      "sha256": "425ea591270be5cb638cec8a29c0718e25910ea29d493bf95cc576e77679d925"
     },
     {
       "path": "tracker_schedule.py",
@@ -369,5 +369,5 @@
     }
   ],
   "notes": "TEST PC : Post-it étoile/cœur/rond, contours lissés, ombre légère, coins et bords redimensionnables ; trackers multi-jours et semaines alternées, titres français automatiques, To-do centrée, onglets/tiroir réordonnables. Calendrier conservé.",
-  "build_sequence": 2026111007
+  "build_sequence": 2026111101
 }

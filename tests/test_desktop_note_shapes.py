@@ -315,7 +315,7 @@ class NoteFormatTests(unittest.TestCase):
             try:
                 root.update();formats=note.menu.nametowidget(note.menu.entrycget('Format','menu'))
                 Path('artifacts').mkdir(exist_ok=True)
-                for label,shape in [('Étoile','star'),('Cœur','heart'),('Rond','circle'),('Feuille arrondie','rounded')]:
+                for label,shape in [('Étoile','star'),('Cœur','heart'),('Rond','circle'),('Feuille arrondie','rounded'),('Carré','square'),('Bandeau','pill')]:
                     formats.invoke(label);root.update();note._apply_shape();root.update()
                     self.assertEqual(note.note['shape'],shape);self.assertIsNotNone(note.paper)
                     alpha=bytes(note.paper.pixels)[3::4]
@@ -324,6 +324,28 @@ class NoteFormatTests(unittest.TestCase):
                     w,h=note.window.winfo_width(),note.window.winfo_height()
                     paper_area=note.paper_area.winfo_width();self.assertGreater(paper_area,100)
                     note.paper.save_png('artifacts/postit-'+shape+'.png')
+                    # Real Windows mouse capture, not just geometry arithmetic.
+                    # Hit an empty corner outside Tk's client rectangle for every
+                    # silhouette, grow and shrink repeatedly, then remap it.
+                    import ctypes,time
+                    user=note.paper.user
+                    user.SetCursorPos.argtypes=[ctypes.c_int,ctypes.c_int]
+                    user.mouse_event.argtypes=[ctypes.c_uint,ctypes.c_uint,ctypes.c_uint,ctypes.c_uint,ctypes.c_size_t]
+                    def pump():
+                        for _ in range(8):root.update();time.sleep(.015)
+                    for delta in (24,-18,30,-20):
+                        x,y,pw,ph=note.paper.geometry
+                        user.SetCursorPos(x+pw+7,y+ph+7);pump()
+                        user.mouse_event(2,0,0,0,0);pump()
+                        user.SetCursorPos(x+pw+7+delta,y+ph+7+delta);pump()
+                        user.mouse_event(4,0,0,0,0);pump()
+                        self.assertEqual(note.window.winfo_width(),pw+delta,'Real mouse resize must reach '+shape)
+                        self.assertTrue(note.window.winfo_ismapped())
+                        self.assertTrue(user.IsWindowVisible(note.paper.hwnd),'Paper must stay visible while resizing '+shape)
+                        self.assertEqual(note.body.get('1.0','end-1c'),'Texte conservé')
+                    note.window.withdraw();pump();note.window.deiconify();pump()
+                    self.assertTrue(user.IsWindowVisible(note.paper.hwnd),'Paper must return after a map transition')
+
                 # A real paper edge, with optional square/rounded corners and a faint shadow.
                 note.corners.set(False);note._change_corners();root.update();note._apply_shape()
                 self.assertFalse(note.paper.style[2]);note._save_geometry();note._close();root.update()

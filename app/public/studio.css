@@ -102,3 +102,5 @@
 .studio-weekdays input{width:15px;min-height:15px;margin:0}
 .studio-dragging{opacity:.45}
 .studio-drop-target{outline:1px dashed var(--gold);outline-offset:-2px}
+
+.studio-budget-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.studio-budget-opening{font-size:.9em;opacity:.8;margin:8px 0}

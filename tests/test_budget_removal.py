@@ -54,6 +54,29 @@ class BudgetRemovalTests(unittest.TestCase):
     def snapshot(self):
         return namespace['budget_snapshot'](self.c, self.month, 'test')
 
+    def test_month_opening_checkpoint_preserves_history_and_carries_forward(self):
+        self.entry(amount=1000)
+        before=self.snapshot()
+        next_month=date(self.month.year+(self.month.month==12),self.month.month%12+1,1)
+        save=namespace['budget_save_month_opening']
+        save(self.c,{'month':next_month.strftime('%Y-%m'),'amount':'125,50','revision':0});self.c.commit()
+        self.assertEqual(self.snapshot()['balance_cents'],before['balance_cents'])
+        after=namespace['budget_snapshot'](self.c,next_month,'test')
+        self.assertEqual(after['forecast_cents'],12550)
+        self.assertEqual(after['month_opening_balance_cents'],12550)
+        self.assertEqual(self.c.execute('SELECT count(*) FROM budget_entries').fetchone()[0],1)
+        with self.assertRaises(LookupError):save(self.c,{'month':next_month.strftime('%Y-%m'),'amount':0,'revision':0})
+        self.c.rollback()
+        save(self.c,{'month':next_month.strftime('%Y-%m'),'amount':0,'revision':1});self.c.commit()
+        self.assertEqual(namespace['budget_snapshot'](self.c,next_month,'test')['forecast_cents'],0)
+        save(self.c,{'month':next_month.strftime('%Y-%m'),'amount':'-20.10','revision':2});self.c.commit()
+        self.assertEqual(namespace['budget_snapshot'](self.c,next_month,'test')['forecast_cents'],-2010)
+        later=date(next_month.year+(next_month.month==12),next_month.month%12+1,1)
+        self.assertEqual(namespace['budget_snapshot'](self.c,later,'test')['forecast_cents'],-2010)
+        self.assertEqual(self.snapshot()['forecast_cents'],before['forecast_cents'])
+        for amount in ('NaN','Infinity','100000001','wrong'):
+            with self.assertRaises((ValueError,ArithmeticError)):save(self.c,{'month':next_month.strftime('%Y-%m'),'amount':amount,'revision':3})
+
     def test_remove_restore_preserves_every_state_date_note_and_receipt(self):
         for state in ('confirmed', 'presumed', 'pending', 'skipped'):
             with self.subTest(state=state):
