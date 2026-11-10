@@ -79,7 +79,9 @@ def hide_keyboard():
 
 def text(label,value):
     hide_keyboard()
-    for _ in range(2):adb('shell','input','swipe','520','420','520','1900','200')
+    # Return to the document start even when a new timer extends the page.
+    # Two swipes were insufficient after the first timer and skipped its name field.
+    for _ in range(6):adb('shell','input','swipe','520','420','520','1900','200')
     node=find(label);x1,y1,x2,y2=bounds(node);adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(.7);adb('shell','input','keyevent','123')
     for _ in range(min(30,len(node.attrib.get('text',''))+3)):adb('shell','input','keyevent','67')
     adb('shell','input','text',value.replace(' ','%s'));time.sleep(.4);hide_keyboard()
@@ -133,11 +135,11 @@ notice=adb('shell','dumpsys','notification','--noredact')
 assert 'Rappel de test Android' in notice,'General native reminder must fire with screen off'
 adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
 menu('Grimoire de recettes')
-for label,seconds in [('Utility_timer_A','40'),('Utility_timer_B','55')]:
+for label,seconds in [('Utility_timer_A','180'),('Utility_timer_B','200')]:
     text('Nom du minuteur',label);text('Minutes','0');text('Secondes',seconds);tap('＋ Démarrer ce minuteur');time.sleep(1)
 adb('shell','input','keyevent','3');adb('shell','input','keyevent','223')
 # The WebView is backgrounded and the screen is asleep during both triggers.
-for _ in range(12):time.sleep(5)
+for _ in range(42):time.sleep(5)
 notifications=adb('shell','dumpsys','notification','--noredact')
 Path('artifacts/android-native-notifications.txt').write_text(notifications,encoding='utf-8')
 assert 'Utility_timer_A' in notifications and 'Utility_timer_B' in notifications,'Both named native timer notifications must appear while the WebView is backgrounded'
