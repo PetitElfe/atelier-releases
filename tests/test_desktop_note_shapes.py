@@ -164,7 +164,9 @@ class NoteFormatTests(unittest.TestCase):
                     def guarded(fn):
                         def run():
                             try:fn()
-                            except BaseException as e:errors.append(repr(e));root.quit()
+                            except BaseException as e:
+                                import traceback
+                                errors.append(traceback.format_exc());root.quit()
                         return run
                     def windows():return [w for w in root.winfo_children() if isinstance(w,tk.Toplevel)]
                     def first_step():
@@ -177,7 +179,6 @@ class NoteFormatTests(unittest.TestCase):
                             self.assertEqual(windows(),[])
                             self.assertNotIn(ids[2],[r['id'] for r in originals['note_rows'](db)])
                             new=originals['create_note'](db,request_id='one-click');controls['target']=new;desktop_postits.wake(new)
-                    root.after(120,guarded(first_step))
                     if not reload:
                         def check_new():
                             # The poll starts after GUI/tray initialization, not
@@ -188,10 +189,12 @@ class NoteFormatTests(unittest.TestCase):
                             self.assertEqual(len(originals['note_rows'](db)),5,'Four retained notes plus one new note')
                             desktop_postits.wake(controls['target'])
                             root.after(2100,guarded(lambda:(self.assertEqual(len(windows()),1),controls['quit']())))
-                        root.after(200,guarded(check_new))
-                    root.after(12000,guarded(lambda:self.fail('Companion did not close safely')))
+                    def ready():
+                        root.after(120,guarded(first_step))
+                        if not reload:root.after(200,guarded(check_new))
+                        root.after(12000,guarded(lambda:self.fail('Companion did not close safely')))
                     with patch('tkinter.Tk',return_value=root),patch.object(sys,'argv',['desktop_postits.py','--note',str(controls.get('target',ids[2]))]):
-                        result=desktop_postits._run_gui()
+                        result=desktop_postits._run_gui(on_ready=ready)
                     self.assertEqual(errors,[])
                     self.assertEqual(result,{'visible_ids':[controls['target']]} if reload else False)
                     self.assertFalse((data/'runtime').exists())

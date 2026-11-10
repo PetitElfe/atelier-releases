@@ -330,7 +330,7 @@ def launch(note_id=None, *, show_all=False, visible_ids=None):
     return {"ok": True, "running": True, "already_running": False}
 
 
-def _run_gui():
+def _run_gui(on_ready=None):
     import tkinter as tk
     from tkinter import messagebox
     import msvcrt
@@ -922,6 +922,7 @@ def _run_gui():
         hotkey_cleanup = quick_capture_native.install(root, DATA, DB, on_postit=wake)
     except (OSError, RuntimeError, AttributeError, ImportError) as exc:
         print("Capture globale indisponible:", str(exc), flush=True)
+    if on_ready is not None:root.after_idle(on_ready)
     try:
         root.mainloop()
     finally:
@@ -931,6 +932,10 @@ def _run_gui():
         for widget in list(windows.values()):
             widget._save()
             widget._save_geometry()
+        # All callbacks belong to this GUI session. Never let a pending shape,
+        # geometry or polling callback survive destroying its Tk interpreter.
+        for callback in root.tk.call('after','info'):
+            root.after_cancel(callback)
         if tray is not None:
             tray.destroy()
         root.destroy()

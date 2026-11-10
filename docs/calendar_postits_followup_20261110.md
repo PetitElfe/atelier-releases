@@ -2,7 +2,7 @@
 
 Cette demande remplace les choix visuels du correctif cf19834e. Android reste en pause. Distribution personnelle TEST uniquement ; main et les données réelles ne sont pas modifiés.
 
-Build prévu : cd52f187, séquence 2026111005. Le contexte Drive consigne le commit immuable et le résultat de la CI avant livraison.
+Build prévu : 3cbae57d, séquence 2026111005. Le contexte Drive consigne le commit immuable et le résultat de la CI avant livraison.
 
 ## Calendrier
 
