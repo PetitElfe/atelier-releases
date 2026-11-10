@@ -62,7 +62,7 @@ class NoteFormatTests(unittest.TestCase):
             gui=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='_run_gui')
             klass=next(n for n in gui.body if isinstance(n,ast.ClassDef) and n.name=='NoteWindow')
             scope={**vars(desktop_postits),'tk':tk,'messagebox':messagebox,'root':root,'tray':object(),'closed':set(),'windows':{}}
-            for name in ('save_edit','save_layout','set_layout_lock','note_rows'):
+            for name in ('save_edit','save_layout','set_layout_lock','note_rows','delete_note'):
                 function=getattr(desktop_postits,name)
                 scope[name]=lambda *a,_fn=function,**k:_fn(*a,db_path=db,**k)
             scope['_update_in_progress']=lambda:False
@@ -78,7 +78,22 @@ class NoteFormatTests(unittest.TestCase):
             note._toggle_lock();root.update()
             note._drag_start(event(50,50));note._drag_move(event(190,190));root.update()
             self.assertEqual((note.window.winfo_x(),note.window.winfo_y()),position)
-            note._toggle_lock();note._change_format('pill',460,210);root.update()
+            note._toggle_lock()
+            # A real right-click must open one menu, not reopen on Toplevel.
+            calls=[]
+            original=note.menu.tk_popup
+            note.menu.tk_popup=lambda *args:calls.append(args)
+            note.title.event_generate('<Button-3>',x=8,y=8);root.update()
+            self.assertEqual(len(calls),1)
+            note.body.event_generate('<Button-3>',x=8,y=8);root.update()
+            self.assertEqual(len(calls),2)
+            note.menu.tk_popup=original
+            formats=note.menu.nametowidget(note.menu.entrycget('Format','menu'))
+            for label,shape,width in [('Carré','square',300),('Feuille arrondie','rounded',320),('Bandeau','pill',460)]:
+                formats.invoke(label);root.update()
+                self.assertEqual(note.note['shape'],shape)
+                self.assertEqual(desktop_postits.note_rows(db)[0]['shape'],shape)
+                self.assertEqual(note.window.winfo_width(),width)
             self.assertEqual(note.note['shape'],'pill');self.assertEqual(note.window.winfo_width(),460)
             note.body.insert('end','\nLigne deux');note._changed();self.assertTrue(note._save());note._save_geometry()
             note._close();root.update()
@@ -87,7 +102,16 @@ class NoteFormatTests(unittest.TestCase):
             reopened=scope['NoteWindow'](saved,0);root.update()
             self.assertEqual(reopened.body.get('1.0','end-1c'),'Ligne un\nLigne deux')
             self.assertEqual(reopened.window.winfo_width(),460);self.assertEqual(reopened.last_shaped_size[2],'pill')
-            reopened._close()
+            from unittest.mock import patch
+            with patch.object(messagebox,'askyesno',return_value=False):
+                reopened.menu.invoke('Supprimer définitivement…');root.update()
+            self.assertEqual(len(desktop_postits.note_rows(db)),1)
+            with patch.object(messagebox,'askyesno',return_value=True):
+                reopened.menu.invoke('Supprimer définitivement…');root.update()
+            self.assertFalse(reopened.window.winfo_exists())
+            self.assertEqual(desktop_postits.note_rows(db),[])
+            with closing(sqlite3.connect(db)) as c:
+                self.assertEqual(c.execute('SELECT count(*) FROM desktop_postit_layout').fetchone()[0],0)
             print('PASS: actual NoteWindow context menu, borderless format, move/lock/unlock, save and reopen on Windows')
 
 

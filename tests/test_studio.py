@@ -20,6 +20,23 @@ class StudioTests(unittest.TestCase):
   with self.assertRaises(LookupError):self.put('page','album-page',{'album_id':'album','title':'Version périmée','items':[],'strokes':[]},1)
   self.assertEqual(studio.objects(self.c,'album-page')[0]['data']['title'],'Page écrite')
   self.assertEqual(self.c.execute('SELECT count(*) FROM studio_history').fetchone()[0],1)
+ def test_tab_archiving_keeps_shared_boards_and_rejects_stale_revision(self):
+  self.c.executescript("CREATE TABLE tracker_boards(id INTEGER PRIMARY KEY,archived INTEGER,updated_at TEXT);INSERT INTO tracker_boards VALUES(1,0,'old'),(2,0,'old'),(3,0,'old');CREATE TABLE tracker_board_marks(row_id INTEGER,day TEXT,value TEXT);INSERT INTO tracker_board_marks VALUES(1,'2026-11-10','1');")
+  self.put('tab-a','tracker-tab',{'title':'Identique','board_ids':[1,2]})
+  self.put('tab-b','tracker-tab',{'title':'Identique','board_ids':[2,3]})
+  body={'operation_id':'archive-tab','action':'tracker-tab-archive','payload':{'id':'tab-a','revision':0,'board_ids':[1,2]}}
+  with self.assertRaises(LookupError):studio.command(self.c,body,{})
+  self.assertEqual(self.c.execute('SELECT sum(archived) FROM tracker_boards').fetchone()[0],0)
+  body['payload']['revision']=1
+  result=studio.command(self.c,body,{})
+  self.assertEqual(result['archived_board_ids'],[1]);self.assertEqual(studio.command(self.c,body,{}),result)
+  self.assertEqual([o['id'] for o in studio.objects(self.c,'tracker-tab')],['tab-b'])
+  self.assertEqual(self.c.execute('SELECT value FROM tracker_board_marks').fetchone()[0],'1')
+ def test_implicit_tab_cannot_archive_board_now_in_a_group(self):
+  self.c.executescript("CREATE TABLE tracker_boards(id INTEGER PRIMARY KEY,archived INTEGER,updated_at TEXT);INSERT INTO tracker_boards VALUES(1,0,'old');")
+  self.put('tab','tracker-tab',{'title':'Tableau partagé','board_ids':[1]})
+  with self.assertRaises(LookupError):studio.command(self.c,{'operation_id':'old-implicit','action':'tracker-tab-archive','payload':{'id':'board-1','revision':0,'board_ids':[1]}},{})
+  self.assertEqual(self.c.execute('SELECT archived FROM tracker_boards').fetchone()[0],0)
  def test_retry_does_not_create_second_album_and_payload_mismatch_is_refused(self):
   body={'operation_id':'same-operation','action':'save','payload':{'id':'album','kind':'album','revision':0,'data':{'title':'Original'}}}
   first=studio.command(self.c,body,{})

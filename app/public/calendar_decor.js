@@ -82,7 +82,15 @@
     };
     read();dialog.showModal();
   };
-  // Date navigation is useful when revisiting decorated months or old entries.
-  const header=document.getElementById('monthTitle')?.parentElement;
-  if(header){const label=document.createElement('label');label.className='calendar-jump-date';label.textContent='Aller au ';const input=document.createElement('input');input.type='date';input.setAttribute('aria-label','Aller à une date');input.onchange=()=>{if(!input.value)return;state.cursor=parseYMD(input.value);renderMonth();renderWeek()};label.append(input);header.append(label);const button=document.createElement('button');button.type='button';button.id='calendarDecorOpen';button.textContent='✎ Décorer';button.onclick=()=>openCalendarDecoration(ymd(state.cursor));header.append(button)}
+  // Navigation and decoration belong to the calendar's context menus.
+  window.openCalendarDateJump=function(day){
+    openModal('<h2>Aller à une date</h2><form id="calendarDateJumpForm" class="studio-form"><label>Date <input type="date" name="date" required></label><button type="submit">Afficher cette date</button><button type="button" id="calendarDateJumpCancel">Annuler</button></form>');
+    const form=document.getElementById('calendarDateJumpForm');form.elements.date.value=day;
+    form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;state.cursor=parseYMD(form.elements.date.value);closeModal();renderMonth();renderWeek()};
+    document.getElementById('calendarDateJumpCancel').onclick=closeModal;
+    form.elements.date.focus();
+  };
+  for(const id of ['monthTitle','weekTitle'])document.getElementById(id)?.addEventListener('contextmenu',event=>{
+    event.preventDefault();showAtelierContextMenu(event,[{label:'Aller à une date…',run:()=>openCalendarDateJump(ymd(state.cursor))}]);
+  });
 })();

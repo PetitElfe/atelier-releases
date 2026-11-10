@@ -266,7 +266,7 @@ function renderTrackerBoards(){
   if(lifeBoardArchivesVisible&&archiveRoot){
     if(!lifeArchivedBoards.length)archiveRoot.append(lifeNode('p','life-muted','Aucun tableau archivé.'));
     lifeArchivedBoards.forEach(board=>{
-      const item=lifeNode('div','tracker-archived-entry');
+      const item=lifeNode('div','tracker-archived-entry');item.dataset.archivedBoardId=board.id;
       const summary=board.archive_summary;
       item.append(lifeNode('strong','',board.title));
       if(summary){

@@ -39,6 +39,7 @@ function bindCalendarDateContextMenu(element,day,time=null){
     showAtelierContextMenu(event,[
       {label:'Nouveau rendez-vous',run:()=>openEventModal(null,day,time)},
       {label:'Règles',run:()=>openCycleQuickEditor(day,event)},
+      {label:'Aller à une date…',run:()=>openCalendarDateJump(day)},
       ...(typeof openCalendarDecoration==='function'?[{label:'Décorer ce jour / ce mois',run:()=>openCalendarDecoration(day)}]:[])
     ]);
   });

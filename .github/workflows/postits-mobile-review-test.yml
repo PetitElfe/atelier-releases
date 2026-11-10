@@ -1,7 +1,7 @@
-name: Calendar and visual consistency Windows TEST
+name: Desktop interaction repairs Windows TEST
 on:
   push:
-    branches: [test/visual-consistency-win-20261110]
+    branches: [test/desktop-repairs-20261110]
 permissions:
   contents: read
 jobs:
@@ -32,6 +32,7 @@ jobs:
       - run: node tools/tracker_layout_browser_test.cjs
       - run: node tools/tracker_ritual_browser_test.cjs
       - run: node tools/studio_browser_test.cjs
+      - run: node tools/desktop_repairs_browser_test.cjs
       - run: node tools/preparations_tracker_home_browser_test.cjs
       - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
       - uses: actions/upload-artifact@v4

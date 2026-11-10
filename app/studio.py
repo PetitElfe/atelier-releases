@@ -313,6 +313,28 @@ def command(c, body, context):
             cur=c.execute('INSERT INTO quick_captures(destination,body,created_at) VALUES(?,?,?)',(target if target in ('carnet','rappels','tracker') else 'carnet','#'+target+' '+text,stamp))
         else:raise ValueError('Destination inconnue.')
         result={'id':cur.lastrowid,'destination':target}
+    elif action == 'tracker-tab-archive':
+        oid=identity(data.get('id'))
+        active=objects(c,'tracker-tab')
+        tab=next((o for o in active if o['id']==oid),None)
+        ids=data.get('board_ids')
+        if not isinstance(ids,list) or any(type(i) is not int or i<1 for i in ids):
+            raise ValueError('Tableaux invalides.')
+        if tab:
+            if data.get('revision')!=tab['revision'] or ids!=tab['data'].get('board_ids',[]):
+                raise LookupError('Cet onglet a changé ailleurs ; actualise avant de le supprimer.')
+        elif not (len(ids)==1 and oid=='board-'+str(ids[0]) and data.get('revision')==0):
+            raise LookupError('Cet onglet n’existe plus ; actualise les trackers.')
+        shared={int(i) for o in active if o['id']!=oid for i in o['data'].get('board_ids',[])}
+        if not tab and shared.intersection(ids):
+            raise LookupError('Ce tableau appartient maintenant à un onglet ; actualise les trackers.')
+        archived=[]
+        for bid in ids:
+            if bid not in shared:
+                c.execute('UPDATE tracker_boards SET archived=1,updated_at=? WHERE id=? AND archived=0',(stamp,bid))
+                archived.append(bid)
+        if tab:save(c,{**tab,'archived':True},stamp)
+        result={'ok':True,'archived_board_ids':archived}
     elif action == 'board-title':
         row=c.execute('SELECT title FROM tracker_boards WHERE id=? AND archived=0',(int(data['id']),)).fetchone()
         if not row or row['title']!=data.get('base'):raise LookupError('Ce tableau a changé ailleurs.')

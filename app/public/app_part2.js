@@ -213,9 +213,15 @@ function renderMonth(){
       <button class="day-add" type="button" title="Ajouter un rendez-vous">+</button>`;
     const dateButton=cell.querySelector('.day-number');dateButton.removeAttribute('title');
     dateButton.setAttribute('aria-label','Voir les rendez-vous du '+fmtFrenchDate(d)+' · '+relative.description);
-    dateButton.addEventListener('mouseenter',()=>atelierShowRelativeDate(cell));
+    const hoverDate=event=>{
+      const target=document.elementFromPoint(event.clientX,event.clientY);
+      if(target?.closest('.event-pill,.calendar-month-event,.day-add,.more-btn'))atelierHideRelativeDate();
+      else if(atelierRelativeDateOwner!==cell)atelierShowRelativeDate(cell);
+    };
+    cell.addEventListener('mouseenter',hoverDate);
+    cell.addEventListener('pointermove',hoverDate,true);
     dateButton.addEventListener('focus',()=>atelierShowRelativeDate(cell));
-    dateButton.addEventListener('mouseleave',atelierHideRelativeDate);
+    cell.addEventListener('mouseleave',atelierHideRelativeDate);
     dateButton.addEventListener('blur',atelierHideRelativeDate);
     const allDayEvents=state.events.filter(e=>e.instance_date===ds);
     cell.querySelector('.day-list-toggle').addEventListener('click',()=>openDayList(ds,allDayEvents));
@@ -289,7 +295,7 @@ function renderWeek(){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';tl.style.gridColumn='1';tl.style.gridRow=String(hour+2);grid.appendChild(tl);
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');
-      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'');cell.style.gridColumn=String(i+2);cell.style.gridRow=String(hour+2);
+      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'')+(cycleShowMarksPreference()&&isRecordedCycleDay(ds)?' cycle-recorded':'');cell.style.gridColumn=String(i+2);cell.style.gridRow=String(hour+2);
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
       bindCalendarDateContextMenu(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);

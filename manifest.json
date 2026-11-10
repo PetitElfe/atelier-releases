@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "928cfba13537e5291c2aea3843f9be58b5293bb2bf90b524e53731f686a466be"
+      "sha256": "207648365a1e301c0b7c86a099d051c01c91e7186d3dbbf74983ba922651e6e2"
     },
     {
       "path": "desktop_shell.py",
@@ -77,7 +77,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "99d439a777a22a81eda5b0695ca17c37040393f24ba3aa2f0704849a4a44a0c5"
+      "sha256": "8eaf9945aa0f7ec5522fdd97a86b48cf98681df7d51a9faabef1bd2c1f56d0c8"
     },
     {
       "path": "public/app_part3.js",
@@ -93,15 +93,15 @@
     },
     {
       "path": "public/calendar_cycle_compact.js",
-      "sha256": "893b7f308f9243fd415c33b1d063ec8733b4de6263093c47ef00a299f15ff8ff"
+      "sha256": "1168867014a7e8e61bc9e6a55c75cef41d827755e43373d9fbddc62e7107ef80"
     },
     {
       "path": "public/calendar_decor.css",
-      "sha256": "168798431e14c7165ab1b6cc1d4a5c296778a3d7ce8c58e7110e8806f6277646"
+      "sha256": "90ee383655149274ba16d0f5e42e7a860668e0ab290d9b84d0b4c0090722c428"
     },
     {
       "path": "public/calendar_decor.js",
-      "sha256": "adcd5ddba990a6397c420984ace155cc3b84f48ac6e28c8013b0d7e6163b5f05"
+      "sha256": "fdb4a4cef8195f6a106648386327ac02ffe8f78cbbcb9fe781b14c32fee70e50"
     },
     {
       "path": "public/editor_flow.js",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "f41f291fc7d702efb05154e3e342fca52922902ce55766353a16c5511e84f2f6"
+      "sha256": "95386cb7c17080a9d01c96739b59a430d3e27d3e550fd84d224d0bd402e40e04"
     },
     {
       "path": "public/mental-health.html",
@@ -325,15 +325,15 @@
     },
     {
       "path": "studio.py",
-      "sha256": "7e0fa92737d9bdcb4bc3f18759b2ab5d1a35791c1348ed18ffd37967845446d7"
+      "sha256": "16023660c6eab88c1c6111e71cf09ece64dc9b526b4b2ffc48285af1233ff1ec"
     },
     {
       "path": "public/studio_core.js",
-      "sha256": "90641f449cede8916c71388cedd1aaa5492f9a0ecf09cceb38d9bd693d0654f0"
+      "sha256": "ff72684c1a58c9cec9176d2face8d5f58986cb5095a05797cfce4d10d55a551c"
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "4e6c16ed11c689ac00dd9ee181c4067e7bb0897f7388ebb695390ebcdebaff4a"
+      "sha256": "a738ab55b6991ce4f5b2b716664043b4926080f9dd1578653085f2773395b7cb"
     },
     {
       "path": "public/studio_budget.js",
@@ -360,6 +360,6 @@
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST : repères J−/J+ cohérents, infobulle discrète sur le numéro du jour sans masquer les rendez-vous ; menus et données conservés.",
-  "build_sequence": 2026111003
+  "notes": "TEST PC : infobulle au survol des cases, fonds rouge et rouge grisé du cycle, commandes du calendrier au clic droit, suppression récupérable des onglets Trackers et menu natif des Post-it corrigé.",
+  "build_sequence": 2026111004
 }

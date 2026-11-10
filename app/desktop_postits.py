@@ -559,6 +559,9 @@ def _run_gui():
                 self.menu.tk_popup(event.x_root, event.y_root)
             finally:
                 self.menu.grab_release()
+            # Stop Tk bindtag propagation: title/body and Toplevel both bind
+            # Button-3. Otherwise a second menu reopens after choosing an action.
+            return "break"
 
         def _insert_newline(self, _=None):
             self.body.insert("insert", "\n")

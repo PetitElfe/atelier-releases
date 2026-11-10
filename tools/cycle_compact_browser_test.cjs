@@ -30,7 +30,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.equal(await page.locator('#calendarCycleHint').count(),0);
   assert.equal(await page.locator('.cycle-module').count(),0);
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
-  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles','Décorer ce jour / ce mois']);
+  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles','Aller à une date…','Décorer ce jour / ce mois']);
   await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
   await page.locator('#cycleQuickEditor').waitFor({state:'visible'});
   const today=ymd(new Date());

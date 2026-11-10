@@ -39,7 +39,9 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>libraryNotebookState.domainId),other.id);
  await page.unroute('**/api/objective-library?node_id='+domain.id);
  await page.evaluate(()=>{showView('calendar');state.cursor=new Date(2026,10,3);renderMonth();renderWeek()});
- await page.evaluate(()=>openCalendarDecoration('2026-11-03'));
+ assert.equal(await page.locator('#calendarDecorOpen,.calendar-jump-date').count(),0,'No extra decoration/navigation header controls');
+ await page.locator('#monthGrid [data-date="2026-11-03"]').click({button:'right',position:{x:60,y:50}});
+ await page.getByRole('menuitem',{name:'Décorer ce jour / ce mois',exact:true}).click();
  const dlg=page.locator('#calendarDecorDialog');await dlg.locator('[name=scope]').selectOption('month');
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=4;c.height=4;c.getContext('2d').fillRect(0,0,4,4);return c.toDataURL('image/png').split(',')[1]});
  await dlg.locator('[name=image]').setInputFiles({name:'fixture.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
@@ -72,5 +74,10 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  const hoverCell=page.locator('#monthGrid .day-cell').nth(10);await hoverCell.locator('.day-number').hover();
  const centring=await page.evaluate(()=>{const cell=document.querySelectorAll('#monthGrid .day-cell')[10].getBoundingClientRect(),tip=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return Math.abs((cell.left+cell.right-tip.left-tip.right)/2)});
  assert.ok(centring<1,'Relative-day label centred on its actual text width');
+ await cell.click({button:'right',position:{x:60,y:50}});
+ await page.getByRole('menuitem',{name:'Aller à une date…',exact:true}).click();
+ await page.locator('#calendarDateJumpForm input').fill('2027-02-12');
+ await page.locator('#calendarDateJumpForm button[type=submit]').click();
+ assert.equal(await page.evaluate(()=>ymd(state.cursor)),'2027-02-12');
  assert.deepEqual(errors,[]);console.log('PASS: shelf, remembered page, guarded saves, domain race, monthly image, opacity, colour, overrides and reload');
 }finally{if(browser)await browser.close();server.kill();rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

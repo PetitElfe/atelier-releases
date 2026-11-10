@@ -55,7 +55,7 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  // A date hint must not obscure appointment labels or survive opening a dialog.
  await api('/api/events','POST',{title:'Événement témoin',event_date:shift(0),start_time:'14:00',end_time:'15:00'});
  await page.evaluate(async()=>{await refresh();showView('calendar');state.cursor=new Date();setCalendarMode('month')});
- const current=page.locator('#monthGrid .day-cell.today');await current.locator('.day-number').hover();await page.locator('#atelierRelativeDateFloat').waitFor({state:'visible'});
+ const current=page.locator('#monthGrid .day-cell.today');await current.waitFor({state:'visible'});const currentBox=await current.boundingBox();await current.hover({position:{x:70,y:currentBox.height-18}});await page.locator('#atelierRelativeDateFloat').waitFor({state:'visible'});
  await current.locator('.event-pill').hover();assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),false,'Hovering an event leaves its text clear');
  await current.locator('.day-number').focus();assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),true);await page.keyboard.press('Escape');assert.equal(await page.locator('#atelierRelativeDateFloat').isVisible(),false);
  // Predict a future date without altering the estimation algorithm.
@@ -63,7 +63,7 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  await page.evaluate(async()=>{await refreshOrganisation();showView('calendar');state.cursor=parseYMD(cycleEstimate().next);setCalendarMode('month')});
  await page.waitForFunction(()=>document.querySelector('#monthGrid .cycle-forecast .calendar-cycle-band')?.getBoundingClientRect().height>0);
  const marker=await page.evaluate(()=>{const el=document.querySelector('#monthGrid .cycle-forecast .calendar-cycle-band');const c=el.getBoundingClientRect(),parent=getComputedStyle(el.parentElement),s=getComputedStyle(el);return {width:c.width,height:c.height,text:el.textContent,label:el.getAttribute('aria-label'),border:s.borderBottomStyle,background:parent.backgroundImage,shadow:parent.boxShadow}});
- assert.ok(marker.width<=23&&marker.height<=4);assert.equal(marker.text,'');assert.match(marker.label,/Règles possibles/);assert.equal(marker.border,'dashed');assert.equal(marker.background,'none');assert.equal(marker.shadow,'none');
+ assert.ok(marker.width<=23&&marker.height<=4);assert.equal(marker.text,'');assert.match(marker.label,/Règles possibles/);assert.equal(marker.border,'dashed');assert.match(marker.background,/linear-gradient/);assert.equal(marker.shadow,'none');
  const cases=[{w:1862,root:1,view:1,body:1},{w:1280,root:.8,view:1,body:1},{w:1280,root:1,view:1.2,body:1},{w:1280,root:1,view:1,body:1.35},{w:768,root:1,view:1,body:1}];
  for(const sample of cases){
   await page.setViewportSize({width:sample.w,height:1000});
@@ -78,7 +78,7 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  await page.locator('#monthGrid .day-cell').nth(10).locator('.day-number').hover();await page.keyboard.press('Tab');await page.locator('#monthGrid').screenshot({path:'artifacts/calendar-discreet-forecast.png'});
  await page.evaluate(()=>setCalendarMode('week'));
  const week=await page.locator('#weekGrid .week-head.cycle-forecast').first().evaluate(el=>{const pseudo=getComputedStyle(el,'::after');return {width:pseudo.width,border:pseudo.borderBottomStyle}});assert.equal(week.width,'22px');assert.equal(week.border,'dashed');
- const slot=await page.evaluate(()=>{const style=el=>{const s=getComputedStyle(el);return [s.backgroundImage,s.backgroundColor]};return {forecast:style(document.querySelector('#weekGrid .week-slot.cycle-forecast')),ordinary:style(document.querySelector('#weekGrid .week-slot:not(.cycle-forecast):not(.week-current-day)'))}});assert.deepEqual(slot.forecast,slot.ordinary,'Forecast keeps the ordinary hourly grid without a day-long colour wash');
+ const slot=await page.evaluate(()=>{const style=el=>{const s=getComputedStyle(el);return [s.backgroundImage,s.backgroundColor]};return {forecast:style(document.querySelector('#weekGrid .week-slot.cycle-forecast')),ordinary:style(document.querySelector('#weekGrid .week-slot:not(.cycle-forecast):not(.week-current-day)'))}});assert.notEqual(slot.forecast[1],slot.ordinary[1],'Forecast has a grey-red background');assert.equal(slot.forecast[0],slot.ordinary[0],'Forecast preserves hourly grid lines');
  await page.evaluate(()=>{state.cursor=new Date(2026,10,17);setCalendarMode('month');renderMonth()});await page.clock.setFixedTime(new Date('2026-11-17T12:00:00'));await page.locator('#monthGrid [data-date="2026-11-13"] .day-number').hover();assert.equal(await page.locator('#atelierRelativeDateFloat').innerText(),'J+4');await page.screenshot({path:'artifacts/calendar-date-hint-fixed.png'});
  assert.deepEqual(errors,[]);console.log('PASS: visible edit/remove/restore, truthful cash/forecast/envelopes, receipts, stale-write guards, recurrence scopes, reload, one-off form and centered J labels at five viewport/zoom combinations; discreet month/week cycle indicators');
 }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('close',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});
