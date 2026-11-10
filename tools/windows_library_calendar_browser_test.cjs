@@ -69,7 +69,7 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  const predicted=page.locator('#monthGrid .day-cell.cycle-forecast').first();await predicted.waitFor();
  const band=await predicted.evaluate(el=>{const c=el.getBoundingClientRect(),b=el.querySelector('.calendar-cycle-band').getBoundingClientRect(),style=getComputedStyle(el);return {margin:style.marginTop,width:c.width,band:b.width}});
  assert.equal(band.margin,'0px');assert.ok(band.band<=26&&band.band<band.width/2,'Forecast is a small discreet indicator');
- const hoverCell=page.locator('#monthGrid .day-cell').nth(10);await hoverCell.hover();
+ const hoverCell=page.locator('#monthGrid .day-cell').nth(10);await hoverCell.locator('.day-number').hover();
  const centring=await page.evaluate(()=>{const cell=document.querySelectorAll('#monthGrid .day-cell')[10].getBoundingClientRect(),tip=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return Math.abs((cell.left+cell.right-tip.left-tip.right)/2)});
  assert.ok(centring<1,'Relative-day label centred on its actual text width');
  assert.deepEqual(errors,[]);console.log('PASS: shelf, remembered page, guarded saves, domain race, monthly image, opacity, colour, overrides and reload');
