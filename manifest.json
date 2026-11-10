@@ -361,7 +361,7 @@
     },
     {
       "path": "native_postit_paper.py",
-      "sha256": "425ea591270be5cb638cec8a29c0718e25910ea29d493bf95cc576e77679d925"
+      "sha256": "5f7830d32ece08af4d8d49fb193cc78b0415dd87fec67b67ef49ed24487cf1ca"
     },
     {
       "path": "tracker_schedule.py",
