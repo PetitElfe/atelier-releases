@@ -6,8 +6,8 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: goblin-android-readability-test
-  cancel-in-progress: false
+  group: goblin-android-native-layout-final
+  cancel-in-progress: true
 jobs:
   signed-test-prerelease:
     if: github.repository == 'PetitElfe/atelier-releases'

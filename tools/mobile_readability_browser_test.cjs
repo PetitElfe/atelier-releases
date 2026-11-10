@@ -45,6 +45,7 @@ async function until(fn){for(let n=0;n<150;n++){if(await fn())return;await new P
    if(size.width===393&&theme==='dark')await page.screenshot({path:'artifacts/readability/'+name+'.png'});
   }
  }
+ for(const width of [320,393,740]){await page.setViewportSize({width,height:850});await open('calendar');for(const mode of ['Semaine','Mois','Année']){await page.getByRole('tab',{name:mode,exact:true}).click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Calendar '+mode+' fits '+width);if(width===320&&mode==='Année')await page.screenshot({path:'artifacts/readability/calendar-year-small.png'});}await page.getByRole('tab',{name:'Jour',exact:true}).click();}
  await page.setViewportSize({width:393,height:850});await page.evaluate(()=>applyTheme('dark'));
  await open('jdr');assert.ok((await page.locator('#content').innerText()).includes('Ancien texte privé'),'A legacy note body different from its title is still displayed');
  const oldNote=page.locator('.studio-note-card').filter({hasText:'Ancienne note'});
