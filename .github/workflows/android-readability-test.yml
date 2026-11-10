@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 0c5d179d470eacfa2fbdc16b4bb82b353a13fa6c
+          ref: ee873dcb70ff29efa1d80ba272e04646cef74dba
           path: pc
       - uses: actions/setup-python@v5
         with:

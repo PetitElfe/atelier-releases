@@ -109,7 +109,7 @@ def launch():
 Path('artifacts').mkdir(exist_ok=True)
 adb('install','-r',str(OLD));launch();menu('Notes')
 legacy_tree=ET.tostring(nodes(),encoding='unicode')
-if 'Ma note avec hashtags' in legacy_tree or 'Conserver sur mon téléphone' in legacy_tree:
+if any(label in legacy_tree for label in ['Ma note avec hashtags','Conserver sur mon téléphone','Enregistrer la note']):
     text('Ma note avec hashtags','Legacy_before_utility_update Private_text_must_survive');tap('Enregistrer la note' if 'Enregistrer la note' in legacy_tree else 'Conserver sur mon téléphone')
 else:
     text('Titre de ma note','Legacy_before_utility_update');text('Contenu de ma note','Private_text_must_survive');tap('Enregistrer sur mon téléphone')
