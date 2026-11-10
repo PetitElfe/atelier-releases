@@ -1,7 +1,7 @@
-name: Desktop interaction repairs Windows TEST
+name: Calendar and Post-it follow-up Windows TEST
 on:
   push:
-    branches: [test/desktop-repairs-20261110]
+    branches: [test/calendar-postits-followup-20261110]
 permissions:
   contents: read
 jobs:

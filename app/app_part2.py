@@ -416,7 +416,10 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/desktop-postits/status':
             try:
                 desktop_postits._guard()
-                return self._json({'available':True,
+                needs_restart=False
+                try:desktop_postits.ensure_current_companion()
+                except RuntimeError:needs_restart=True
+                return self._json({'available':True,'needs_restart':needs_restart,
                                    'running':desktop_postits.is_running(),
                                    'startup':desktop_postits.startup_enabled()})
             except (RuntimeError,OSError) as exc:
@@ -972,11 +975,14 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({'ok':True,'startup':enabled})
                 if p.endswith('/new'):
                     desktop_postits._guard()
-                    note_id=desktop_postits.create_note()
-                    desktop_postits.launch()
+                    desktop_postits.ensure_current_companion()
+                    note_id=desktop_postits.create_note(request_id=body.get('operation_id'))
+                    desktop_postits.launch(note_id)
                     return self._json({'ok':True,'id':note_id},201)
-                return self._json(desktop_postits.launch())
-            except (RuntimeError,OSError) as exc:
+                note_id=body.get('note_id')
+                if note_id is not None and (type(note_id) is not int or note_id<1):return self._json({'error':'Post-it incorrect.'},400)
+                return self._json(desktop_postits.launch(note_id,show_all=note_id is None))
+            except (RuntimeError,OSError,ValueError) as exc:
                 return self._json({'error':str(exc)},409)
         if p == '/api/standalone-preparations':
             title=str(body.get('title') or '').strip()[:150]

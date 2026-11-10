@@ -182,15 +182,9 @@ function atelierShowRelativeDate(cell){
   let tip=document.getElementById('atelierRelativeDateFloat');
   if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';tip.setAttribute('role','tooltip');document.body.append(tip)}
   tip.textContent=cell.dataset.relativeDate;tip.setAttribute('aria-label',cell.dataset.relativeDescription);tip.hidden=false;atelierRelativeDateOwner=cell;cell.querySelector('.day-number')?.setAttribute('aria-describedby',tip.id);
-  // A fixed child's CSS coordinates also inherit zoom. Measure its actual unit
-  // instead of applying viewport coordinates as unscaled CSS pixels.
-  tip.style.left='0px';tip.style.top='0px';const origin=tip.getBoundingClientRect();
-  tip.style.left='100px';tip.style.top='100px';const probe=tip.getBoundingClientRect();
-  const scaleX=(probe.left-origin.left)/100||1,scaleY=(probe.top-origin.top)/100||1;
-  const bounds=cell.getBoundingClientRect(),width=origin.width,height=origin.height;
-  const left=Math.max(8,Math.min(window.innerWidth-width-8,bounds.left+(bounds.width-width)/2));
-  const above=bounds.top-height-6,top=above>=8?above:Math.min(window.innerHeight-height-8,bounds.bottom+6);
-  tip.style.left=(left-origin.left)/scaleX+'px';tip.style.top=(top-origin.top)/scaleY+'px';
+  // The day owns its hint, so inherited zoom cannot move it into another day.
+  cell.append(tip);
+  tip.style.left='';tip.style.top='';
 }
 window.addEventListener('resize',atelierHideRelativeDate);
 window.addEventListener('scroll',atelierHideRelativeDate,true);

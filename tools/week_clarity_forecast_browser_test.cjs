@@ -88,7 +88,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   },forecast.next);
   const forecastCell=page.locator('#monthGrid .day-cell.cycle-forecast-start');
   assert.ok(await forecastCell.count()>=1,'Future period shown in faint red');
-  assert.match(await forecastCell.first().locator('.calendar-cycle-band').getAttribute('title'),/Règles possibles/);assert.equal(await forecastCell.first().getAttribute('title'),null,'Forecast details stay on their discreet mark, without a duplicate cell tooltip');
+  assert.match(await forecastCell.first().getAttribute('aria-description'),/Règles possibles/);assert.equal(await forecastCell.first().getAttribute('title'),null,'Forecast has an accessible description without a second tooltip');
   await page.evaluate(async iso=>{
     state.cursor=parseYMD(iso);
     await refresh();

@@ -27,7 +27,7 @@ function renderCycleHeader(){
   const today=ymd(new Date()),recorded=isRecordedCycleDay(today);
   const chip=document.createElement('span');chip.className='calendar-cycle-chip goblin-cycle-chip';
   if(recorded){chip.textContent='Goblin grognon · règles en cours';chip.classList.add('is-goblin-window')}
-  else if(prediction){chip.textContent='Goblin grognon · J−'+prediction.approxDays+' avant les règles estimées';chip.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+' · estimation indicative, pas une prédiction des symptômes.'}
+  else if(prediction){chip.textContent='Goblin grognon · J−'+prediction.approxDays;chip.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+' · estimation indicative, pas une prédiction des symptômes.'}
   else {chip.textContent='Goblin grognon · estimation indisponible';chip.title='Enregistre au moins deux débuts de règles espacés de 21 à 45 jours.'}
   root.append(chip);
 }

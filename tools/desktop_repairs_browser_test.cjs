@@ -46,7 +46,26 @@ const action=(action,payload,operation_id=crypto.randomUUID())=>api('/api/studio
  assert.equal(styles.recorded.top,'0px');assert.equal(styles.recorded.bottom,'1px');
  await page.evaluate(()=>{state.cursor=parseYMD(cycleEstimate().next);renderMonth();setCalendarMode('month')});
  const forecast=await page.locator('#monthGrid .cycle-forecast').first().evaluate(el=>getComputedStyle(el).backgroundImage);
- assert.match(forecast,/155, 123, 133/,'Estimates use a muted grey-red wash');assert.notEqual(forecast,recorded);
- await page.locator('#calendarView').screenshot({path:'artifacts/desktop-calendar-grey-red.png'});
+ assert.match(forecast,/189, 81, 97, 0\.086/,'Estimates use the same red with lower opacity');assert.notEqual(forecast,recorded);
+ assert.equal(await page.locator('.calendar-cycle-band').count(),0);
+ assert.doesNotMatch(await page.locator('#calendarCycleSummary').innerText(),/avant les règles estimées/);
+ const forecastDay=await page.locator('#monthGrid .cycle-forecast').first().getAttribute('data-date');
+ const ordinaryDay=await page.locator('#monthGrid .day-cell:not(.cycle-forecast):not(.outside)').first().getAttribute('data-date');
+ for(const event_date of [forecastDay,ordinaryDay])await api('/api/events','POST',{title:'Même rendez-vous',event_date,start_time:'14:00',end_time:'15:00'});
+ await page.evaluate(()=>refresh());
+ const appearance=async day=>page.locator('#monthGrid [data-date="'+day+'"] .event-pill').evaluate(el=>{const s=getComputedStyle(el);return {height:el.getBoundingClientRect().height,padding:s.padding,lineHeight:s.lineHeight,font:s.font,border:s.borderWidth}});
+ assert.deepEqual(await appearance(forecastDay),await appearance(ordinaryDay),'Same appointment thickness on forecast and ordinary days');
+ await page.locator('#calendarView').screenshot({path:'artifacts/desktop-calendar-lighter-red.png'});
+ // Header creates exactly one note; all-notes reopening is a separate command.
+ const requests=[];
+ await page.route('**/api/desktop-postits/status',route=>route.fulfill({json:{available:true,running:true,startup:false}}));
+ await page.route('**/api/desktop-postits/new',async route=>{requests.push(route.request().postDataJSON());await new Promise(r=>setTimeout(r,200));await route.fulfill({status:201,json:{ok:true,id:99}})});
+ await page.evaluate(()=>{const button=document.getElementById('quickPostitsHeader');button.click();button.click();startDesktopPostits(true)});
+ await page.waitForFunction(()=>!desktopPostitsBusy&&!document.getElementById('quickPostitsHeader').disabled);
+ assert.equal(requests.length,1,'Double click/concurrent controls create only one request');
+ assert.match(requests[0].operation_id,/^[0-9a-f-]{36}$/);
+ await page.locator('#quickPostitsHeader').click();await page.waitForFunction(()=>!desktopPostitsBusy);
+ assert.equal(requests.length,2,'A later deliberate click creates one additional note');
+ assert.notEqual(requests[0].operation_id,requests[1].operation_id);
  assert.deepEqual(errors,[]);console.log('PASS: cancel/remove implicit and grouped tabs, identical titles, shared boards, F5 persistence, real archive restore with original marks');
 }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('close',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -61,24 +61,25 @@ const shift=(days)=>{const d=new Date();d.setDate(d.getDate()+days);return d.toL
  // Predict a future date without altering the estimation algorithm.
  await api('/api/cycle-periods','POST',{start_date:shift(-53),end_date:null});await api('/api/cycle-periods','POST',{start_date:shift(-25),end_date:null});
  await page.evaluate(async()=>{await refreshOrganisation();showView('calendar');state.cursor=parseYMD(cycleEstimate().next);setCalendarMode('month')});
- await page.waitForFunction(()=>document.querySelector('#monthGrid .cycle-forecast .calendar-cycle-band')?.getBoundingClientRect().height>0);
- const marker=await page.evaluate(()=>{const el=document.querySelector('#monthGrid .cycle-forecast .calendar-cycle-band');const c=el.getBoundingClientRect(),parent=getComputedStyle(el.parentElement),s=getComputedStyle(el);return {width:c.width,height:c.height,text:el.textContent,label:el.getAttribute('aria-label'),border:s.borderBottomStyle,background:parent.backgroundImage,shadow:parent.boxShadow}});
- assert.ok(marker.width<=23&&marker.height<=4);assert.equal(marker.text,'');assert.match(marker.label,/Règles possibles/);assert.equal(marker.border,'dashed');assert.match(marker.background,/linear-gradient/);assert.equal(marker.shadow,'none');
+ await page.locator('#monthGrid .cycle-forecast').first().waitFor();
+ assert.equal(await page.locator('.calendar-cycle-band').count(),0,'No cycle bars or dots');
+ const marker=await page.locator('#monthGrid .cycle-forecast').first().evaluate(el=>({label:el.getAttribute('aria-description'),background:getComputedStyle(el).backgroundImage,shadow:getComputedStyle(el).boxShadow}));
+ assert.match(marker.label,/Règles possibles/);assert.match(marker.background,/189, 81, 97/);assert.equal(marker.shadow,'none');
  const cases=[{w:1862,root:1,view:1,body:1},{w:1280,root:.8,view:1,body:1},{w:1280,root:1,view:1.2,body:1},{w:1280,root:1,view:1,body:1.35},{w:768,root:1,view:1,body:1}];
  for(const sample of cases){
   await page.setViewportSize({width:sample.w,height:1000});
   await page.evaluate(s=>{document.documentElement.style.zoom=String(s.root);document.body.style.zoom=String(s.body);document.querySelector('#calendarView').style.zoom=String(s.view)},sample);
   for(const index of [7,10,13]){
    const cell=page.locator('#monthGrid .day-cell').nth(index);await cell.locator('.day-number').hover();
-   const metrics=await cell.evaluate(el=>{const c=el.getBoundingClientRect(),t=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return {actual:t.left+t.width/2,expected:Math.max(8+t.width/2,Math.min(innerWidth-8-t.width/2,c.left+c.width/2)),left:t.left,right:t.right,width:innerWidth,tipTop:t.top,tipBottom:t.bottom,cellTop:c.top,cellBottom:c.bottom}});
-   assert.ok(Math.abs(metrics.actual-metrics.expected)<1,'Centered tooltip '+JSON.stringify({sample,metrics}));assert.ok(metrics.left>=7&&metrics.right<=metrics.width-7,'Tooltip stays within viewport');assert.ok(metrics.tipBottom<=metrics.cellTop-4||metrics.tipTop>=metrics.cellBottom+4,'Date hint never covers the day or its appointments');
+   const metrics=await cell.evaluate(el=>{const c=el.getBoundingClientRect(),t=document.getElementById('atelierRelativeDateFloat').getBoundingClientRect();return {actual:t.left+t.width/2,expected:c.left+c.width/2,left:t.left,right:t.right,width:innerWidth,tipTop:t.top,tipBottom:t.bottom,cellTop:c.top,cellBottom:c.bottom}});
+   assert.ok(Math.abs(metrics.actual-metrics.expected)<1,'Centered tooltip '+JSON.stringify({sample,metrics}));assert.ok(metrics.left>=7&&metrics.right<=metrics.width-7,'Tooltip stays within viewport');assert.ok(metrics.tipTop>=metrics.cellTop&&metrics.tipBottom<=metrics.cellBottom,'Date hint belongs inside its day');
   }
  }
  await page.evaluate(()=>{document.documentElement.style.zoom='1';document.body.style.zoom='1';document.querySelector('#calendarView').style.zoom='1'});await page.setViewportSize({width:1400,height:1000});
  await page.locator('#monthGrid .day-cell').nth(10).locator('.day-number').hover();await page.keyboard.press('Tab');await page.locator('#monthGrid').screenshot({path:'artifacts/calendar-discreet-forecast.png'});
  await page.evaluate(()=>setCalendarMode('week'));
- const week=await page.locator('#weekGrid .week-head.cycle-forecast').first().evaluate(el=>{const pseudo=getComputedStyle(el,'::after');return {width:pseudo.width,border:pseudo.borderBottomStyle}});assert.equal(week.width,'22px');assert.equal(week.border,'dashed');
- const slot=await page.evaluate(()=>{const style=el=>{const s=getComputedStyle(el);return [s.backgroundImage,s.backgroundColor]};return {forecast:style(document.querySelector('#weekGrid .week-slot.cycle-forecast')),ordinary:style(document.querySelector('#weekGrid .week-slot:not(.cycle-forecast):not(.week-current-day)'))}});assert.notEqual(slot.forecast[1],slot.ordinary[1],'Forecast has a grey-red background');assert.equal(slot.forecast[0],slot.ordinary[0],'Forecast preserves hourly grid lines');
+ const week=await page.locator('#weekGrid .week-head.cycle-forecast').first().evaluate(el=>getComputedStyle(el,'::after').content);assert.equal(week,'none');
+ const slot=await page.evaluate(()=>{const style=el=>{const s=getComputedStyle(el);return [s.backgroundImage,s.backgroundColor]};return {forecast:style(document.querySelector('#weekGrid .week-slot.cycle-forecast')),ordinary:style(document.querySelector('#weekGrid .week-slot:not(.cycle-forecast):not(.week-current-day)'))}});assert.notEqual(slot.forecast[1],slot.ordinary[1],'Forecast has a lighter red background');assert.equal(slot.forecast[0],slot.ordinary[0],'Forecast preserves hourly grid lines');
  await page.evaluate(()=>{state.cursor=new Date(2026,10,17);setCalendarMode('month');renderMonth()});await page.clock.setFixedTime(new Date('2026-11-17T12:00:00'));await page.locator('#monthGrid [data-date="2026-11-13"] .day-number').hover();assert.equal(await page.locator('#atelierRelativeDateFloat').innerText(),'J+4');await page.screenshot({path:'artifacts/calendar-date-hint-fixed.png'});
  assert.deepEqual(errors,[]);console.log('PASS: visible edit/remove/restore, truthful cash/forecast/envelopes, receipts, stale-write guards, recurrence scopes, reload, one-off form and centered J labels at five viewport/zoom combinations; discreet month/week cycle indicators');
 }finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('close',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

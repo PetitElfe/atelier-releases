@@ -9,6 +9,8 @@ from __future__ import annotations
 import datetime as dt
 from contextlib import contextmanager
 import json
+import hashlib
+import re
 import os
 from pathlib import Path
 import shutil
@@ -25,6 +27,7 @@ DB = DATA / "atelier.db"
 SCRIPT = CODE / "app" / "desktop_postits.py"
 LOCK = DATA / "desktop-postits.lock"
 WAKE = DATA / "desktop-postits-wake.txt"
+RUNTIME = DATA / "desktop-postits-runtime.json"
 AUTORUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 AUTORUN_NAME = "LAtelierDuGoblinPostitsTEST"
 COLORS = {
@@ -183,8 +186,15 @@ def set_layout_lock(note_id, locked, db_path=DB):
             raise ValueError("La position de cette note doit être enregistrée avant verrouillage.")
 
 
-def create_note(db_path=DB):
+def create_note(db_path=DB, request_id=None):
+    if request_id is not None and (not isinstance(request_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',request_id)):
+        raise ValueError('Identifiant de création invalide.')
     with _db(db_path) as c:
+        c.execute('CREATE TABLE IF NOT EXISTS desktop_postit_requests(id TEXT PRIMARY KEY,note_id INTEGER NOT NULL)')
+        c.execute('BEGIN IMMEDIATE')
+        if request_id:
+            previous=c.execute('SELECT note_id FROM desktop_postit_requests WHERE id=?',(request_id,)).fetchone()
+            if previous:return previous['note_id']
         count=c.execute("SELECT COUNT(*) FROM home_postits WHERE archived=0").fetchone()[0]
         if count>=100:
             raise ValueError("Archive quelques Post-it avant d'en ajouter.")
@@ -192,6 +202,7 @@ def create_note(db_path=DB):
         cur=c.execute("""INSERT INTO home_postits
             (title,body,color,shape,archived,created_at,updated_at)
             VALUES('Nouveau Post-it','','gold','rounded',0,?,?)""", (stamp,stamp))
+        if request_id:c.execute('INSERT INTO desktop_postit_requests VALUES(?,?)',(request_id,cur.lastrowid))
         return cur.lastrowid
 
 
@@ -278,25 +289,39 @@ def is_running():
             return False
 
 
-def wake():
-    # The companion checks this on its own clock; server may shut down now.
-    WAKE.write_text(str(time.time_ns()), encoding="ascii")
+def source_signature():
+    return hashlib.sha256(SCRIPT.read_bytes()).hexdigest()
 
 
-def launch():
+def ensure_current_companion():
+    if not is_running():return
+    try:
+        runtime=json.loads(RUNTIME.read_text(encoding='utf-8'))
+        if runtime.get('source')==source_signature():return
+    except (OSError,ValueError):pass
+    raise RuntimeError('Un ancien compagnon Post-it est encore ouvert. Près de l’horloge Windows, ouvre son icône puis « Quitter les Post-it ». Rouvre ensuite les Post-it dans L’Atelier. Aucune nouvelle note n’a été créée.')
+
+
+def wake(note_id=None, show_all=False, note_ids=None):
+    WAKE.write_text(json.dumps({'token':str(time.time_ns()),'note_id':note_id,'show_all':show_all,'note_ids':note_ids or []}), encoding="ascii")
+
+
+def launch(note_id=None, *, show_all=False, visible_ids=None):
     _guard()
+    ensure_current_companion()
     if is_running():
-        wake()
+        wake(note_id,show_all=show_all,note_ids=visible_ids)
         return {"ok": True, "running": True, "already_running": True}
     flags = (getattr(subprocess, "CREATE_NO_WINDOW", 0) |
              getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     env = os.environ.copy()
     env.update(ATELIER_DATA_DIR=str(DATA), ATELIER_PORT="8876")
     logfile = (DATA / "desktop-postits.log").open("ab", buffering=0)
+    arguments=(['--notes',','.join(map(str,visible_ids))] if visible_ids is not None else ['--note',str(note_id)] if note_id is not None else [] if show_all else ['--background'])
     # Never hold CODE/app as the working directory: Windows then refuses
     # to rename that folder during updates, even after the server stops.
     try:
-        subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(DATA),
+        subprocess.Popen([_pythonw(), str(SCRIPT)]+arguments, cwd=str(DATA),
                          env=env, stdin=subprocess.DEVNULL,
                          stdout=logfile, stderr=subprocess.STDOUT,
                          close_fds=True, creationflags=flags)
@@ -318,10 +343,14 @@ def _run_gui():
         wake()
         return
 
+    loaded_signature=source_signature()
+    RUNTIME.write_text(json.dumps({'pid':os.getpid(),'source':loaded_signature}),encoding='utf-8')
+    restart_requested=False
     create_layout_table()
     root = tk.Tk()
     root.withdraw()
-    closed = set()
+    initial_ids=({int(i) for i in sys.argv[sys.argv.index('--notes')+1].split(',') if i} if '--notes' in sys.argv else {int(sys.argv[sys.argv.index('--note')+1])} if '--note' in sys.argv else set() if '--background' in sys.argv else None)
+    closed = {n['id'] for n in note_rows() if initial_ids is not None and n['id'] not in initial_ids}
     windows = {}
     wake_value = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
     tray = None
@@ -428,6 +457,8 @@ def _run_gui():
             self.menu_button = tk.Button(self.header, text="···", relief="flat",
                                          font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
                                          padx=9, pady=3, cursor="hand2", command=self._open_menu)
+            self.close_button=tk.Button(self.header,text="×",relief="flat",font=("Segoe UI",14),bg=paper,fg=ink,padx=8,pady=3,cursor="hand2",command=self._delete)
+            self.close_button.pack(side="right")
             self.menu_button.pack(side="right")
             self.window.bind("<Button-3>", self._menu)
             self.title.bind("<Button-3>", self._menu)
@@ -440,8 +471,8 @@ def _run_gui():
             self.body.bind("<KP_Enter>", self._insert_newline)
             self.body.edit_modified(False)
             self.window.bind("<Configure>", self._geometry_changed)
-            self.window.protocol("WM_DELETE_WINDOW", self._close)
-            self.window.bind('<Alt-F4>', lambda _: self._close())
+            self.window.protocol("WM_DELETE_WINDOW", self._delete)
+            self.window.bind('<Alt-F4>', lambda _: (self._close(), 'break')[1])
             root.after_idle(self._apply_shape)
 
         def _open_menu(self):
@@ -546,8 +577,8 @@ def _run_gui():
                 self.hint.config(text="● Patiente jusqu’à la fin de la mise à jour")
                 return
             try:
-                create_note()
-                wake()
+                note_id=create_note()
+                wake(note_id)
             except (sqlite3.Error,OSError,ValueError) as error:
                 messagebox.showerror("Post-it", str(error), parent=self.window)
 
@@ -583,7 +614,7 @@ def _run_gui():
 
         def _change_color(self):
             paper, ink = COLORS[self.color.get()]
-            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.resize_grip,
+            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -640,7 +671,7 @@ def _run_gui():
             self.body.edit_modified(False)
             self.color.set(note["color"])
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
-            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.resize_grip,
+            for item in (self.window, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -781,7 +812,7 @@ def _run_gui():
                 return
             try:
                 if restore_note(rows[current[0]]["id"]):
-                    wake()
+                    wake(rows[current[0]]["id"])
                 dialog.destroy()
             except (sqlite3.Error,OSError,ValueError) as exc:
                 messagebox.showerror("Archives",str(exc),parent=dialog)
@@ -801,8 +832,8 @@ def _run_gui():
         if _update_in_progress():
             return
         try:
-            create_note()
-            wake()
+            note_id=create_note()
+            wake(note_id)
         except (sqlite3.Error,OSError,ValueError) as exc:
             messagebox.showerror("Post-it",str(exc),parent=root)
 
@@ -824,6 +855,7 @@ def _run_gui():
                 root.after_cancel(widget.geo_pending)
                 widget._save_geometry()
         root.quit()
+        return True
 
     try:
         from windows_tray import WindowsTray
@@ -836,10 +868,15 @@ def _run_gui():
         tray = None
 
     def sync():
-        nonlocal wake_value
+        nonlocal wake_value,restart_requested
         if _update_in_progress():
             root.after(1700, sync)
             return
+        try:
+            if source_signature()!=loaded_signature:
+                if quit_all():restart_requested=True;return
+                root.after(1700,sync);return
+        except OSError:pass
         try:
             import native_reminders
             native_reminders.tick()
@@ -847,7 +884,17 @@ def _run_gui():
         try:
             current_wake = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
             if current_wake != wake_value:
-                closed.clear()
+                try:request=json.loads(current_wake)
+                except ValueError:request={}
+                if not isinstance(request,dict):request={}
+                if request.get('show_all'):closed.clear()
+                targets={i for i in request.get('note_ids',[]) if type(i) is int}
+                target=request.get('note_id')
+                if type(target) is int:targets.add(target)
+                closed.difference_update(targets)
+                for note_id,widget in list(windows.items()):
+                    if request.get('show_all') or note_id in targets:
+                        widget.window.deiconify();widget.window.lift()
                 wake_value = current_wake
             rows = note_rows()
             ids = {row["id"] for row in rows}
@@ -888,6 +935,8 @@ def _run_gui():
             tray.destroy()
         root.destroy()
         lock_file.close()
+        RUNTIME.unlink(missing_ok=True)
+    return {'visible_ids':list(windows)} if restart_requested else False
 
 
 def _self_test():
@@ -956,4 +1005,5 @@ if __name__ == "__main__":
         _self_test()
     else:
         _guard()
-        _run_gui()
+        restart=_run_gui()
+        if restart:launch(visible_ids=restart['visible_ids'])

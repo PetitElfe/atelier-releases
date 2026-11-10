@@ -15,6 +15,24 @@ class NoteFormatTests(unittest.TestCase):
         self.assertEqual(desktop_postits.note_corner_radius('pill',460,210),44)
         self.assertLessEqual(desktop_postits.note_corner_radius('pill',40,30),15)
 
+    def test_creation_retry_and_old_companion_do_not_multiply_notes(self):
+        import tempfile,sqlite3,json
+        from contextlib import closing
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            db=Path(directory)/'notes.db'
+            with closing(sqlite3.connect(db)) as c,c:
+                c.execute('CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)')
+            first=desktop_postits.create_note(db,request_id='same-click')
+            self.assertEqual(first,desktop_postits.create_note(db,request_id='same-click'))
+            with closing(sqlite3.connect(db)) as c:self.assertEqual(c.execute('SELECT count(*) FROM home_postits').fetchone()[0],1)
+            runtime=Path(directory)/'runtime.json'
+            with patch.object(desktop_postits,'is_running',return_value=True),patch.object(desktop_postits,'RUNTIME',runtime),patch.object(desktop_postits,'source_signature',return_value='current'):
+                with self.assertRaisesRegex(RuntimeError,'ancien compagnon'):desktop_postits.ensure_current_companion()
+                runtime.write_text(json.dumps({'source':'old'}))
+                with self.assertRaisesRegex(RuntimeError,'ancien compagnon'):desktop_postits.ensure_current_companion()
+                runtime.write_text(json.dumps({'source':'current'}));desktop_postits.ensure_current_companion()
+
     @unittest.skipUnless(os.name=='nt' and os.environ.get('GOBLIN_NATIVE_POSTIT_TEST')=='1','Requires isolated Windows desktop runner')
     def test_actual_native_regions_on_open_change_resize_and_reopen(self):
         import ctypes
@@ -104,15 +122,78 @@ class NoteFormatTests(unittest.TestCase):
             self.assertEqual(reopened.window.winfo_width(),460);self.assertEqual(reopened.last_shaped_size[2],'pill')
             from unittest.mock import patch
             with patch.object(messagebox,'askyesno',return_value=False):
-                reopened.menu.invoke('Supprimer définitivement…');root.update()
+                reopened.close_button.invoke();root.update()
             self.assertEqual(len(desktop_postits.note_rows(db)),1)
             with patch.object(messagebox,'askyesno',return_value=True):
-                reopened.menu.invoke('Supprimer définitivement…');root.update()
+                reopened.close_button.invoke();root.update()
             self.assertFalse(reopened.window.winfo_exists())
             self.assertEqual(desktop_postits.note_rows(db),[])
             with closing(sqlite3.connect(db)) as c:
                 self.assertEqual(c.execute('SELECT count(*) FROM desktop_postit_layout').fetchone()[0],0)
             print('PASS: actual NoteWindow context menu, borderless format, move/lock/unlock, save and reopen on Windows')
+
+    @unittest.skipUnless(os.name=='nt' and os.environ.get('GOBLIN_NATIVE_POSTIT_TEST')=='1','Requires isolated Windows desktop runner')
+    def test_five_saved_notes_targeted_open_cross_delete_and_safe_reload(self):
+        import json,sqlite3,tempfile,tkinter as tk
+        from contextlib import closing,ExitStack
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            data=Path(directory);db=data/'notes.db';script=data/'companion.py'
+            script.write_text('# first version',encoding='utf-8')
+            with closing(sqlite3.connect(db)) as c,c:
+                c.execute('CREATE TABLE home_postits(id INTEGER PRIMARY KEY,title TEXT,body TEXT,color TEXT,shape TEXT,archived INTEGER,created_at TEXT,updated_at TEXT)')
+            desktop_postits.create_layout_table(db)
+            ids=[desktop_postits.create_note(db) for _ in range(5)]
+            originals={name:getattr(desktop_postits,name) for name in ('create_layout_table','note_rows','save_edit','save_layout','set_layout_lock','create_note','delete_note')}
+            controls={};errors=[]
+            class Tray:
+                def __init__(self,root,on_show,on_new,on_archives,on_quit,*args):controls.update(show=on_show,new=on_new,quit=on_quit)
+                def destroy(self):pass
+            def children(widget):
+                result=[]
+                for child in widget.winfo_children():result.append(child);result.extend(children(child))
+                return result
+            with ExitStack() as stack:
+                stack.enter_context(patch.multiple(desktop_postits,DATA=data,DB=db,SCRIPT=script,LOCK=data/'lock',WAKE=data/'wake',RUNTIME=data/'runtime',_update_in_progress=lambda:False))
+                for name,fn in originals.items():stack.enter_context(patch.object(desktop_postits,name,lambda *a,_fn=fn,**k:_fn(*a,db_path=db,**k)))
+                stack.enter_context(patch.dict(sys.modules,{'windows_tray':SimpleNamespace(WindowsTray=Tray),'native_reminders':SimpleNamespace(tick=lambda:None),'quick_capture_native':SimpleNamespace(install=lambda *a,**k:None)}))
+                stack.enter_context(patch('tkinter.messagebox.askyesno',return_value=True))
+                for reload in (False,True):
+                    root=tk.Tk();root.withdraw()
+                    def guarded(fn):
+                        def run():
+                            try:fn()
+                            except BaseException as e:errors.append(repr(e));root.quit()
+                        return run
+                    def windows():return [w for w in root.winfo_children() if isinstance(w,tk.Toplevel)]
+                    def first_step():
+                        self.assertEqual(len(windows()),1,'Targeted opening must not show five saved notes')
+                        if reload:
+                            body=next(w for w in children(windows()[0]) if isinstance(w,tk.Text));body.insert('end','Texte avant mise à jour');body.edit_modified(True)
+                            script.write_text('# second version',encoding='utf-8')
+                        else:
+                            next(w for w in children(windows()[0]) if isinstance(w,tk.Button) and w.cget('text')=='×').invoke()
+                            self.assertEqual(windows(),[])
+                            self.assertNotIn(ids[2],[r['id'] for r in originals['note_rows'](db)])
+                            new=originals['create_note'](db,request_id='one-click');controls['target']=new;desktop_postits.wake(new)
+                    root.after(120,guarded(first_step))
+                    if not reload:
+                        def check_new():
+                            self.assertEqual(len(windows()),1)
+                            self.assertEqual(len(originals['note_rows'](db)),5,'Four retained notes plus one new note')
+                            desktop_postits.wake(controls['target'])
+                        root.after(1900,guarded(check_new))
+                        root.after(3700,guarded(lambda:(self.assertEqual(len(windows()),1),controls['quit']())))
+                    root.after(12000,guarded(lambda:self.fail('Companion did not close safely')))
+                    with patch('tkinter.Tk',return_value=root),patch.object(sys,'argv',['desktop_postits.py','--note',str(controls.get('target',ids[2]))]):
+                        result=desktop_postits._run_gui()
+                    self.assertEqual(errors,[])
+                    self.assertEqual(result,{'visible_ids':[controls['target']]} if reload else False)
+                    self.assertFalse((data/'runtime').exists())
+                    if reload:self.assertEqual(next(r for r in originals['note_rows'](db) if r['id']==controls['target'])['body'],'Texte avant mise à jour')
+            print('PASS: five saved notes, one targeted window, real cross deletion, one new note, repeated wake without duplicates, safe reload with dirty text preserved')
+
 
 
 if __name__=='__main__':unittest.main()

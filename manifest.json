@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "18ab21137c5502d9ccbe87ee809718af2fd4b50dca915f78cf78113fea7ec06c"
+      "sha256": "2b70213bbc9f715932eeb0ff6109556c73d9223c80c489033f3e037311c1be07"
     },
     {
       "path": "app_part3.py",
@@ -37,7 +37,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "207648365a1e301c0b7c86a099d051c01c91e7186d3dbbf74983ba922651e6e2"
+      "sha256": "a40ea25162615eae76cd16645817d32ae3cfb7aa1973c09c6c72e6f069f88b2b"
     },
     {
       "path": "desktop_shell.py",
@@ -77,7 +77,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "8eaf9945aa0f7ec5522fdd97a86b48cf98681df7d51a9faabef1bd2c1f56d0c8"
+      "sha256": "ccb904ea37769ba226fb58a020d1334f73b13e451cfdf3248eae4306405492f2"
     },
     {
       "path": "public/app_part3.js",
@@ -93,15 +93,15 @@
     },
     {
       "path": "public/calendar_cycle_compact.js",
-      "sha256": "1168867014a7e8e61bc9e6a55c75cef41d827755e43373d9fbddc62e7107ef80"
+      "sha256": "daaa26f6e8a89155d12cf58d6a64e8c98befb63daaeebc153669c60b6dc99a91"
     },
     {
       "path": "public/calendar_decor.css",
-      "sha256": "90ee383655149274ba16d0f5e42e7a860668e0ab290d9b84d0b4c0090722c428"
+      "sha256": "1664914e8dfb063cb51e35022d325372adc3f15d843ee59f302f5c5320107098"
     },
     {
       "path": "public/calendar_decor.js",
-      "sha256": "fdb4a4cef8195f6a106648386327ac02ffe8f78cbbcb9fe781b14c32fee70e50"
+      "sha256": "058c30e4a618224eab6254b7fe1a3938a92e36e95b49606ff370b8b42278bcd6"
     },
     {
       "path": "public/editor_flow.js",
@@ -121,7 +121,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "a4864f45474efdf5e263dce7084be65fec28e6c73cd17ecdc21871b17f13ad0e"
+      "sha256": "361bf8bfc64e48885c560a1e0495c92e6774e488d3684ccfebcebb2f475bdff8"
     },
     {
       "path": "public/interface_reference.css",
@@ -209,7 +209,7 @@
     },
     {
       "path": "public/postits.js",
-      "sha256": "5e48a77bbd412e4d5a960df336cff7210fbbc5a2da4d9b223639ab3fe8e30ce4"
+      "sha256": "13b970bf4823e81073fafe9863828c32d76852cb26e70f5195e6b19a189a1e04"
     },
     {
       "path": "public/progression_view.js",
@@ -360,6 +360,6 @@
       "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
     }
   ],
-  "notes": "TEST PC : infobulle au survol des cases, fonds rouge et rouge grisé du cycle, commandes du calendrier au clic droit, suppression récupérable des onglets Trackers et menu natif des Post-it corrigé.",
-  "build_sequence": 2026111004
+  "notes": "TEST PC : rendez-vous de même épaisseur, infobulle dans le jour, cycle en rouge léger sans traits, Goblin grognon raccourci ; création ciblée des Post-it, suppression par la croix et contrôle du compagnon chargé.",
+  "build_sequence": 2026111005
 }

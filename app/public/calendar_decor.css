@@ -1,14 +1,11 @@
-#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 12px!important;border-radius:0}
+#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 26px!important;border-radius:0}
 #monthGrid .calendar-decoration{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;pointer-events:none;z-index:-1}
-/* Subtle day tint; the small solid/dashed mark also distinguishes the states. */
-#monthGrid .calendar-cycle-band{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:26px;height:4px;min-height:0;padding:0;box-sizing:border-box;border-radius:2px;background:#b97583;pointer-events:auto}
-#monthGrid .cycle-forecast .calendar-cycle-band{width:22px;height:3px;background:transparent;border:0;border-bottom:2px dashed #b5929d;opacity:.65;border-radius:0}
-#monthGrid .day-cell.cycle-forecast,#monthGrid .day-cell.cycle-forecast-start{background:linear-gradient(#9b7b8524,#9b7b8524),var(--panel);box-shadow:none;border-top:0}
+/* One red hue: lighter for estimates; no decorative cycle marks. */
+#monthGrid .day-cell.cycle-forecast,#monthGrid .day-cell.cycle-forecast-start{background:linear-gradient(#bd516116,#bd516116),var(--panel);box-shadow:none;border-top:0}
 #monthGrid .day-cell.cycle-recorded{background:linear-gradient(#bd51612c,#bd51612c),var(--panel);box-shadow:none}
-#weekGrid .week-slot.cycle-forecast{background-color:#34292b}
-#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:#39312f}
-#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:#34292b;border-bottom:1px solid #605744}
-#weekGrid .week-head.cycle-forecast::after{content:'';position:absolute;width:22px;left:50%;bottom:3px;transform:translateX(-50%);border-bottom:2px dashed #b5929d;opacity:.65;pointer-events:none}
+#weekGrid .week-slot.cycle-forecast{background-color:#302725}
+#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:#352d28}
+#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:#302725;border-bottom:1px solid #605744}
 #atelierRelativeDateFloat{transform:none;text-align:center;white-space:nowrap}
 .calendar-decor-dialog{width:min(440px,90vw);max-height:90vh;overflow:auto;background:#292d26;color:#eee5d4;border:1px solid #8ca083;border-radius:14px;padding:22px}
 .calendar-decor-dialog::backdrop{background:#0009}
@@ -28,7 +25,7 @@
 #monthGrid .day-cell.cycle-forecast{border-left:0}
 #weekGrid .cycle-forecast{margin:0;border-radius:0}
 #weekGrid .week-slot.cycle-forecast{padding:0;border-left:0}
-@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 12px!important}}
+@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 24px!important}}
 
 #atelierRelativeDateFloat{padding:4px 8px;border-radius:5px;font-size:11px;box-shadow:0 2px 8px #0005}
 
@@ -40,3 +37,8 @@
 #weekGrid .week-slot,#weekGrid .time-label{border-top:0!important;border-bottom:1px solid var(--line)!important}
 #weekGrid .week-slot.cycle-forecast{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.35) 50%,transparent 51%)}
 #weekGrid .week-slot.cycle-forecast.week-current-day{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.40) 50%,transparent 51%),linear-gradient(90deg,rgba(207,171,92,.095),rgba(207,171,92,.045))}
+#monthGrid .day-cell{line-height:1.3}
+#monthGrid .day-cell .event-pill{line-height:1.2}
+#weekGrid .week-head.cycle-forecast{line-height:1.25}
+#weekGrid .week-head.cycle-forecast::after{content:none}
+#atelierRelativeDateFloat{position:absolute;left:50%;top:auto;bottom:5px;transform:translateX(-50%);max-width:calc(100% - 12px);box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;line-height:1.2;z-index:4}

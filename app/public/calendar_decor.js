@@ -19,9 +19,8 @@
       }
       const color=individual.color||monthly.color;
       if(/^#[0-9a-f]{6}$/i.test(color||''))cell.querySelector('.day-number').style.color=color;
-      if(cell.classList.contains('cycle-recorded')||cell.classList.contains('cycle-forecast')){
-        const band=document.createElement('span');band.className='calendar-cycle-band';const label=cell.classList.contains('cycle-recorded')?'Règles enregistrées':cell.dataset.cycleForecast;band.setAttribute('role','img');band.setAttribute('aria-label',label);band.title=label;cell.append(band);
-      }
+      if(cell.classList.contains('cycle-recorded'))cell.setAttribute('aria-description','Règles enregistrées');
+      else if(cell.classList.contains('cycle-forecast'))cell.setAttribute('aria-description',cell.dataset.cycleForecast);
     });
   };
   window.openCalendarDecoration=function(day){
