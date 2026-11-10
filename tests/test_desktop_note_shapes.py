@@ -180,11 +180,15 @@ class NoteFormatTests(unittest.TestCase):
                     root.after(120,guarded(first_step))
                     if not reload:
                         def check_new():
+                            # The poll starts after GUI/tray initialization, not
+                            # when the test created the root. Wait for the real
+                            # observable note instead of racing that first tick.
+                            if not windows():root.after(80,guarded(check_new));return
                             self.assertEqual(len(windows()),1)
                             self.assertEqual(len(originals['note_rows'](db)),5,'Four retained notes plus one new note')
                             desktop_postits.wake(controls['target'])
-                        root.after(1900,guarded(check_new))
-                        root.after(3700,guarded(lambda:(self.assertEqual(len(windows()),1),controls['quit']())))
+                            root.after(2100,guarded(lambda:(self.assertEqual(len(windows()),1),controls['quit']())))
+                        root.after(200,guarded(check_new))
                     root.after(12000,guarded(lambda:self.fail('Companion did not close safely')))
                     with patch('tkinter.Tk',return_value=root),patch.object(sys,'argv',['desktop_postits.py','--note',str(controls.get('target',ids[2]))]):
                         result=desktop_postits._run_gui()
