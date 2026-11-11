@@ -39,7 +39,7 @@
   };
   restore();new MutationObserver(restore).observe(root,{childList:true});
  };
- const drawer=document.querySelector('#sideNav .side-nav-links');if(drawer)S.reorder(drawer,()=>[...drawer.querySelectorAll('button:not(#renameNavButton)')],n=>n.dataset.view||n.id,'atelier-drawer-order');
+ const drawer=document.querySelector('#sideNav .side-nav-links');if(drawer)S.reorder(drawer,()=>[...drawer.querySelectorAll('button:not(#renameNavButton)')],n=>n.id==='openMentalNotebook'?n.id:n.dataset.view||n.id,'atelier-drawer-order');
  S.color=v=>/^#[0-9a-f]{6}$/i.test(v||'')?v:'#91a98d';
  S.refresh().catch(S.error);
 })();
