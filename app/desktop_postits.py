@@ -532,6 +532,9 @@ def _run_gui(on_ready=None):
             if self.locked:return
             x,y,w,h=geometry
             self.window.geometry(f'{w}x{h}+{x}+{y}')
+            self.window.update_idletasks()
+            if self.shape_pending:root.after_cancel(self.shape_pending);self.shape_pending=None
+            self._apply_shape()
 
         def _mapping_changed(self,event):
             if event.widget!=self.window:return
@@ -807,8 +810,7 @@ def _run_gui(on_ready=None):
         def _geometry_changed(self, event):
             if event.widget != self.window or self.window.state() != "normal":
                 return
-            if self.shape_pending:root.after_cancel(self.shape_pending)
-            self.shape_pending=root.after(16,self._apply_shape)
+            if not self.shape_pending:self.shape_pending=root.after(8,self._apply_shape)
             if self.locked:
                 # Ne pas repositionner à chaque événement Configure : cela fait
                 # trembler la fenêtre lorsque Windows termine un glisser.

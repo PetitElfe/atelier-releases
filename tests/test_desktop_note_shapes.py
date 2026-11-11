@@ -325,6 +325,14 @@ class NoteFormatTests(unittest.TestCase):
                     w,h=note.window.winfo_width(),note.window.winfo_height()
                     paper_area=note.paper_area.winfo_width();self.assertGreater(paper_area,100)
                     note.paper.save_png('artifacts/postit-'+shape+'.png')
+                    # Moving must reuse the rendered paper, with no allocation
+                    # or full bitmap upload for an unchanged size/style.
+                    bitmap=note.paper.bitmap;pixels=note.paper.pixels
+                    px,py,pw,ph=note.paper.geometry
+                    note.paper.update((px+3,py+4,pw,ph))
+                    self.assertEqual(note.paper.bitmap,bitmap);self.assertIs(note.paper.pixels,pixels)
+                    note._native_geometry((px+3,py+4,pw,ph));root.update()
+
                     # Real Windows mouse capture, not just geometry arithmetic.
                     # Hit an empty corner outside Tk's client rectangle for every
                     # silhouette, grow and shrink repeatedly, then remap it.

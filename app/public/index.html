@@ -64,7 +64,7 @@
       <button data-view="reminders">Rappels</button>
       <button data-view="organisation">Habitudes & routines</button>
       <button data-view="trackers">Trackers</button>
-      <button type="button" id="openMentalNotebook" onclick="window.open('/mental-health.html','_blank','noopener')">Carnet de santé mentale</button>
+      <button type="button" id="openMentalNotebook">Santé</button>
       <button data-view="admin">Administratif</button>
       <button data-view="captures">Notes et captures <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
@@ -175,7 +175,7 @@
             <h2 id="monthTitle"></h2>
             <button id="nextMonth" aria-label="Mois suivant">›</button>
           </div>
-          
+
         </div>
         <div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
         <div id="monthGrid" class="month-grid"></div>
@@ -188,7 +188,7 @@
               <button id="prevWeek" type="button" aria-label="Semaine précédente">‹</button>
               <h3 id="weekTitle"></h3>
               <button id="nextWeek" type="button" aria-label="Semaine suivante">›</button>
-              
+
             </div>
             <button id="addEventWeek" type="button" class="primary">+ Rendez-vous</button>
           </div>
@@ -209,7 +209,7 @@
         <div class="library-head">
           <div>
             <div class="section-kicker">TES ESPACES</div>
-            <h2>Bibliothèque</h2>
+            <h2 class="visually-hidden">Bibliothèque</h2>
             <p class="muted">Un domaine est un espace complet : Anglais, Art, JDR, LoL… avec ses carnets, ses sous-objectifs, ses tâches et son avancée.</p>
           </div>
           <button id="addLibraryDomain" class="primary" type="button">+ Nouveau domaine</button>
@@ -374,13 +374,13 @@
     <section id="cuisineView" class="view">
       <div class="panel-head cuisine-library-head">
         <div>
-          <div class="section-kicker">OBJECTIF · CUISINE</div>
-          <h2>Bibliothèque de recettes</h2>
-          <p class="muted">Les recettes vivent ici. Les « idées de repas » ne sont qu’une sélection de cette bibliothèque.</p>
+
+          <h2 class="visually-hidden">Mes grimoires</h2>
+
         </div>
         <div class="cuisine-library-actions">
           <button id="importRecipe" type="button">Importer une recette</button>
-          <button id="addRecipeBook" type="button">+ Rayon</button>
+          <button id="addRecipeBook" type="button">+ Grimoire</button>
           <button id="addRecipe" class="primary" type="button">+ Recette</button>
         </div>
       </div>
@@ -389,7 +389,7 @@
         <aside class="recipe-library-sidebar">
           <label for="recipeSearch">Rechercher</label>
           <input id="recipeSearch" type="search" autocomplete="off" placeholder="Titre, rayon, ingrédient…">
-          <div class="recipe-books-title">Rayons</div>
+          <div class="recipe-books-title">Mes grimoires</div>
           <div id="recipeBookShelf" class="recipe-book-shelf"></div>
         </aside>
         <section class="recipe-library-content">
@@ -681,6 +681,7 @@
   <script src="/editor_flow.js"></script>
   <script src="/interface_reference.js"></script>
   <script src="/library_moodboard.js"></script>
+  <link rel="stylesheet" href="/book_spines.css">
   <script src="/library_refresh.js"></script>
   <script src="/utility_details.js"></script>
   <script src="/budget_support.js"></script>
@@ -699,5 +700,7 @@
   <script src="/studio_album.js"></script>
   <script src="/grounding_cards.js"></script>
   <script src="/studio_tools.js"></script>
+  <script src="/health_vault_crypto.js"></script>
+  <script src="/health_space.js"></script>
 </body>
 </html>

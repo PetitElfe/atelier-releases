@@ -29,15 +29,19 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "4dd6a06686e2f475cdf2e86b2b577ab0875b3c1f17ff1fa85304c039c7d7461b"
+      "sha256": "79601cd2b4c0df8b31f73b3745da518d2beaf14c3846c2ba7a43a769ef15b5b9"
     },
     {
       "path": "app_part3.py",
       "sha256": "35948530a0407363342e827211efe9f39f3a42fc1ea897217eac384e7c6cdd6f"
     },
     {
+      "path": "creator_access.py",
+      "sha256": "2284267db32833ee534adf44b7c14cff59589f55de99f0e50352e30cbd22953f"
+    },
+    {
       "path": "desktop_postits.py",
-      "sha256": "6957f1f8c41a726a03d7f179811f0834749d65b7a9b530171de1d1625ac31ea4"
+      "sha256": "853c6653cecb74a2a1de0cdfaa338c9b31f548d0f43a3d3eeb990fcfd82a211e"
     },
     {
       "path": "desktop_shell.py",
@@ -48,8 +52,16 @@
       "sha256": "2b812c7a1f3e2bfd4f0626327c0f3b4bfbe2e0543364aa1bfdb2d53dee036624"
     },
     {
+      "path": "health_vault.py",
+      "sha256": "70ccabc0db7da115833dbe33d57d00599cd562e9e2c242be294c4807ff90d8e4"
+    },
+    {
       "path": "library_moodboard.py",
       "sha256": "e19c3d0f296bc227867988326bea1ba615f71f82147e976c774ff481e4e359c2"
+    },
+    {
+      "path": "native_postit_paper.py",
+      "sha256": "3336f57fdaee3abd0d7ad81fe78cd9ac7e818c471b78ffba10fd8dd9e42b750b"
     },
     {
       "path": "native_reminders.py",
@@ -88,6 +100,14 @@
       "sha256": "2c1c5cdc15ee02fa6869d69ffa280dca40f28f0f21c4bd9d429284d6336e7b2e"
     },
     {
+      "path": "public/book_spines.css",
+      "sha256": "290512bf1162915a9a1b275861e730be695948061b92e2b2a230587b1e692d1c"
+    },
+    {
+      "path": "public/budget_support.js",
+      "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
+    },
+    {
       "path": "public/calendar_cycle_compact.css",
       "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
     },
@@ -104,6 +124,10 @@
       "sha256": "058c30e4a618224eab6254b7fe1a3938a92e36e95b49606ff370b8b42278bcd6"
     },
     {
+      "path": "public/creator_access.js",
+      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
+    },
+    {
       "path": "public/editor_flow.js",
       "sha256": "c6257de04c00c378136fcdde5eee4a674041266dfbb29539a654dbc091a293f5"
     },
@@ -116,12 +140,28 @@
       "sha256": "11e83eb006ecba1072c0701ee31e3d5c24944fb40c7b4f82ba000010afc15e04"
     },
     {
+      "path": "public/grounding_cards.css",
+      "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
+    },
+    {
+      "path": "public/grounding_cards.js",
+      "sha256": "7e102a2df72dd5d8be3ef3445f3d287932fa155db7480f91daec91525de0350a"
+    },
+    {
+      "path": "public/health_space.js",
+      "sha256": "277a46e8df04b5862a1fdf8ea782cc03cea786157c62e94944acde1d94bc26fc"
+    },
+    {
+      "path": "public/health_vault_crypto.js",
+      "sha256": "948e439180dcdfb692aabfe0d137e5e10c2cca286ddb090c924114604ff8eeba"
+    },
+    {
       "path": "public/home_reference.css",
       "sha256": "902ea1f821a7eecab01b344b60fbecbac6e3c749e0f7104ae48a7a1d1e77d4f9"
     },
     {
       "path": "public/index.html",
-      "sha256": "361bf8bfc64e48885c560a1e0495c92e6774e488d3684ccfebcebb2f475bdff8"
+      "sha256": "745ee76f638326ab8a0f8144140cfe1b88c4ab9fb628f34e26f33dacb1291238"
     },
     {
       "path": "public/interface_reference.css",
@@ -152,6 +192,10 @@
       "sha256": "5b511e535276705db9c342f750318858c43ed2474ba19e0caacc5b171c57eee5"
     },
     {
+      "path": "public/kitchen_timers.js",
+      "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
+    },
+    {
       "path": "public/library_moodboard.css",
       "sha256": "de64b4866eeef38ac2bbde622e3840990e9bacd66799796ea073af6128610a2e"
     },
@@ -165,7 +209,7 @@
     },
     {
       "path": "public/library_refresh.js",
-      "sha256": "8b9293a69c3ce0ef6b4cae0102dd37b445dbfecd034ed83d3aa9d835d773e7e5"
+      "sha256": "cb9d01c174c995837ffc5f4d4b5b4685de6d664392c1a87993bcd26e555a979a"
     },
     {
       "path": "public/life_tools.css",
@@ -177,7 +221,7 @@
     },
     {
       "path": "public/mental-health.html",
-      "sha256": "3ceaffdbbba37c26afb04407e73997625a234ba094dc056a19fdc549ece09561"
+      "sha256": "b27948f7c10c0e4061b265600948d7c700f0f05698e0b496bf7bd54601fa4f61"
     },
     {
       "path": "public/mental_drafts.js",
@@ -217,11 +261,11 @@
     },
     {
       "path": "public/recipe_shelves.css",
-      "sha256": "837a9ae922096d582a922aed89f5098b717943626bad176dff34e1ad313c4847"
+      "sha256": "128dc2267f07d60aa04757a4db6354e9570a3408703795f0230fc7e7b3a05ffd"
     },
     {
       "path": "public/recipe_shelves.js",
-      "sha256": "02ae878d47802a2fa4522227b2958fe75c9a387120914bc1784758d50ffddeff"
+      "sha256": "b999aa8e74424400e09130bcc4eff6690b842d4037692d7ae90484cd76b81fed"
     },
     {
       "path": "public/safety_boot.js",
@@ -236,12 +280,40 @@
       "sha256": "5e07dcff329b3567df83db73764d75b7d131f78e2f41efbfed9db4f789a040de"
     },
     {
+      "path": "public/studio.css",
+      "sha256": "51f8bae8a4689f3d32605573bf29e67bcc14a34292ec4998bc65fb5505e86508"
+    },
+    {
+      "path": "public/studio_album.js",
+      "sha256": "48042e543631290195c8ad27285763825a5859eb4ec49a6e4a93b3e2833d5cd4"
+    },
+    {
+      "path": "public/studio_budget.js",
+      "sha256": "7942a7817a582c7420aa9f40fd129ec9ad1f4f18cdd7886f9d3fee7fcc53fe09"
+    },
+    {
+      "path": "public/studio_core.js",
+      "sha256": "0355953a2e91fa3da546af6439c922c3acf55dca6a87bd947c31032a83421438"
+    },
+    {
+      "path": "public/studio_tools.js",
+      "sha256": "27d754088cfa1f1f45163edaf45f3e67d633ff72094618fa142f3e47d40f9e06"
+    },
+    {
+      "path": "public/studio_trackers.js",
+      "sha256": "5b372d14a3e00c749ffcf14cf6f391038db7a447cc096230e822a3923eb6208b"
+    },
+    {
       "path": "public/styles.css",
       "sha256": "48d4e12555d4fd82c37ca8e03e883a457fb113bbd238fb30c3c2650fb69f6bd2"
     },
     {
       "path": "public/tracker_ritual_ui.js",
       "sha256": "30953d0f5b91f13768e1eea39fec619381217536ff490e63201e7e50b45da7e5"
+    },
+    {
+      "path": "public/utility_details.js",
+      "sha256": "3036a5006414b874205ef730d5ee80e7856f09493dc1e72c4497b467f1df4da9"
     },
     {
       "path": "public/utility_live.js",
@@ -272,12 +344,28 @@
       "sha256": "e447a436ece08f1e9538286ecf1e645294eae4aca6a7030769fd47ea5e6a5ef3"
     },
     {
+      "path": "reminder_occurrences.py",
+      "sha256": "a9cad55e09f154afde8c416d8a28a95ba579d6ca0f7e24b18205ea45b8776455"
+    },
+    {
+      "path": "studio.py",
+      "sha256": "cfd260479897f957314d6250dfdbb8b62d5409e9ea68a8ee6ea6d4679cf07ace"
+    },
+    {
       "path": "tracker_rituals.py",
       "sha256": "673f634e67992788379556742e414c870eb9043c684892bafa68440afb7d4b6b"
     },
     {
+      "path": "tracker_schedule.py",
+      "sha256": "b0c5a74a3712dea0fd4933ab36963a0cc5142aee0ded75e75cc715b18a84938f"
+    },
+    {
       "path": "updater.py",
       "sha256": "9168bf2663de4388ebbec41683e0ac5e14c682c14f74829d125fecc1b637d857"
+    },
+    {
+      "path": "utility_details.py",
+      "sha256": "013b0a34566ce2691897c0585a270b3938ab44f825d8014024c48da9c93103ef"
     },
     {
       "path": "utility_notes.py",
@@ -294,80 +382,8 @@
     {
       "path": "windows_tray.py",
       "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
-    },
-    {
-      "path": "public/kitchen_timers.js",
-      "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
-    },
-    {
-      "path": "reminder_occurrences.py",
-      "sha256": "a9cad55e09f154afde8c416d8a28a95ba579d6ca0f7e24b18205ea45b8776455"
-    },
-    {
-      "path": "creator_access.py",
-      "sha256": "2284267db32833ee534adf44b7c14cff59589f55de99f0e50352e30cbd22953f"
-    },
-    {
-      "path": "public/creator_access.js",
-      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
-    },
-    {
-      "path": "utility_details.py",
-      "sha256": "013b0a34566ce2691897c0585a270b3938ab44f825d8014024c48da9c93103ef"
-    },
-    {
-      "path": "public/utility_details.js",
-      "sha256": "3036a5006414b874205ef730d5ee80e7856f09493dc1e72c4497b467f1df4da9"
-    },
-    {
-      "path": "public/budget_support.js",
-      "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
-    },
-    {
-      "path": "studio.py",
-      "sha256": "cfd260479897f957314d6250dfdbb8b62d5409e9ea68a8ee6ea6d4679cf07ace"
-    },
-    {
-      "path": "public/studio_core.js",
-      "sha256": "0355953a2e91fa3da546af6439c922c3acf55dca6a87bd947c31032a83421438"
-    },
-    {
-      "path": "public/studio_trackers.js",
-      "sha256": "5b372d14a3e00c749ffcf14cf6f391038db7a447cc096230e822a3923eb6208b"
-    },
-    {
-      "path": "public/studio_budget.js",
-      "sha256": "7942a7817a582c7420aa9f40fd129ec9ad1f4f18cdd7886f9d3fee7fcc53fe09"
-    },
-    {
-      "path": "public/studio_album.js",
-      "sha256": "c6cb248a9ed2215099a4d9e75374476136a29731ff777b2a1d1b080ebb6fb3ed"
-    },
-    {
-      "path": "public/studio_tools.js",
-      "sha256": "5534824941d824bd0470638a78bdf9bb9586df640bcbea783ade16ebf74b8039"
-    },
-    {
-      "path": "public/studio.css",
-      "sha256": "ff5fc6815b5a5915eff4faee63abcacc46ef78009039d09b1a2babd87da38d19"
-    },
-    {
-      "path": "public/grounding_cards.js",
-      "sha256": "7e102a2df72dd5d8be3ef3445f3d287932fa155db7480f91daec91525de0350a"
-    },
-    {
-      "path": "public/grounding_cards.css",
-      "sha256": "0e6db6913a2f262e614be917b25882294e60ab72f7dda9bd1a293844e601b73e"
-    },
-    {
-      "path": "native_postit_paper.py",
-      "sha256": "c213d9141cc0e43595b8d8d8feeee891fdeeb78613f1b2d86246fafcab5a59c6"
-    },
-    {
-      "path": "tracker_schedule.py",
-      "sha256": "b0c5a74a3712dea0fd4933ab36963a0cc5142aee0ded75e75cc715b18a84938f"
     }
   ],
   "notes": "TEST PC : Post-it étoile/cœur/rond, contours lissés, ombre légère, coins et bords redimensionnables ; trackers multi-jours et semaines alternées, titres français automatiques, To-do centrée, onglets/tiroir réordonnables. Calendrier conservé.",
-  "build_sequence": 2026111101
+  "build_sequence": 2026111102
 }

@@ -1,4 +1,5 @@
 import tracker_schedule
+import health_vault
 
 # Tracker boards: each board has its own recurring window. Month/day marks
 # are indexed by ISO dates and are NEVER migrated/deleted on rhythm changes.
@@ -323,6 +324,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/sync/capabilities':
@@ -1396,6 +1398,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/personal-design':
@@ -2199,7 +2202,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
     def do_DELETE(self):
-        u=urlparse(self.path); p=u.path; parts=p.strip('/').split('/')
+        u=urlparse(self.path); p=u.path
+        if health_vault.serve(self,self.command,p,DATA):return
+        parts=p.strip('/').split('/')
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'DELETE',p,parse_qs(u.query),DB_PATH):return
         if p == '/api/objective-map/edges':

@@ -173,7 +173,8 @@ class PaperBackdrop:
         if self.destroyed:return
         x,y,w,h=map(int,geometry);shape=shape or self.style[0];color=color or self.style[1];rounded=self.style[2] if rounded is None else rounded
         self.geometry=(x,y,w,h);self.style=(shape,color,rounded);cw,ch=w+2*MARGIN,h+2*MARGIN;key=(w,h,shape,color,rounded)
-        if key!=self.paint_key:
+        repaint=key!=self.paint_key
+        if repaint:
             self._free_bitmap();bits=C.c_void_p();info=Info();info.header=Header(C.sizeof(Header),cw,-ch,1,32,0,cw*ch*4,0,0,0,0)
             self.bitmap=self.gdi.CreateDIBSection(self.dc,C.byref(info),0,C.byref(bits),None,0)
             if not self.bitmap:raise C.WinError(C.get_last_error())
@@ -181,18 +182,16 @@ class PaperBackdrop:
             self.image=C.c_void_p();self.graphics=C.c_void_p()
             self._ok(self.gdip.GdipCreateBitmapFromScan0(cw,ch,cw*4,0xE200B,bits,C.byref(self.image)))
             self._ok(self.gdip.GdipGetImageGraphicsContext(self.image,C.byref(self.graphics)))
-            self._ok(self.gdip.GdipSetSmoothingMode(self.graphics,4));self._ok(self.gdip.GdipSetPixelOffsetMode(self.graphics,4));self._ok(self.gdip.GdipGraphicsClear(self.graphics,0))
+            self._ok(self.gdip.GdipSetSmoothingMode(self.graphics,4));self._ok(self.gdip.GdipSetPixelOffsetMode(self.graphics,4));self._ok(self.gdip.GdipGraphicsClear(self.graphics,0x01000000))
             for dx,dy,spread,alpha in [(6,8,2,4),(5,7,1,6),(4,6,0,10),(3,4,0,12)]:self._fill(shape,rounded,(MARGIN+dx-spread,MARGIN+dy-spread,w+2*spread,h+2*spread),alpha<<24)
             self._fill(shape,rounded,(MARGIN,MARGIN,w,h),0xFF000000|int(color.lstrip('#'),16));self._ok(self.gdip.GdipFlush(self.graphics,1))
-            # Almost transparent boundary makes all eight resize targets reachable,
-            # including the empty corners around round/star/heart paper.
-            for row in range(ch):
-                for col in range(cw):
-                    index=(row*cw+col)*4
-                    if not self.pixels[index+3]:self.pixels[index+3]=1
+            # Native clear sets alpha=1 over the transparent hit surface in
+            # one call. Never walk every pixel in Python during a live resize.
             self.paint_key=key
         dest=W.POINT(x-MARGIN,y-MARGIN);size=W.SIZE(cw,ch);origin=W.POINT(0,0);blend=Blend(0,0,255,1)
-        if not self.user.UpdateLayeredWindow(self.hwnd,None,C.byref(dest),C.byref(size),self.dc,C.byref(origin),0,C.byref(blend),2):raise C.WinError(C.get_last_error())
+        if repaint:
+            if not self.user.UpdateLayeredWindow(self.hwnd,None,C.byref(dest),C.byref(size),self.dc,C.byref(origin),0,C.byref(blend),2):raise C.WinError(C.get_last_error())
+        elif not self.user.SetWindowPos(self.hwnd,None,dest.x,dest.y,0,0,0x15):raise C.WinError(C.get_last_error())
         # Repeated ShowWindow calls during captured mouse movement send owner
         # visibility messages back into Tk. Only map a hidden paper once.
         if not self.user.IsWindowVisible(self.hwnd):self.user.ShowWindow(self.hwnd,4)
@@ -225,7 +224,7 @@ class PaperBackdrop:
             if message==0x200:
                 _,p=self._cursor()
                 if self.drag:
-                    px,py,geo,edge=self.drag;new=resize_rectangle(geo,p.x-px,p.y-py,edge,minimum_size(self.style[0]));self.update(new)
+                    px,py,geo,edge=self.drag;new=resize_rectangle(geo,p.x-px,p.y-py,edge,minimum_size(self.style[0]))
                     # A ctypes WndProc runs inside Tcl's native event dispatch.
                     # Re-entering Tk here can fatally corrupt its GIL state.
                     # Hand widget changes back to the Tk timer instead.

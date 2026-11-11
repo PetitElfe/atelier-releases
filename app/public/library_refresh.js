@@ -48,8 +48,8 @@
     if(libraryNotebookState.loading){const loading=document.createElement('span');loading.className='muted';loading.textContent='Chargement…';books.append(loading)}
     (libraryNotebookState.sections||[]).forEach((book,index)=>{
       const button=document.createElement('button');button.type='button';button.dataset.notebookId=String(book.id);
-      button.className='library-head-book library-shelf-book domain-book-spine'+(Number(librarySelectedNotebookId)===Number(book.id)?' active':'');
-      button.style.setProperty('--book-color',colors[index%colors.length]);button.textContent=book.title;
+      button.className='library-head-book library-shelf-book domain-book-spine atelier-book'+(Number(librarySelectedNotebookId)===Number(book.id)?' active':'');
+      button.style.setProperty('--leather',['#4b5946','#66506c','#805e3d','#3e596a','#7b4a42'][index%5]);button.style.setProperty('--book-color',colors[index%colors.length]);const title=document.createElement('span');title.className='atelier-spine-title';title.textContent=book.title;button.append(title);
       button.title=book.title+' · '+(book.entries||[]).length+' page(s)';button.setAttribute('aria-label','Ouvrir le carnet '+book.title);
       button.onclick=()=>navigate('notebook',book.id);books.append(button);
     });
@@ -75,4 +75,14 @@
     mood.classList.toggle('hidden',view!=='home');
     if(view==='home'&&window.libraryMoodboard)window.libraryMoodboard.mount(Number(domain.id),mood);
   };
+  const shelfCache=new Map();
+  const oldDomainRender=renderLibraryDomain;
+  renderLibraryDomain=function(...args){const result=oldDomainRender.apply(this,args);if(!libraryNotebookState.loading&&libraryNotebookState.domainId)shelfCache.set(Number(libraryNotebookState.domainId),libraryNotebookState.sections||[]);return result};
+  const oldHubRender=renderLibrary;
+  renderLibrary=function(...args){const result=oldHubRender.apply(this,args);const roots=libraryRootDomains();document.querySelectorAll('#libraryDomainShelf .library-domain-card').forEach((card,index)=>{
+    const domain=roots[index];if(!domain)return;const row=document.createElement('div');row.className='library-domain-volumes';row.setAttribute('aria-label','Carnets de '+domain.title);card.append(row);
+    const draw=books=>{if(!row.isConnected)return;row.replaceChildren();if(!books.length){const empty=document.createElement('span');empty.className='muted';empty.textContent='Aucun carnet pour le moment';row.append(empty)}books.forEach((book,i)=>{const b=document.createElement('button');b.type='button';b.className='atelier-book';b.style.setProperty('--leather',['#4b5946','#66506c','#805e3d','#3e596a','#7b4a42'][i%5]);b.style.setProperty('--spine-height',(155+i%4*12)+'px');const title=document.createElement('span');title.className='atelier-spine-title';title.textContent=book.title;b.append(title);b.title=book.title;b.setAttribute('aria-label','Ouvrir le carnet '+book.title);b.onclick=async()=>{try{openLibraryDomain(domain.id);await loadLibraryNotebooks(domain.id,book.id);await navigate('notebook',book.id)}catch(e){showUiError(e,'Carnet inaccessible')}};row.append(b)})};
+    if(shelfCache.has(Number(domain.id)))draw(shelfCache.get(Number(domain.id)));
+    else{row.textContent='Chargement des carnets…';api('/api/objective-library?node_id='+Number(domain.id)).then(data=>{shelfCache.set(Number(domain.id),data.sections||[]);draw(data.sections||[])}).catch(()=>{row.textContent='Carnets indisponibles : ouvre le domaine pour réessayer.'})}
+  });return result};
 })();

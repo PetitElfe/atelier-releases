@@ -1,7 +1,7 @@
 name: Post-it shapes and tracker schedules Windows TEST
 on:
   push:
-    branches: [test/postit-resize-budget-opening-20261111]
+    branches: [test/books-health-postit-fluidity-20261111]
 permissions:
   contents: read
 jobs:
@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: node --test tests/health_vault_crypto.test.cjs
       - run: TZ=Europe/Paris node --test tests/calendar_relative.test.cjs
       - run: python tools/release_smoke.py
       - uses: actions/setup-node@v4
@@ -22,6 +23,8 @@ jobs:
       - run: npm install --no-save playwright@1.62.1
       - run: npx playwright install --only-shell chromium
       - run: node tools/life_tools_browser_test.cjs
+      - run: node tools/books_health_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
       - run: node tools/budget_opening_browser_test.cjs
       - run: node tools/budget_calendar_clarity_browser_test.cjs
       - run: node tools/cycle_compact_browser_test.cjs

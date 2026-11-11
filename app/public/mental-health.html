@@ -38,7 +38,7 @@ sadness:[['Me parler avec douceur','Que dirais-tu à quelqu’un que tu aimes da
 catastrophe:[['Le fait et l’inquiétude','Qu’est-ce que je sais vraiment ? Qu’est-ce que j’imagine ?'],['Une autre possibilité','Quelle explication moins inquiétante serait également possible ?'],['Mon prochain pas','Si ce problème devait arriver, quel soutien pourrais-je demander ?']],
 stories:[['La clé minuscule','Au pied d’un vieux chêne, une clé brillait dans une tasse oubliée…'],['Le courrier des étoiles','Un facteur trouva une lettre adressée à la Lune…'],['Le village des chats','Dans un village où les chats tenaient les boutiques, un colis mystérieux arriva…'],['La petite bibliothèque','Chaque nuit, un nouveau livre apparaissait sur l’étagère la plus haute…'],['Le jardin des nuages','Une graine bleue poussait dans un pot qui ne touchait jamais terre…']],
 self:[['Un peu de douceur','Quelle boisson, couverture ou musique douce me ferait plaisir maintenant ?'],['Mon endroit calme','Quel petit coin confortable pourrais-je aménager ?'],['Une pause sans performance','Quelle activité simple puis-je faire sans objectif ni obligation ?']]};
-let data={cards:[],answers:[],journal:[],phrases:[]},rev=0,category=location.hash==='#grounding'?'grounding':'journal',editing=null;
+let data={cards:[],answers:[],journal:[],phrases:[]},rev=0,category=groups.some(g=>g[0]===location.hash.slice(1))?location.hash.slice(1):'journal',editing=null;
 function node(tag,txt='',cls=''){const e=document.createElement(tag);e.textContent=txt;if(cls)e.className=cls;return e}
 function button(txt,fn){const b=node('button',txt);b.type='button';b.onclick=fn;return b}
 function announce(text){$('notice').textContent=text}
