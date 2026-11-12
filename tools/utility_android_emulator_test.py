@@ -139,6 +139,14 @@ for _ in range(8):time.sleep(5)
 notice=adb('shell','dumpsys','notification','--noredact')
 assert 'Rappel de test Android' in notice,'General native reminder must fire with screen off'
 adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
+# Same native delivery path as expiry reminders, with a short explicit diagnostic.
+menu('Courses');tap('Inventaire');tap('Vérifier les rappels');tap('Tester un rappel de péremption (30 s)')
+adb('shell','input','keyevent','3');adb('shell','input','keyevent','223')
+for _ in range(8):time.sleep(5)
+food_notice=adb('shell','dumpsys','notification','--noredact')
+Path('artifacts/android-food-notifications.txt').write_text(food_notice,encoding='utf-8')
+assert 'Essai péremption' in food_notice,'Native expiry notification must fire with the app backgrounded and screen off'
+adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
 menu('Grimoire de recettes')
 for label,seconds in [('Utility_timer_A','180'),('Utility_timer_B','200')]:
     text('Nom du minuteur',label);text('Minutes','0');text('Secondes',seconds);tap('＋ Démarrer ce minuteur');time.sleep(1)
