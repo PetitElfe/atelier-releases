@@ -357,11 +357,11 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "727a2cff8029829a0ece019c12f73c89e3b744f77e7e8ecc03f4f1564e641bab"
+      "sha256": "d334dfdcd35c848f235e726e4edb741dcc045a33e8546a3fec7c61ada08bba09"
     },
     {
       "path": "local_icon.ps1",
-      "sha256": "84a50e85878278ef67df343a31958976cfd20fdc7c255361e01e10d88d595011"
+      "sha256": "27e5d21c937bf475209fdf89f1307b51a36e1021f39acc389543f0894700db14"
     },
     {
       "path": "public/local_icon.js",
@@ -371,6 +371,6 @@
   "notes": "Icône locale Windows : choix du PNG dans une fenêtre native, conversion ICO sur l’ordinateur, raccourci et icône de fenêtre personnalisés, restauration d’origine. Aucun transfert du dessin, pas de fichier artistique dans le dépôt.",
   "build_sequence": 2026111205,
   "edition": "NATHAN",
-  "common_source_build": "bd812328",
-  "common_source_revision": "be516e07e632e0b7c53890b890bcc7ff2723340f"
+  "common_source_build": "7977af38",
+  "common_source_revision": "6ffc57fde2c878389ee66c69e7b998680a29d3f3"
 }
