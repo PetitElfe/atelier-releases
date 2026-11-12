@@ -117,18 +117,12 @@ def budget_materialize(c,month,ts):
     for rule in c.execute('SELECT * FROM budget_rules WHERE active=1').fetchall():
         due=budget_due_in_month(rule,month)
         if not due:continue
-        status='presumed' if rule['kind']=='fixed' and due<=today else 'pending'
+        status='pending'
         c.execute("""INSERT OR IGNORE INTO budget_entries
           (rule_id,scheduled_date,title,kind,category,amount_cents,status,source,actual_date,created_at,occurrence_date)
           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
           (rule['id'],due,rule['title'],'income' if rule['kind']=='income' else 'expense',
            rule['category'],rule['amount_cents'],status,'scheduled',due if status=='presumed' else None,ts,due))
-    # Une charge consultée à l'avance devient « présumée payée » à échéance,
-    # sans jamais transformer un revenu en revenu confirmé.
-    c.execute("""UPDATE budget_entries
-      SET status='presumed', actual_date=scheduled_date, revision=revision+1
-      WHERE archived=0 AND source='scheduled' AND status='pending' AND scheduled_date<=?
-      AND rule_id IN (SELECT id FROM budget_rules WHERE kind='fixed')""",(today,))
     for debt in c.execute('SELECT * FROM budget_debts WHERE archived=0').fetchall():
         due=budget_due_in_month(debt,month)
         if not due:continue
@@ -193,14 +187,16 @@ def budget_snapshot(c,month,ts):
     if start>last:opening=0;start=first
     month_override=c.execute('SELECT * FROM budget_month_openings WHERE month=?',(first[:7],)).fetchone()
     month_opening=opening+int(c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
-      FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed')
+      FROM budget_entries WHERE archived=0 AND status='confirmed'
       AND COALESCE(actual_date,scheduled_date)>=? AND COALESCE(actual_date,scheduled_date)<?""",(start,first)).fetchone()[0])
-    # Le solde courant suit les confirmations et les charges présumées jusqu'à aujourd'hui.
+    month_opening+=int(c.execute('SELECT COALESCE(SUM(adjustment_cents),0) FROM budget_cash_adjustments WHERE reference_date>=? AND reference_date<?',(start,first)).fetchone()[0])
+    # Only explicit confirmations change cash; planned/presumed entries affect forecast.
+
     today=min(date.today().isoformat(),last)
     movement=c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
-      FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed') AND COALESCE(actual_date,scheduled_date)<=?
+      FROM budget_entries WHERE archived=0 AND status='confirmed' AND COALESCE(actual_date,scheduled_date)<=?
        AND COALESCE(actual_date,scheduled_date)>=?""",(today,start)).fetchone()[0]
-    balance=opening+int(movement)
+    balance=opening+int(movement)+int(c.execute('SELECT COALESCE(SUM(adjustment_cents),0) FROM budget_cash_adjustments WHERE reference_date>=? AND reference_date<=?',(start,today)).fetchone()[0])
     pending=[x for x in entries if x['status']=='pending']
     # Le prévisionnel tient compte de TOUTES les échéances entre le solde
     # initial et la fin du mois sélectionné, pas seulement du mois affiché.
@@ -209,6 +205,8 @@ def budget_snapshot(c,month,ts):
        FROM budget_entries WHERE archived=0 AND status IN ('confirmed','presumed','pending')
        AND COALESCE(actual_date,scheduled_date)>=?
        AND COALESCE(actual_date,scheduled_date)<=?""",(start,last)).fetchone()[0])
+    forecast+=int(c.execute('SELECT COALESCE(SUM(adjustment_cents),0) FROM budget_cash_adjustments WHERE reference_date>=? AND reference_date<=?',(start,last)).fetchone()[0])
+    cash_revision=c.execute('SELECT revision FROM budget_cash_adjustments WHERE month=?',(first[:7],)).fetchone()
     notes=c.execute('SELECT notes FROM budget_month_notes WHERE month=?',(first[:7],)).fetchone()
     debts=[]
     for item in c.execute('SELECT * FROM budget_debts ORDER BY archived,id DESC'):
@@ -219,11 +217,41 @@ def budget_snapshot(c,month,ts):
     return {'month':first[:7],'entries':entries,'removed_entries':removed,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
      'debts':debts,'opening_balance_cents':opening,'opening_date':start,'balance_cents':balance,
      'month_opening_balance_cents':month_opening,'month_opening_revision':month_override['revision'] if month_override else 0,
-     'month_opening_override':bool(month_override),'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
+     'month_opening_override':bool(month_override),'cash_revision':cash_revision['revision'] if cash_revision else 0,'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
      'income_cents':sum(x['amount_cents'] for x in entries if x['kind']=='income' and x['status']!='skipped'),
      'expenses_cents':sum(x['amount_cents'] for x in entries if x['kind']=='expense' and x['status']!='skipped'),
      'pending_income':[x for x in pending if x['kind']=='income'],
      'upcoming_charges':[x for x in entries if x['kind']=='expense' and x['source']=='scheduled' and x['scheduled_date']>=date.today().isoformat() and x['status']!='skipped']}
+
+def budget_save_current_balance(c,body,ts):
+    from decimal import Decimal
+    month=budget_month(body.get('month'))
+    if month!=date.today().replace(day=1):raise ValueError('Le solde actuel se règle dans le mois en cours. Pour un ancien mois, utilise le solde au 1er.')
+    value=Decimal(str(body.get('amount','')).replace(',','.'))
+    amount=budget_amount(abs(value))*(-1 if value<0 else 1)
+    if type(body.get('revision')) is not int or type(body.get('base_balance_cents')) is not int:raise ValueError('Version du solde requise.')
+    snapshot=budget_snapshot(c,month,ts)
+    # budget_materialize commits before this lock. Re-read under the write lock.
+    c.execute('BEGIN IMMEDIATE')
+    current=c.execute('SELECT * FROM budget_cash_adjustments WHERE month=?',(month.strftime('%Y-%m'),)).fetchone()
+    revision=current['revision'] if current else 0
+    if revision!=body['revision']:raise LookupError('Ce solde a changé ailleurs. Recharge le budget.')
+    settings=c.execute('SELECT opening_balance_cents,opening_date FROM budget_settings WHERE id=1').fetchone()
+    # A concurrent payment may have committed between snapshot and BEGIN.
+    current_net=int(c.execute("SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0) FROM budget_entries WHERE archived=0 AND status='confirmed' AND COALESCE(actual_date,scheduled_date)>=? AND COALESCE(actual_date,scheduled_date)<=?",(snapshot['opening_date'],date.today().isoformat())).fetchone()[0])
+    offsets=int(c.execute('SELECT COALESCE(SUM(adjustment_cents),0) FROM budget_cash_adjustments WHERE reference_date>=? AND reference_date<=?',(snapshot['opening_date'],date.today().isoformat())).fetchone()[0])
+    # Detect changed anchors as well as changed payments, without rewriting history.
+    checkpoint=c.execute('SELECT month,amount_cents FROM budget_month_openings WHERE month<=? ORDER BY month DESC LIMIT 1',(month.strftime('%Y-%m'),)).fetchone()
+    anchor_opening=int(settings['opening_balance_cents']) if settings else 0
+    anchor_start=settings['opening_date'] if settings else '2026-01-01'
+    last=month.replace(day=budget_last_day(month.year,month.month)).isoformat()
+    if checkpoint and (anchor_start>last or checkpoint['month']+'-01'>=anchor_start):anchor_opening=int(checkpoint['amount_cents']);anchor_start=checkpoint['month']+'-01'
+    if anchor_start>last:anchor_opening=0;anchor_start=month.isoformat()
+    if anchor_start!=snapshot['opening_date'] or anchor_opening!=snapshot['opening_balance_cents'] or anchor_opening+current_net+offsets!=body['base_balance_cents']:raise LookupError('Une opération ou le solde a changé. Recharge le budget avant de réessayer.')
+    adjustment=(current['adjustment_cents'] if current else 0)+amount-body['base_balance_cents']
+    if current:c.execute('UPDATE budget_cash_adjustments SET adjustment_cents=?,reference_date=?,revision=revision+1 WHERE month=?',(adjustment,date.today().isoformat(),month.strftime('%Y-%m')))
+    else:c.execute('INSERT INTO budget_cash_adjustments(month,reference_date,adjustment_cents) VALUES(?,?,?)',(month.strftime('%Y-%m'),date.today().isoformat(),adjustment))
+    return {'ok':True,'revision':revision+1}
 
 _jdr_lock = threading.RLock()
 
@@ -1712,6 +1740,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'ok':True})
             except (KeyError,TypeError,ValueError) as ex:
                 return self._json({'error':str(ex)},400)
+        if p == '/api/budget/current-balance':
+            try:
+                with conn() as c:
+                    result=budget_save_current_balance(c,body,datetime.now().isoformat(timespec='seconds'));c.commit()
+                return self._json(result)
+            except LookupError as ex:return self._json({'error':str(ex)},409)
+            except (ValueError,TypeError,ArithmeticError) as ex:return self._json({'error':str(ex)},400)
         if p == '/api/budget/opening-balance':
             try:
                 with conn() as c:
@@ -1737,6 +1772,19 @@ class Handler(BaseHTTPRequestHandler):
                     c.commit()
                 return self._json({'ok':True})
             except ValueError as ex:return self._json({'error':str(ex)},400)
+        if len(parts)==4 and parts[:2]==['api','budget'] and parts[3]=='postpone':
+            try:
+                eid=int(parts[2]);when=budget_date(body.get('date'))
+                with conn() as c:
+                    c.execute('BEGIN IMMEDIATE')
+                    old=c.execute('SELECT * FROM budget_entries WHERE id=?',(eid,)).fetchone()
+                    if not old:return self._json({'error':'Opération introuvable.'},404)
+                    if old['archived'] or type(body.get('revision')) is not int or body['revision']!=old['revision']:return self._json({'error':'Cette ligne a changé. Recharge le budget.'},409)
+                    if c.execute('SELECT 1 FROM budget_entries WHERE id!=? AND scheduled_date=? AND ((rule_id IS NOT NULL AND rule_id=?) OR (debt_id IS NOT NULL AND debt_id=?))',(eid,when,old['rule_id'],old['debt_id'])).fetchone():raise ValueError('Une autre échéance existe déjà à cette date. Choisis un autre jour.')
+                    c.execute("UPDATE budget_entries SET occurrence_date=COALESCE(occurrence_date,scheduled_date),scheduled_date=?,actual_date=NULL,status='pending',revision=revision+1 WHERE id=?",(when,eid))
+                    c.commit()
+                return self._json({'ok':True})
+            except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
         if len(parts)==4 and parts[:2]==['api','budget'] and parts[3]=='status':
             try:
                 eid=int(parts[2]); status=str(body.get('status',''))
