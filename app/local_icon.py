@@ -95,6 +95,9 @@ def start(data,edition):
         user.LoadImageW.argtypes=[W.HINSTANCE,W.LPCWSTR,W.UINT,ctypes.c_int,ctypes.c_int,W.UINT];user.LoadImageW.restype=W.HANDLE
         user.SendMessageW.argtypes=[W.HWND,W.UINT,W.WPARAM,W.LPARAM];user.SendMessageW.restype=W.LPARAM
         user.CopyIcon.argtypes=[W.HANDLE];user.CopyIcon.restype=W.HANDLE
+        shell=ctypes.WinDLL('shell32');shell.ExtractIconExW.argtypes=[W.LPCWSTR,ctypes.c_int,ctypes.POINTER(W.HANDLE),ctypes.POINTER(W.HANDLE),W.UINT]
+        big=W.HANDLE();small=W.HANDLE();shell.ExtractIconExW(str(exe),0,ctypes.byref(big),ctypes.byref(small),1)
+        defaults=(small.value,big.value)
         originals={};applied={};icons={};last_shortcut=None
         def visit(hwnd,_):
             title=ctypes.create_unicode_buffer(512);user.GetWindowTextW(hwnd,title,512)
@@ -103,7 +106,7 @@ def start(data,edition):
             if not handle:return True
             try:
                 buf=ctypes.create_unicode_buffer(32768);n=W.DWORD(len(buf))
-                if not kernel.QueryFullProcessImageNameW(handle,0,buf,ctypes.byref(n)) or os.path.normcase(buf.value)!=os.path.normcase(str(exe)):return True
+                if not kernel.QueryFullProcessImageNameW(handle,0,buf,ctypes.byref(n)) or os.path.normcase(os.path.realpath(buf.value))!=os.path.normcase(os.path.realpath(str(exe))):return True
             finally:kernel.CloseHandle(handle)
             choice=selected(data);key=str(choice) if choice else ''
             if applied.get(hwnd)==key:return True
@@ -111,7 +114,7 @@ def start(data,edition):
             if choice:
                 if key not in icons:icons[key]=tuple(user.LoadImageW(None,str(choice),1,size,size,0x10) for size in (16,48))
                 handles=icons[key]
-            else:handles=originals[hwnd]
+            else:handles=defaults if any(defaults) else originals[hwnd]
             for i,icon in enumerate(handles):user.SendMessageW(hwnd,0x80,i,int(icon or 0))
             applied[hwnd]=key;return True
         cb=callback(visit)

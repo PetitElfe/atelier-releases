@@ -31,12 +31,15 @@ if($Mode -in @('Choose','ImportTest')){
   }finally{$image.Dispose()}
 }
 if($Mode -ne 'ImportTest'){
+  Add-Type -TypeDefinition 'using System;using System.Text;using System.IO;using System.Runtime.InteropServices;public static class AtelierIconPath{[DllImport("kernel32.dll",CharSet=CharSet.Unicode)]static extern uint GetLongPathName(string p,StringBuilder b,uint n);public static string Canonical(string p){var b=new StringBuilder(32768);return GetLongPathName(p,b,32768)>0?b.ToString():Path.GetFullPath(p);}}'
+  $canonicalTarget=[AtelierIconPath]::Canonical($TargetExe)
   $shell=New-Object -ComObject WScript.Shell
   $desktop=$shell.SpecialFolders.Item('Desktop')
   $dirs=@($desktop,(Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'))
   foreach($dir in $dirs){if(-not(Test-Path -LiteralPath $dir)){continue};Get-ChildItem -LiteralPath $dir -Filter '*.lnk' -File|ForEach-Object{
     $link=$shell.CreateShortcut($_.FullName)
-    if([string]::Equals($link.TargetPath,$TargetExe,[StringComparison]::OrdinalIgnoreCase)){
+    if(-not $link.TargetPath){return}
+    if([string]::Equals([AtelierIconPath]::Canonical($link.TargetPath),$canonicalTarget,[StringComparison]::OrdinalIgnoreCase)){
       $link.IconLocation=if($Mode -eq 'Reset'){$TargetExe+',0'}else{$OutputIcon+',0'};$link.Save()
     }
   }}

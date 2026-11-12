@@ -24,9 +24,11 @@ with tempfile.TemporaryDirectory() as name:
  try:
   run("$s=New-Object -ComObject WScript.Shell;$l=$s.CreateShortcut("+quoted(link)+");$l.TargetPath="+quoted(exe)+";$l.Save()")
   local_icon._powershell(root,exe,'Apply',ico)
-  assert str(ico).lower() in run("$s=New-Object -ComObject WScript.Shell;$s.CreateShortcut("+quoted(link)+").IconLocation").lower()
+  location=run("$s=New-Object -ComObject WScript.Shell;$s.CreateShortcut("+quoted(link)+").IconLocation")
+  assert os.path.normcase(os.path.realpath(location.rsplit(',',1)[0]))==os.path.normcase(os.path.realpath(ico)),repr(location)
   local_icon._powershell(root,exe,'Reset')
-  assert str(exe).lower() in run("$s=New-Object -ComObject WScript.Shell;$s.CreateShortcut("+quoted(link)+").IconLocation").lower()
+  location=run("$s=New-Object -ComObject WScript.Shell;$s.CreateShortcut("+quoted(link)+").IconLocation")
+  assert os.path.normcase(os.path.realpath(location.rsplit(',',1)[0]))==os.path.normcase(os.path.realpath(exe)),repr(location)
  finally:link.unlink(missing_ok=True)
  # Verify the running-window icon on a form that belongs only to this fixture.
  title="L'Atelier du Goblin - icon fixture "+uuid.uuid4().hex
