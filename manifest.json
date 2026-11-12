@@ -389,7 +389,7 @@
     },
     {
       "path": "public/display_preferences.css",
-      "sha256": "cbbbc31f08681d0c8ef850c71213804a7e773b753f4e5a5249cdee540999abe9"
+      "sha256": "0356b4cb6848a7d240b1310fda6ce1cc3b93f43f74cdbab3ff0e8c66a2c88bae"
     },
     {
       "path": "local_icon.py",
@@ -413,11 +413,11 @@
     },
     {
       "path": "public/groceries_pc.js",
-      "sha256": "bffcdca4a60557a0b5c6baffdc7031f1f55ad008a20676a06026a2ddbb9186a6"
+      "sha256": "46eeb8841d4d2c0d2270b8b5f5abacdc0863c009f9451795197bcc8dac26eca8"
     },
     {
       "path": "public/groceries.css",
-      "sha256": "766f697a7cbc67a919134fe3f2a7d6dc47fd178ebd96f9a09a089ce30ff2c386"
+      "sha256": "1932d665fe99232c00115827779baad2cb7c97f63e4efc6e21219582e3951bee"
     }
   ],
   "notes": "Courses PC/téléphone : liste compacte, file hors connexion, achat unique avec budget et inventaire, dates facultatives et rappels J−3/J−2/J0. Mode Modifier sur les rubriques dynamiques ; en-tête resserré.",
