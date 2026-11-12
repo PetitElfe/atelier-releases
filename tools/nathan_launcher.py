@@ -195,6 +195,9 @@ def main():
     if "--nathan-postits" in sys.argv:
         _run_python("desktop_postits.py",sys.argv[sys.argv.index("--nathan-postits")+1:])
         return
+    if "--nathan-capture" in sys.argv:
+        _run_python("quick_capture_macro.py",[])
+        return
     if "--nathan-reminder" in sys.argv:
         _run_python("native_reminders.py",["--activate",sys.argv[sys.argv.index("--nathan-reminder")+1]])
         return

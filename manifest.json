@@ -5,7 +5,7 @@
   "files": [
     {
       "path": "Lancer_Capture_Rapide.cmd",
-      "sha256": "1d39ec3470c10af938ea9b97fb338fc5b6f9db62a6ee4b9cc19d798aaa485b81"
+      "sha256": "1dbb0a17b029f5875b4cf2f868f0ca6b8231fc262ec4f319f548f67e2ea3b1f9"
     },
     {
       "path": "README.md",
@@ -33,7 +33,7 @@
     },
     {
       "path": "app_part3.py",
-      "sha256": "2acdd5e33fd9ed890cd27209b51b27381535f8f068a6fa2523df431aaa06e104"
+      "sha256": "760fc2969074fe8d0573f45b928860bc0fc1badc8b6ba81397ebea8ef506e8b1"
     },
     {
       "path": "creator_access.py",
@@ -153,7 +153,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "0f9ffcd9c474e0b96b58dfdafe3dfa6e63b900a95dee81ec4be8d8dc136402d8"
+      "sha256": "c69259c473cf04c5b7e42b0a0885bbcbc4bbbee7d66502d2a85d4d44824d2f70"
     },
     {
       "path": "public/interface_reference.css",
@@ -301,7 +301,7 @@
     },
     {
       "path": "quick_capture_macro.py",
-      "sha256": "9838680eb052f01816d0a93314fbb66d3b951a6cdbe292795e5c193e59d38433"
+      "sha256": "8d131e0a3cf59b0b78d8670448d819e9785a066448c54c4f65cdc5dc8d1e161f"
     },
     {
       "path": "quick_capture_native.py",

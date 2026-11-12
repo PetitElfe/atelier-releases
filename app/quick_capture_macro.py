@@ -9,8 +9,8 @@ import sys
 import tempfile
 import time
 
-TEST_CODE=Path(r"E:\LATELIER_TEST_0180\code_0180")
-TEST_DATA=Path(r"E:\LATELIER_TEST_0180\data")
+TEST_CODE=Path(os.environ.get('LOCALAPPDATA',''))/'LAtelierDuGoblinNathan'/'code'
+TEST_DATA=Path(os.environ.get('LOCALAPPDATA',''))/'LAtelierDuGoblinNathan'/'data'
 
 def request_capture(data_dir: Path, now: float | None=None) -> Path:
     """Demande consommée par le compagnon dans les 15 secondes."""
@@ -34,5 +34,5 @@ if __name__=="__main__":
         print("PASS: capture macro signaling isolated")
     else:
         if os.name!="nt" or Path(__file__).resolve().parent.parent != TEST_CODE.resolve():
-            raise SystemExit("Lanceur réservé à l'installation TEST du Goblin.")
+            raise SystemExit("Lanceur réservé à l'installation personnelle Nathan.")
         request_capture(TEST_DATA)

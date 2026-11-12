@@ -1,6 +1,7 @@
 """Run only on disposable Windows runner: no real profile is opened."""
 import json,os,subprocess,tempfile,time,urllib.request,urllib.error,sqlite3,sys,hashlib
 from pathlib import Path
+from contextlib import closing
 ROOT=Path(__file__).resolve().parents[1];EXE=ROOT/'dist/LAtelierDuGoblin_Nathan.exe'
 def api(path,body=None,method=None):
  req=urllib.request.Request('http://127.0.0.1:8877'+path,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json','Origin':'http://127.0.0.1:8877','X-Atelier-Desktop':'1','X-Atelier-Update':'1'},method=method)
@@ -35,7 +36,7 @@ with tempfile.TemporaryDirectory() as folder:
  before=(data/'own-document.bin').read_bytes()
  subprocess.run([str(EXE),'--nathan-install-only'],env=env,timeout=90,check=True)
  assert (data/'own-document.bin').read_bytes()==before and (profile/'layout').read_bytes()==b'private layout'
- with sqlite3.connect(data/'atelier.db') as c:assert c.execute('SELECT title FROM tasks WHERE id=?',(task['id'],)).fetchone()[0]=='Nathan task preserved'
+ with closing(sqlite3.connect(data/'atelier.db')) as c:assert c.execute('SELECT title FROM tasks WHERE id=?',(task['id'],)).fetchone()[0]=='Nathan task preserved'
  assert list((base/'backups').glob('*/data/atelier.db'))
  server=subprocess.Popen([str(installed),'--nathan-server'],env=env)
  try:
