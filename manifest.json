@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "01c2dacb98d8720879c44cabc0e2f1ef882c19bb91416268cb93839e77197ce0"
+      "sha256": "e65f94415a7297733e344cd5eba0f1f2bee96c8332a18c9710ddb838a2b1be9b"
     },
     {
       "path": "app_part3.py",
@@ -313,7 +313,7 @@
     },
     {
       "path": "studio.py",
-      "sha256": "cfd260479897f957314d6250dfdbb8b62d5409e9ea68a8ee6ea6d4679cf07ace"
+      "sha256": "d91c41227f5d30b2446dd4269b0e596e665c61eada78dbe47284b10545e48453"
     },
     {
       "path": "tracker_rituals.py",
