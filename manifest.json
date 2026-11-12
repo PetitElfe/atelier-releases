@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "63aeb533f789cc24386b481cc4271923247346123a0734179fe9150a9c41daa4"
+      "sha256": "b79f5113d2f8ce26341fe601fedd1bfb91fd3771b3ab6ebccbeff22c376a6ff2"
     },
     {
       "path": "app_part2.py",
-      "sha256": "dbd0cc8d6e4437aeee6b0f87cdff9a04484a2aabc935a1e46cf779cd1e746d95"
+      "sha256": "d93cde8f8fb6de89947e84de7b6b1322ce10f0c9a6da0f612053f166994c9e45"
     },
     {
       "path": "app_part3.py",
@@ -125,7 +125,7 @@
     },
     {
       "path": "public/creator_access.js",
-      "sha256": "f19d04b6c3821fa0e47b8b6cb5e5573fc874cd78ffa52fc38783e2f5667fa346"
+      "sha256": "013e2bc9d167d8a87e63d0834ccc4679d22bb8fd87d2bfc9643de335b09d2590"
     },
     {
       "path": "public/editor_flow.js",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "8831bac1e131b00bf27a9d68d403623f0eaf688f2da74727a65c6a0489090051"
+      "sha256": "126ae5ec44e5045c2f8b47e3e48a02477790ef7a318f6c2af18db35ecc5000b7"
     },
     {
       "path": "public/interface_reference.css",
@@ -393,7 +393,7 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "5f58c77f402b950598cf92ebf08f86099de7d06b6e7fa5e2d9863894988f3ac4"
+      "sha256": "29b00034f93779f08d79101da30ee4b2781846bbb24ec5c3f8cc8c1843ed515f"
     },
     {
       "path": "local_icon.ps1",
@@ -425,9 +425,21 @@
     },
     {
       "path": "publish_official_icon.ps1",
-      "sha256": "4bd4497e5842f4cf90f7694cdbd98827b440f3cf36ec429f5ba26f76e4e9bdab"
+      "sha256": "9d302d4b1f083f6f96b06d25bd683ebe6d6b61fde80993ade6453e175db393cf"
+    },
+    {
+      "path": "official_icon_publish.py",
+      "sha256": "430e81ff7b1a5f8b848bae0d17c1e3f176fad947f362c4b189ab3a2fe5d8ab28"
+    },
+    {
+      "path": "official_icon_prepare.ps1",
+      "sha256": "3bfa34e7f5e8a2bb638a0b7a9b9b27dd7a2705ce24b83672bbecb43569bd9713"
+    },
+    {
+      "path": "public/official_icon_publish.js",
+      "sha256": "c84e59d83d0b7ad52fcf04b4d8e60b5a9f04a0a5bc294084a176400c76f0648d"
     }
   ],
-  "notes": "Courses PC/téléphone : liste compacte, file hors connexion, achat unique avec budget et inventaire, dates facultatives et rappels J−3/J−2/J0. Mode Modifier sur les rubriques dynamiques ; en-tête resserré.",
-  "build_sequence": 2026111208
+  "notes": "Icône officielle : glisser-déposer local du PNG, aperçu privé, publication explicitement confirmée, étapes visibles, délais réseau bornés et annulation. Ancien assistant bloquant remplacé.",
+  "build_sequence": 2026111209
 }

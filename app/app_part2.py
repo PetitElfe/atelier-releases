@@ -352,6 +352,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if official_icon_publish.serve(self,self.command,p,DATA,PORT,HOST):return
         if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
@@ -744,6 +745,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if official_icon_publish.serve(self,self.command,p,DATA,PORT,HOST):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
         if p in ('/api/creator-access','/api/personal-design/presets'):

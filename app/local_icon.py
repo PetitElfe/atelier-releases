@@ -139,22 +139,4 @@ def start(data,edition):
 
 
 def publish(data):
-    global _phase,_message
-    import updater,shutil
-    updater.guard()
-    if not shutil.which('gh'):raise ValueError('Pour publier une seule fois l’icône commune, installe GitHub CLI puis connecte ton compte PetitElfe avec « gh auth login ». Ton PNG ne passe pas par ce chat.')
-    if not _lock.acquire(blocking=False):raise RuntimeError('Une opération d’icône est déjà ouverte.')
-    _phase='working';_message='Publication de l’icône commune depuis Windows…'
-    def work():
-        global _phase,_message
-        try:
-            done=subprocess.run(['powershell.exe','-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('publish_official_icon.ps1'))],stdin=subprocess.DEVNULL,capture_output=True,timeout=900,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
-            if done.returncode:raise ValueError()
-            _phase='success';_message='Publication terminée ou sélection annulée. La compilation Android est visible dans GitHub Actions.'
-            import official_icon
-            try:official_icon.sync(data)
-            except Exception:pass
-        except Exception:_phase='error';_message='Publication non terminée. Le message Windows précise le problème ; le dessin d’origine est intact.'
-        finally:_lock.release()
-    threading.Thread(target=work,daemon=True,name='publish-official-icon').start()
-    return {'ok':True}
+    raise ValueError('Recharge l’interface puis dépose ton PNG dans la zone Icône officielle. L’ancien assistant de publication a été remplacé.')
