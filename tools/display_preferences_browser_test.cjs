@@ -17,6 +17,7 @@ const proc=spawn('python',['app/app.py'],{env:{...process.env,ATELIER_DATA_DIR:d
  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).fontSize),'25.6px');
  assert.ok(await page.evaluate(()=>parseFloat(getComputedStyle(document.querySelector('#atelierDisplayStatus')).fontSize)>=14),'Small fixed-pixel captions must scale too');
  assert.match(await page.evaluate(()=>getComputedStyle(document.body).fontFamily),/system-ui/);
+ assert.match(await page.evaluate(()=>getComputedStyle(document.querySelector('#atelierDisplayStatus')).fontFamily),/system-ui/);
  for(const theme of ['sage','mauve','bleu','miel','goblin']){
  await page.locator('#atelierUiTheme').selectOption(theme);
  const colors=await page.evaluate(()=>{const menu=document.createElement('div');menu.className='studio-menu';menu.innerHTML='<button>Modifier</button>';document.body.append(menu);const s=getComputedStyle(menu),expected=getComputedStyle(document.querySelector('.settings-card'));const out=[s.backgroundColor,expected.backgroundColor,getComputedStyle(menu.firstChild).fontSize];menu.remove();return out});

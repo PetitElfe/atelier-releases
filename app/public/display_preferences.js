@@ -8,9 +8,10 @@ function visit(rules,factor){for(const rule of rules){
  if(rule.cssRules?.length)visit(rule.cssRules,factor);
  if(!rule.style)continue;
  const style=rule.style;
- if(!originals.has(style))originals.set(style,{size:style.fontSize,line:style.lineHeight});
+ if(!originals.has(style))originals.set(style,{size:style.fontSize,line:style.lineHeight,family:style.fontFamily});
  const original=originals.get(style),size=/^(\d+(?:\.\d+)?)px$/.exec(original.size),line=/^(\d+(?:\.\d+)?)px$/.exec(original.line);
  // CSS pixels already account for Windows display scaling. Never multiply by devicePixelRatio.
+ if(/^(?:Georgia|system-ui|-apple-system|Arial|sans-serif|serif|["']?Segoe UI["']?[, ])/i.test(original.family))style.fontFamily='var(--atelier-font)';
  if(size)style.fontSize=Math.max(14,Number(size[1])*factor)+'px';
  if(line)style.lineHeight='max(1.25em, '+Number(line[1])*factor+'px)';
 }}

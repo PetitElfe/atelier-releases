@@ -349,7 +349,7 @@
     },
     {
       "path": "public/display_preferences.js",
-      "sha256": "08ded68bced9f8b73ab07f34619e04abe4512f26b1a5a0e311464d67d8c22ff7"
+      "sha256": "444690f161d004720ff437f8543d3d5d899ec0655dbc17206f3ca92d46502850"
     },
     {
       "path": "public/display_preferences.css",
@@ -359,6 +359,6 @@
   "notes": "TEST Windows : taille des textes automatique ou réglable jusqu’à 160 %, choix de police et menus harmonisés avec le thème. Mise à jour intégrée Misu/Nathan ; données et fonctions réservées conservées.",
   "build_sequence": 2026111202,
   "edition": "NATHAN",
-  "common_source_build": "de97b1a2",
-  "common_source_revision": "a7d75b26eae51b204498a2b047082b7faf02c466"
+  "common_source_build": "775cf6bb",
+  "common_source_revision": "4c7bbc5f4ef80c4106062584c0c3b8cce00c7217"
 }
