@@ -85,11 +85,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "ccb904ea37769ba226fb58a020d1334f73b13e451cfdf3248eae4306405492f2"
+      "sha256": "ea8e0042e0cc9a8c717f0360fefc40003def8d3ca860554bde21b5ab45d1b157"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c9bf0e71a2a23fd5285fa9a8ddd44988aa50f8d2fe6738d212313124572002e9"
+      "sha256": "f01f8902f127c2e086a6ec636137ff138b4f6aabd3fc2e0a005e6548b79d66c3"
     },
     {
       "path": "public/big_refonte.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/interface_reference.js",
-      "sha256": "09507804732d5570c0c80d2b1e78ece69a4d9bc6fea013df4e57e65c6233923f"
+      "sha256": "f1d80e13ac6a629f0fc53fdf5fdea96e78d3460bb47fbf8d628bec39ad5274f5"
     },
     {
       "path": "public/kitchen_timers.js",
@@ -173,7 +173,7 @@
     },
     {
       "path": "public/library_moodboard.js",
-      "sha256": "1ab17cf963ab3551ca77317a91ba21d2b39d93a9a00594858a33447ff2a05a6c"
+      "sha256": "d7cb9567f29a79260d6e98935d1143fccbf9d797452a84daff204dd32317f67d"
     },
     {
       "path": "public/library_refresh.css",
@@ -213,7 +213,7 @@
     },
     {
       "path": "public/objective_map.js",
-      "sha256": "7a775b8a8d794a648ad7241c95e8880ac731c4bb586620b554c8bcd7bacb27e3"
+      "sha256": "9e2ca24bb5886bc0b4f3021888614f363faa73601ea972ed78d227afb1070456"
     },
     {
       "path": "public/postits.js",
@@ -257,7 +257,7 @@
     },
     {
       "path": "public/studio_core.js",
-      "sha256": "1e4e293154b9291ac3800ba9130d536ae0acbc97fa2a8398946f38cb08697f10"
+      "sha256": "9d766cb1263bb0e93163745fe142c7763d61dd50862312a25fe0319e46caf11f"
     },
     {
       "path": "public/studio_tools.js",
@@ -349,16 +349,16 @@
     },
     {
       "path": "public/display_preferences.js",
-      "sha256": "444690f161d004720ff437f8543d3d5d899ec0655dbc17206f3ca92d46502850"
+      "sha256": "8c6599154bf20310a85686a131167588641a615483741a51268b2fbc9ec2a06f"
     },
     {
       "path": "public/display_preferences.css",
-      "sha256": "a604b15d8aea3a180c4e295e1fabe719abea4d355012508061537f765fd534ea"
+      "sha256": "70bfa3308fea7095891e11cb1c249ca6591fcbf71559bc347cf4b8959c656150"
     }
   ],
-  "notes": "TEST Windows : trackers allégés, ajout de tableau près du titre ; budget compact, dates jj/mm, validation manuelle, solde actuel réglable par clic droit et lignes supprimées dans Archives. Bilan mensuel en attente de définition.",
-  "build_sequence": 2026111203,
+  "notes": "Correctif affichage Windows : suppression de la réécriture des polices et de l’agrandissement automatique selon la résolution. Zoom global proportionnel 80–160 %, raccourcis Ctrl +/−/0, zooms carnet/carte indépendants, géométrie des widgets et menus adaptée au zoom.",
+  "build_sequence": 2026111204,
   "edition": "NATHAN",
-  "common_source_build": "d5f8af36",
-  "common_source_revision": "89c31a01cab31e4cc8d3c6829fce76a338aaded5"
+  "common_source_build": "39a01da0",
+  "common_source_revision": "90b89a330a2c37abd5e5181c741864a363fabacc"
 }

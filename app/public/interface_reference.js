@@ -2,7 +2,7 @@
    Préférences de présentation locales; ne modifie ni rendez-vous ni données SQLite. */
 (()=>{'use strict';
  const root=document.documentElement;
- const scales=[80,85,90,95,100,105,110,115,120,130,140,150,160];
+ const scales=[80,85,90,95,100,105,110,115,120,125,130,140,150,160];
  const themes={goblin:'Goblin sombre',sage:'Sauge',mauve:'Mauve',bleu:'Bleu nuit',miel:'Miel'};
  const safeGet=(k,d)=>{try{return localStorage.getItem(k)||d}catch(_){return d}};
  const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
@@ -11,7 +11,7 @@
  const settings=document.querySelector('#settingsView .settings-grid');
  if(settings){
    const section=document.createElement('section');section.className='settings-card atelier-appearance-settings';
-   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Adapte les textes à ton écran sans déplacer tes widgets. Les réglages restent sur cet ordinateur.</p></div></div><label>Taille des textes<select id="atelierUiScale"><option value="auto">Automatique selon la fenêtre</option></select></label><label>Police<select id="atelierUiFont"><option value="classic">Classique · Georgia</option><option value="system">Système · Segoe UI</option><option value="arial">Arial</option></select></label><label>Thème de couleurs<select id="atelierUiTheme"></select></label><p id="atelierDisplayStatus" class="muted"></p><p class="muted">Le mode automatique suit la taille disponible de la fenêtre et respecte la mise à l’échelle Windows. Tu peux choisir jusqu’à 160 %. Les petits textes restent lisibles (14 px minimum).</p>';
+   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Règle le zoom de toute l’application en conservant ses proportions. Les réglages restent sur cet ordinateur.</p></div></div><label>Zoom de l’application<select id="atelierUiScale"><option value="auto">Automatique · échelle Windows</option></select></label><label>Police<select id="atelierUiFont"><option value="classic">Classique · Georgia</option><option value="system">Système · Segoe UI</option><option value="arial">Arial</option></select></label><label>Thème de couleurs<select id="atelierUiTheme"></select></label><p id="atelierDisplayStatus" class="muted"></p><p class="muted">Automatique respecte l’échelle Windows sans agrandir les textes séparément. Ctrl + / Ctrl − : zoom ; Ctrl 0 : 100 %. Les zooms du carnet et de la carte restent indépendants.</p>';
    const size=section.querySelector('#atelierUiScale'),theme=section.querySelector('#atelierUiTheme');
    for(const value of scales){const opt=document.createElement('option');opt.value=value;opt.textContent=value+' %';size.append(opt)}
    for(const [key,label] of Object.entries(themes)){const opt=document.createElement('option');opt.value=key;opt.textContent=label;theme.append(opt)}
@@ -256,7 +256,7 @@ function atelierOpenRowMenu(event,items){
   const btn=document.createElement('button');btn.type='button';btn.setAttribute('role','menuitem');
   btn.textContent=label;btn.onclick=()=>{close();action()};menu.append(btn);
  }
- menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(event.clientX,window.innerWidth-180))+'px';
+ menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(event.clientX/(window.AtelierDisplay?.factor||1),window.innerWidth/(window.AtelierDisplay?.factor||1)-180))+'px';
  menu.style.top=Math.max(8,Math.min(event.clientY,window.innerHeight-110))+'px';
  document.body.append(menu);
  setTimeout(()=>{document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true)},0);

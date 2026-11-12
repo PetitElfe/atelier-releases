@@ -1,5 +1,6 @@
 /* ALPHA 0.18 — progressive objective map; existing tree is preserved. */
 (function(){
+  const ui=()=>window.AtelierDisplay?.factor||1;
   let activeDomain=null, graph=null, scale=1, panX=0, panY=0, selected=null, mode='map', isRendering=false, requestVersion=0, editing=false;
   const $map=()=>document.getElementById('objectiveMapRoot');
   const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -86,7 +87,7 @@
     };
     const viewport=root.querySelector('.objective-map-viewport');
     if(viewport){
-      viewport.addEventListener('wheel',e=>{e.preventDefault();const rect=viewport.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,old=scale;scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));panX=x-(x-panX)*scale/old;panY=y-(y-panY)*scale/old;draw()},{passive:false});
+      viewport.addEventListener('wheel',e=>{e.preventDefault();const rect=viewport.getBoundingClientRect(),x=(e.clientX-rect.left)/ui(),y=(e.clientY-rect.top)/ui(),old=scale;scale=Math.max(.4,Math.min(2.2,scale+(e.deltaY<0?.1:-.1)));panX=x-(x-panX)*scale/old;panY=y-(y-panY)*scale/old;draw()},{passive:false});
       let pointer=null,connection=null,draft=null;
       viewport.oncontextmenu=e=>{
         if(!editing)return;
@@ -97,7 +98,7 @@
           const canvas=viewport.querySelector('.objective-map-canvas');
           const bounds=canvas?.getBoundingClientRect();
           if(bounds){
-            const x=(e.clientX-bounds.left)/scale,y=(e.clientY-bounds.top)/scale;
+            const x=(e.clientX-bounds.left)/ui()/scale,y=(e.clientY-bounds.top)/ui()/scale;
             for(const candidate of viewport.querySelectorAll('.objective-map-edge')){
               const length=candidate.getTotalLength();
               for(let distance=0;distance<=length;distance+=4){
@@ -114,8 +115,8 @@
         const menu=document.createElement('button');
         menu.type='button';menu.className='objective-map-context';menu.textContent='Supprimer la liaison';
         const rect=viewport.getBoundingClientRect();
-        menu.style.left=Math.max(0,Math.min(viewport.clientWidth-180,e.clientX-rect.left))+'px';
-        menu.style.top=Math.max(0,Math.min(viewport.clientHeight-46,e.clientY-rect.top))+'px';
+        menu.style.left=Math.max(0,Math.min(viewport.clientWidth-180,(e.clientX-rect.left)/ui()))+'px';
+        menu.style.top=Math.max(0,Math.min(viewport.clientHeight-46,(e.clientY-rect.top)/ui()))+'px';
         menu.onclick=async()=>{
           menu.remove();
           try{await call('/api/objective-map/edges?from_id='+Number(path.dataset.from)+'&to_id='+Number(path.dataset.to),{method:'DELETE'});await refreshMap(activeDomain)}
@@ -144,12 +145,12 @@
       viewport.onpointermove=e=>{
         if(connection!==null&&draft){
           const p=coords.get(connection),rect=viewport.getBoundingClientRect();
-          const x=(e.clientX-rect.left-panX)/scale,y=(e.clientY-rect.top-panY)/scale;
+          const x=((e.clientX-rect.left)/ui()-panX)/scale,y=((e.clientY-rect.top)/ui()-panY)/scale;
           draft.setAttribute('d','M'+(p.x+152)+' '+(p.y+25)+' L'+x+' '+y);
           return;
         }
         if(!pointer)return;
-        const dx=e.clientX-pointer.startX,dy=e.clientY-pointer.startY;
+        const dx=(e.clientX-pointer.startX)/ui(),dy=(e.clientY-pointer.startY)/ui();
         if(Math.abs(dx)+Math.abs(dy)>5)pointer.moved=true;
         if(pointer.nodeId&&editing){
           const i=nodes.findIndex(n=>Number(n.id)===pointer.nodeId);
@@ -180,7 +181,7 @@
         }
         if(!pointer)return;
         const current=pointer;pointer=null;
-        const dx=e.clientX-current.startX,dy=e.clientY-current.startY;
+        const dx=(e.clientX-current.startX)/ui(),dy=(e.clientY-current.startY)/ui();
         if(current.nodeId){
           if(!editing){if(!current.moved){selected=current.nodeId;draw()}else{panX=current.oldX+dx;panY=current.oldY+dy}return}
           if(!current.moved){selected=current.nodeId;draw();return}

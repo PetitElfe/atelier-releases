@@ -465,9 +465,9 @@ function syncSideNavEdge(left){
   const nav=$('#sideNav');
   if(!nav)return;
   const width=nav.offsetWidth||220;
-  const onLeft=left+(width/2)<window.innerWidth/2;
+  const onLeft=left+(width/2)<window.innerWidth/layoutUiScale()/2;
   nav.classList.toggle('side-nav-on-left',onLeft);
-  const collapseX=onLeft?-(left+width):(window.innerWidth-left);
+  const collapseX=onLeft?-(left+width):(window.innerWidth/layoutUiScale()-left);
   nav.style.setProperty('--side-nav-collapse-x',collapseX+'px');
 }
 
@@ -475,7 +475,7 @@ function setSideNavCollapsed(collapsed){
   const nav=$('#sideNav');
   if(!nav)return;
   const storedLeft=parseFloat(nav.style.left);
-  const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left;
+  const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left/layoutUiScale();
   syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
   nav.inert=!!collapsed;
@@ -495,9 +495,9 @@ function clampSideNavPosition(left,top){
   const width=nav?.offsetWidth||220;
   const height=nav?.offsetHeight||260;
   const minLeft=0;
-  const maxLeft=Math.max(minLeft,window.innerWidth-width);
+  const maxLeft=Math.max(minLeft,window.innerWidth/layoutUiScale()-width);
   const minTop=8;
-  const maxTop=Math.max(minTop,window.innerHeight-height-8);
+  const maxTop=Math.max(minTop,window.innerHeight/layoutUiScale()-height-8);
   return {left:Math.min(maxLeft,Math.max(minLeft,left)),top:Math.min(maxTop,Math.max(minTop,top))};
 }
 
@@ -508,7 +508,7 @@ function applySideNavPosition(pos=null){
   if(!saved){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
-  const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
+  const fallback={left:window.innerWidth/layoutUiScale()-(nav.offsetWidth||220),top:84};
   // Une position intermédiaire est valide pendant le glisser : ne jamais
   // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
   // Le clamp suivant suffit à garder le tiroir visible à l'écran.
@@ -535,13 +535,13 @@ function initSideNavDrag(){
     if(e.button!==0)return;
     e.preventDefault();
     const rect=nav.getBoundingClientRect();
-    active=true;startX=e.clientX;startY=e.clientY;startLeft=parseFloat(nav.style.left)||rect.left;startTop=parseFloat(nav.style.top)||rect.top;
+    active=true;startX=e.clientX;startY=e.clientY;startLeft=parseFloat(nav.style.left)||rect.left/layoutUiScale();startTop=parseFloat(nav.style.top)||rect.top/layoutUiScale();
     handle.setPointerCapture?.(e.pointerId);
     nav.classList.add('is-dragging');
   });
   handle.addEventListener('pointermove',e=>{
     if(!active)return;
-    const next=applySideNavPosition({left:startLeft+(e.clientX-startX),top:startTop+(e.clientY-startY)});
+    const next=applySideNavPosition({left:startLeft+(e.clientX-startX)/layoutUiScale(),top:startTop+(e.clientY-startY)/layoutUiScale()});
     if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
   });
   const stop=e=>{
@@ -859,7 +859,7 @@ $('#settingsNavReset').onclick=()=>{
   setSideNavCollapsed(false);
   const nav=$('#sideNav');
   if(nav){
-    const next=applySideNavPosition({left:window.innerWidth-(nav.offsetWidth||220),top:84});
+    const next=applySideNavPosition({left:window.innerWidth/layoutUiScale()-(nav.offsetWidth||220),top:84});
     if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
   }
 };
@@ -1198,7 +1198,7 @@ function openLayoutModuleSettings(item){
     if(!homeCanvasReady||!isHomeCanvasItem(item))return;
     const d=readGlobalLayout(item);
     d.y=12;
-    d.x=Math.max(0,Math.min(d.x,Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width)));
+    d.x=Math.max(0,Math.min(d.x,Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width/layoutUiScale())));
     saveGlobalLayout(item,d);applyGlobalLayout(item,d);
     closeModal();window.scrollTo({top:0,behavior:'instant'});
   };
@@ -1272,6 +1272,7 @@ let homeCanvasActivationReady=false;
 let homeCanvas=null;
 let homeCanvasMeasurePending=false;
 let homeCanvasReflowPending=false;
+function layoutUiScale(){return window.AtelierDisplay?.factor||1}
 function homeVisibleX(savedX,canvasWidth,elementWidth){
   const x=Number.isFinite(Number(savedX))?Number(savedX):0;
   return Math.round(Math.max(0,Math.min(x,Math.max(0,canvasWidth-elementWidth))));
@@ -1348,7 +1349,7 @@ function requestHomeCanvasMeasure(){
       if(item.el.classList.contains('home-module-off'))continue;
       const r=item.el.getBoundingClientRect();
       if(!r.width||!r.height)continue;
-      bottom=Math.max(bottom,r.bottom-frame.top);
+      bottom=Math.max(bottom,(r.bottom-frame.top)/layoutUiScale());
     }
     // Hors édition, la page doit s'arrêter après le dernier module réellement
     // visible. Aucun espace artificiel ne doit forcer une barre de défilement.
@@ -1358,7 +1359,7 @@ function requestHomeCanvasMeasure(){
       // les modules tiennent sur l'écran. Ce surplus disparaît à « Terminer ».
       const canvasDocumentTop=frame.top+window.scrollY;
       const editingRoom=Math.max(
-        window.innerHeight-canvasDocumentTop+440,
+        (window.innerHeight-canvasDocumentTop)/layoutUiScale()+440,
         bottom+440
       );
       height=Math.max(height,Math.ceil(editingRoom));
@@ -1427,7 +1428,7 @@ function activateHomeCanvas(){
         // A new module must not adopt an arbitrary legacy-flow position.
         next=homeSuggestedLayout(item);
       }else if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
-        next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};
+        next={...m.old,x:Math.round((m.rect.left-homeLeft)/layoutUiScale()),y:Math.round((m.rect.top-minTop)/layoutUiScale()+14)};
       }else{
         next=homeSuggestedLayout(item);
         if(hasLegacy&&m.rect.width===0){
@@ -1478,18 +1479,18 @@ function clearHomeCanvasGuides(){
 function homeCanvasMagnet(item,x,y,event){
   clearHomeCanvasGuides();
   if(!homeCanvas||event?.altKey)return {x,y};
-  const rect=item.el.getBoundingClientRect(),w=rect.width,h=rect.height;
+  const rect=item.el.getBoundingClientRect(),w=rect.width/layoutUiScale(),h=rect.height/layoutUiScale();
   const candidatesX=[{value:(homeCanvas.clientWidth-w)/2,line:homeCanvas.clientWidth/2}];
   const candidatesY=[];
   for(const other of globalLayoutItems.filter(isHomeCanvasItem)){
     if(other===item||other.el.classList.contains('home-module-off'))continue;
     const r=other.el.getBoundingClientRect();
-    if(!r.width||!r.height)continue;
+    if(!(r.width/layoutUiScale())||!(r.height/layoutUiScale()))continue;
     const left=parseFloat(other.el.style.left)||0,top=readGlobalLayout(other).y;
-    candidatesX.push({value:left,line:left},{value:left+r.width-w,line:left+r.width},
-      {value:left+(r.width-w)/2,line:left+r.width/2});
-    candidatesY.push({value:top,line:top},{value:top+r.height-h,line:top+r.height},
-      {value:top+(r.height-h)/2,line:top+r.height/2});
+    candidatesX.push({value:left,line:left},{value:left+(r.width/layoutUiScale())-w,line:left+(r.width/layoutUiScale())},
+      {value:left+((r.width/layoutUiScale())-w)/2,line:left+(r.width/layoutUiScale())/2});
+    candidatesY.push({value:top,line:top},{value:top+(r.height/layoutUiScale())-h,line:top+(r.height/layoutUiScale())},
+      {value:top+((r.height/layoutUiScale())-h)/2,line:top+(r.height/layoutUiScale())/2});
   }
   function closest(value,candidates,guide){
     let nearest=null,dist=8;
@@ -1516,7 +1517,7 @@ function setupHomeCanvasKeyboard(){
     event.preventDefault();
     const item=selectedHomeCanvasItem,d=readGlobalLayout(item),step=event.shiftKey?10:1;
     d.x=parseFloat(item.el.style.left)||0;
-    const w=item.el.getBoundingClientRect().width;
+    const w=item.el.getBoundingClientRect().width/layoutUiScale();
     if(event.key==='ArrowLeft')d.x-=step;
     if(event.key==='ArrowRight')d.x+=step;
     if(event.key==='ArrowUp')d.y-=step;
@@ -1542,9 +1543,9 @@ function beginHomeCanvasDrag(event,item){
   item.el.classList.add('layout-selected');
   function updatePosition(){
     if(!active||!homeCanvas)return;
-    const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width);
-    let x=Math.max(0,Math.min(maxX,initial.x+clientX-initial.clientX));
-    let y=Math.max(0,initial.y+clientY-initial.clientY+window.scrollY-initial.scrollY);
+    const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width/layoutUiScale());
+    let x=Math.max(0,Math.min(maxX,initial.x+(clientX-initial.clientX)/layoutUiScale()));
+    let y=Math.max(0,initial.y+(clientY-initial.clientY+window.scrollY-initial.scrollY)/layoutUiScale());
     const positioned=homeCanvasMagnet(item,x,y,{altKey:altHeld});
     d.x=Math.round(Math.max(0,Math.min(maxX,positioned.x)));
     d.y=Math.round(Math.max(0,positioned.y));
@@ -1617,7 +1618,7 @@ function ensureLayoutNaturalHeight(item){
   el.style.marginBottom='';
   const rect=el.getBoundingClientRect();
   if(rect.height>0){
-    item.layoutNaturalHeight=rect.height;
+    item.layoutNaturalHeight=rect.height/layoutUiScale();
     item.layoutNaturalMarginBottom=parseFloat(getComputedStyle(el).marginBottom)||0;
   }
   el.style.minHeight=oldHeight;
@@ -1631,7 +1632,7 @@ function applyGlobalLayout(item,d){
     item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
     item.el.style.maxWidth=canvasWidth+'px';
     item.el.style.left='0px';
-    const renderedWidth=item.el.getBoundingClientRect().width;
+    const renderedWidth=item.el.getBoundingClientRect().width/layoutUiScale();
     item.el.style.left=homeVisibleX(d.x,canvasWidth,renderedWidth)+'px';
     item.el.style.top=Math.max(0,d.y||0)+'px';
     item.el.style.setProperty('--layout-x','0px');
@@ -1651,7 +1652,7 @@ function applyGlobalLayout(item,d){
     const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
     if(value){
       const rect=item.el.getBoundingClientRect();
-      value.textContent=Math.round(rect.width)+' × '+Math.round(rect.height);
+      value.textContent=Math.round(rect.width/layoutUiScale())+' × '+Math.round(rect.height/layoutUiScale());
     }
     requestHomeCanvasMeasure();
     return;
@@ -1677,7 +1678,7 @@ function applyGlobalLayout(item,d){
   const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
   if(value){
     const rect=item.el.getBoundingClientRect();
-    value.textContent=Math.round(rect.width)+' × '+Math.round(rect.height);
+    value.textContent=Math.round(rect.width/layoutUiScale())+' × '+Math.round(rect.height/layoutUiScale());
   }
 }
 function layoutUndoKey(view){return 'atelierLayoutResetUndo_'+view}
@@ -1820,8 +1821,8 @@ function initGlobalLayoutEditor(){
       const d=readGlobalLayout(item),sx=event.clientX,sy=event.clientY,ox=d.x,oy=d.y;
       item.el.classList.add('layout-selected');
       const move=ev=>{
-        d.x=clamp(ox+ev.clientX-sx,-window.innerWidth+100,window.innerWidth-100);
-        d.y=clamp(oy+ev.clientY-sy,-window.innerHeight+100,window.innerHeight*2);
+        d.x=clamp(ox+(ev.clientX-sx)/layoutUiScale(),-window.innerWidth+100,window.innerWidth-100);
+        d.y=clamp(oy+(ev.clientY-sy)/layoutUiScale(),-window.innerHeight+100,window.innerHeight*2);
         applyGlobalLayout(item,d);
         // Persist also during dragging: a lost pointerup must never lose a placement.
         saveGlobalLayout(item,d);
@@ -1845,7 +1846,7 @@ function initGlobalLayoutEditor(){
       const d=readGlobalLayout(item),rect=item.el.getBoundingClientRect();
       const original={...d};
       const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
-      const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
+      const initial={x:d.x,y:d.y,width:rect.width/layoutUiScale(),height:rect.height/layoutUiScale()};
       const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
       const minHeight=item.id==='journal'?340:item.id==='homeDailyTrackersWidget'?185:item.id==='calendar'?130:90;
       const bounds={
@@ -1861,7 +1862,7 @@ function initGlobalLayoutEditor(){
       const apply=ev=>{
         if(!active||ev.pointerId!==pointerId)return;
         const next=layoutResizeGeometry(axis,initial,
-          ev.clientX-sx,ev.clientY-sy+window.scrollY-scrollY,bounds,ev.shiftKey);
+          (ev.clientX-sx)/layoutUiScale(),(ev.clientY-sy+window.scrollY-scrollY)/layoutUiScale(),bounds,ev.shiftKey);
         d.x=next.x;d.y=next.y;d.scale=1;
         if(!['top','bottom','height'].includes(axis))d.width=next.width;
         if(!['left','right','width'].includes(axis))d.height=next.height;
