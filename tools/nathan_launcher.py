@@ -20,6 +20,10 @@ import traceback
 from contextlib import contextmanager
 from urllib.request import urlopen, Request
 
+# Independent frozen processes must own their extracted runtime: notes and
+# update/restart workers can outlive the original server or GUI.
+os.environ['PYINSTALLER_RESET_ENVIRONMENT']='1'
+
 NAME = "L'Atelier du Goblin — Nathan"
 VERSION = "0.18.0"
 PORT = 8877
