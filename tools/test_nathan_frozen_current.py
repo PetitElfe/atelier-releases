@@ -6,6 +6,21 @@ ROOT=Path(__file__).resolve().parents[1];EXE=ROOT/'dist/LAtelierDuGoblin_Nathan.
 def api(path,body=None,method=None):
  req=urllib.request.Request('http://127.0.0.1:8877'+path,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json','Origin':'http://127.0.0.1:8877','X-Atelier-Desktop':'1','X-Atelier-Update':'1'},method=method)
  with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
+def shutdown(data):
+ import ctypes
+ from ctypes import wintypes
+ kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+ kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD];kernel.OpenProcess.restype=wintypes.HANDLE
+ kernel.WaitForSingleObject.argtypes=[wintypes.HANDLE,wintypes.DWORD];kernel.WaitForSingleObject.restype=wintypes.DWORD
+ kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+ pid=int((data/'server.pid').read_text().strip())
+ handle=kernel.OpenProcess(0x100000,False,pid)
+ try:
+  api('/api/shutdown',{})
+  if handle:assert kernel.WaitForSingleObject(handle,30000)==0,'Own fixture server did not exit'
+ finally:
+  if handle:kernel.CloseHandle(handle)
+
 def ready():
  for _ in range(100):
   try:
@@ -27,7 +42,7 @@ with tempfile.TemporaryDirectory() as folder:
   import uuid
   note=api('/api/desktop-postits/new',{'operation_id':str(uuid.uuid4())});assert note['display_confirmed']
   runtime=json.loads((data/'desktop-postits-runtime.json').read_text());postit_pid=runtime['pid'];assert runtime['visible_ids']
-  api('/api/shutdown',{});server.wait(timeout=30)
+  shutdown(data);server.wait(timeout=30)
  finally:
   if postit_pid:subprocess.run(['taskkill','/PID',str(postit_pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
   if server.poll() is None:server.terminate();server.wait(timeout=10)
@@ -46,7 +61,7 @@ with tempfile.TemporaryDirectory() as folder:
   worker=subprocess.Popen([str(installed),'--nathan-update-worker',os.environ['GITHUB_SHA']],env=env)
   worker.wait(timeout=240);status=api('/api/update/status');assert status['phase']=='success',status
   assert (data/'own-document.bin').read_bytes()==before
-  api('/api/shutdown',{})
+  shutdown(data)
  finally:
   if server.poll() is None:server.terminate()
  print('PASS: frozen fresh install, native note ACK, safe existing-profile upgrade, preserved SQLite/files/layout, source-pinned in-app update/restart; owner APIs inaccessible')
