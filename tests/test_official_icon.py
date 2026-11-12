@@ -17,3 +17,9 @@ class OfficialIconTests(unittest.TestCase):
  def test_metadata_cannot_supply_remote_urls(self):
   with patch.object(official_icon,'download',return_value=json.dumps({'ico_sha256':'https://evil/','png_sha256':'b'*64}).encode()):
    with self.assertRaises(ValueError):official_icon.metadata()
+
+ def test_official_fallback_is_not_a_private_override(self):
+  import local_icon
+  with tempfile.TemporaryDirectory() as folder,patch.object(official_icon,'current',return_value=Path(folder)/'official-icon/icon.ico'),patch('updater.guard'):
+   local_icon._message='';status=local_icon.status(folder)
+   self.assertFalse(status['custom']);self.assertIn('officielle',status['message'])
