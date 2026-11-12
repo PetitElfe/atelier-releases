@@ -20,6 +20,12 @@ def build(shared=None):
     script='/* STUDIO_MOBILE_EXTENSION_START */\n'+'\n'.join((target/n).read_text() for n in names)+'\n/* STUDIO_MOBILE_EXTENSION_END */'
     if '/* STUDIO_MOBILE_EXTENSION_START */' in html:html=re.sub(r'/\* STUDIO_MOBILE_EXTENSION_START \*/.*?/\* STUDIO_MOBILE_EXTENSION_END \*/',lambda _:script,html,flags=re.S)
     else:html=html.replace('</script>',script+'\n</script>')
+    grocery_styles='<style id="groceryStyles">'+(target/'groceries.css').read_text()+"\nbody.shopping-focus header{min-height:56px;height:auto;padding:8px 14px}body.shopping-focus .paper{padding-top:12px}body.shopping-focus #title,body.shopping-focus #subtitle{display:none}.shopping-focus .grocery-row input{min-height:40px;font-size:16px}.shopping-focus .grocery-tabs button{min-height:40px}.shopping-focus .grocery-app{padding-bottom:12px}\n</style>"
+    if 'id="groceryStyles"' in html:html=re.sub(r'<style id="groceryStyles">.*?</style>',lambda _:grocery_styles,html,flags=re.S)
+    else:html=html.replace('</head>',grocery_styles+'\n</head>')
+    groceries='/* GROCERY_EXTENSION_START */\n'+(target/'groceries_ui.js').read_text()+'\n'+(target/'groceries_mobile.js').read_text()+'\n/* GROCERY_EXTENSION_END */'
+    if '/* GROCERY_EXTENSION_START */' in html:html=re.sub(r'/\* GROCERY_EXTENSION_START \*/.*?/\* GROCERY_EXTENSION_END \*/',lambda _:groceries,html,flags=re.S)
+    else:html=html.replace('</script>',groceries+'\n</script>')
     path.write_text(html)
 
 if __name__=='__main__':

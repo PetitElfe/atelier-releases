@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
             .build();
         webView = new WebView(this);
         webView.setWebViewClient(new WebViewClientCompat() {
+            @Override public void onPageFinished(WebView view,String url) { openGroceryIntent(); }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if ("https".equals(uri.getScheme()) && "appassets.androidplatform.net".equals(uri.getHost())) return false;
@@ -89,6 +90,8 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(tailnet, "AtelierTailnet");
         webView.addJavascriptInterface(new KitchenTimerBridge(this), "AtelierTimers");
         webView.addJavascriptInterface(new ReminderBridge(this), "AtelierReminders");
+        webView.addJavascriptInterface(new FoodReminderBridge(this), "AtelierFoods");
+        FoodReminderBridge.resume(this);
         webView.addJavascriptInterface(new AgendaWidgetProvider.Bridge(this), "AtelierWidget");
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface public void exportBackup(String json) {
@@ -152,6 +155,13 @@ public class MainActivity extends Activity {
             nativeBackRegistered = true;
         }
     }
+    private void openGroceryIntent() {
+        if(webView!=null && getIntent().getBooleanExtra("groceries_inventory",false)) {
+            webView.evaluateJavascript("window.openGroceryInventory&&window.openGroceryInventory()",null);
+            getIntent().removeExtra("groceries_inventory");
+        }
+    }
+    @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent);setIntent(intent);openGroceryIntent(); }
     private void dispatchBackToWeb() {
         if (webView == null) { moveTaskToBack(true); return; }
         webView.evaluateJavascript(
@@ -188,6 +198,7 @@ public class MainActivity extends Activity {
         super.onResume();
         KitchenTimerBridge.resume(this);
         ReminderBridge.resume(this);
+        FoodReminderBridge.resume(this);
         AgendaWidgetProvider.updateAll(this);
         // On returning from the background, refresh remote PC lists only.
         // Existing local WebView data and the offline journal remain untouched.

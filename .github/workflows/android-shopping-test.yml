@@ -1,0 +1,203 @@
+name: Shopping Android 0.1.19 signed TEST
+on:
+  push:
+    branches: [test/shopping-android-20261112]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: goblin-android-shopping
+  cancel-in-progress: true
+jobs:
+  signed-test-prerelease:
+    if: github.repository == 'PetitElfe/atelier-releases'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: python tools/bundle_studio_mobile.py
+      - name: Verify UI logic and journal synchronization before publishing
+        shell: bash
+        run: |
+          node --test tests/mental_sync_race.test.cjs
+          node --test tests/mobile_auto_backup.test.cjs
+          node --test tests/mobile_navigation_notes.test.cjs
+          node <<'NODE'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const html=fs.readFileSync('mobile/prototype/index.html','utf8');
+          const script=html.match(/<script>([\s\S]*?)<\/script>/);
+          assert(script,'Mobile JavaScript was not bundled');
+          new Function(script[1]);
+          for(const part of ['goblinUpdateChannel()', "id:'goblinUpdateChannel'", 'window.AtelierUpdates.setUpdateChannel', 'starTravel>=55', "const mentalKey='goblin-mobile-mental-v1'"]){
+            assert(html.includes(part),part+' missing');
+          }
+          const backup=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/AutoBackupBridge.java','utf8');
+          const activity=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/MainActivity.java','utf8');
+          assert(backup.includes('original-before-first-upgrade.json'),'First-launch preservation missing');
+          assert(backup.includes('snapshot(String payload, String reason)'),'Private backup API missing');
+          assert(activity.includes('webView.addJavascriptInterface(autoBackupBridge, "AtelierAutoBackup")'),'Native backup unavailable');
+          assert(html.includes("goblinSnapshot('startup')"),'First-launch snapshot missing');
+          assert(html.includes("goblinSnapshot('pre-update')"),'Pre-update guard missing');
+          const native=fs.readFileSync('mobile/android/app/src/main/java/fr/atelierdugoblin/mobile/UpdateBridge.java','utf8');
+          for(const part of ['TEST_TAG','currentChannel()','setUpdateChannel(String channel)','release.optBoolean("prerelease") != isTest','generation != channelGeneration','Arrays.equals(signer(target,true), signer(target,false))']){
+            assert(native.includes(part),part+' missing');
+          }
+          console.log('Signed TEST prerequisites: PASS');
+          NODE
+      - name: Install Android SDK and bundle app
+        shell: bash
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          mkdir -p mobile/android/app/src/main/assets
+          cp mobile/prototype/index.html mobile/android/app/src/main/assets/index.html
+      - name: Load permanent signing key without exposing it
+        env:
+          KEYSTORE_B64: ${{ secrets.ATELIER_ANDROID_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ATELIER_ANDROID_KEY_ALIAS }}
+        shell: bash
+        run: |
+          test -n "$KEYSTORE_B64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || exit 1
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/atelier-release.jks"
+          echo "ATELIER_SIGNING_FILE=$RUNNER_TEMP/atelier-release.jks" >> "$GITHUB_ENV"
+      - name: Build Android TEST 0.1.19 signed with the permanent certificate
+        working-directory: mobile/android
+        env:
+          RELEASE_VERSION: '0.1.19'
+          ATELIER_SIGNING_FILE: ${{ env.ATELIER_SIGNING_FILE }}
+          ATELIER_SIGNING_STORE_PASSWORD: ${{ secrets.ATELIER_ANDROID_STORE_PASSWORD }}
+          ATELIER_SIGNING_KEY_PASSWORD: ${{ secrets.ATELIER_ANDROID_KEY_PASSWORD }}
+          ATELIER_SIGNING_KEY_ALIAS: ${{ secrets.ATELIER_ANDROID_KEY_ALIAS }}
+        run: gradle --no-daemon assembleRelease
+      - name: Verify TEST APK contents, package and versionCode
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=mobile/android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep -q "package: name='fr.atelierdugoblin.mobile'"
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='119'"
+          unzip -p "$APK" assets/index.html | grep -q 'goblinUpdateChannel'
+          echo 'APK 0.1.19 signed, correctly packaged, and contains the channel selector.'
+      - name: Download prior signed 0.1.18 TEST APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/old-016"
+          gh release download android-test-v0.1.18 --repo "${{ github.repository }}" --pattern "LAtelierDuGoblin-Mobile.apk*" --dir "$RUNNER_TEMP/old-016"
+          (cd "$RUNNER_TEMP/old-016" && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+          test -s "$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk"
+      - name: Match Android identity, signer, and 0.1.18 to 0.1.19 upgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          OLD="$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk"
+          NEW=mobile/android/app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose "$OLD"
+          "$APKSIGNER" verify --verbose "$NEW"
+          old_cert=$("$APKSIGNER" verify --print-certs "$OLD" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
+          new_cert=$("$APKSIGNER" verify --print-certs "$NEW" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)
+          test -n "$old_cert" && test "$old_cert" = "$new_cert"
+          "$AAPT" dump badging "$OLD" | grep -q "versionCode='118'"
+          "$AAPT" dump badging "$NEW" | grep -q "versionCode='119'"
+          echo "PASS: same signer, versionCode 118 -> 119, and stable application ID."
+      - name: Enable Android emulator acceleration
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod a+rw /dev/kvm; fi
+      - name: Smoke-test signed replacement in Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_4
+          emulator-boot-timeout: 720
+          script: |
+            GOBLIN_OLD_APK="$RUNNER_TEMP/old-016/LAtelierDuGoblin-Mobile.apk" python tools/utility_android_emulator_test.py
+      - name: Prepare reviewed candidate artifact
+        run: |
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk LAtelierDuGoblin-Mobile.apk
+          sha256sum LAtelierDuGoblin-Mobile.apk > LAtelierDuGoblin-Mobile.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Goblin_Android_Shopping_019_Candidate
+          path: |
+            LAtelierDuGoblin-Mobile.apk
+            LAtelierDuGoblin-Mobile.apk.sha256
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android_utility_emulator_evidence
+          path: artifacts/
+          if-no-files-found: ignore
+  sync-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 1bdafdda1ee4deffd57be19a28fc7a9c9bd31b91
+          path: pc
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/utility_android_sync_browser_test.cjs
+      - run: node tools/studio_mobile_browser_test.cjs
+      - run: cmp mobile/prototype/grounding_cards.js pc/app/public/grounding_cards.js
+      - run: node tools/mobile_readability_browser_test.cjs
+      - run: ATELIER_PC_APP=pc/app/app.py ATELIER_MOBILE_HTML=mobile/prototype/index.html node tools/groceries_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android_utility_sync_evidence
+          path: artifacts/
+          if-no-files-found: ignore
+
+  publish-tested:
+    needs: [signed-test-prerelease, sync-browser]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Goblin_Android_Shopping_019_Candidate
+          path: candidate
+      - name: Publish signed TEST only after all checks pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd candidate && sha256sum -c LAtelierDuGoblin-Mobile.apk.sha256)
+          if gh release view android-test-v0.1.19 >/dev/null 2>&1; then exit 0; fi
+          cat > /tmp/shopping-notes.md <<'NOTES'
+          Courses : aliment, prix, total. Achat confirmé une seule fois dans le budget du PC ; inventaire et péremption facultative. Saisie locale hors connexion et reprise sans double dépense. Rappels natifs privés à J−3, J−2 et J0 ; autorisation des notifications nécessaire.
+
+          Mise à jour signée depuis 0.1.18 sans désinstallation. Nécessite la nouvelle mise à jour Windows TEST des courses. Tailscale doit être actif sur le téléphone et le PC ; les essais réels sur les appareils de Misu restent à confirmer. L’icône officielle commune sera intégrée séparément depuis le fichier choisi par sa créatrice, sans envoi du dessin dans le chat.
+          NOTES
+          gh release create android-test-v0.1.19 candidate/* --prerelease --target "${{ github.sha }}" --title 'Android TEST 0.1.19 — Courses et inventaire' --notes-file /tmp/shopping-notes.md
