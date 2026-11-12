@@ -5,7 +5,7 @@
 :root[data-atelier-theme="mauve"]{--bg:#191421;--panel:#2f2438;--line:#765e84;--gold:#ebc9e9;--muted:#c6b2c9;--text:#f9eef9}
 :root[data-atelier-theme="bleu"]{--bg:#101a28;--panel:#1c2b3e;--line:#577086;--gold:#b8d4ee;--muted:#aabed3;--text:#f2f8fe}
 :root[data-atelier-theme="miel"]{--bg:#24190e;--panel:#342619;--line:#916a45;--gold:#e7c583;--muted:#c9ae90;--text:#fbecda}
-body{font-size:1rem;font-family:var(--atelier-font);background:var(--bg);color:var(--text)}
+body{font-family:var(--atelier-font);background:var(--bg);color:var(--text)}
 button,input,select,textarea{font-family:var(--atelier-font);line-height:1.35}
 :where(.studio-menu,.atelier-context-menu,.modal,.settings-card,.studio-fieldset,.studio-tabs,.tabs,.topbar,.sidebar,.drawer,.library-page-sidebar,.recipe-library-sidebar){background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
 :where(.studio-menu,.atelier-context-menu,.modal,.settings-card,.sidebar,.drawer) :where(input,select,textarea,button){background-color:var(--panel2);color:var(--text);border-color:var(--line)}
@@ -30,4 +30,17 @@ select option,optgroup{background:var(--panel);color:var(--text)}
 .topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit){background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
 .topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit):hover{background:var(--atelier-hover)!important;color:var(--text)!important;border-color:var(--gold)!important}
 
-body :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted){font-family:var(--atelier-font)}
+
+/* Size adapts through wrapping/scrolling, never through independent font inflation. */
+.topbar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px}
+.top-brand{flex-wrap:nowrap!important;min-width:0;overflow:hidden}
+.top-brand-labels{min-width:0;flex-shrink:1}
+.top-brand-labels .eyebrow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{flex-wrap:wrap}
+:root[data-atelier-compact=true] .topbar{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+:root[data-atelier-compact=true] .top-date-wrap{grid-column:1/-1;grid-row:2}
+:root[data-atelier-compact=true] #jumpDateLabel{font-size:24px}
+#sideNav{height:calc(var(--atelier-viewport-height,100dvh) - 96px)!important;max-height:calc(var(--atelier-viewport-height,100dvh) - 20px)!important}
+.modal{max-height:calc(var(--atelier-viewport-height,100dvh) - 24px)!important;max-width:calc(var(--atelier-viewport-width,100vw) - 28px)}
+:where(.studio-menu,.atelier-context-menu){max-width:calc(var(--atelier-viewport-width,100vw) - 16px);max-height:calc(var(--atelier-viewport-height,100dvh) - 16px)}
+:root[data-atelier-font=system] :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted),:root[data-atelier-font=arial] :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted){font-family:var(--atelier-font)}

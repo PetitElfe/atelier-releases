@@ -1,33 +1,31 @@
-/* Local display preferences shared by the desktop and its embedded journal. */
+/* One proportional application zoom. Never rewrite the application's typography. */
 (()=>{'use strict';
-const root=document.documentElement, embedded=location.pathname.endsWith('mental-health.html');
+const root=document.documentElement,embedded=window.parent!==window;let timer;
 const read=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
-const families={classic:"Georgia, 'Times New Roman', serif",system:'system-ui, "Segoe UI", sans-serif',arial:'Arial, sans-serif'};
-const originals=new Map();let timer;
-function visit(rules,factor){for(const rule of rules){
- if(rule.cssRules?.length)visit(rule.cssRules,factor);
- if(!rule.style)continue;
- const style=rule.style;
- if(!originals.has(style))originals.set(style,{size:style.fontSize,line:style.lineHeight,family:style.fontFamily});
- const original=originals.get(style),size=/^(\d+(?:\.\d+)?)px$/.exec(original.size),line=/^(\d+(?:\.\d+)?)px$/.exec(original.line);
- // CSS pixels already account for Windows display scaling. Never multiply by devicePixelRatio.
- if(/^(?:Georgia|system-ui|-apple-system|Arial|sans-serif|serif|["']?Segoe UI["']?[, ])/i.test(original.family))style.fontFamily='var(--atelier-font)';
- if(size)style.fontSize=Math.max(14,Number(size[1])*factor)+'px';
- if(line)style.lineHeight='max(1.25em, '+Number(line[1])*factor+'px)';
-}}
+const write=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+const steps=[80,85,90,95,100,105,110,115,120,125,130,140,150,160];
+const display=window.AtelierDisplay={factor:1,apply,setZoom};
+function setZoom(value){write('atelier-ui-scale',String(value));apply()}
 function apply(){
- const chosen=read('atelier-ui-scale','auto'),number=Number(chosen);
- const automatic=innerWidth>=2400&&innerHeight>=1000?1.25:innerWidth>=1800&&innerHeight>=900?1.1:1;
- const factor=chosen==='auto'||!Number.isFinite(number)||number<80||number>160?automatic:number/100;
+ const chosen=read('atelier-ui-scale','auto'),n=Number(chosen),factor=chosen!=='auto'&&steps.includes(n)?n/100:1;
+ // An embedded journal is already scaled by its parent. Do not apply it twice.
+ display.zoom=factor;display.factor=embedded?1:factor;root.style.zoom=String(display.factor);
+ root.style.removeProperty('font-size');root.style.removeProperty('--atelier-text-factor');
+ root.style.setProperty('--atelier-viewport-width',innerWidth/display.factor+'px');root.style.setProperty('--atelier-viewport-height',innerHeight/display.factor+'px');
+ root.dataset.atelierCompact=String(innerWidth/display.factor<1180);
  const theme=read('atelier-ui-theme','goblin');root.dataset.atelierTheme=['goblin','sage','mauve','bleu','miel'].includes(theme)?theme:'goblin';
- root.style.zoom='';document.querySelectorAll('main .view').forEach(v=>v.style.zoom='');
- root.style.setProperty('--atelier-text-factor',factor);root.style.setProperty('--atelier-font',families[read('atelier-ui-font','classic')]||families.classic);
- root.style.fontSize=Math.max(14,16*factor)+'px';
- for(const sheet of document.styleSheets){try{visit(sheet.cssRules,factor)}catch{/* Ignore cross-origin sheets. */}}
- for(const [id,key,fallback] of [['atelierUiScale','atelier-ui-scale','auto'],['atelierUiTheme','atelier-ui-theme','goblin'],['atelierUiFont','atelier-ui-font','classic']]){const control=document.getElementById(id);if(control)control.value=read(key,fallback)}
- const status=document.getElementById('atelierDisplayStatus');if(status)status.textContent=(chosen==='auto'?'Automatique · ':'')+Math.round(factor*100)+' % · fenêtre '+innerWidth+' × '+innerHeight+' · texte de 14 px minimum';
- if(embedded){root.style.setProperty('--ink','var(--text)');root.style.setProperty('--paper','var(--panel)');root.style.setProperty('--soft','var(--panel2)');root.style.setProperty('--accent','var(--gold)')}
+ const font=read('atelier-ui-font','classic');root.dataset.atelierFont=font;
+ root.style.setProperty('--atelier-font',({classic:"Georgia, 'Times New Roman', serif",system:'system-ui, "Segoe UI", sans-serif',arial:'Arial, sans-serif'})[font]||'Georgia,serif');
+ for(const [id,key,fallback]of [['atelierUiScale','atelier-ui-scale','auto'],['atelierUiTheme','atelier-ui-theme','goblin'],['atelierUiFont','atelier-ui-font','classic']]){const control=document.getElementById(id);if(control)control.value=read(key,fallback)}
+ const status=document.getElementById('atelierDisplayStatus');if(status)status.textContent=(chosen==='auto'?'Échelle Windows · ':'Zoom de l’application · ')+Math.round(factor*100)+' %';
+ if(location.pathname.endsWith('mental-health.html')){root.style.setProperty('--ink','var(--text)');root.style.setProperty('--paper','var(--panel)');root.style.setProperty('--soft','var(--panel2)');root.style.setProperty('--accent','var(--gold)')}
+ if(typeof applySideNavPosition==='function'){applySideNavPosition();if(document.getElementById('sideNav')?.classList.contains('is-collapsed'))setSideNavCollapsed(true)}
+ if(typeof reflowHomeCanvasViewport==='function')reflowHomeCanvasViewport();
+ dispatchEvent(new CustomEvent('atelier-display-changed',{detail:{factor:display.factor}}));
 }
-window.AtelierDisplay={apply};apply();
-addEventListener('resize',()=>{clearTimeout(timer);timer=setTimeout(apply,100)});addEventListener('storage',e=>{if(!e.key||e.key.startsWith('atelier-ui-'))apply()});addEventListener('load',apply);
+function step(direction){const value=Math.round((display.zoom||1)*100),next=direction>0?steps.find(v=>v>value):[...steps].reverse().find(v=>v<value);if(next)setZoom(next)}
+addEventListener('keydown',event=>{if(!(event.ctrlKey||event.metaKey)||event.altKey)return;if(['+','=','-','0'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();if(event.key==='0')setZoom(100);else step(event.key==='-'?-1:1)}},true);
+addEventListener('wheel',event=>{if(!event.ctrlKey)return;event.preventDefault();event.stopImmediatePropagation();step(event.deltaY<0?1:-1)},{passive:false,capture:true});
+addEventListener('resize',()=>{clearTimeout(timer);timer=setTimeout(apply,80)});
+addEventListener('storage',event=>{if(!event.key||event.key.startsWith('atelier-ui-'))apply()});addEventListener('load',apply);apply();
 })();

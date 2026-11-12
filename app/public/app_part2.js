@@ -595,8 +595,9 @@ function showAtelierContextMenu(anchor,actions){
     b.onclick=()=>{menu.remove();action.run()};menu.appendChild(b)}
   document.body.appendChild(menu);
   const x=anchor.clientX??anchor.getBoundingClientRect().left,y=anchor.clientY??anchor.getBoundingClientRect().bottom;
-  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menu.offsetWidth-8))+'px';
-  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menu.offsetHeight-8))+'px';
+  const ui=window.AtelierDisplay?.factor||1;
+  menu.style.left=Math.max(8,Math.min(x/ui,window.innerWidth/ui-menu.offsetWidth-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y/ui,window.innerHeight/ui-menu.offsetHeight-8))+'px';
   const dismiss=e=>{if(!menu.contains(e.target))menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
   setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
   menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.remove();anchor.focus?.()}});

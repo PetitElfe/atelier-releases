@@ -23,7 +23,7 @@
   function moveOrResize(event,s,item,card,resizing){
     if(event.button!==0||s.gesture)return;event.preventDefault();const previousUndo=s.undo,geometry={x:item.x,y:item.y,w:item.w,h:item.h};undoSnapshot(s);s.gesture=true;clearTimeout(s.timer);const handle=event.currentTarget;handle.setPointerCapture(event.pointerId);
     const x=event.clientX,y=event.clientY,original={x:parseFloat(card.style.left),y:item.y,w:card.offsetWidth,h:item.h},surface=card.parentElement;
-    const move=e=>{const dx=e.clientX-x,dy=e.clientY-y;if(resizing){item.w=Math.min(1400,surface.clientWidth-original.x-12,Math.max(160,original.w+dx));item.h=Math.max(120,Math.min(1400,original.h+dy))}else{item.x=Math.max(0,Math.min(surface.clientWidth-card.offsetWidth-12,original.x+dx));item.y=Math.max(0,Math.min(20000,original.y+dy))}size(s)};
+    const move=e=>{const zoom=window.AtelierDisplay?.factor||1,dx=(e.clientX-x)/zoom,dy=(e.clientY-y)/zoom;if(resizing){item.w=Math.min(1400,surface.clientWidth-original.x-12,Math.max(160,original.w+dx));item.h=Math.max(120,Math.min(1400,original.h+dy))}else{item.x=Math.max(0,Math.min(surface.clientWidth-card.offsetWidth-12,original.x+dx));item.y=Math.max(0,Math.min(20000,original.y+dy))}size(s)};
     let finished=false;
     const cleanup=()=>{finished=true;s.gesture=false;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',cancel);handle.removeEventListener('lostpointercapture',cancel);window.removeEventListener('blur',cancel);if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId)};
     const end=e=>{if(finished||e.pointerId!==event.pointerId)return;cleanup();changed(s)};
