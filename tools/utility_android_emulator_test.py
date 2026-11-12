@@ -141,7 +141,7 @@ assert 'Rappel de test Android' in notice,'General native reminder must fire wit
 adb('shell','input','keyevent','224');adb('shell','wm','dismiss-keyguard');launch()
 # Same native delivery path as expiry reminders, with a short explicit diagnostic.
 menu('Courses');tap('Inventaire');tap('Vérifier les rappels');tap('Tester un rappel de péremption (30 s)')
-food_alarms=adb('shell','dumpsys','alarm');Path('artifacts/android-food-alarms.txt').write_text(food_alarms,encoding='utf-8');assert 'FoodReminderReceiver' in food_alarms,'Expiry test must register a real native alarm'
+food_alarms=adb('shell','dumpsys','alarm');Path('artifacts/android-food-alarms.txt').write_text(food_alarms,encoding='utf-8');assert 'fr.atelierdugoblin.FOOD' in food_alarms,'Expiry test must register a real native alarm'
 adb('shell','input','keyevent','3');adb('shell','input','keyevent','223')
 for _ in range(8):time.sleep(5)
 food_notice=adb('shell','dumpsys','notification','--noredact')

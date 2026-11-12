@@ -44,5 +44,5 @@
   }
  }
  const timer=setInterval(()=>{if(document.hidden||root.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;if(data.jobs.length)drain();else pull()},12000);
- const api={render,pull,drain,openInventory(){data.mode='inventory';save();render()},dispose(){disposed=true;clearInterval(timer)},get state(){return data}};render();if(data.jobs.length)drain();else pull();return api;
+ const api={render,pull,drain,importLegacy(rows){const done=new Set(data.importedLegacy||[]),items=[];for(const old of rows){if(done.has(old.key))continue;const row={key:old.key,name:String(old.text||'').trim().slice(0,120),price:null,purchase_count:1,checked:old.done?1:0};if(!row.name)continue;data.cart.push(row);items.push({...row,base:null});done.add(row.key)}data.importedLegacy=[...done];for(let i=0;i<items.length;i+=500)queue('cart',items.slice(i,i+500));data.mode='cart';save();render()},openInventory(){data.mode='inventory';save();render()},dispose(){disposed=true;clearInterval(timer)},get state(){return data}};render();if(data.jobs.length)drain();else pull();return api;
 };})();
