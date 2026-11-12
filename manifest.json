@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "7ba37f73b12326b749283ba2be98a5983fe9eac83c40783eb8fa734323e31e07"
+      "sha256": "b40694ea605b7c7bcd54c251d3da040f00eeb172288a8a8bcfdfcbef0aad64ad"
     },
     {
       "path": "app_part3.py",
@@ -125,7 +125,7 @@
     },
     {
       "path": "public/creator_access.js",
-      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
+      "sha256": "f19d04b6c3821fa0e47b8b6cb5e5573fc874cd78ffa52fc38783e2f5667fa346"
     },
     {
       "path": "public/editor_flow.js",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "bddf0c2839ec1a06ce1616dedf4c90a39df7d184f697c143c47fa1b775054a7b"
+      "sha256": "8831bac1e131b00bf27a9d68d403623f0eaf688f2da74727a65c6a0489090051"
     },
     {
       "path": "public/interface_reference.css",
@@ -393,7 +393,7 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "d334dfdcd35c848f235e726e4edb741dcc045a33e8546a3fec7c61ada08bba09"
+      "sha256": "f50fdcc851301fffaaac4c4f1b09f850ee723025dd1ac39b7956401076478409"
     },
     {
       "path": "local_icon.ps1",
@@ -401,7 +401,7 @@
     },
     {
       "path": "public/local_icon.js",
-      "sha256": "51d9e49d14c0d170e6d8fb3a87460f9e3b95bb6e1ce0c8f728908704e08478f1"
+      "sha256": "e7fb931fdbad03863fbc87bdc3f45d5542c1550d68b2234acf5650ba60a45094"
     },
     {
       "path": "groceries.py",
@@ -409,7 +409,7 @@
     },
     {
       "path": "public/groceries_ui.js",
-      "sha256": "39aa97c994e83c4d04b81ef221a4d0443cfa41100d382dc0a1eaa078c8ad32c1"
+      "sha256": "7a987650f36cd9cdc5428f89dacb50431d651a311ed04992c7c0f953035cd086"
     },
     {
       "path": "public/groceries_pc.js",
@@ -418,8 +418,16 @@
     {
       "path": "public/groceries.css",
       "sha256": "1932d665fe99232c00115827779baad2cb7c97f63e4efc6e21219582e3951bee"
+    },
+    {
+      "path": "official_icon.py",
+      "sha256": "8dc443c65d871853d32092ae66d21adf0f90a2a13bd81144c16b4a6162d1e447"
+    },
+    {
+      "path": "publish_official_icon.ps1",
+      "sha256": "adb275f24c389a71118e277f0f804ae616ca6649ea9f94fcdfdbbc6d5903b761"
     }
   ],
   "notes": "Courses PC/téléphone : liste compacte, file hors connexion, achat unique avec budget et inventaire, dates facultatives et rappels J−3/J−2/J0. Mode Modifier sur les rubriques dynamiques ; en-tête resserré.",
-  "build_sequence": 2026111206
+  "build_sequence": 2026111207
 }

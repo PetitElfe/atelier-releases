@@ -32,3 +32,16 @@ jobs:
           name: Shopping_layout_evidence
           path: artifacts/
           if-no-files-found: ignore
+  native-icon:
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - shell: pwsh
+        run: |
+          $null=[scriptblock]::Create((Get-Content app/publish_official_icon.ps1 -Raw))
+          python tools/test_local_icon_windows.py

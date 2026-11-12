@@ -975,6 +975,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':'Pièce jointe trop volumineuse (4 Mo max).'},413)
         body = self._body(); ts = now_iso()
         if p in ('/api/groceries/cart','/api/groceries/checkout','/api/groceries/food','/api/groceries/remove'):
+            if body.get('installation_id')!=utility_safety.identity(DATA):return self._json({'error':'Installation PC différente. Les saisies restent sur ton appareil.'},409)
             try:
                 with conn() as c:
                     result=groceries.action(c,p.rsplit('/',1)[-1],body,ts);c.commit()
@@ -1030,11 +1031,15 @@ class Handler(BaseHTTPRequestHandler):
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
-        if p in ('/api/local-icon/choose','/api/local-icon/reset'):
+        if p in ('/api/local-icon/choose','/api/local-icon/reset','/api/local-icon/publish'):
             if (self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Local-Icon')!='1'):
                 return self._json({'error':'Action réservée aux paramètres locaux.'},403)
             if body:return self._json({'error':'Aucun fichier ni chemin ne doit être envoyé.'},400)
             try:
+                if p.endswith('/publish'):
+                    if PORT!=8876:return self._json({'error':'Publication réservée à la créatrice.'},403)
+                    if not creator_access.allowed(DATA,self.headers.get('X-Atelier-Creator','')):return self._json({'error':'Déverrouille ton mode création avant de publier.'},403)
+                    return self._json(local_icon.publish(DATA))
                 edition='NATHAN' if PORT==8877 else 'MISU'
                 return self._json(local_icon.change(DATA,local_icon.executable(DATA,edition),p.rsplit('/',1)[-1]))
             except (RuntimeError,ValueError) as ex:return self._json({'error':str(ex)},409)
