@@ -15,6 +15,7 @@ const proc=spawn('python',['app/app.py'],{env:{...process.env,ATELIER_DATA_DIR:d
  await page.evaluate(()=>showView('settings'));await page.getByRole('button',{name:'Affichage et couleurs',exact:true}).click();
  await page.locator('#atelierUiScale').selectOption('160');await page.locator('#atelierUiFont').selectOption('system');
  assert.equal(await page.evaluate(()=>getComputedStyle(document.body).fontSize),'25.6px');
+ assert.ok(await page.evaluate(()=>parseFloat(getComputedStyle(document.querySelector('#atelierDisplayStatus')).fontSize)>=14),'Small fixed-pixel captions must scale too');
  assert.match(await page.evaluate(()=>getComputedStyle(document.body).fontFamily),/system-ui/);
  for(const theme of ['sage','mauve','bleu','miel','goblin']){
  await page.locator('#atelierUiTheme').selectOption(theme);

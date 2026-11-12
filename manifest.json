@@ -385,11 +385,11 @@
     },
     {
       "path": "public/display_preferences.js",
-      "sha256": "d77c238999dafdf28523eaf06fe7cf67f5d5e6590568af01ead06b45f0a963eb"
+      "sha256": "8c061f6bff2d596825ca9656679062927b05f9f2735db84c8b8450a946d81fb6"
     },
     {
       "path": "public/display_preferences.css",
-      "sha256": "b48814a4101a7b280da214e6f00b5794b44c337448d402299307642d4bcc605a"
+      "sha256": "a604b15d8aea3a180c4e295e1fabe719abea4d355012508061537f765fd534ea"
     }
   ],
   "notes": "TEST Windows : taille des textes automatique ou réglable jusqu’à 160 %, choix de police et menus harmonisés avec le thème. Mise à jour intégrée Misu/Nathan ; données et fonctions réservées conservées.",
