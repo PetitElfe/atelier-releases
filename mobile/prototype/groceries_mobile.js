@@ -25,7 +25,7 @@ render=function(){
  const key='goblin-groceries-v1:'+base,offline='goblin-groceries-v1:';
  if(base&&!localStorage.getItem(key)&&localStorage.getItem(offline))localStorage.setItem(key,localStorage.getItem(offline));
  if(!base){const connect=document.createElement('button');connect.textContent='Relier mon PC';connect.onclick=()=>{state.page='settings';render()};content.prepend(connect)}
- client=GoblinGroceries({root:host,storageKey:key,request:async(method,path,body)=>{if(!base)throw Error('Relie ton PC dans les paramètres pour synchroniser.');return callPc(method,path,body,base)},nativeSync:foods=>{if(base!==pcUrl)return;try{window.AtelierFoods?.sync(JSON.stringify(foods))}catch{}},requestNotifications:()=>window.AtelierFoods?.requestPermission(),testNotifications:window.AtelierFoods?()=>window.AtelierFoods.test():null});
+ client=GoblinGroceries({root:host,storageKey:key,quietStatus:true,request:async(method,path,body)=>{if(!base)throw Error('Relie ton PC dans les paramètres pour synchroniser.');return callPc(method,path,body,base)},nativeSync:foods=>{if(base!==pcUrl)return;try{window.AtelierFoods?.sync(JSON.stringify(foods))}catch{}},requestNotifications:()=>window.AtelierFoods?.requestPermission(),testNotifications:window.AtelierFoods?()=>window.AtelierFoods.test():null});
  window.atelierGroceries=client;legacyNotice(content);
 };
 const resume=window.__atelierOnResume;window.__atelierOnResume=()=>{resume?.();client?.drain();client?.pull()};
