@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "745ee76f638326ab8a0f8144140cfe1b88c4ab9fb628f34e26f33dacb1291238"
+      "sha256": "bd7ec04ea9ba0535456c34cc981b388c58b9088172f6d98c4189e683f810833c"
     },
     {
       "path": "public/interface_reference.css",
@@ -169,7 +169,7 @@
     },
     {
       "path": "public/interface_reference.js",
-      "sha256": "802d9537144f33c3e67df222f4a24baf197d6bc9af0598ff720ee718a48d984a"
+      "sha256": "09507804732d5570c0c80d2b1e78ece69a4d9bc6fea013df4e57e65c6233923f"
     },
     {
       "path": "public/jdr-legacy.html",
@@ -221,7 +221,7 @@
     },
     {
       "path": "public/mental-health.html",
-      "sha256": "b27948f7c10c0e4061b265600948d7c700f0f05698e0b496bf7bd54601fa4f61"
+      "sha256": "2c32250d0f2a6cc9634d9daef042c69e2746e4eb9e9cd9e344a0d0ebbaff548f"
     },
     {
       "path": "public/mental_drafts.js",
@@ -382,8 +382,16 @@
     {
       "path": "windows_tray.py",
       "sha256": "386517f2dbdc6e5c46a950c5060bee0602bd6c20675bd531e078c3ec668b3abe"
+    },
+    {
+      "path": "public/display_preferences.js",
+      "sha256": "d77c238999dafdf28523eaf06fe7cf67f5d5e6590568af01ead06b45f0a963eb"
+    },
+    {
+      "path": "public/display_preferences.css",
+      "sha256": "b48814a4101a7b280da214e6f00b5794b44c337448d402299307642d4bcc605a"
     }
   ],
-  "notes": "TEST PC : Post-it étoile/cœur/rond, contours lissés, ombre légère, coins et bords redimensionnables ; trackers multi-jours et semaines alternées, titres français automatiques, To-do centrée, onglets/tiroir réordonnables. Calendrier conservé.",
-  "build_sequence": 2026111102
+  "notes": "TEST Windows : taille des textes automatique ou réglable jusqu’à 160 %, choix de police et menus harmonisés avec le thème. Mise à jour intégrée Misu/Nathan ; données et fonctions réservées conservées.",
+  "build_sequence": 2026111202
 }
