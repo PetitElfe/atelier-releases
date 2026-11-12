@@ -1,0 +1,49 @@
+name: Display preferences desktop TEST
+on:
+  push:
+    branches: [test/display-misu-20261112, test/display-nathan-20261112]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/display_preferences_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
+      - run: node tools/budget_opening_browser_test.cjs
+      - run: node tools/tracker_schedule_order_browser_test.cjs
+      - run: node tools/cycle_compact_browser_test.cjs
+      - run: node tools/week_clarity_forecast_browser_test.cjs
+      - run: node tools/studio_browser_test.cjs
+  frozen-update:
+    if: github.ref_name == 'test/display-nathan-20261112'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Read existing released executable for isolated update test
+        shell: python
+        run: |
+          import urllib.request,hashlib,io,zipfile,pathlib
+          data=urllib.request.urlopen('https://github.com/PetitElfe/atelier-releases/releases/download/nathan-test-20261112/Atelier_Nathan_TEST_20261112.zip').read()
+          assert hashlib.sha256(data).hexdigest()=='6c3d79fc8d9441261e9b985230e175bc88c4cdb17e3d1e1eb125afd5d6ac3d9a'
+          out=pathlib.Path('dist');out.mkdir(exist_ok=True)
+          z=zipfile.ZipFile(io.BytesIO(data))
+          (out/'LAtelierDuGoblin_Nathan.exe').write_bytes(z.read('LAtelierDuGoblin_Nathan.exe'))
+      - run: python tools/test_nathan_display_update.py
