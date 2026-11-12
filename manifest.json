@@ -425,7 +425,7 @@
     },
     {
       "path": "publish_official_icon.ps1",
-      "sha256": "adb275f24c389a71118e277f0f804ae616ca6649ea9f94fcdfdbbc6d5903b761"
+      "sha256": "4bd4497e5842f4cf90f7694cdbd98827b440f3cf36ec429f5ba26f76e4e9bdab"
     }
   ],
   "notes": "Courses PC/téléphone : liste compacte, file hors connexion, achat unique avec budget et inventaire, dates facultatives et rappels J−3/J−2/J0. Mode Modifier sur les rubriques dynamiques ; en-tête resserré.",

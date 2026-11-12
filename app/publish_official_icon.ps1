@@ -1,15 +1,15 @@
 ﻿# Run locally as the repository owner. No artwork is sent to a chat or committed to git.
 $ErrorActionPreference='Stop'
-trap{Add-Type -AssemblyName System.Windows.Forms;[Windows.Forms.MessageBox]::Show($_.Exception.Message,'Publication de l’icône')|Out-Null;exit 1}
+trap{Add-Type -AssemblyName System.Windows.Forms;[Windows.Forms.MessageBox]::Show($_.Exception.Message,'Publication de l''icône')|Out-Null;exit 1}
 $repo='PetitElfe/atelier-releases'
 if(-not(Get-Command gh -ErrorAction SilentlyContinue)){throw 'Installe GitHub CLI, puis connecte ton compte PetitElfe avec gh auth login. Relance ensuite ce fichier.'}
 & gh auth status
 if($LASTEXITCODE -ne 0){throw 'Connecte ton compte avec gh auth login.'}
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-$dialog=New-Object Windows.Forms.OpenFileDialog;$dialog.Filter='Image PNG (*.png)|*.png';$dialog.Title='Icône officielle distribuée avec L’Atelier'
+$dialog=New-Object Windows.Forms.OpenFileDialog;$dialog.Filter='Image PNG (*.png)|*.png';$dialog.Title='Icône officielle distribuée avec L''Atelier'
 if($dialog.ShowDialog() -ne [Windows.Forms.DialogResult]::OK){exit}
-if([Windows.Forms.MessageBox]::Show('Une copie de ton icône sera publiée sur GitHub et distribuée avec L’Atelier. Ton dessin ne sera pas envoyé dans ChatGPT. Continuer ?','Icône officielle','YesNo') -ne 'Yes'){exit}
+if([Windows.Forms.MessageBox]::Show('Une copie de ton icône sera publiée sur GitHub et distribuée avec L''Atelier. Ton dessin ne sera pas envoyé dans ChatGPT. Continuer ?','Icône officielle','YesNo') -ne 'Yes'){exit}
 $temp=Join-Path ([IO.Path]::GetTempPath()) ('atelier-brand-'+[guid]::NewGuid().ToString('N'));[IO.Directory]::CreateDirectory($temp)|Out-Null
 try{
  $source=[Drawing.Image]::FromFile($dialog.FileName)
@@ -25,7 +25,7 @@ try{
  $pngName='icon-'+$pngHash+'.png';$icoName='icon-'+$icoHash+'.ico';Rename-Item $png $pngName;Rename-Item $ico $icoName
  $meta=Join-Path $temp 'icon.json';@{png_sha256=$pngHash;ico_sha256=$icoHash}|ConvertTo-Json|Set-Content $meta -Encoding ascii
  & gh release view atelier-official-icon --repo $repo 2>$null|Out-Null
- if($LASTEXITCODE -ne 0){& gh release create atelier-official-icon --repo $repo --prerelease --title 'Icône officielle de L’Atelier' --notes 'Image publiée directement par sa créatrice, sans dépôt du dessin dans un chat.'}
+ if($LASTEXITCODE -ne 0){& gh release create atelier-official-icon --repo $repo --prerelease --title 'Icône officielle de L''Atelier' --notes 'Image publiée directement par sa créatrice, sans dépôt du dessin dans un chat.'}
  if($LASTEXITCODE -ne 0){throw 'Création de la publication impossible.'}
  & gh release upload atelier-official-icon (Join-Path $temp $pngName) (Join-Path $temp $icoName) --repo $repo --clobber
  if($LASTEXITCODE -ne 0){throw 'Envoi des icônes impossible.'}
@@ -45,5 +45,5 @@ try{
  if($LASTEXITCODE -ne 0){@{ref='refs/heads/test/official-icon-android';sha=$commit.sha}|ConvertTo-Json|& gh api "repos/$repo/git/refs" --method POST --input -|Out-Null}
  @{sha=$next.sha;force=$true}|ConvertTo-Json|& gh api "repos/$repo/git/refs/heads/test/official-icon-android" --method PATCH --input -|Out-Null
  if($LASTEXITCODE -ne 0){throw 'Relance de la compilation Android impossible. Les icônes PC sont publiées.'}
- [Windows.Forms.MessageBox]::Show('Icône publiée. Les PC la récupéreront au prochain démarrage ou dans l’heure. La prochaine mise à jour Android signée se prépare automatiquement.','L’Atelier')|Out-Null
+ [Windows.Forms.MessageBox]::Show('Icône publiée. Les PC la récupéreront au prochain démarrage ou dans l''heure. La prochaine mise à jour Android signée se prépare automatiquement.','L''Atelier')|Out-Null
 }finally{Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue}
