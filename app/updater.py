@@ -1,4 +1,4 @@
-"""L'Atelier: safe in-place updates for the isolated Windows TEST copy only."""
+"""L'Atelier: safe in-place updates for the isolated Nathan copy only."""
 import hashlib, io, json, os, re, shutil, socket, sqlite3, subprocess, sys, time
 from contextlib import closing
 from pathlib import Path, PurePosixPath
@@ -7,10 +7,10 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
-BASE = Path(r'E:\LATELIER_TEST_0180')
-CODE = BASE / 'code_0180'
+BASE = Path(os.environ.get('LOCALAPPDATA','')) / 'LAtelierDuGoblinNathan'
+CODE = BASE / 'code'
 DATA = BASE / 'data'
-PORT = 8876
+PORT = 8877
 REPO = 'PetitElfe/atelier-releases'
 BRANCH = 'feature/0180-progression-foundations'
 CANDIDATE_BRANCH = 'test/windows-library-calendar-20261103'
@@ -23,11 +23,11 @@ def _sha(data):
 
 def guard(*, external_runner=False):
     if os.name != 'nt':
-        raise RuntimeError('Mise à jour en un clic disponible uniquement dans Windows TEST.')
+        raise RuntimeError('Mise à jour en un clic disponible uniquement dans Nathan.')
     if ((not external_runner and Path(__file__).resolve().parent != (CODE / 'app').resolve())
             or Path(os.environ.get('ATELIER_DATA_DIR', '')).resolve() != DATA.resolve()
             or os.environ.get('ATELIER_PORT') != str(PORT)):
-        raise RuntimeError('Opération interdite hors de L’Atelier TEST (port 8876).')
+        raise RuntimeError('Opération interdite hors de L’Atelier Nathan (port 8877).')
     if not (DATA / 'atelier.db').is_file() or not (CODE / 'manifest.json').is_file():
         raise RuntimeError('Dossier de test ou base de données introuvable.')
     for base in (BASE, CODE, CODE / 'app', DATA):
@@ -54,6 +54,7 @@ def _get(url, maximum=80000000):
 
 def _manifest(data):
     manifest=json.loads(data.decode('utf-8-sig'))
+    if manifest.get('edition')!='NATHAN':raise RuntimeError('Seule une mise à jour Nathan est autorisée.')
     if manifest.get('version')!='0.18.0' or manifest.get('format')!=2:
         raise RuntimeError('Version de mise à jour TEST inattendue.')
     entries=manifest.get('files')
@@ -61,6 +62,7 @@ def _manifest(data):
     seen=set()
     for item in entries:
         rel=item.get('path','') if isinstance(item,dict) else ''
+        if rel.startswith('public/jdr') or rel in ('public/personal_design.js','public/creator_access.js'):raise RuntimeError('Fonction privée interdite dans cette édition.')
         p=PurePosixPath(rel)
         if (not rel or '\\' in rel or ':' in rel or p.is_absolute() or
             '..' in p.parts or rel in seen or
@@ -73,22 +75,7 @@ def _manifest(data):
     return manifest
 
 def _selected_branch():
-    # Per-installation opt-in; Nathan's separate updater/channel is unaffected.
-    config = DATA / 'windows-test-channel.json'
-    if not config.exists():
-        return BRANCH
-    if config.is_symlink() or getattr(config, 'is_junction', lambda: False)():
-        raise RuntimeError('Configuration TEST redirigée : arrêt.')
-    raw = config.read_bytes()
-    if len(raw) > 4096:
-        raise RuntimeError('Configuration du canal TEST invalide.')
-    try:
-        branch = json.loads(raw).get('branch')
-    except (ValueError, AttributeError):
-        raise RuntimeError('Configuration du canal TEST invalide.')
-    if branch not in (BRANCH, CANDIDATE_BRANCH):
-        raise RuntimeError('Canal Windows TEST non autorisé.')
-    return branch
+    return 'test/windows-nathan-current'
 
 def _latest_revision():
     """Resolve an immutable SHA without depending on GitHub's shared API quota."""
@@ -196,14 +183,14 @@ def _stop():
     # Check ownership BEFORE requesting a shutdown: never stop a foreign server.
     with urlopen('http://127.0.0.1:'+str(PORT)+'/api/runtime-version',timeout=3) as probe:
         if not probe.headers.get('Server','').startswith('AtelierLocal/'):
-            raise RuntimeError('Le port 8876 appartient à une autre application.')
+            raise RuntimeError('Le port 8877 appartient à une autre application.')
         if json.load(probe).get('version')!='0.18.0':
-            raise RuntimeError('Serveur de test inattendu sur le port 8876.')
+            raise RuntimeError('Serveur de test inattendu sur le port 8877.')
     req=Request('http://127.0.0.1:'+str(PORT)+'/api/shutdown',
                 data=b'{}',method='POST',headers={'Content-Type':'application/json'})
     with urlopen(req,timeout=4) as r:
         if not r.headers.get('Server','').startswith('AtelierLocal/'):
-            raise RuntimeError('Le port 8876 appartient à une autre application.')
+            raise RuntimeError('Le port 8877 appartient à une autre application.')
         r.read(1024)
     for _ in range(100):
         if not _port() and not (DATA/'server.pid').exists(): return
@@ -256,7 +243,7 @@ def _start():
     flags=(getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0) |
            getattr(subprocess,'CREATE_NO_WINDOW',0))
     with open(LOG,'ab',buffering=0) as out:
-        child=subprocess.Popen([sys.executable,'-u',str(CODE/'app'/'app.py')],
+        child=subprocess.Popen([sys.executable,'--nathan-server'],
            cwd=str(CODE),env=env,stdin=subprocess.DEVNULL,stdout=out,stderr=subprocess.STDOUT,
            close_fds=True,creationflags=flags)
     for _ in range(100):
@@ -357,7 +344,7 @@ def worker(revision, *, external_runner=False):
         _install_staged(stage,backup,applied)
         started_new=True
         _start()
-        _status('success','L’Atelier TEST a redémarré avec succès.',revision)
+        _status('success','L’Atelier Nathan a redémarré avec succès.',revision)
     except Exception as exc:
         message=str(exc)
         if stopped:
@@ -408,7 +395,7 @@ def begin(revision):
            getattr(subprocess,'CREATE_NO_WINDOW',0))
     try:
         with open(LOG,'ab',buffering=0) as output:
-            subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--worker',revision],
+            subprocess.Popen([sys.executable,'--nathan-update-worker',revision],
               cwd=str(BASE),env=os.environ.copy(),stdin=subprocess.DEVNULL,
               stdout=output,stderr=subprocess.STDOUT,close_fds=True,creationflags=flags)
     except Exception:

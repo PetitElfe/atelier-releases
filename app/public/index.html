@@ -28,7 +28,6 @@
   <link rel="stylesheet" href="/library_refresh.css" />
   <link rel="stylesheet" href="/library_moodboard.css" />
   <link rel="stylesheet" href="/calendar_decor.css" />
-  <link rel="stylesheet" href="/personal_design.css" />
   <link rel="stylesheet" href="/recipe_shelves.css" />
   <link rel="stylesheet" href="/studio.css">
   <link rel="stylesheet" href="/grounding_cards.css">
@@ -70,7 +69,7 @@
       <button data-view="budget">Budget</button>
       <button data-view="kitchen">Courses & repas</button>
       <button data-view="cuisine">Cuisine</button>
-      <button type="button" id="openJdrWorkspace" onclick="window.location.href='/jdr.html'">Table JDR</button>
+
       <button id="renameNavButton" type="button" class="secondary atelier-nav-customize">✎ Renommer le tiroir</button>
     </div>
   </nav>
@@ -596,18 +595,6 @@
             <label><input type="checkbox" id="safetyNewProfile"> Cette installation est nouvelle et vide : autoriser la récupération d’une ancienne copie de la même édition.</label><div id="safetyRestorePreview" hidden></div><p id="safetyMessage" role="status" aria-live="polite"></p>
             <button type="button" id="safetyRefresh">Actualiser le diagnostic</button><button type="button" id="safetyExportDiagnostics">Exporter le diagnostic sans mes contenus</button><button type="button" id="safetyRestart">Redémarrer l’application</button><pre id="safetyDiagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
           </section>
-          <section class="settings-card" id="settingsPersonalDesignCard">
-            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">✎</span><div><h3>Mes dessins</h3><p>Habille L’Atelier avec tes propres créations.</p></div></div>
-            <p id="personalDesignAvailability">Vérification de ton installation TEST…</p>
-            <button type="button" id="personalDesignStart" disabled>Ouvrir le mode création</button>
-            <p>Choisis une zone, glisse ton dessin dessus, ajuste le rendu puis enregistre ton thème. Les boutons gardent leur fonction.</p>
-            <p>Ce mode est réservé à l’installation Windows TEST de Léo (8876). Il n’est pas protégé par un mot de passe sur cet ordinateur.</p>
-            <details><summary>Préparer mes dessins dans Clip Studio Paint</summary>
-              <p>Garde ton original en .clip avec ses calques. Pour l’application, utilise Fichier → Exporter (calque simple) → PNG. Pour les contours transparents, masque le calque Papier et active l’export de la transparence.</p>
-              <p>Les dimensions sont données en pixels pour chaque zone. Dessiner à deux fois la taille affichée aide à garder des contours nets ; les ppp ne changent pas la taille à l’écran. Pour un bouton, garde le centre lisible. Pour un fond, évite les détails forts derrière les textes.</p>
-              <a href="https://help.clip-studio.com/fr-fr/manual_fr/210_file/Exporter_des_fichiers.htm" target="_blank" rel="noopener noreferrer">Guide officiel d’export Clip Studio Paint</a>
-            </details>
-          </section>
         </div>
       </div>
     </section>
@@ -686,8 +673,6 @@
   <script src="/utility_details.js"></script>
   <script src="/budget_support.js"></script>
   <script src="/calendar_decor.js"></script>
-  <script src="/personal_design.js"></script>
-  <script src="/creator_access.js"></script>
   <script src="/recipe_shelves.js"></script>
   <script src="/kitchen_timers.js"></script>
   <script src="/utility_safety.js"></script>

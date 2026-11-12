@@ -29,11 +29,11 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "79601cd2b4c0df8b31f73b3745da518d2beaf14c3846c2ba7a43a769ef15b5b9"
+      "sha256": "0927983f92ec8e2b352411c7d80965c84f15e562ea634b296b52b90827da5424"
     },
     {
       "path": "app_part3.py",
-      "sha256": "35948530a0407363342e827211efe9f39f3a42fc1ea897217eac384e7c6cdd6f"
+      "sha256": "2acdd5e33fd9ed890cd27209b51b27381535f8f068a6fa2523df431aaa06e104"
     },
     {
       "path": "creator_access.py",
@@ -41,11 +41,7 @@
     },
     {
       "path": "desktop_postits.py",
-      "sha256": "853c6653cecb74a2a1de0cdfaa338c9b31f548d0f43a3d3eeb990fcfd82a211e"
-    },
-    {
-      "path": "desktop_shell.py",
-      "sha256": "8ae05d247e8f5192ace037170e6ec26a127636fc2ade102d6d4f4d7c31cb38eb"
+      "sha256": "c10a64d9fda86f484a05358de90ae461e97fe371b4ec4ec34ecf4bf7e4284296"
     },
     {
       "path": "event_preparations.py",
@@ -65,11 +61,11 @@
     },
     {
       "path": "native_reminders.py",
-      "sha256": "06077ce7b423b02f740047e78a2d1f0290285619f951d0d35a733ec30f80e9b4"
+      "sha256": "338fe56c105c110377db77831186580e1e090d4480b7b595603301873f38e3cc"
     },
     {
       "path": "native_toasts.ps1",
-      "sha256": "e11f14788fa2f68e0156615428275e55899cc1dca0f0e39af05210346764c89e"
+      "sha256": "53059e6a02a08c0e8c6a1eab68b4e84bd567bd483c59bc0a9fbaa1e464f66d76"
     },
     {
       "path": "objective_maps.py",
@@ -77,7 +73,7 @@
     },
     {
       "path": "personal_design.py",
-      "sha256": "0fe160676a78d39d7524c84744971d4deb11c35420843eeef5dc79e0c2692f92"
+      "sha256": "cac5eed4d13e5762d6aa4f86f3c31101dd34af225a45a94bfe764819852b0754"
     },
     {
       "path": "progression.py",
@@ -124,10 +120,6 @@
       "sha256": "058c30e4a618224eab6254b7fe1a3938a92e36e95b49606ff370b8b42278bcd6"
     },
     {
-      "path": "public/creator_access.js",
-      "sha256": "b6a11c8e273688a0a2b829eac867dfc6046c3372c12f6ab4b3dd90742f582a31"
-    },
-    {
       "path": "public/editor_flow.js",
       "sha256": "c6257de04c00c378136fcdde5eee4a674041266dfbb29539a654dbc091a293f5"
     },
@@ -149,7 +141,7 @@
     },
     {
       "path": "public/health_space.js",
-      "sha256": "277a46e8df04b5862a1fdf8ea782cc03cea786157c62e94944acde1d94bc26fc"
+      "sha256": "cd41e76d81cf2623b3798b88d21da48b69b23d02178103dccd2536434381e5e9"
     },
     {
       "path": "public/health_vault_crypto.js",
@@ -161,7 +153,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "745ee76f638326ab8a0f8144140cfe1b88c4ab9fb628f34e26f33dacb1291238"
+      "sha256": "0f9ffcd9c474e0b96b58dfdafe3dfa6e63b900a95dee81ec4be8d8dc136402d8"
     },
     {
       "path": "public/interface_reference.css",
@@ -170,26 +162,6 @@
     {
       "path": "public/interface_reference.js",
       "sha256": "802d9537144f33c3e67df222f4a24baf197d6bc9af0598ff720ee718a48d984a"
-    },
-    {
-      "path": "public/jdr-legacy.html",
-      "sha256": "09342a53c37913a8306571dc1024f684c34ee78f25d99ff074b368d9ec49fc23"
-    },
-    {
-      "path": "public/jdr-manoir.html",
-      "sha256": "7cbebe385dc90e2e66a1508216870bd8ab6213c6d823861380d7c74e631bc3a2"
-    },
-    {
-      "path": "public/jdr-mj.html",
-      "sha256": "d34bead44a3af489a06a04b86d536bfed9c28884639c1095d4b6145f9b85471a"
-    },
-    {
-      "path": "public/jdr-roster-manoir.json",
-      "sha256": "92088dafdbd3595eeb33ed4afee07827546888dc425e31171ee66ad070860f97"
-    },
-    {
-      "path": "public/jdr.html",
-      "sha256": "5b511e535276705db9c342f750318858c43ed2474ba19e0caacc5b171c57eee5"
     },
     {
       "path": "public/kitchen_timers.js",
@@ -242,14 +214,6 @@
     {
       "path": "public/objective_map.js",
       "sha256": "7a775b8a8d794a648ad7241c95e8880ac731c4bb586620b554c8bcd7bacb27e3"
-    },
-    {
-      "path": "public/personal_design.css",
-      "sha256": "cb3a0e3092cd7e9ed81eed195ce78fae635107879da1dc0aba4c7a75017bb089"
-    },
-    {
-      "path": "public/personal_design.js",
-      "sha256": "9ed2734f0f6c8714e0167382db7a1e6ea50d11b40df215a4a4def10038532dee"
     },
     {
       "path": "public/postits.js",
@@ -361,7 +325,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "9168bf2663de4388ebbec41683e0ac5e14c682c14f74829d125fecc1b637d857"
+      "sha256": "5629470982060603971dc49e386028478488b5d047696b6fc5c68d4bcc6205ce"
     },
     {
       "path": "utility_details.py",
@@ -385,5 +349,8 @@
     }
   ],
   "notes": "TEST PC : Post-it étoile/cœur/rond, contours lissés, ombre légère, coins et bords redimensionnables ; trackers multi-jours et semaines alternées, titres français automatiques, To-do centrée, onglets/tiroir réordonnables. Calendrier conservé.",
-  "build_sequence": 2026111102
+  "build_sequence": 2026111201,
+  "edition": "NATHAN",
+  "common_source_build": "d5f7211f",
+  "common_source_revision": "447300e99f648175baa48bf309e4597beb08eb6c"
 }

@@ -16,11 +16,7 @@ class Conflict(ValueError):
 
 
 def available():
-    try:
-        updater.guard(external_runner=True)
-        return True
-    except RuntimeError:
-        return False
+    return False  # Reserved owner-only creator feature; unavailable in Nathan edition.
 
 
 def validate(theme):

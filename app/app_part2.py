@@ -284,7 +284,7 @@ def jdr_hot_update():
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'AtelierLocal/' + atelier_version()
+    server_version = 'AtelierLocal/Nathan/' + atelier_version()
 
     def log_message(self, fmt, *args):
         print('[Atelier]', fmt % args)
@@ -324,6 +324,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if '/jdr' in p.lower() or p.startswith('/api/creator-access') or p.startswith('/api/personal-design') or p in ('/personal_design.js','/personal_design.css','/creator_access.js'):
+            return self._json({'error':'Fonction réservée à une autre édition.'},404)
         if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'GET',p,parse_qs(u.query),DB_PATH):return
@@ -709,6 +711,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if '/jdr' in p.lower() or p.startswith('/api/creator-access') or p.startswith('/api/personal-design') or p in ('/personal_design.js','/personal_design.css','/creator_access.js'):
+            return self._json({'error':'Fonction réservée à une autre édition.'},404)
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
         if p in ('/api/creator-access','/api/personal-design/presets'):
@@ -1398,6 +1402,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if '/jdr' in p.lower() or p.startswith('/api/creator-access') or p.startswith('/api/personal-design') or p in ('/personal_design.js','/personal_design.css','/creator_access.js'):
+            return self._json({'error':'Fonction réservée à une autre édition.'},404)
         if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
@@ -2203,6 +2209,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         u=urlparse(self.path); p=u.path
+        if '/jdr' in p.lower() or p.startswith('/api/creator-access') or p.startswith('/api/personal-design') or p in ('/personal_design.js','/personal_design.css','/creator_access.js'):
+            return self._json({'error':'Fonction réservée à une autre édition.'},404)
         if health_vault.serve(self,self.command,p,DATA):return
         parts=p.strip('/').split('/')
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return

@@ -19,33 +19,12 @@ def _request_clean_shutdown():
         return False
 
 def _kill_stale_atelier(pid_file):
-    if not _probe_atelier():
-        return False
-    if _request_clean_shutdown():
-        return True
-    try:
-        pid=int(pid_file.read_text(encoding='ascii').strip())
-        if pid>0 and pid!=os.getpid():
-            os.kill(pid, signal.SIGTERM)
-            return True
-    except Exception as exc:
-        print(f"[Atelier] Impossible d'arreter l'ancienne instance : {exc}")
-    return False
+    return False  # Never stop an unrelated/recycled PID in Nathan edition.
+
 
 def make_server(pid_file):
-    try:
-        return ThreadingHTTPServer((HOST, PORT), Handler), PORT
-    except OSError as first_error:
-        print("[Atelier] Une ancienne instance semble encore utiliser le port 8765.")
-        _kill_stale_atelier(pid_file)
-        last_error=first_error
-        for _ in range(30):
-            time.sleep(0.1)
-            try:
-                return ThreadingHTTPServer((HOST, PORT), Handler), PORT
-            except OSError as exc:
-                last_error=exc
-        raise OSError("Une ancienne instance de L'Atelier est encore active sur le port 8765. Ferme-la puis relance L'Atelier.") from last_error
+    return ThreadingHTTPServer((HOST, PORT), Handler), PORT
+
 
 
 if __name__ == '__main__':

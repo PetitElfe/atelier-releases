@@ -21,8 +21,8 @@ import tempfile
 import time
 from native_postit_paper import SHAPES,PaperBackdrop,content_rect,minimum_size,TRANSPARENT
 
-BASE = Path(r"E:\LATELIER_TEST_0180")
-CODE = BASE / "code_0180"
+BASE = Path(os.environ.get('LOCALAPPDATA','')) / 'LAtelierDuGoblinNathan'
+CODE = BASE / "code"
 DATA = BASE / "data"
 DB = DATA / "atelier.db"
 SCRIPT = CODE / "app" / "desktop_postits.py"
@@ -30,7 +30,7 @@ LOCK = DATA / "desktop-postits.lock"
 WAKE = DATA / "desktop-postits-wake.txt"
 RUNTIME = DATA / "desktop-postits-runtime.json"
 AUTORUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-AUTORUN_NAME = "LAtelierDuGoblinPostitsTEST"
+AUTORUN_NAME = "LAtelierDuGoblinPostitsNathan"
 COLORS = {
     "sage": ("#92B09A", "#213326"),
     "mauve": ("#AA91BE", "#2B2138"),
@@ -92,7 +92,7 @@ def _guard():
     if (not (CODE / "manifest.json").is_file() or not DB.is_file() or
             (CODE / "app" / "VERSION").read_text(encoding="utf-8").strip() != "0.18.0"):
         raise RuntimeError("L'Atelier du Goblin TEST n'est pas installé ici.")
-    if os.environ.get("ATELIER_PORT", "8876") != "8876":
+    if os.environ.get("ATELIER_PORT", "8877") != "8877":
         raise RuntimeError("Port TEST incorrect.")
     if (os.environ.get("ATELIER_DATA_DIR") and
             Path(os.environ["ATELIER_DATA_DIR"]).resolve() != DATA.resolve()):
@@ -249,7 +249,7 @@ def _pythonw():
 
 def _startup_command():
     # Explicitly quote both absolute paths for Windows registry Run.
-    return subprocess.list2cmdline([_pythonw(), str(SCRIPT)])
+    return subprocess.list2cmdline([_pythonw(), "--nathan-postits"])
 
 
 def startup_enabled():
@@ -348,13 +348,13 @@ def launch(note_id=None, *, show_all=False, visible_ids=None):
     flags = (getattr(subprocess, "CREATE_NO_WINDOW", 0) |
              getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     env = os.environ.copy()
-    env.update(ATELIER_DATA_DIR=str(DATA), ATELIER_PORT="8876")
+    env.update(ATELIER_DATA_DIR=str(DATA), ATELIER_PORT="8877")
     logfile = (DATA / "desktop-postits.log").open("ab", buffering=0)
     arguments=(['--notes',','.join(map(str,visible_ids))] if visible_ids is not None else ['--note',str(note_id)] if note_id is not None else [] if show_all else ['--background'])
     # Never hold CODE/app as the working directory: Windows then refuses
     # to rename that folder during updates, even after the server stops.
     try:
-        process=subprocess.Popen([_pythonw(), str(SCRIPT)]+arguments, cwd=str(DATA),
+        process=subprocess.Popen([_pythonw(), "--nathan-postits"]+arguments, cwd=str(DATA),
                          env=env, stdin=subprocess.DEVNULL,
                          stdout=logfile, stderr=subprocess.STDOUT,
                          close_fds=True, creationflags=flags)
@@ -984,7 +984,7 @@ def _run_gui(on_ready=None):
     try:
         from windows_tray import WindowsTray
         tray = WindowsTray(root,show_all,create_new,show_archives,quit_all,
-                           BASE / "desktop" / "LAtelierDuGoblin_TEST.exe")
+                           BASE / "desktop" / "LAtelierDuGoblin_Nathan.exe")
     except (OSError,RuntimeError,AttributeError) as exc:
         # If Explorer's tray is unavailable, keep ordinary taskbar windows
         # rather than hiding the Post-its without a way to reopen them.

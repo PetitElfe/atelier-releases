@@ -1,6 +1,6 @@
 param([ValidateSet('register','show')][string]$Mode,[string]$Target,[string]$Arguments,[string]$Link,[string]$XmlFile,[string]$Tag)
 $ErrorActionPreference='Stop'
-$AppId='LAtelierDuGoblin.TEST.Reminders'
+$AppId='LAtelierDuGoblin.Nathan.Reminders'
 if($Mode -eq 'register') {
 Add-Type -TypeDefinition @'
 using System;
@@ -16,7 +16,7 @@ void GetPath([Out,MarshalAs(UnmanagedType.LPWStr)] StringBuilder p,int c,IntPtr 
 [ComImport,Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] interface IGoblinStore {void GetCount(out uint c);void GetAt(uint i,out GoblinKey k);void GetValue(ref GoblinKey k,out GoblinVariant v);void SetValue(ref GoblinKey k,ref GoblinVariant v);void Commit();}
 public static class GoblinShortcut {
 public static void Create(string path,string target,string args,string appid) {
-object shell=new GoblinShellLink();IGoblinLink link=(IGoblinLink)shell;link.SetPath(target);link.SetArguments(args??"");link.SetWorkingDirectory(System.IO.Path.GetDirectoryName(target));link.SetDescription("L'Atelier TEST - rappels Windows");
+object shell=new GoblinShellLink();IGoblinLink link=(IGoblinLink)shell;link.SetPath(target);link.SetArguments(args??"");link.SetWorkingDirectory(System.IO.Path.GetDirectoryName(target));link.SetDescription("L'Atelier Nathan - rappels Windows");
 IGoblinStore store=(IGoblinStore)shell;GoblinKey id=new GoblinKey(5);GoblinVariant text=new GoblinVariant{vt=31,pointer=Marshal.StringToCoTaskMemUni(appid)};
 try{store.SetValue(ref id,ref text);}finally{Marshal.FreeCoTaskMem(text.pointer);}
 // A stub CLSID keeps protocol-only notifications in Notification Center.
@@ -35,5 +35,5 @@ $xml=New-Object Windows.Data.Xml.Dom.XmlDocument
 $xml.LoadXml([IO.File]::ReadAllText($XmlFile,[Text.Encoding]::UTF8))
 $toast=[Windows.UI.Notifications.ToastNotification]::new($xml)
 $toast.Tag=$Tag
-$toast.Group='GoblinTEST'
+$toast.Group='GoblinNathan'
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId).Show($toast)

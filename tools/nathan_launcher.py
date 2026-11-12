@@ -82,54 +82,25 @@ def _bundled():
 def _install(launch=True):
     safe()
     base,code,data,exe,profile=paths()
-    if code.exists():
-        if not (code/"app"/"app.py").is_file() or not (code/"manifest.json").is_file():
-            raise RuntimeError("Installation Nathan incomplète. Ne rien écraser automatiquement.")
-    else:
-        source=_bundled()
-        if not (source/"app"/"app.py").is_file():
-            raise RuntimeError("Fichiers de l'application manquants dans l'installateur.")
-        base.mkdir(parents=True,exist_ok=True)
-        staging=base/"code-new"
-        if staging.exists():raise RuntimeError("Ancienne préparation présente : contrôle nécessaire.")
-        shutil.copytree(source,staging)
-        # Check initial files match our bundled manifest (not a shared DB).
-        manifest=json.loads((staging/"manifest.json").read_text(encoding="utf-8"))
-        for row in manifest["files"]:
-            file=staging/"app"/row["path"]
-            if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest()!=row["sha256"]:
-                raise RuntimeError("Fichier Nathan incorrect : "+row["path"])
-        staging.rename(code)
-        data.mkdir(exist_ok=True)
-        (data/"installed-revision.txt").write_text(
-            (code/"nathan-build-revision.txt").read_text(encoding="ascii").strip(),
-            encoding="ascii")
-    data.mkdir(exist_ok=True)
-    exe.parent.mkdir(exist_ok=True)
     current=Path(sys.executable).resolve()
-    if current!=exe.resolve():
-        if exe.exists() and not _same(current,exe):
-            raise RuntimeError("Une ancienne appli Nathan est déjà installée. Refus d'écraser sans sauvegarde.")
-        if not exe.exists():
-            dest=exe.with_suffix(".new")
-            if dest.exists():raise RuntimeError("Installation incomplète : fichier temporaire.")
-            shutil.copy2(current,dest)
-            if not _same(current,dest):raise RuntimeError("Copie de l'exécutable non vérifiée.")
-            dest.rename(exe)
-        _shortcut(exe)
-        if launch:
-            subprocess.Popen([str(exe)],cwd=str(exe.parent),
-                creationflags=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0))
-        return True
+    if current==exe.resolve():return False
+    if not base.exists() and (Path(os.environ['LOCALAPPDATA'])/'PetitGoblin'/'LAtelierNathan').exists():
+        raise RuntimeError('Un ancien profil Nathan sur le port 18877 existe. Aucun nouveau profil n’a été créé ; garde cette installation pour préparer sa migration.')
+    if _busy():raise RuntimeError('Ferme L’Atelier Nathan et ses Post-it, puis relance ce fichier. Aucune autre application ne sera arrêtée.')
+    data.mkdir(parents=True,exist_ok=True)
+    from nathan_install import install
+    with one_window(data):install(_bundled(),base,current)
     _shortcut(exe)
-    return False
+    if launch:subprocess.Popen([str(exe)],cwd=str(exe.parent),creationflags=getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0))
+    return True
+
 
 def _run_python(path,argv):
     safe()
     base,code,data,exe,profile=paths()
     if not (code/"app"/path).is_file():raise RuntimeError("Code Nathan manquant.")
     os.environ.update(ATELIER_DATA_DIR=str(data),ATELIER_PORT=str(PORT),
-                      ATELIER_NO_BROWSER="1")
+                      ATELIER_NO_BROWSER="1",ATELIER_EDITION="NATHAN")
     sys.path.insert(0,str(code/"app"))
     sys.argv=[str(code/"app"/path)]+argv
     runpy.run_path(str(code/"app"/path),run_name="__main__")
@@ -137,7 +108,7 @@ def _run_python(path,argv):
 def _probe():
     try:
         with urlopen("http://127.0.0.1:8877/api/runtime-version",timeout=1) as r:
-            return (r.headers.get("Server","").startswith("AtelierLocal/") and
+            return (r.headers.get("Server","").startswith("AtelierLocal/Nathan/") and
                     json.load(r).get("version")==VERSION)
     except (OSError,ValueError):
         return False
@@ -185,7 +156,7 @@ def stop_own_server(child):
             return
         with urlopen(Request(base + "api/shutdown", data=b"{}", method="POST",
                              headers={"Content-Type": "application/json"}), timeout=3) as r:
-            if not r.headers.get("Server", "").startswith("AtelierLocal/"):
+            if not r.headers.get("Server", "").startswith("AtelierLocal/Nathan/"):
                 raise RuntimeError("Serveur Nathan non reconnu.")
         for _ in range(30):
             if not _busy():
@@ -222,7 +193,10 @@ def main():
         _run_python("app.py",[])
         return
     if "--nathan-postits" in sys.argv:
-        _run_python("desktop_postits.py",[])
+        _run_python("desktop_postits.py",sys.argv[sys.argv.index("--nathan-postits")+1:])
+        return
+    if "--nathan-reminder" in sys.argv:
+        _run_python("native_reminders.py",["--activate",sys.argv[sys.argv.index("--nathan-reminder")+1]])
         return
     if "--nathan-update-worker" in sys.argv:
         ix=sys.argv.index("--nathan-update-worker")

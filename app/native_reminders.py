@@ -38,15 +38,15 @@ def config(data=DATA):
 
 def status(data=DATA):
     cfg=config(data)
-    return {'available':os.name=='nt' and int(os.environ.get('ATELIER_PORT','0'))==8876,
+    return {'available':os.name=='nt' and int(os.environ.get('ATELIER_PORT','0'))==8877,
             'enabled':bool(cfg.get('enabled')),'last_sent':cfg.get('last_sent'),'error':cfg.get('error','')}
 
 
 def xml(title,token,*,test=False):
-    base='goblin-test-reminder://activate/'+token
+    base='goblin-nathan-reminder://activate/'+token
     toast=ET.Element('toast',{'activationType':'protocol','launch':base+'?a=open','duration':'long'})
     visual=ET.SubElement(toast,'visual');binding=ET.SubElement(visual,'binding',{'template':'ToastGeneric'})
-    ET.SubElement(binding,'text').text='L’Atelier du Goblin TEST'
+    ET.SubElement(binding,'text').text='L’Atelier du Goblin — Nathan'
     ET.SubElement(binding,'text').text=title[:240]
     if not test:
         actions=ET.SubElement(toast,'actions')
@@ -68,12 +68,12 @@ def enable(enabled):
         pythonw=Path(sys.executable).with_name('pythonw.exe')
         if not pythonw.exists():pythonw=Path(sys.executable)
         entry=Path(__file__).resolve()
-        command='"'+str(pythonw)+'" "'+str(entry)+'" --activate "%1"'
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,r'Software\Classes\goblin-test-reminder') as key:
-            winreg.SetValueEx(key,'',0,winreg.REG_SZ,'L’Atelier TEST — rappels');winreg.SetValueEx(key,'URL Protocol',0,winreg.REG_SZ,'')
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,r'Software\Classes\goblin-test-reminder\shell\open\command') as key:winreg.SetValueEx(key,'',0,winreg.REG_SZ,command)
+        command='"'+str(updater.BASE/'desktop/LAtelierDuGoblin_Nathan.exe')+'" --nathan-reminder "%1"'
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,r'Software\Classes\goblin-nathan-reminder') as key:
+            winreg.SetValueEx(key,'',0,winreg.REG_SZ,'L’Atelier Nathan — rappels');winreg.SetValueEx(key,'URL Protocol',0,winreg.REG_SZ,'')
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER,r'Software\Classes\goblin-nathan-reminder\shell\open\command') as key:winreg.SetValueEx(key,'',0,winreg.REG_SZ,command)
         folder=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs';folder.mkdir(parents=True,exist_ok=True)
-        _powershell(['-Mode','register','-Target',str(pythonw),'-Arguments','"'+str(updater.CODE/'app/desktop_shell.py')+'"','-Link',str(folder/'LAtelier TEST Rappels.lnk')])
+        _powershell(['-Mode','register','-Target',str(updater.BASE/'desktop/LAtelierDuGoblin_Nathan.exe'),'-Arguments','','-Link',str(folder/'LAtelier Nathan Rappels.lnk')])
         import desktop_postits
         desktop_postits.launch()
     cfg=config();cfg.update(enabled=bool(enabled),error='');utility_safety.atomic(DATA/'native-reminders.json',cfg)
@@ -136,7 +136,7 @@ def tick():
 def activate(data,uri):
     if maintenance(data):raise RuntimeError('Restauration en cours. Réessaie depuis L’Atelier après son redémarrage.')
     parsed=urlparse(uri)
-    if parsed.scheme!='goblin-test-reminder' or parsed.netloc!='activate' or len(uri)>400:raise ValueError('Activation de rappel invalide.')
+    if parsed.scheme!='goblin-nathan-reminder' or parsed.netloc!='activate' or len(uri)>400:raise ValueError('Activation de rappel invalide.')
     token=parsed.path.lstrip('/');action=parse_qs(parsed.query).get('a',['open'])[0]
     if action not in ('open','finish','cancel','10','30','60'):raise ValueError('Action de rappel invalide.')
     if action=='open':return True
@@ -155,16 +155,15 @@ def activate(data,uri):
 
 def open_window():
     import ctypes
-    import desktop_shell
-    handle=ctypes.windll.user32.FindWindowW(None,desktop_shell.WINDOW_TITLE)
+    handle=ctypes.windll.user32.FindWindowW(None,"L'Atelier du Goblin — Nathan")
     if handle:ctypes.windll.user32.ShowWindow(handle,9);ctypes.windll.user32.SetForegroundWindow(handle)
     else:
-        exe=updater.BASE/'desktop/LAtelierDuGoblin_TEST.exe'
+        exe=updater.BASE/'desktop/LAtelierDuGoblin_Nathan.exe'
         if exe.exists():os.startfile(exe)
-        else:subprocess.Popen([sys.executable,str(updater.CODE/'app/desktop_shell.py')],creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+
 
 
 if __name__=='__main__' and len(sys.argv)==3 and sys.argv[1]=='--activate':
-    os.environ.update(ATELIER_DATA_DIR=str(DATA),ATELIER_PORT='8876')
+    os.environ.update(ATELIER_DATA_DIR=str(DATA),ATELIER_PORT='8877')
     updater.guard(external_runner=True)
     if activate(DATA,sys.argv[2]):open_window()

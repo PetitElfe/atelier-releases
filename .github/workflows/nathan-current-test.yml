@@ -1,0 +1,88 @@
+name: Nathan latest common edition TEST
+on:
+  push:
+    branches: [test/nathan-current-common-20261112]
+permissions:
+  contents: read
+jobs:
+  common:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python tools/build_nathan_bundle.py
+      - run: python -m unittest discover -s tests -p test_nathan_current_install.py
+      - run: python tools/release_smoke.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/health_vault_crypto.test.cjs
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/nathan_current_browser_test.cjs
+      - run: node tools/budget_opening_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
+      - run: node tools/tracker_schedule_order_browser_test.cjs
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install "pywebview==6.2.1" "pyinstaller>=6.16,<7" "pillow>=11,<13"
+      - run: python tools/build_nathan_bundle.py
+      - run: python -m unittest discover -s tests -p test_nathan_current_install.py
+      - run: python tools/create_desktop_icon.py
+      - run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name LAtelierDuGoblin_Nathan --icon build/atelier.ico --version-file tools/windows_version_info.txt --add-data "build/nathan_code;nathan_code" --hidden-import webview.platforms.winforms --hidden-import http.server --hidden-import urllib.parse --hidden-import urllib.request --hidden-import http.client --hidden-import sqlite3 --hidden-import tkinter --hidden-import tkinter.messagebox --hidden-import tkinter.font --hidden-import calendar --hidden-import email.mime --hidden-import xml.etree.ElementTree --hidden-import mimetypes --hidden-import ipaddress --hidden-import ctypes.wintypes --hidden-import zipfile --hidden-import hashlib --hidden-import socketserver tools/nathan_launcher.py
+      - run: python tools/test_nathan_frozen_current.py
+      - shell: pwsh
+        run: |
+          @'
+          L'ATELIER DU GOBLIN — NATHAN — TEST 0.18.0
+          Fonctions communes au niveau de la version Misu d5f7211f : bibliothèque,
+          grimoires, calendrier, trackers, budget, santé/coffre, sport et téléphone.
+          Sans Table JDR ni mode Mes dessins / Création réservé à Misu.
+          Aucune donnée de Misu n'est incluse ou copiée.
+
+          Fermer L'Atelier Nathan ET ses Post-it, extraire ce ZIP et ouvrir
+          LAtelierDuGoblin_Nathan.exe. Python est inclus ; WebView2 est nécessaire.
+          L'ancienne installation Nathan reconnue est sauvegardée puis mise à jour.
+          Ses données, documents et préférences restent dans son propre profil :
+          %LOCALAPPDATA%\LAtelierDuGoblinNathan (port 8877).
+          Aucun dossier E:\ de Misu n'est utilisé. Aucun autre processus n'est arrêté.
+          Si un profil plus ancien sur 18877 est détecté, l'installation s'arrête
+          pour préparer sa migration, sans créer une seconde base vide.
+          Les prochaines mises à jour utilisent le canal test/windows-nathan-current.
+          L'exécutable n'est pas signé ; Windows peut afficher Éditeur inconnu.
+          '@ | Set-Content dist/LIRE_NATHAN.txt -Encoding UTF8
+          Compress-Archive -Path dist/LAtelierDuGoblin_Nathan.exe,dist/LIRE_NATHAN.txt -DestinationPath dist/Atelier_Nathan_TEST_20261112.zip
+          (Get-FileHash dist/Atelier_Nathan_TEST_20261112.zip -Algorithm SHA256).Hash.ToLower() | Set-Content dist/Atelier_Nathan_TEST_20261112.zip.sha256 -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nathan_current_verified_windows
+          path: |
+            dist/Atelier_Nathan_TEST_20261112.zip
+            dist/Atelier_Nathan_TEST_20261112.zip.sha256
+  publish:
+    needs: [common, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Nathan_current_verified_windows
+          path: dist
+      - name: Publish verified Nathan TEST only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          gh release create nathan-test-20261112 dist/Atelier_Nathan_TEST_20261112.zip dist/Atelier_Nathan_TEST_20261112.zip.sha256 --target "$SOURCE_SHA" --prerelease --title "L’Atelier Nathan — TEST du 12 novembre 2026" --notes "Fonctions communes au niveau d5f7211f. Sans JDR ni mode Création réservé à Misu. Fermer Nathan et ses Post-it, extraire le ZIP et ouvrir l’exécutable. Sauvegarde de l’ancien profil avant remplacement, conservation de ses données. Vérifications navigateur et Windows réussies avant publication."
