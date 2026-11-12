@@ -5,6 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
+import groceries
 import local_icon
 import studio, utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
@@ -15,7 +16,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 24
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -437,6 +438,7 @@ _backup_db_before_migration()
 with conn() as c:
     c.execute('PRAGMA journal_mode = WAL')
     c.executescript(SCHEMA)
+    groceries.initialise(c)
     progression.initialise(c)
     objective_maps.initialise(c)
     library_moodboard.initialise(c)

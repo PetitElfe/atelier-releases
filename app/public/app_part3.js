@@ -1089,6 +1089,8 @@ function initHomeModuleLibrary(){
 
 let globalLayoutEditing=false;
 let globalLayoutItems=[];
+let globalLayoutKeyboardReady=false;
+const globalLayoutRegistered=new WeakSet();
 
 function getGlobalLayoutSpecs(){
   const base=[
@@ -1118,13 +1120,25 @@ function getGlobalLayoutSpecs(){
     '#kitchenView .kitchen-panel',
     '#calendarView .mini-panel',
     '#cuisineView .recipe-library-sidebar','#cuisineView .recipe-library-content',
-    '#settingsView .settings-card'
+    '#settingsView .settings-card',
+    '.studio-budget-columns > section','.studio-budget-summary','.studio-todo-list',
+    '.studio-tracker-document','.health-content','.studio-spread','#studioTools > section','#studioSport > section',
+    '#capturesView > section','#albumsView .studio-album-shelf'
   ].join(',');
   const extra=[...document.querySelectorAll(selector)].map((el,index)=>{
     const view=el.closest('.view')?.id.replace(/View$/,'')||'home';
-    const id=el.id||'panel_'+index;
+    const board=el.dataset.trackerBoardId||el.dataset.boardId;
+    const heading=el.querySelector('h2,h3,.studio-tracker-title')?.textContent?.trim();
+    const stable=board?'board_'+board:heading?Array.from(heading).map(c=>c.codePointAt(0).toString(16)).join('_'):null;
+    const id=el.id||stable||'panel_'+index;
     return {view,id,el,key:'atelierModuleLayout_'+view+'_'+id};
   });
+  for(const view of document.querySelectorAll('main .view[id]')){
+    const name=view.id.replace(/View$/,'');
+    if([...base,...extra].some(item=>item.view===name))continue;
+    const panels=[...view.children].filter(el=>el.matches('section,article,div,iframe')&&!el.matches('.toolbar,.studio-tabs,.layout-controls'));
+    for(const [index,el]of panels.entries())extra.push({view:name,id:el.id||'content_'+index,el,key:'atelierViewLayout_'+name+'_'+(el.id||'content_'+index)});
+  }
   const seen=new Set();
   return [...base,...extra].filter(item=>{
     if(seen.has(item.el))return false;
@@ -1743,20 +1757,23 @@ function layoutResizeGeometry(axis,start,dx,dy,limits,freeform=false){
 }
 
 function initGlobalLayoutEditor(){
-  globalLayoutItems=getGlobalLayoutSpecs();
-  setupHomeCanvasKeyboard();
+  const existing=new Map(globalLayoutItems.map(item=>[item.el,item]));
+  globalLayoutItems=getGlobalLayoutSpecs().map(item=>existing.get(item.el)||item);
+  if(!globalLayoutKeyboardReady){setupHomeCanvasKeyboard();globalLayoutKeyboardReady=true}
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   // Le clic normal d'un encadré (notamment le mini-calendrier) ne doit PAS
   // activer ses boutons et liens pendant la manipulation de la disposition.
-  $$('.view').forEach(view=>view.addEventListener('click',event=>{
+  $$('.view').forEach(view=>{if(view.dataset.layoutCapture)return;view.dataset.layoutCapture='1';view.addEventListener('click',event=>{
     if(!globalLayoutEditing||view.id!==state.view+'View')return;
     const target=event.target.closest?.('.layout-object');
     if(!target||event.target.closest('.layout-controls'))return;
     event.preventDefault();
     event.stopImmediatePropagation();
-  },true));
+  },true)});
 
   globalLayoutItems.forEach(item=>{
+    if(globalLayoutRegistered.has(item.el)&&item.el.querySelector(':scope > .layout-controls'))return;
+    globalLayoutRegistered.add(item.el);
     item.el.classList.add('layout-object');
     let controls=item.el.querySelector(':scope > .layout-controls');
     if(!controls){
@@ -1934,6 +1951,8 @@ function initGlobalLayoutEditor(){
 
 initHomeModuleLibrary(); initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
+let layoutMountTimer;
+new MutationObserver(records=>{if(!records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&!n.matches('.layout-controls')&&!n.closest('.layout-controls'))))return;clearTimeout(layoutMountTimer);layoutMountTimer=setTimeout(initGlobalLayoutEditor,150)}).observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
 refresh().then(()=>{
