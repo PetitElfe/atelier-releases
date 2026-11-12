@@ -23,6 +23,7 @@ function apply(){
  root.style.setProperty('--atelier-text-factor',factor);root.style.setProperty('--atelier-font',families[read('atelier-ui-font','classic')]||families.classic);
  root.style.fontSize=Math.max(14,16*factor)+'px';
  for(const sheet of document.styleSheets){try{visit(sheet.cssRules,factor)}catch{/* Ignore cross-origin sheets. */}}
+ for(const [id,key,fallback] of [['atelierUiScale','atelier-ui-scale','auto'],['atelierUiTheme','atelier-ui-theme','goblin'],['atelierUiFont','atelier-ui-font','classic']]){const control=document.getElementById(id);if(control)control.value=read(key,fallback)}
  const status=document.getElementById('atelierDisplayStatus');if(status)status.textContent=(chosen==='auto'?'Automatique · ':'')+Math.round(factor*100)+' % · fenêtre '+innerWidth+' × '+innerHeight+' · texte de 14 px minimum';
  if(embedded){root.style.setProperty('--ink','var(--text)');root.style.setProperty('--paper','var(--panel)');root.style.setProperty('--soft','var(--panel2)');root.style.setProperty('--accent','var(--gold)')}
 }
