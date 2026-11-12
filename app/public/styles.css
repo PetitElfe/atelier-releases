@@ -1533,3 +1533,25 @@ body.home-active{overflow-y:auto}
  .atelier-settings-shortcuts{grid-template-columns:1fr}
  .atelier-settings-shortcuts>strong{text-align:left}
 }
+
+/* Windows responsive layout: keep modules legible on Full HD, 2K and 4K screens.
+   The journal pages must fill the entire resized book, not just the first 345px. */
+.journal-book{min-height:345px;align-items:stretch}
+.journal-page{height:100%;min-height:345px}
+.journal-book{container-type:inline-size}
+@container (min-width:700px){
+  .journal-page{padding:clamp(18px,2.3cqw,36px)}
+  .journal-heading{font-size:clamp(15px,2.3cqw,23px)}
+  .journal-date,.journal-link{font-size:clamp(10px,1.4cqw,15px)}
+  .journal-task,.deadline-line{font-size:clamp(11px,1.5cqw,17px)}
+  .journal-empty,.deadline-empty,.objective-name{font-size:clamp(11px,1.5cqw,17px)}
+  .objective-context,.objective-actions,.meal-ideas{font-size:clamp(10px,1.2cqw,14px)}
+}
+@media (min-width:1800px){
+  .desk-top-row{grid-template-columns:minmax(245px,18vw) minmax(180px,22vw)}
+  .pinned-calendar{width:100%;padding:clamp(10px,.8vw,20px)}
+  .desk-note{padding:clamp(12px,.9vw,22px)}
+  .desk-note-head{font-size:clamp(13px,.85vw,19px)}
+  .home-mini-calendar .hday{min-height:clamp(25px,1.8vw,42px);font-size:clamp(11px,.75vw,17px)}
+  .home-mini-calendar .dow{font-size:clamp(10px,.7vw,15px)}
+}
