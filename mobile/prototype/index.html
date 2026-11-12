@@ -226,6 +226,8 @@ body.theme-classic .studio-agenda>.studio-tabs button.selected{color:var(--ink)}
 </style>
 <style id="groceryStyles">.grocery-app{font-family:system-ui,'Segoe UI',sans-serif;max-width:760px;min-width:0;color:inherit}.grocery-tabs{display:flex;gap:8px;margin:4px 0 10px}.grocery-tabs button{padding:7px 12px}.grocery-tabs .selected{border-color:var(--gold,#b8c8a4)}.grocery-sync{font-size:12px;line-height:1.4;color:var(--muted,#b9c6b7);margin-bottom:10px;min-height:16px}.grocery-list{display:flex;flex-direction:column;gap:0}.grocery-row{display:grid;grid-template-columns:24px minmax(0,1fr) 80px 28px;align-items:center;gap:8px;border-bottom:1px solid var(--line,#536555);min-height:48px}.grocery-row input{min-width:0;width:100%;border:0;background:transparent;color:inherit;padding:8px 0;font-size:16px}.grocery-row input[type=checkbox]{width:21px;height:21px;accent-color:#91a78a}.grocery-row input[inputmode=decimal]{text-align:right;font-variant-numeric:tabular-nums}.grocery-remove{border:0;background:transparent;padding:3px;color:inherit}.grocery-add{display:grid;grid-template-columns:minmax(0,1fr) 80px 40px;gap:8px;margin:12px 0}.grocery-add input{min-width:0;width:100%;font-size:16px;padding:9px 6px;border:1px solid var(--line,#536555);background:transparent;color:inherit;border-radius:7px}.grocery-footer{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;background:var(--bg,#17271f)}.grocery-footer strong{font-size:19px;font-variant-numeric:tabular-nums}.grocery-finish{font-size:16px;padding:10px 12px}.grocery-stock-row{display:grid;grid-template-columns:minmax(0,1fr) 140px 32px;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line,#536555)}.grocery-stock-row input{min-width:0;width:100%;font-size:14px;padding:7px 2px;color:inherit;background:transparent;border:1px solid var(--line,#536555);border-radius:5px}.grocery-stock-row button{padding:4px}.grocery-hint{font-size:12px;color:var(--muted,#b9c6b7)}
 
+.grocery-legacy{display:none!important}.grocery-app button{font-family:inherit;font-size:14px;line-height:1.35;color:inherit;background:transparent;border:1px solid var(--line,#536555);border-radius:7px;padding:8px 10px;cursor:pointer}.grocery-app button:focus-visible{outline:2px solid var(--gold,#b8c8a4);outline-offset:2px}.grocery-app .grocery-tabs .selected,.grocery-app .grocery-finish{background:color-mix(in srgb,var(--gold,#b8c8a4) 15%,transparent);border-color:var(--gold,#b8c8a4)}.grocery-app .grocery-remove{border:0;padding:4px}.grocery-app .grocery-stock-row button{padding:5px}
+
 body.shopping-focus header{min-height:56px;height:auto;padding:8px 14px}body.shopping-focus .paper{padding-top:12px}body.shopping-focus #title,body.shopping-focus #subtitle{display:none}.shopping-focus .grocery-row input{min-height:40px;font-size:16px}.shopping-focus .grocery-tabs button{min-height:40px}.shopping-focus .grocery-app{padding-bottom:12px}
 </style>
 </head><body>
@@ -1677,6 +1679,7 @@ setTimeout(autoCheckGoblin,1800);
 /* Phone list owns its rendering; no cards or editor controls in a shopping row. */
 (()=>{'use strict';let client=null,binding=null,host=null;
 const previous=render;
+function legacyNotice(content){document.getElementById('groceryLegacyPending')?.remove();const pending=(window.StudioVault?.pending()||[]).filter(j=>j.base===pcUrl&&j.action.startsWith('shopping-'));if(!pending.length)return;const box=document.createElement('aside');box.id='groceryLegacyPending';box.className='grocery-sync';box.textContent='Anciennes saisies conservées en attente de connexion : '+pending.map(j=>j.payload.name||'article modifié').join(', ');const retry=document.createElement('button');retry.textContent='Synchroniser ces saisies';retry.onclick=async()=>{await StudioVault.drain();await client?.pull();render()};box.append(retry);content.prepend(box)}
 window.openGroceryInventory=()=>{state.page='connected';tab='shopping';render();client?.openInventory()};
 render=function(){
  const active=state.page==='shopping'||state.page==='connected'&&tab==='shopping';
@@ -1685,13 +1688,13 @@ render=function(){
  const content=document.getElementById('content'),base=pcUrl||'';
  document.getElementById('title').textContent='Courses';document.getElementById('subtitle').textContent='';
  for(const b of document.querySelectorAll('[data-mobile-go]'))b.classList.toggle('active',b.dataset.mobileSection==='shopping');
- if(client&&binding===base&&host?.isConnected){client.render();return}
+ if(client&&binding===base&&host?.isConnected){legacyNotice(content);client.render();return}
  client?.dispose();content.replaceChildren();host=document.createElement('div');content.append(host);binding=base;
  const key='goblin-groceries-v1:'+base,offline='goblin-groceries-v1:';
  if(base&&!localStorage.getItem(key)&&localStorage.getItem(offline))localStorage.setItem(key,localStorage.getItem(offline));
  if(!base){const connect=document.createElement('button');connect.textContent='Relier mon PC';connect.onclick=()=>{state.page='settings';render()};content.prepend(connect)}
  client=GoblinGroceries({root:host,storageKey:key,request:async(method,path,body)=>{if(!base)throw Error('Relie ton PC dans les paramètres pour synchroniser.');return callPc(method,path,body,base)},nativeSync:foods=>{try{window.AtelierFoods?.sync(JSON.stringify(foods))}catch{}},requestNotifications:()=>window.AtelierFoods?.requestPermission()});
- window.atelierGroceries=client;
+ window.atelierGroceries=client;legacyNotice(content);
 };
 const resume=window.__atelierOnResume;window.__atelierOnResume=()=>{resume?.();client?.drain();client?.pull()};
 render();
