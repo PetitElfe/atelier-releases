@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "b961af7c6eac84386eb57dbfa19e38fddef9dc57245ed005947ca5d069c78cf2"
+      "sha256": "01c2dacb98d8720879c44cabc0e2f1ef882c19bb91416268cb93839e77197ce0"
     },
     {
       "path": "app_part3.py",
@@ -153,7 +153,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "e51098b84c67637078643d5d03f7cb43734a8f6625fbc8a72abd6e98904c2508"
+      "sha256": "1eb6bd63d0257fa91a002bcc3d51163d7a47c81211e84a5478cef29e3a160004"
     },
     {
       "path": "public/interface_reference.css",
@@ -357,7 +357,7 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "d334dfdcd35c848f235e726e4edb741dcc045a33e8546a3fec7c61ada08bba09"
+      "sha256": "f50fdcc851301fffaaac4c4f1b09f850ee723025dd1ac39b7956401076478409"
     },
     {
       "path": "local_icon.ps1",
@@ -373,7 +373,7 @@
     },
     {
       "path": "public/groceries_ui.js",
-      "sha256": "39aa97c994e83c4d04b81ef221a4d0443cfa41100d382dc0a1eaa078c8ad32c1"
+      "sha256": "7a987650f36cd9cdc5428f89dacb50431d651a311ed04992c7c0f953035cd086"
     },
     {
       "path": "public/groceries_pc.js",
@@ -382,11 +382,15 @@
     {
       "path": "public/groceries.css",
       "sha256": "1932d665fe99232c00115827779baad2cb7c97f63e4efc6e21219582e3951bee"
+    },
+    {
+      "path": "official_icon.py",
+      "sha256": "8dc443c65d871853d32092ae66d21adf0f90a2a13bd81144c16b4a6162d1e447"
     }
   ],
   "notes": "Courses simples, validation unique dans le budget, inventaire et rappels de péremption facultative. Mode Modifier des rubriques et en-tête.",
-  "build_sequence": 2026111206,
+  "build_sequence": 2026111207,
   "edition": "NATHAN",
-  "common_source_build": "1bdafdda",
-  "common_source_revision": "1bdafdda1ee4deffd57be19a28fc7a9c9bd31b91"
+  "common_source_build": "12f19339",
+  "common_source_revision": "12f1933960befa742aa7e725b14941d076b16d15"
 }

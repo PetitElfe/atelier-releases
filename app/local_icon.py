@@ -13,7 +13,9 @@ def selected(data):
     root=folder(data);config=root/'selection.json'
     if config.is_symlink():raise RuntimeError('Réglage d’icône redirigé.')
     try:name=json.loads(config.read_text(encoding='utf-8'))['file']
-    except (OSError,ValueError,KeyError,TypeError):return None
+    except (OSError,ValueError,KeyError,TypeError):
+        import official_icon
+        return official_icon.current(data)
     if not isinstance(name,str) or not re.fullmatch(r'icon-[0-9a-f]{32}\.ico',name):return None
     file=root/name
     if file.is_symlink() or not file.is_file():return None
@@ -82,6 +84,8 @@ def start(data,edition):
     import updater
     try:updater.guard()
     except RuntimeError:return
+    import official_icon
+    official_icon.start(data)
     _started=True;exe=executable(data,edition)
     def watch():
         from ctypes import wintypes as W
@@ -130,3 +134,25 @@ def start(data,edition):
             except Exception:pass
             time.sleep(1)
     threading.Thread(target=watch,daemon=True,name='local-window-icon').start()
+
+
+def publish(data):
+    global _phase,_message
+    import updater,shutil
+    updater.guard()
+    if not shutil.which('gh'):raise ValueError('Pour publier une seule fois l’icône commune, installe GitHub CLI puis connecte ton compte PetitElfe avec « gh auth login ». Ton PNG ne passe pas par ce chat.')
+    if not _lock.acquire(blocking=False):raise RuntimeError('Une opération d’icône est déjà ouverte.')
+    _phase='working';_message='Publication de l’icône commune depuis Windows…'
+    def work():
+        global _phase,_message
+        try:
+            done=subprocess.run(['powershell.exe','-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('publish_official_icon.ps1'))],stdin=subprocess.DEVNULL,capture_output=True,timeout=900,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            if done.returncode:raise ValueError()
+            _phase='success';_message='Publication terminée ou sélection annulée. La compilation Android est visible dans GitHub Actions.'
+            import official_icon
+            try:official_icon.sync(data)
+            except Exception:pass
+        except Exception:_phase='error';_message='Publication non terminée. Le message Windows précise le problème ; le dessin d’origine est intact.'
+        finally:_lock.release()
+    threading.Thread(target=work,daemon=True,name='publish-official-icon').start()
+    return {'ok':True}

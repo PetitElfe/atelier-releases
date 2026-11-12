@@ -979,6 +979,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'error':'Pièce jointe trop volumineuse (4 Mo max).'},413)
         body = self._body(); ts = now_iso()
         if p in ('/api/groceries/cart','/api/groceries/checkout','/api/groceries/food','/api/groceries/remove'):
+            if body.get('installation_id')!=utility_safety.identity(DATA):return self._json({'error':'Installation PC différente. Les saisies restent sur ton appareil.'},409)
             try:
                 with conn() as c:
                     result=groceries.action(c,p.rsplit('/',1)[-1],body,ts);c.commit()
