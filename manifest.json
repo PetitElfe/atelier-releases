@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "0bdf3d74a674d0e39e5d90973ad771911e58e6c3908286521d1b6619737760a9"
+      "sha256": "63aeb533f789cc24386b481cc4271923247346123a0734179fe9150a9c41daa4"
     },
     {
       "path": "app_part2.py",
-      "sha256": "f73e2e71ed79617d33cc900c47f160c956c1972b6c4f70facf5628aba40f4057"
+      "sha256": "b961af7c6eac84386eb57dbfa19e38fddef9dc57245ed005947ca5d069c78cf2"
     },
     {
       "path": "app_part3.py",
@@ -89,7 +89,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "f01f8902f127c2e086a6ec636137ff138b4f6aabd3fc2e0a005e6548b79d66c3"
+      "sha256": "d95dc3086e72602b37ac2e3708c96b9d4b272081db030d245a95e007d8d8cfd8"
     },
     {
       "path": "public/big_refonte.css",
@@ -153,7 +153,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "6926558c237c637e72bb99b140930a18b535e9bbff5b76d2bd74fa65b24e5524"
+      "sha256": "e51098b84c67637078643d5d03f7cb43734a8f6625fbc8a72abd6e98904c2508"
     },
     {
       "path": "public/interface_reference.css",
@@ -349,11 +349,11 @@
     },
     {
       "path": "public/display_preferences.js",
-      "sha256": "8c6599154bf20310a85686a131167588641a615483741a51268b2fbc9ec2a06f"
+      "sha256": "e7509e0eac5b7a126907b7aebfe0ecbc0aac66fb5b243856e95756eda88f9e8c"
     },
     {
       "path": "public/display_preferences.css",
-      "sha256": "70bfa3308fea7095891e11cb1c249ca6591fcbf71559bc347cf4b8959c656150"
+      "sha256": "0356b4cb6848a7d240b1310fda6ce1cc3b93f43f74cdbab3ff0e8c66a2c88bae"
     },
     {
       "path": "local_icon.py",
@@ -366,11 +366,27 @@
     {
       "path": "public/local_icon.js",
       "sha256": "51d9e49d14c0d170e6d8fb3a87460f9e3b95bb6e1ce0c8f728908704e08478f1"
+    },
+    {
+      "path": "groceries.py",
+      "sha256": "f12c3b12b6b28810a4913fe8ac9abc628b24b5c26e050ac148e85df931915b60"
+    },
+    {
+      "path": "public/groceries_ui.js",
+      "sha256": "39aa97c994e83c4d04b81ef221a4d0443cfa41100d382dc0a1eaa078c8ad32c1"
+    },
+    {
+      "path": "public/groceries_pc.js",
+      "sha256": "46eeb8841d4d2c0d2270b8b5f5abacdc0863c009f9451795197bcc8dac26eca8"
+    },
+    {
+      "path": "public/groceries.css",
+      "sha256": "1932d665fe99232c00115827779baad2cb7c97f63e4efc6e21219582e3951bee"
     }
   ],
-  "notes": "Icône locale Windows : choix du PNG dans une fenêtre native, conversion ICO sur l’ordinateur, raccourci et icône de fenêtre personnalisés, restauration d’origine. Aucun transfert du dessin, pas de fichier artistique dans le dépôt.",
-  "build_sequence": 2026111205,
+  "notes": "Courses simples, validation unique dans le budget, inventaire et rappels de péremption facultative. Mode Modifier des rubriques et en-tête.",
+  "build_sequence": 2026111206,
   "edition": "NATHAN",
-  "common_source_build": "7977af38",
-  "common_source_revision": "6ffc57fde2c878389ee66c69e7b998680a29d3f3"
+  "common_source_build": "1bdafdda",
+  "common_source_revision": "1bdafdda1ee4deffd57be19a28fc7a9c9bd31b91"
 }

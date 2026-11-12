@@ -12,7 +12,7 @@ function apply(){
  display.zoom=factor;display.factor=embedded?1:factor;root.style.zoom=String(display.factor);
  root.style.removeProperty('font-size');root.style.removeProperty('--atelier-text-factor');
  root.style.setProperty('--atelier-viewport-width',innerWidth/display.factor+'px');root.style.setProperty('--atelier-viewport-height',innerHeight/display.factor+'px');
- root.dataset.atelierCompact=String(innerWidth/display.factor<1180);
+ root.dataset.atelierCompact=String(innerWidth/display.factor<980);
  const theme=read('atelier-ui-theme','goblin');root.dataset.atelierTheme=['goblin','sage','mauve','bleu','miel'].includes(theme)?theme:'goblin';
  const font=read('atelier-ui-font','classic');root.dataset.atelierFont=font;
  root.style.setProperty('--atelier-font',({classic:"Georgia, 'Times New Roman', serif",system:'system-ui, "Segoe UI", sans-serif',arial:'Arial, sans-serif'})[font]||'Georgia,serif');

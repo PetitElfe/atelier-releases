@@ -496,6 +496,10 @@ class Handler(BaseHTTPRequestHandler):
             with conn() as c:
                 return self._json([dict(row) for row in c.execute(
                     'SELECT * FROM home_postits WHERE archived=? ORDER BY id',(archived,)).fetchall()])
+        if p == '/api/groceries':
+            with conn() as c:
+                result=groceries.snapshot(c);result['installation_id']=utility_safety.identity(DATA)
+            return self._json(result)
         if p == '/api/local-icon/status':return self._json(local_icon.status(DATA))
         if p == '/api/update/status':
             try:
@@ -732,6 +736,8 @@ class Handler(BaseHTTPRequestHandler):
                     moment=datetime.fromisoformat(q.get('now',[now_iso()])[0])
                     if moment.tzinfo is not None:raise ValueError()
                     rows=reminder_occurrences.all_reminders(c,moment);c.commit()
+                    food_reminders={r[0] for r in c.execute('SELECT reminder_id FROM grocery_reminders')}
+                    for row in rows:row['food_expiry']=row['id'] in food_reminders
                     for row in rows:row['trigger_at_ms']=int(datetime.fromisoformat(row.get('snoozed_until') or row['remind_at']).timestamp()*1000)
                     if p.endswith('/due'):rows=[r for r in rows if (r.get('snoozed_until') or r['remind_at'])<=moment.isoformat(timespec='seconds')]
                     return self._json(rows)
@@ -972,6 +978,13 @@ class Handler(BaseHTTPRequestHandler):
             if incoming_size>admin_docs.MAX_ATTACHMENT_REQUEST:
                 return self._json({'error':'Pièce jointe trop volumineuse (4 Mo max).'},413)
         body = self._body(); ts = now_iso()
+        if p in ('/api/groceries/cart','/api/groceries/checkout','/api/groceries/food','/api/groceries/remove'):
+            try:
+                with conn() as c:
+                    result=groceries.action(c,p.rsplit('/',1)[-1],body,ts);c.commit()
+                return self._json(result)
+            except LookupError as ex:return self._json({'error':str(ex)},409)
+            except (ValueError,TypeError) as ex:return self._json({'error':str(ex)},400)
         if len(parts)==4 and parts[:2]==['api','admin'] and parts[3]=='attachments':
             try:admin_id=int(parts[2])
             except ValueError:return self._json({'error':'Démarche invalide.'},400)
