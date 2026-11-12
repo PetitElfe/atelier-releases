@@ -25,7 +25,9 @@ def status(data):
     import updater
     try:updater.guard();available=True
     except RuntimeError:available=False
-    return {'available':available,'custom':selected(data) is not None,'phase':_phase,'message':_message}
+    choice=selected(data);private=bool(choice and choice.parent==folder(data))
+    message=_message or ('L’icône officielle commune est active.' if choice and not private else '')
+    return {'available':available,'custom':private,'phase':_phase,'message':message}
 
 def _powershell(data,exe,mode,output=None):
     args=['powershell.exe','-NoProfile','-NonInteractive','-STA','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('local_icon.ps1')),'-Mode',mode,'-TargetExe',str(exe)]
