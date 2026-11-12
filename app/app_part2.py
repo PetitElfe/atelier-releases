@@ -496,6 +496,7 @@ class Handler(BaseHTTPRequestHandler):
             with conn() as c:
                 return self._json([dict(row) for row in c.execute(
                     'SELECT * FROM home_postits WHERE archived=? ORDER BY id',(archived,)).fetchall()])
+        if p == '/api/local-icon/status':return self._json(local_icon.status(DATA))
         if p == '/api/update/status':
             try:
                 updater.guard()
@@ -1020,6 +1021,14 @@ class Handler(BaseHTTPRequestHandler):
             self._json({'ok':True,'version':atelier_version()})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
+        if p in ('/api/local-icon/choose','/api/local-icon/reset'):
+            if (self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Local-Icon')!='1'):
+                return self._json({'error':'Action réservée aux paramètres locaux.'},403)
+            if body:return self._json({'error':'Aucun fichier ni chemin ne doit être envoyé.'},400)
+            try:
+                edition='NATHAN' if PORT==8877 else 'MISU'
+                return self._json(local_icon.change(DATA,local_icon.executable(DATA,edition),p.rsplit('/',1)[-1]))
+            except (RuntimeError,ValueError) as ex:return self._json({'error':str(ex)},409)
         if p == '/api/update/start':
             # Only this installation's localhost UI may initiate an update.
             # The per-edition port is fixed by the server configuration.

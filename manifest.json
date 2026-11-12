@@ -25,15 +25,15 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "66bcd464195adaa3e3874e3937e3c60c69cf9f5cec5a998fd11199bf835a89bf"
+      "sha256": "0bdf3d74a674d0e39e5d90973ad771911e58e6c3908286521d1b6619737760a9"
     },
     {
       "path": "app_part2.py",
-      "sha256": "470c6fb2992e04bce7e30575504cb270dd54f120387f82337a1d5715a65280a5"
+      "sha256": "f73e2e71ed79617d33cc900c47f160c956c1972b6c4f70facf5628aba40f4057"
     },
     {
       "path": "app_part3.py",
-      "sha256": "760fc2969074fe8d0573f45b928860bc0fc1badc8b6ba81397ebea8ef506e8b1"
+      "sha256": "c6471950418bc6b7409590b6de2ab0119a900c8843e7ca4248d6445f60ee0ddf"
     },
     {
       "path": "creator_access.py",
@@ -153,7 +153,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "e2c86863da6057fb0c909ec42998ba088cf97a45deca9dab97cedb50dd69559c"
+      "sha256": "6926558c237c637e72bb99b140930a18b535e9bbff5b76d2bd74fa65b24e5524"
     },
     {
       "path": "public/interface_reference.css",
@@ -354,11 +354,23 @@
     {
       "path": "public/display_preferences.css",
       "sha256": "70bfa3308fea7095891e11cb1c249ca6591fcbf71559bc347cf4b8959c656150"
+    },
+    {
+      "path": "local_icon.py",
+      "sha256": "727a2cff8029829a0ece019c12f73c89e3b744f77e7e8ecc03f4f1564e641bab"
+    },
+    {
+      "path": "local_icon.ps1",
+      "sha256": "84a50e85878278ef67df343a31958976cfd20fdc7c255361e01e10d88d595011"
+    },
+    {
+      "path": "public/local_icon.js",
+      "sha256": "51d9e49d14c0d170e6d8fb3a87460f9e3b95bb6e1ce0c8f728908704e08478f1"
     }
   ],
-  "notes": "Correctif affichage Windows : suppression de la réécriture des polices et de l’agrandissement automatique selon la résolution. Zoom global proportionnel 80–160 %, raccourcis Ctrl +/−/0, zooms carnet/carte indépendants, géométrie des widgets et menus adaptée au zoom.",
-  "build_sequence": 2026111204,
+  "notes": "Icône locale Windows : choix du PNG dans une fenêtre native, conversion ICO sur l’ordinateur, raccourci et icône de fenêtre personnalisés, restauration d’origine. Aucun transfert du dessin, pas de fichier artistique dans le dépôt.",
+  "build_sequence": 2026111205,
   "edition": "NATHAN",
-  "common_source_build": "39a01da0",
-  "common_source_revision": "90b89a330a2c37abd5e5181c741864a363fabacc"
+  "common_source_build": "bd812328",
+  "common_source_revision": "be516e07e632e0b7c53890b890bcc7ff2723340f"
 }

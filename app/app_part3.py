@@ -63,6 +63,7 @@ if __name__ == '__main__':
         timer.start()
 
     try:
+        local_icon.start(DATA,'NATHAN' if active_port==8877 else 'MISU')
         server.serve_forever()
     except KeyboardInterrupt:
         pass
