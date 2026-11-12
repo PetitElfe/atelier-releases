@@ -1,0 +1,23 @@
+name: Android sync prototype tests
+on:
+  push:
+    branches: [feature/android-goblin-mobile]
+    paths:
+      - 'mobile/sync/**'
+      - '.github/workflows/android-sync-tests.yml'
+  pull_request:
+    paths:
+      - 'mobile/sync/**'
+      - '.github/workflows/android-sync-tests.yml'
+  workflow_dispatch:
+jobs:
+  test-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run isolated sync server tests
+        working-directory: mobile/sync
+        run: python -m unittest -v test_lan_sync_server.py
