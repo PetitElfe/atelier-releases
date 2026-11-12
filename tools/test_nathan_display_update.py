@@ -55,7 +55,7 @@ try:
  with closing(sqlite3.connect(data/'atelier.db')) as c:assert c.execute('SELECT title FROM tasks WHERE id=?',(task['id'],)).fetchone()[0]=='Nathan task preserved'
  assert list((base/'backups').glob('*/data/atelier.db'))
  fixture_updater=base/'code/app/updater.py'
- fixture_updater.write_text(fixture_updater.read_text(encoding='utf-8').replace("return 'test/windows-nathan-current'","return 'test/icon-nathan-20261112'"),encoding='utf-8')
+ fixture_updater.write_text(fixture_updater.read_text(encoding='utf-8').replace("return 'test/windows-nathan-current'","return 'test/shopping-nathan-20261112'"),encoding='utf-8')
  server=subprocess.Popen([str(installed),'--nathan-server'],env=env)
  try:
   ready();assert any(t['title']=='Nathan task preserved' for t in api('/api/tasks'))
@@ -71,6 +71,11 @@ try:
    except Exception:pass
   assert status['phase']=='success',status
   assert (base/'code/app/public/display_preferences.js').is_file()
+  grocery=api('/api/groceries');assert grocery['installation_id']
+  added=api('/api/groceries/cart',{'installation_id':grocery['installation_id'],'operation_id':'nathan-shopping-native-test','items':[{'key':'native-fixture-food','name':'Courses Nathan','price':1.25,'purchase_count':1,'checked':0,'base':None}]});assert added['cart'][0]['name']=='Courses Nathan'
+  for path in ['/api/personal-design','/api/creator-access','/api/local-icon/publish']:
+   try:api(path,{});raise AssertionError('Owner feature exposed after update '+path)
+   except urllib.error.HTTPError as e:assert e.code in (403,404)
   assert "return 'test/windows-nathan-current'" in fixture_updater.read_text(encoding='utf-8')
   assert (data/'own-document.bin').read_bytes()==before
   shutdown(data)
