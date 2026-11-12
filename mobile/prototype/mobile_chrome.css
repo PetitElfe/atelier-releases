@@ -16,8 +16,8 @@ body>header #quickSettings svg{width:23px;height:23px;flex:none}
 #content .settings-group{margin:0;border:0;border-bottom:1px solid var(--card-border);border-radius:0;background:transparent}
 #content .settings-group>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;min-height:58px;padding:16px 0;font-size:15px;font-weight:550}
 #content .settings-group>summary::-webkit-details-marker{display:none}
-#content .settings-group>summary::after{content:'›';font-size:21px;font-weight:400;color:var(--muted-ink)}
-#content .settings-group[open]>summary::after{rotate:90deg}
+#content .settings-group>summary::after{content:'';width:7px;height:7px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;rotate:45deg;margin-right:5px;flex:none;color:var(--muted-ink)}
+#content .settings-group[open]>summary::after{rotate:135deg}
 #content .settings-group>.panel{border:0;box-shadow:none;background:transparent;padding:0 0 16px;margin:0}
 .mobile-technical{font-size:13px;line-height:1.5;margin:12px 0}.mobile-technical>summary{padding:8px 0;cursor:pointer;color:var(--muted-ink)}
 .mobile-technical p{font-size:13px;overflow-wrap:anywhere}.mobile-drafts .panel{box-shadow:none;border:0;padding:0;margin:0;background:transparent}
