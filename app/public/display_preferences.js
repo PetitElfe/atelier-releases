@@ -5,7 +5,7 @@ const read=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
 const families={classic:"Georgia, 'Times New Roman', serif",system:'system-ui, "Segoe UI", sans-serif',arial:'Arial, sans-serif'};
 const originals=new Map();let timer;
 function visit(rules,factor){for(const rule of rules){
- if(rule.cssRules){visit(rule.cssRules,factor);continue}
+ if(rule.cssRules?.length)visit(rule.cssRules,factor);
  if(!rule.style)continue;
  const style=rule.style;
  if(!originals.has(style))originals.set(style,{size:style.fontSize,line:style.lineHeight});

@@ -29,3 +29,5 @@ select option,optgroup{background:var(--panel);color:var(--text)}
 .atelier-context-menu button.danger{color:#f6aca5!important}
 .topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit){background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
 .topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit):hover{background:var(--atelier-hover)!important;color:var(--text)!important;border-color:var(--gold)!important}
+
+body :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted){font-family:var(--atelier-font)}
