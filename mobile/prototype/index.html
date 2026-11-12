@@ -254,6 +254,7 @@ body>header #quickSettings svg{width:23px;height:23px;flex:none}
 .mobile-technical{font-size:13px;line-height:1.5;margin:12px 0}.mobile-technical>summary{padding:8px 0;cursor:pointer;color:var(--muted-ink)}
 .mobile-technical p{font-size:13px;overflow-wrap:anywhere}.mobile-drafts .panel{box-shadow:none;border:0;padding:0;margin:0;background:transparent}
 #mobileSyncDetails{font-size:14px;line-height:1.5}#mobileSyncDetails h2{margin:8px 0 12px}#mobileSyncDetails .panel{border:0;border-bottom:1px solid var(--card-border);border-radius:0;background:transparent;box-shadow:none;padding:12px 0;margin:0}#mobileSyncDetails .panel .panel:last-child{border:0}#mobileSyncDetails button{min-height:42px;white-space:normal}#mobileSyncDetails p{overflow-wrap:anywhere}#mobileSyncDetails .sync-primary{width:100%;margin:8px 0}
+body>header{z-index:30}.nav.drawer{z-index:60}.goblin-update-banner{top:var(--mobile-header-height,56px);z-index:20}body.studio-breathing #goblinUpdateBanner{display:none!important}
 </style>
 </head><body>
 <header><button id="menu" aria-label="Ouvrir le menu">☰<span id="goblinUpdateDot" hidden aria-label="Mise à jour disponible" style="color:#e5d48f;font-size:14px"> ●</span></button><button type="button" class="header-home" id="home" aria-label="Revenir à mon journal">L’Atelier du Goblin</button><button id="quickSettings" type="button" class="quick-settings" aria-label="Ouvrir les paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.6 3h4.8l.6 2.5 1.6.9 2.5-.8 2.4 4.2-1.9 1.7v1.8l1.9 1.7-2.4 4.2-2.5-.8-1.6.9-.6 2.5H9.6L9 19.3l-1.6-.9-2.5.8-2.4-4.2 1.9-1.7v-1.8l-1.9-1.7 2.4-4.2 2.5.8L9 5.5 9.6 3Z"/><circle cx="12" cy="12" r="3"/></svg><span id="headerUpdateBadge" class="settings-badge" hidden>1</span></button></header>
@@ -1763,6 +1764,7 @@ function tidy(){const host=document.getElementById('content');for(const el of ho
  if(state.page==='settings')simplifySettings();paint()
 }
 render=function(){if(state.page==='settings'&&wasSettings){openGroups=new Set([...document.querySelectorAll('#content .settings-group[open]')].map(g=>g.querySelector(':scope > summary')?.textContent))}else if(state.page==='settings')openGroups.clear();wasSettings=state.page==='settings';const result=previous();tidy();return result};
+const appbar=document.querySelector('body>header');new ResizeObserver(()=>document.documentElement.style.setProperty('--mobile-header-height',appbar.getBoundingClientRect().height+'px')).observe(appbar);
 window.MobileChrome={paint,details,snapshot};window.addEventListener('studio-queue-updated',paint);window.addEventListener('online',paint);window.addEventListener('offline',paint);setInterval(paint,2000);render();
 })();
 

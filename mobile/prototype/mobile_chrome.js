@@ -24,5 +24,6 @@ function tidy(){const host=document.getElementById('content');for(const el of ho
  if(state.page==='settings')simplifySettings();paint()
 }
 render=function(){if(state.page==='settings'&&wasSettings){openGroups=new Set([...document.querySelectorAll('#content .settings-group[open]')].map(g=>g.querySelector(':scope > summary')?.textContent))}else if(state.page==='settings')openGroups.clear();wasSettings=state.page==='settings';const result=previous();tidy();return result};
+const appbar=document.querySelector('body>header');new ResizeObserver(()=>document.documentElement.style.setProperty('--mobile-header-height',appbar.getBoundingClientRect().height+'px')).observe(appbar);
 window.MobileChrome={paint,details,snapshot};window.addEventListener('studio-queue-updated',paint);window.addEventListener('online',paint);window.addEventListener('offline',paint);setInterval(paint,2000);render();
 })();
