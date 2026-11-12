@@ -108,3 +108,35 @@
 .health-journal-frame{width:100%;height:calc(100dvh - 220px);min-height:480px;border:0;border-radius:10px}.health-content{padding:16px 0}.health-vault-grid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px}.health-folder-nav{display:flex;flex-direction:column;gap:4px;align-self:start}.health-folder-nav button{text-align:left;padding:9px 12px}.health-folder-nav .active{background:#ced5bb;color:#18221b}#healthSecretForm input,#healthRecovery input{width:100%;box-sizing:border-box}#healthEmergencyExport pre{white-space:pre-wrap}#healthSecretForm label{display:flex;gap:8px;flex-direction:column}.health-content textarea{width:100%;min-height:100px;box-sizing:border-box}.health-content .studio-fieldset{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.health-content .studio-fieldset strong{margin-right:auto}@media(max-width:850px){.health-vault-grid{grid-template-columns:1fr}.health-folder-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .health-vault-grid>section>button{margin:4px 8px 10px 0}
+
+/* Compact budget sheets; columns keep their natural width at every screen size. */
+#studioBudget{max-width:fit-content;max-width:min(100%,1500px)}
+#studioBudget .studio-budget-columns{display:flex;flex-wrap:wrap;align-items:flex-start;gap:18px 22px;width:fit-content;max-width:100%}
+#studioBudget .studio-budget-ledger{width:max-content;max-width:100%;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--panel) 87%,var(--text));color:var(--text)}
+#studioBudget .studio-budget-ledger h3{margin:0;padding:10px 12px;font-size:18px;background:var(--panel)}
+#studioBudget .studio-ledger-scroll{max-width:min(100%,780px);overflow-x:auto}
+#studioBudget .studio-ledger{width:auto;table-layout:auto;border-collapse:collapse;background:transparent}
+#studioBudget .studio-ledger :is(th,td){text-align:left;padding:7px 10px;border-color:var(--line)}
+#studioBudget .studio-ledger .studio-budget-amount{text-align:right;min-width:7ch}
+#studioBudget .studio-budget-name{min-width:100px;max-width:240px;white-space:normal;overflow-wrap:anywhere}
+#studioBudget .studio-budget-date{white-space:nowrap}
+#studioBudget .studio-ledger thead,#studioBudget .studio-ledger tfoot{background:color-mix(in srgb,var(--panel) 80%,var(--gold))}
+#studioBudget .studio-budget-status-actions{display:flex;align-items:center;gap:3px}
+#studioBudget .studio-budget-status-actions button{display:inline-grid;place-items:center;width:27px;height:27px;min-height:27px;margin:0;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--muted);font:600 17px/1 system-ui}
+#studioBudget .studio-budget-status-actions .done[aria-pressed=true]{color:#b8e3b7;background:color-mix(in srgb,var(--panel) 70%,#509e59)}
+#studioBudget .studio-budget-status-actions button:hover{color:var(--text);border-color:var(--gold)}
+#studioBudget .studio-budget-ledger>.studio-add-line{border:0!important;margin:0;background:var(--panel)!important}
+#studioBudget .studio-budget-footer{display:flex;flex-wrap:wrap;align-items:flex-start;gap:18px 24px;margin-top:22px;padding:14px 0;border-top:1px solid var(--line)}
+#studioBudget .studio-budget-total{display:grid;gap:5px;font-variant-numeric:tabular-nums}
+#studioBudget .studio-budget-total>span{color:var(--muted);font-size:14px}
+#studioBudget .studio-budget-total strong{font-size:20px}
+#studioBudget .studio-budget-forecast{margin-left:auto}
+#studioBudget .studio-budget-current{cursor:context-menu}
+#studioBudget .studio-budget-current:focus-visible,#studioBudget .studio-budget-month-title:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#studioBudget .studio-budget-month-title{font-size:22px;margin:14px 0;cursor:context-menu}
+#studioBudget .studio-budget-archive-toolbar{margin:14px 0}
+#trackersView .tracker-heading.hidden{display:none!important}
+#trackersView #studioTrackerTabs{margin-top:0}
+#trackersView .studio-tracker-heading{display:flex;align-items:center;gap:10px;margin:12px 0 8px}
+#trackersView .studio-tracker-heading .studio-tracker-title{margin:0}
+#trackersView .studio-tracker-add{padding:0;border:0;background:transparent;font:600 25px/1 system-ui;min-height:30px;min-width:30px;color:var(--text)}

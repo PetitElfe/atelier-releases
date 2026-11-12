@@ -134,7 +134,7 @@ def budget_support(c,method,parts,q,body):
   result=[]
   entries=c.execute("SELECT category,amount_cents,status FROM budget_entries WHERE archived=0 AND kind='expense' AND substr(COALESCE(actual_date,scheduled_date),1,7)=? AND status!='skipped'",(month,)).fetchall()
   for row in c.execute('SELECT * FROM budget_category_limits WHERE month=? ORDER BY category',(month,)):
-   item=dict(row);matching=[e for e in entries if e['category'].strip().casefold()==item['category'].casefold()];item['spent_cents']=sum(e['amount_cents'] for e in matching if e['status'] in ('confirmed','presumed'));item['planned_cents']=sum(e['amount_cents'] for e in matching);result.append(item)
+   item=dict(row);matching=[e for e in entries if e['category'].strip().casefold()==item['category'].casefold()];item['spent_cents']=sum(e['amount_cents'] for e in matching if e['status']=='confirmed');item['planned_cents']=sum(e['amount_cents'] for e in matching);result.append(item)
   return result
  category=body.get('category')
  if not isinstance(category,str) or not 1<=len(category.strip())<=80:raise ValueError('Catégorie invalide.')

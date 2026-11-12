@@ -14,7 +14,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -216,6 +216,11 @@ CREATE TABLE IF NOT EXISTS budget_settings (
 );
 CREATE TABLE IF NOT EXISTS budget_month_openings (
  month TEXT PRIMARY KEY, amount_cents INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1
+);
+-- Manual reconciliation changes cash without inventing an income or expense.
+CREATE TABLE IF NOT EXISTS budget_cash_adjustments (
+ month TEXT PRIMARY KEY, reference_date TEXT NOT NULL, adjustment_cents INTEGER NOT NULL,
+ revision INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS budget_rules (
  id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL CHECK(kind IN ('income','fixed')),

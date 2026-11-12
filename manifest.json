@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "fcccf813c31fdfe79d364f1834178c726dd5a841f9fc94d09b61abefd4852bca"
+      "sha256": "66bcd464195adaa3e3874e3937e3c60c69cf9f5cec5a998fd11199bf835a89bf"
     },
     {
       "path": "app_part2.py",
-      "sha256": "79601cd2b4c0df8b31f73b3745da518d2beaf14c3846c2ba7a43a769ef15b5b9"
+      "sha256": "e7a2e8a408d0f25266ac5fc5da2f4e2d41396ac10a74265c7bf75ee87a00ef57"
     },
     {
       "path": "app_part3.py",
@@ -105,7 +105,7 @@
     },
     {
       "path": "public/budget_support.js",
-      "sha256": "56be6096470c256e6a104eecd25ae0feefb13c4c7670919e18f4a07c0afcfadb"
+      "sha256": "37cbfb02696a89439f7b0cd1cde078befc6d799d1381762d0a33f4401e7f420e"
     },
     {
       "path": "public/calendar_cycle_compact.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "bd7ec04ea9ba0535456c34cc981b388c58b9088172f6d98c4189e683f810833c"
+      "sha256": "1d1d20d5f852b97382b56bed742130b1c95616b82be13b18c69418f01f8e73b9"
     },
     {
       "path": "public/interface_reference.css",
@@ -281,7 +281,7 @@
     },
     {
       "path": "public/studio.css",
-      "sha256": "51f8bae8a4689f3d32605573bf29e67bcc14a34292ec4998bc65fb5505e86508"
+      "sha256": "47dde44be0cc514b016fb7cdbb4c98b23750007142f9b2111e18c36eadecb1f1"
     },
     {
       "path": "public/studio_album.js",
@@ -289,7 +289,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "7942a7817a582c7420aa9f40fd129ec9ad1f4f18cdd7886f9d3fee7fcc53fe09"
+      "sha256": "63a11384c1bfb7f3698bb46f51fa2b33983b6141e9649f38c8d67d62ebf89b94"
     },
     {
       "path": "public/studio_core.js",
@@ -301,7 +301,7 @@
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "5b372d14a3e00c749ffcf14cf6f391038db7a447cc096230e822a3923eb6208b"
+      "sha256": "bad1f7a491c76fca5034189ffa5993bbf2b44c334059bf97c5869545fa209f0a"
     },
     {
       "path": "public/styles.css",
@@ -365,7 +365,7 @@
     },
     {
       "path": "utility_details.py",
-      "sha256": "013b0a34566ce2691897c0585a270b3938ab44f825d8014024c48da9c93103ef"
+      "sha256": "66399d02270bbaedf59c5d0f45481e710581ffdb7d9f97df2b83a3c5b0e9bfb9"
     },
     {
       "path": "utility_notes.py",
@@ -392,6 +392,6 @@
       "sha256": "a604b15d8aea3a180c4e295e1fabe719abea4d355012508061537f765fd534ea"
     }
   ],
-  "notes": "TEST Windows : taille des textes automatique ou réglable jusqu’à 160 %, choix de police et menus harmonisés avec le thème. Mise à jour intégrée Misu/Nathan ; données et fonctions réservées conservées.",
-  "build_sequence": 2026111202
+  "notes": "TEST Windows : trackers allégés, ajout de tableau près du titre ; budget compact, dates jj/mm, validation manuelle, solde actuel réglable par clic droit et lignes supprimées dans Archives. Bilan mensuel en attente de définition.",
+  "build_sequence": 2026111203
 }
