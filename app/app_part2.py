@@ -1418,6 +1418,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur=c.execute('''INSERT INTO food_items(name,quantity,units_count,price,calories,expiry_date,expiry_mode,notes,status,created_at,updated_at)
                                  VALUES(?,?,?,?,?,?,?,?,?,?,?)''',
                               (name,body.get('quantity',''),units,float_or_none(body.get('price')),float_or_none(body.get('calories')),expiry,mode,body.get('notes',''),'active',ts,ts))
+                groceries.sync_reminders(c,cur.lastrowid,ts)
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'id':cur.lastrowid},201)
             if p == '/api/recipe-books':
                 name=(body.get('name') or '').strip()
@@ -2248,6 +2249,7 @@ class Handler(BaseHTTPRequestHandler):
                 c.execute('''UPDATE food_items SET name=?,quantity=?,units_count=?,price=?,calories=?,expiry_date=?,expiry_mode=?,notes=?,status=?,updated_at=? WHERE id=?''',
                           (d['name'],d.get('quantity',''),max(1,int(d.get('units_count') or 1)),float_or_none(d.get('price')),float_or_none(d.get('calories')),
                            expiry,mode,d.get('notes',''),d.get('status','active'),ts,iid))
+                if old['expiry_date']!=expiry or old['status']!=d.get('status','active') or old['name']!=d['name']:groceries.sync_reminders(c,iid,ts)
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})
             if len(parts)==3 and parts[0]=='api' and parts[1] in ('recipes','meals'):
                 iid=int(parts[2]); old=c.execute('SELECT * FROM recipes WHERE id=?',(iid,)).fetchone()

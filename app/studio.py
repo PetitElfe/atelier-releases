@@ -409,6 +409,9 @@ def command(c, body, context):
             raise ValueError('Choisis un nombre d’unités disponibles.')
         c.execute('UPDATE food_items SET units_count=?,status=?,updated_at=? WHERE id=?',
                   (food['units_count'] - count, 'consumed' if count == food['units_count'] else 'active', stamp, food['id']))
+        if count==food['units_count']:
+            import groceries
+            groceries.sync_reminders(c,food['id'],stamp)
         result = {'ok': True}
     else:
         raise ValueError('Action inconnue.')
