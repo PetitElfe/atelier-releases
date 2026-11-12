@@ -1,5 +1,5 @@
 """Run only on disposable Windows runner: no real profile is opened."""
-import json,os,subprocess,tempfile,time,urllib.request,urllib.error,sqlite3,sys,hashlib
+import json,os,subprocess,tempfile,time,urllib.request,urllib.error,sqlite3,sys,hashlib,shutil
 from pathlib import Path
 from contextlib import closing
 ROOT=Path(__file__).resolve().parents[1];EXE=ROOT/'dist/LAtelierDuGoblin_Nathan.exe'
@@ -28,7 +28,8 @@ def ready():
   except Exception:pass
   time.sleep(.25)
  raise RuntimeError('Frozen Nathan server did not become ready')
-with tempfile.TemporaryDirectory() as folder:
+folder=tempfile.mkdtemp()
+try:
  env=dict(os.environ,LOCALAPPDATA=folder);base=Path(folder)/'LAtelierDuGoblinNathan';data=base/'data';installed=base/'desktop'/EXE.name
  subprocess.run([str(EXE),'--nathan-install-only'],env=env,timeout=90,check=True)
  assert installed.exists() and not (data/'atelier.db').exists()
@@ -65,3 +66,12 @@ with tempfile.TemporaryDirectory() as folder:
  finally:
   if server.poll() is None:server.terminate()
  print('PASS: frozen fresh install, native note ACK, safe existing-profile upgrade, preserved SQLite/files/layout, source-pinned in-app update/restart; owner APIs inaccessible')
+
+finally:
+ # The actual server has exited (asserted above); its onefile loader can still
+ # hold the inherited log handle briefly while it removes its own runtime.
+ for attempt in range(40):
+  try:shutil.rmtree(folder);break
+  except PermissionError:
+   if attempt==39:raise
+   time.sleep(.25)
