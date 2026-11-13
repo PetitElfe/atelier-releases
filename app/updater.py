@@ -201,7 +201,7 @@ def _backup(backup):
     # Native desktop Post-its can own SQLite connections even after the main
     # server stops. Never copy a live WAL-mode database byte-by-byte.
     ephemeral={'updater-state.json','updater.lock','updater-worker.log',
-               'desktop-postits.lock','desktop-postits-wake.txt',
+               'desktop-window.lock','desktop-postits.lock','desktop-postits-wake.txt',
                'desktop-postits.log','desktop-launch.log','desktop-server.log'}
     database_files={'atelier.db','atelier.db-wal','atelier.db-shm'}
     ignored=ephemeral|database_files

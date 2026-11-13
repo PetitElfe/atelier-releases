@@ -325,7 +325,7 @@
     },
     {
       "path": "updater.py",
-      "sha256": "5629470982060603971dc49e386028478488b5d047696b6fc5c68d4bcc6205ce"
+      "sha256": "cce0a59b836dcb72b08f5c23fa896484cef4b1018b601a5aade9f36d49a3b3bd"
     },
     {
       "path": "utility_details.py",
@@ -389,7 +389,7 @@
     }
   ],
   "notes": "Courses simples, validation unique dans le budget, inventaire et rappels de péremption facultative. Mode Modifier des rubriques et en-tête.",
-  "build_sequence": 2026111208,
+  "build_sequence": 2026111301,
   "edition": "NATHAN",
   "common_source_build": "12f19339",
   "common_source_revision": "12f1933960befa742aa7e725b14941d076b16d15"

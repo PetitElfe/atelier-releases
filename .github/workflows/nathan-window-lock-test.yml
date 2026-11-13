@@ -1,0 +1,27 @@
+name: Nathan TEST desktop window lock backup
+on:
+  push:
+    branches: [test/nathan-window-lock-20261113]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          config: core.autocrlf=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python tools/test_desktop_window_lock.py
+      - name: Check repair PowerShell syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path tools/Reparer_Nathan_Verrou.ps1),[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count) { throw ($errors | Out-String) }
