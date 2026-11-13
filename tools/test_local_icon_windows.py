@@ -61,7 +61,12 @@ with tempfile.TemporaryDirectory() as name:
   # Official cache -> explicit apply, without watcher or private selection.
   import hashlib
   cache=root/'official-icon';cache.mkdir();digest=hashlib.sha256(raw).hexdigest();(cache/('icon-'+digest+'.ico')).write_bytes(raw);(cache/'current.json').write_text(json.dumps({'ico_sha256':digest}))
-  with patch('updater.guard'),patch.object(local_icon,'executable',return_value=image_path):
+  original_run=subprocess.run
+  def diagnose(*args,**kwargs):
+   result=original_run(*args,**kwargs)
+   if result.returncode:print('SYNTHETIC FIXTURE ONLY:',result.stderr,flush=True)
+   return result
+  with patch('updater.guard'),patch.object(local_icon,'executable',return_value=image_path),patch.object(subprocess,'run',side_effect=diagnose):
    result=local_icon.reapply(root)
    assert result['windows']>=1,result
    assert u.SendMessageW(hwnd,0x7F,0,0),'Direct official window icon not applied'
