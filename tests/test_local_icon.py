@@ -36,3 +36,10 @@ class LocalIconTests(unittest.TestCase):
   args=run.call_args.args[0];self.assertIn('-STA',args);self.assertNotIn('-InputPng',args)
   text=(Path(local_icon.__file__).with_suffix('.ps1')).read_text()
   self.assertNotIn('Invoke-WebRequest',text);self.assertNotIn('HttpClient',text)
+
+ def test_reapply_requires_windows_acknowledgement(self):
+  root=local_icon.folder(self.data);icon=root/('icon-'+'b'*32+'.ico');icon.write_bytes(b'fixture');(root/'selection.json').write_text(json.dumps({'file':icon.name}))
+  with patch('updater.guard'),patch.object(local_icon,'_powershell',return_value={'shortcuts':0,'windows':0}):
+   with self.assertRaisesRegex(RuntimeError,'aucune fenêtre'):local_icon.reapply(self.data)
+  with patch('updater.guard'),patch.object(local_icon,'_powershell',return_value={'shortcuts':1,'windows':1}):
+   self.assertEqual(local_icon.reapply(self.data)['windows'],1)

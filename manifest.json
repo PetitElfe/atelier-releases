@@ -393,11 +393,11 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "29b00034f93779f08d79101da30ee4b2781846bbb24ec5c3f8cc8c1843ed515f"
+      "sha256": "23df134d3ef41d000efb2a0825b696844e4c144e81ebd1196af04bee90562079"
     },
     {
       "path": "local_icon.ps1",
-      "sha256": "27e5d21c937bf475209fdf89f1307b51a36e1021f39acc389543f0894700db14"
+      "sha256": "367bc430c4c5d6c63228d54f79d1f20f4e000a8c034edca33352e01337e6f38d"
     },
     {
       "path": "public/local_icon.js",
@@ -429,7 +429,7 @@
     },
     {
       "path": "official_icon_publish.py",
-      "sha256": "430e81ff7b1a5f8b848bae0d17c1e3f176fad947f362c4b189ab3a2fe5d8ab28"
+      "sha256": "2d97590c0438cee7ff681381c334dc410a4b561a3ae474ab3738856191fdda44"
     },
     {
       "path": "official_icon_prepare.ps1",
@@ -437,9 +437,9 @@
     },
     {
       "path": "public/official_icon_publish.js",
-      "sha256": "c84e59d83d0b7ad52fcf04b4d8e60b5a9f04a0a5bc294084a176400c76f0648d"
+      "sha256": "0c23ed8d5e372aa5c1fc2afbd25f852ca049ca05f0d812426009ebccfd9969d5"
     }
   ],
-  "notes": "Icône officielle : glisser-déposer local du PNG, aperçu privé, publication explicitement confirmée, étapes visibles, délais réseau bornés et annulation. Ancien assistant bloquant remplacé.",
-  "build_sequence": 2026111209
+  "notes": "Icône : application Windows vérifiée, réapplication sans renvoi du PNG, correction du suivi des fenêtres.",
+  "build_sequence": 2026111301
 }

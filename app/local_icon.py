@@ -32,10 +32,21 @@ def status(data):
 def _powershell(data,exe,mode,output=None):
     args=['powershell.exe','-NoProfile','-NonInteractive','-STA','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('local_icon.ps1')),'-Mode',mode,'-TargetExe',str(exe)]
     if output:args+=['-OutputIcon',str(output)]
-    done=subprocess.run(args,stdin=subprocess.DEVNULL,capture_output=True,timeout=600,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    done=subprocess.run(args,stdin=subprocess.DEVNULL,capture_output=True,timeout=600 if mode=='Choose' else 25,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if done.returncode==2:return False
     if done.returncode:raise RuntimeError('Impossible de préparer l’icône locale. Choisis un PNG valide, de 16 Mo maximum et de dimensions raisonnables.')
-    return True
+    try:return json.loads(done.stdout.decode('utf-8-sig').strip())
+    except (ValueError,UnicodeError,AttributeError):return True
+
+def reapply(data,edition='MISU'):
+    import updater
+    updater.guard()
+    choice=selected(data)
+    if not choice:raise ValueError('Aucune icône enregistrée sur ce PC. La publication précédente n’a pas laissé de copie utilisable.')
+    result=_powershell(data,executable(data,edition),'Apply',choice)
+    if not isinstance(result,dict):raise RuntimeError('Windows n’a pas confirmé l’application de l’icône.')
+    if not result.get('shortcuts') and not result.get('windows'):raise RuntimeError('Icône enregistrée, mais aucune fenêtre ni aucun raccourci de cette installation n’a été trouvé. Ouvre L’Atelier depuis son raccourci Windows.')
+    return {'ok':True,**result,'message':'Icône réappliquée : '+str(result.get('shortcuts',0))+' raccourci(s), '+str(result.get('windows',0))+' fenêtre(s). Windows peut conserver temporairement l’ancienne icône épinglée.'}
 
 def change(data,exe,action):
     global _phase,_message
@@ -130,7 +141,8 @@ def start(data,edition):
                 # The frozen Nathan launcher rewrites its shortcut at startup;
                 # reapply the private override after that launcher has run.
                 if choice and key!=last_shortcut:
-                    _powershell(data,exe,'Apply',choice);last_shortcut=key
+                    try:_powershell(data,exe,'Apply',choice);last_shortcut=key
+                    except Exception:pass
                 if not choice:last_shortcut=None
                 user.EnumWindows(cb,0)
             except Exception:pass

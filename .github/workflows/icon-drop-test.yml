@@ -1,7 +1,7 @@
 name: Official icon local drag-drop and bounded publisher TEST
 on:
   push:
-    branches: [test/icon-drop-misu-20261112]
+    branches: [test/icon-apply-misu-20261113]
 permissions:
   contents: read
 jobs:

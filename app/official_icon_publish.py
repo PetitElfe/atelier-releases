@@ -117,7 +117,9 @@ def publish(identifier):
    tmp=cache/'current.tmp';tmp.write_text(json.dumps(meta));os.replace(tmp,cache/'current.json')
    choice=s['data']/'local-icon'/'selection.json'
    if choice.is_file() and not choice.is_symlink():shutil.copyfile(choice,choice.with_name('selection-before-official.json'));choice.unlink()
-   _state(s,'success','Icône publiée et appliquée sur ce PC. Les autres PC la récupéreront automatiquement. Android prépare sa mise à jour signée.',5)
+   import local_icon
+   applied=local_icon.reapply(s['data'])
+   _state(s,'success','Icône publiée. '+applied['message']+' Android prépare sa mise à jour signée.',5)
    shutil.rmtree(folder,ignore_errors=True)
   except Cancelled:
    _state(s,'cancelled','Opération arrêtée. '+('L’icône PC a déjà été publiée ; la préparation Android est à relancer.' if metadata_published else 'Aucune nouvelle publication n’a été confirmée.'));shutil.rmtree(folder,ignore_errors=True)
@@ -134,6 +136,9 @@ def serve(handler,method,p,data,port,host):
  try:
   updater.guard()
   if method=='GET' and p.endswith('/status'):handler._json(status());return True
+  if method=='POST' and p.endswith('/reapply'):
+   import local_icon
+   handler._json(local_icon.reapply(data));return True
   if method!='POST':handler._json({'error':'Méthode invalide.'},405);return True
   size=int(handler.headers.get('Content-Length','0'))
   if p.endswith('/prepare'):

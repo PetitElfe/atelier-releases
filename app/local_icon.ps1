@@ -36,13 +36,35 @@ if($Mode -ne 'ImportTest'){
   $shell=New-Object -ComObject WScript.Shell
   $desktop=$shell.SpecialFolders.Item('Desktop')
   $dirs=@($desktop,(Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'))
+  $shortcutCount=0
   foreach($dir in $dirs){if(-not(Test-Path -LiteralPath $dir)){continue};Get-ChildItem -LiteralPath $dir -Filter '*.lnk' -File|ForEach-Object{
     $link=$shell.CreateShortcut($_.FullName)
     if(-not $link.TargetPath){return}
     if([string]::Equals([AtelierIconPath]::Canonical($link.TargetPath),$canonicalTarget,[StringComparison]::OrdinalIgnoreCase)){
-      $link.IconLocation=if($Mode -eq 'Reset'){$TargetExe+',0'}else{$OutputIcon+',0'};$link.Save()
+      $link.IconLocation=if($Mode -eq 'Reset'){$TargetExe+',0'}else{$OutputIcon+',0'};$link.Save();$shortcutCount++
     }
   }}
+  # Apply directly, with bounded messages; do not rely on a background watcher.
+  $windowCount=0
+  if($Mode -ne 'Reset'){
+    Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class AtelierApplyWindowIcon{[DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern IntPtr LoadImage(IntPtr h,string p,uint t,int x,int y,uint f);[DllImport("user32.dll",SetLastError=true)]public static extern IntPtr SendMessageTimeout(IntPtr w,uint m,UIntPtr p,IntPtr l,uint f,uint ms,out UIntPtr result);[DllImport("user32.dll")]public static extern bool DestroyIcon(IntPtr i);}'
+    foreach($process in Get-Process){
+      try{
+        if(-not $process.Path -or -not $process.MainWindowHandle -or -not $process.MainWindowTitle.StartsWith("L'Atelier du Goblin") -and -not $process.MainWindowTitle.StartsWith('L’Atelier du Goblin')){continue}
+        if(-not [string]::Equals([AtelierIconPath]::Canonical($process.Path),$canonicalTarget,[StringComparison]::OrdinalIgnoreCase)){continue}
+        $applied=$true
+        foreach($pair in @(@(0,16),@(1,48))){
+          $icon=[AtelierApplyWindowIcon]::LoadImage([IntPtr]::Zero,$OutputIcon,1,$pair[1],$pair[1],0x10)
+          if($icon -eq [IntPtr]::Zero){throw 'Cannot load icon'}
+          $result=[UIntPtr]::Zero
+          $ack=[AtelierApplyWindowIcon]::SendMessageTimeout($process.MainWindowHandle,0x80,[UIntPtr]$pair[0],$icon,2,1500,[ref]$result)
+          if($ack -eq [IntPtr]::Zero){$applied=$false;[AtelierApplyWindowIcon]::DestroyIcon($icon)|Out-Null}
+        }
+        if($applied){$windowCount++}
+      }catch{continue}
+    }
+  }
   Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class AtelierIconRefresh{[DllImport("shell32.dll")]public static extern void SHChangeNotify(uint e,uint f,IntPtr a,IntPtr b);}'
   [AtelierIconRefresh]::SHChangeNotify(0x8000000,0,[IntPtr]::Zero,[IntPtr]::Zero)
+  @{shortcuts=$shortcutCount;windows=$windowCount}|ConvertTo-Json -Compress
 }

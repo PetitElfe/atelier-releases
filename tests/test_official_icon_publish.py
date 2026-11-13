@@ -52,7 +52,7 @@ class PublisherTests(unittest.TestCase):
     if path.endswith('/git/trees'):return 0,json.dumps({'sha':'d'*40})
     if path.endswith('/git/commits'):return 0,json.dumps({'sha':'e'*40})
     return 0,'{}'
-   with patch.object(P.shutil,'which',return_value='fixture-gh'),patch.object(P,'_gh',side_effect=gh):P.publish(s['draft_id']);self.wait()
+   with patch.object(P.shutil,'which',return_value='fixture-gh'),patch.object(P,'_gh',side_effect=gh),patch('local_icon.reapply',return_value={'message':'fixture applied'}):P.publish(s['draft_id']);self.wait()
    self.assertEqual(P.status()['phase'],'success');self.assertTrue((Path(data)/'official-icon/current.json').exists());self.assertFalse(s['folder'].exists())
    uploads=[a for a,p in calls if a[:2]==['release','upload']];self.assertEqual(len(uploads),2);self.assertIn('icon.json',uploads[-1][3]);self.assertFalse(any('main'==x for a,p in calls for x in a));self.assertTrue(any('test/official-icon-android' in a[1] for a,p in calls if a[0]=='api'))
  def test_http_guards_prevent_remote_or_other_edition_uploads(self):
