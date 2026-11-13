@@ -1,6 +1,6 @@
 """Administrative actions and references to the user's own Windows document folder."""
 import base64,calendar,hashlib,json,os,re,sqlite3,threading,uuid,sys
-import admin_planning
+import admin_planning,admin_support,document_picker
 from contextlib import closing
 from datetime import date,datetime,timedelta
 from pathlib import Path
@@ -24,6 +24,7 @@ def initialise(c):
  CREATE TABLE IF NOT EXISTS admin_local_file_links(file_id INTEGER NOT NULL REFERENCES admin_local_files(id) ON DELETE CASCADE,admin_id INTEGER NOT NULL REFERENCES admin_documents(id) ON DELETE CASCADE,PRIMARY KEY(file_id,admin_id));
  CREATE TABLE IF NOT EXISTS admin_workspace_operations(id TEXT PRIMARY KEY,result_json TEXT NOT NULL);''')
  admin_planning.initialise(c)
+ admin_support.initialise(c)
 
 def iso(value):
  if not value:return None
@@ -128,7 +129,8 @@ def snapshot(c):
  for r in c.execute('SELECT file_id,admin_id FROM admin_local_file_links'):associations.setdefault(r['file_id'],[]).append(r['admin_id'])
  for f in files:f['admin_ids']=sorted(set(associations.get(f['id'],[])+([f['admin_id']] if f['admin_id'] else [])))
  contacts={str(r['admin_id']):{'name':r['name'],'phone':r['phone']} for r in c.execute('SELECT * FROM admin_case_contacts')}
- return {'contacts':contacts,'actions':tasks,'files':files,'cases':[dict(r) for r in c.execute('SELECT * FROM admin_documents WHERE archived=0')],'classers':[r[0] for r in c.execute('SELECT name FROM admin_classers ORDER BY name COLLATE NOCASE')],'plans':{str(r['admin_id']):r['task_id'] for r in c.execute('SELECT * FROM admin_dossier_plans')}}
+ for r in c.execute('SELECT l.admin_id,c.name,c.phone FROM admin_contact_links l JOIN admin_contacts c ON c.id=l.contact_id ORDER BY c.id DESC'):contacts[str(r['admin_id'])]={'name':r['name'],'phone':r['phone']}
+ return {**admin_support.snapshot(c),'contacts':contacts,'actions':tasks,'files':files,'cases':[dict(r) for r in c.execute('SELECT * FROM admin_documents WHERE archived=0')],'classers':[r[0] for r in c.execute('SELECT name FROM admin_classers ORDER BY name COLLATE NOCASE')],'plans':{str(r['admin_id']):r['task_id'] for r in c.execute('SELECT * FROM admin_dossier_plans')}}
 
 def configured(data):
  path=Path(data)/'admin-workspace.json'
@@ -185,11 +187,19 @@ def list_files(base):
 
 def native(c,data,body):
  action=body.get('action');base=root(data)
+ if action=='pick':return {'files':document_picker.choose(base,body.get('kind')=='template')}
+ if action=='register-many':
+  paths=body.get('paths',[])
+  if not isinstance(paths,list) or not 1<=len(paths)<=100:raise ValueError('Choisis de 1 à 100 documents.')
+  for rel in paths:
+   file=within(base,str(rel))
+   if not file.is_file() or file.suffix.lower() not in document_picker.EXTENSIONS:raise ValueError('Document invalide.')
+  return {'files':[native(c,data,{**body,'action':'register','path':rel}) for rel in paths]}
  if action=='browse':return {'root':str(base),'files':list_files(base)}
  if action=='open-root':os.startfile(base);return {'ok':True}
  if action=='register':
   rel=str(body['path']);file=within(base,rel)
-  if not file.is_file() or file.suffix.lower() not in ('.pdf','.docx','.doc'):raise ValueError('Choisis un document PDF ou Word.')
+  if not file.is_file() or file.suffix.lower() not in document_picker.EXTENSIONS:raise ValueError('Choisis un document PDF ou Word.')
   kind=body.get('kind','document')
   if kind not in ('template','document'):raise ValueError('Classement invalide.')
   owner=body.get('admin_id') or None
@@ -249,7 +259,7 @@ def serve(h,method,p,data,database,port):
    if not isinstance(body,dict):raise ValueError('Requête invalide.')
    if mobile:
     import utility_safety
-    if p not in ('/api/admin-workspace/classer','/api/admin-workspace/dossier','/api/admin-workspace/case-state','/api/admin-workspace/action'):raise ValueError('Commande mobile indisponible.')
+    if p not in ('/api/admin-workspace/classer','/api/admin-workspace/dossier','/api/admin-workspace/case-state','/api/admin-workspace/action','/api/admin-workspace/contact','/api/admin-workspace/contact-link','/api/admin-workspace/task-link','/api/admin-workspace/event'):raise ValueError('Commande mobile indisponible.')
     if body.get('installation_id')!=utility_safety.identity(data):raise LookupError('Cette adresse correspond à une autre installation du PC.')
    c.execute('BEGIN IMMEDIATE')
    if p=='/api/admin-workspace/native':
@@ -263,6 +273,13 @@ def serve(h,method,p,data,database,port):
      target=Path(data)/'admin-workspace.json';tmp=target.with_suffix('.tmp');tmp.write_text(json.dumps({'root':value}),encoding='utf-8');os.replace(tmp,target);result={'ok':True}
     else:
      with _FILE_LOCK:result=native(c,data,body)
+   elif p in ('/api/admin-workspace/contact','/api/admin-workspace/contact-link','/api/admin-workspace/task-link','/api/admin-workspace/event'):
+    operation=str(body.get('operation_id',''))
+    if not re.fullmatch('[a-f0-9-]{36}',operation):raise ValueError('Identifiant d’action invalide.')
+    previous=c.execute('SELECT result_json FROM admin_workspace_operations WHERE id=?',(operation,)).fetchone()
+    if previous:result=json.loads(previous[0])
+    else:
+     result=admin_support.command(c,p,body,sys.modules[__name__]);c.execute('INSERT INTO admin_workspace_operations VALUES(?,?)',(operation,json.dumps(result)))
    elif p in ('/api/admin-workspace/classer','/api/admin-workspace/dossier','/api/admin-workspace/case-state'):
     operation=str(body.get('operation_id',''))
     if not re.fullmatch('[a-f0-9-]{36}',operation):raise ValueError('Identifiant d’action invalide.')

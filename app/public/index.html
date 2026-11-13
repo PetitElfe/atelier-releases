@@ -69,7 +69,7 @@
       <button data-view="admin">Administratif</button>
       <button data-view="captures">Notes et captures <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
-      <button data-view="kitchen">Courses & repas</button>
+      <button data-view="kitchen">Alimentation</button>
       <button data-view="cuisine">Cuisine</button>
       <button type="button" id="openJdrWorkspace" onclick="window.location.href='/jdr.html'">Table JDR</button>
       <button id="renameNavButton" type="button" class="secondary atelier-nav-customize">✎ Renommer le tiroir</button>
@@ -352,7 +352,7 @@
     </section>
 
     <section id="kitchenView" class="view">
-      <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Courses, aliments & repas</h2></div></div>
+      <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Alimentation</h2></div></div>
       <div class="kitchen-grid">
         <section id="shoppingPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Prépare la liste, coche ce que tu prends, puis valide.</p></div><div class="kitchen-head-actions"><button id="addShopping">+ Article</button><button id="validateShopping" class="primary">✓ Valider les achats</button></div></div>
@@ -676,6 +676,7 @@
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
   <script src="/life_tools.js"></script>
+<script src="admin_contacts.js"></script>
 <script src="admin_workspace.js"></script>
   <script src="/standalone_preparations.js"></script>
   <script src="/tracker_ritual_ui.js"></script>
@@ -711,5 +712,6 @@
   <script src="/health_space.js"></script>
   <script src="/groceries_pc.js"></script>
   <script>window.AtelierDisplay.apply();</script>
+<link rel="stylesheet" href="/daily_features.css"><script src="/daily_features.js"></script>
 </body>
 </html>

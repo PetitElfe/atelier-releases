@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "2c45790bb0d27cc1788c9f4cffc781e3beee86b5f54525a0cc6f591a655cc505"
+      "sha256": "bf6df403624b584441c08ce86a6185dcd35e3a11a7d2f23158393d1ef2702585"
     },
     {
       "path": "app_part2.py",
-      "sha256": "3da44747c2bd24885bd129461f5bfc6a93d860bc37865de4563fcdd235374df4"
+      "sha256": "6954557f518dc1622300510e30bdc2d15ca4f1beaa3059eb2d33f275027fb76b"
     },
     {
       "path": "app_part3.py",
@@ -45,7 +45,7 @@
     },
     {
       "path": "desktop_shell.py",
-      "sha256": "8ae05d247e8f5192ace037170e6ec26a127636fc2ade102d6d4f4d7c31cb38eb"
+      "sha256": "a0265e87ce2d474df0c3f277743a9948ba62e751c6f9767a4ef8a5473ca8eb7e"
     },
     {
       "path": "event_preparations.py",
@@ -93,7 +93,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "d95dc3086e72602b37ac2e3708c96b9d4b272081db030d245a95e007d8d8cfd8"
+      "sha256": "5abf298037892a4fafa07226edcbbb07b3b801e1babcd38fccc09e3a47951c08"
     },
     {
       "path": "public/big_refonte.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "043db750ed7d02a76ce84865cc2e95d34917c1a6db48ff5cdda2c53fac0d9e0f"
+      "sha256": "9980c3697561fc947e6e1c540ab5359ebcff8be9558080e2881adb8621c30fa4"
     },
     {
       "path": "public/interface_reference.css",
@@ -409,7 +409,7 @@
     },
     {
       "path": "public/groceries_ui.js",
-      "sha256": "7a987650f36cd9cdc5428f89dacb50431d651a311ed04992c7c0f953035cd086"
+      "sha256": "e1e6af09af3943bce5e2294f5d5ac29f1db5d0a3635a469af5545a4f5708a77f"
     },
     {
       "path": "public/groceries_pc.js",
@@ -441,11 +441,11 @@
     },
     {
       "path": "admin_workspace.py",
-      "sha256": "52f13588287bde0e2a658559a01ba6b89f288f34ada76e04370fe489295152d0"
+      "sha256": "e58603c37aae2d5015fe8c464963cf0d297c1755b6f7a70165c8e3a943d45e86"
     },
     {
       "path": "public/admin_workspace.js",
-      "sha256": "9b6d6f0602e9b420f66b3ed40627e052020753557de7c225257b94572acd96ce"
+      "sha256": "5941e9a55e8e921762e7f94d596f18ad11cc6e338713e7d74fc267043d67c2c4"
     },
     {
       "path": "public/admin_workspace.css",
@@ -453,9 +453,33 @@
     },
     {
       "path": "admin_planning.py",
-      "sha256": "5051d4e82a182688fda3087351044b1abb901d5f8f7bdaa6ef30a5acd5a49256"
+      "sha256": "1a87d65d473bb9f426189906e66786caf08627f793fd702d4b5e55f796233294"
+    },
+    {
+      "path": "admin_support.py",
+      "sha256": "c62a2225402b9f8c4d0fcea8ab4d58228a6d9e4742b3e0876870a7fe3cecbce8"
+    },
+    {
+      "path": "document_picker.py",
+      "sha256": "af20881d52f4157a79682870af6802e7c0cb1c543139eb32310a110734da4eba"
+    },
+    {
+      "path": "alimentation.py",
+      "sha256": "5899e729a644babed255aaeff3961ede4b136961ae9f2d2d94b64cb7f1e68358"
+    },
+    {
+      "path": "public/admin_contacts.js",
+      "sha256": "23fad5d2a124898ec7a824f938b5ef9fc51f368ed9b00c4792ab1106cb5f6e5a"
+    },
+    {
+      "path": "public/daily_features.js",
+      "sha256": "bbec8bfc45ee128ade6edab78bb8d4dfd84684a11ca6382ad0fca790481f589b"
+    },
+    {
+      "path": "public/daily_features.css",
+      "sha256": "98bf76ef4e9c708900c6f2dde16294a297d31aa4436a79bb93e7cb3776900c47"
     }
   ],
-  "notes": "Contact des démarches : copie du numéro sur PC ; synchronisation de la liste Administratif avec Android TEST, classeurs, dates et états conservés.",
-  "build_sequence": 2026111305
+  "notes": "Démarches : contacts multiples, calendrier, tâches et sélection multiple de documents. Quantités, fiches rapides et apports renseignés. Retour aux carnets et réglages d’affichage.",
+  "build_sequence": 2026111306
 }

@@ -2051,8 +2051,7 @@ function cycleEstimate(){
   const last=dates[dates.length-1];
   let next=localDayAdd(last,avg);
   const today=ymd(new Date());
-  let skipped=0;
-  while(next<today&&skipped<240){next=localDayAdd(next,avg);skipped++;}
+  // Keep an overdue estimate visible until the user confirms or postpones it.
   return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next)),
     duration,spread,last,sampleCount:values.length,observedDuration:durations.length>0};
 }

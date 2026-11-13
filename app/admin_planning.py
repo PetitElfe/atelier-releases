@@ -135,7 +135,7 @@ def command(c,path,body,workspace):
    c.execute('UPDATE admin_documents SET title=?,category=?,notes=?,updated_at=? WHERE id=?',(title,category,notes,stamp,identity))
   else:identity=c.execute('INSERT INTO admin_documents(title,category,notes,created_at,updated_at) VALUES(?,?,?,?,?)',(title,category,notes,stamp,stamp)).lastrowid
   if 'contact' in body:
-   details=contact(body['contact']);c.execute('INSERT INTO admin_case_contacts VALUES(?,?,?) ON CONFLICT(admin_id) DO UPDATE SET name=excluded.name,phone=excluded.phone',(identity,details['name'],details['phone']))
+   details=contact(body['contact']);__import__('admin_support').set_basic_contact(c,identity,details);c.execute('INSERT INTO admin_case_contacts VALUES(?,?,?) ON CONFLICT(admin_id) DO UPDATE SET name=excluded.name,phone=excluded.phone',(identity,details['name'],details['phone']))
   action={**body,'title':title,'admin_id':identity,'task_id':plan_task}
   if plan_task:
    item=next(x for x in workspace.snapshot(c)['actions'] if x['id']==plan_task)
