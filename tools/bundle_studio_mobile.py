@@ -28,10 +28,10 @@ def build(shared=None):
     else:html=html.replace('</script>',groceries+'\n</script>')
     utility='/* UTILITY_SYNC_EXTENSION_START */\n'+(target/'utility_sync_extension.js').read_text()+'\n/* UTILITY_SYNC_EXTENSION_END */'
     html=re.sub(r'/\* UTILITY_SYNC_EXTENSION_START \*/.*?/\* UTILITY_SYNC_EXTENSION_END \*/',lambda _:utility,html,flags=re.S)
-    chrome_style='<style id="mobileChromeStyles">'+(target/'mobile_chrome.css').read_text()+'</style>'
+    chrome_style='<style id="mobileChromeStyles">'+(target/'mobile_chrome.css').read_text()+'\n'+(target/'admin_mobile.css').read_text()+'</style>'
     if 'id="mobileChromeStyles"' in html:html=re.sub(r'<style id="mobileChromeStyles">.*?</style>',lambda _:chrome_style,html,flags=re.S)
     else:html=html.replace('</head>',chrome_style+'\n</head>')
-    chrome='/* MOBILE_CHROME_START */\n'+(target/'mobile_chrome.js').read_text()+'\n/* MOBILE_CHROME_END */'
+    chrome='/* MOBILE_CHROME_START */\n'+(target/'mobile_chrome.js').read_text()+'\n'+(target/'admin_mobile.js').read_text()+'\n/* MOBILE_CHROME_END */'
     if '/* MOBILE_CHROME_START */' in html:html=re.sub(r'/\* MOBILE_CHROME_START \*/.*?/\* MOBILE_CHROME_END \*/',lambda _:chrome,html,flags=re.S)
     else:html=html.replace('</script>',chrome+'\n</script>')
     path.write_text(html)

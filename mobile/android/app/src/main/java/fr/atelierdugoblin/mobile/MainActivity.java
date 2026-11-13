@@ -49,7 +49,16 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if ("https".equals(uri.getScheme()) && "appassets.androidplatform.net".equals(uri.getHost())) return false;
-                if ("https".equals(uri.getScheme())) startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                if ("tel".equals(uri.getScheme())) {
+                    String number=uri.getSchemeSpecificPart();
+                    if (number != null && number.matches("[+]?[0-9]{3,18}")) {
+                        try { startActivity(new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null))); }
+                        catch (android.content.ActivityNotFoundException ignored) { android.widget.Toast.makeText(MainActivity.this,"Aucune application de téléphone disponible.",android.widget.Toast.LENGTH_SHORT).show(); }
+                    }
+                } else if ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) || "mailto".equals(uri.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
+                    catch (android.content.ActivityNotFoundException ignored) { android.widget.Toast.makeText(MainActivity.this,"Aucune application disponible pour ce lien.",android.widget.Toast.LENGTH_SHORT).show(); }
+                }
                 return true;
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
