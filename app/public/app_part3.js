@@ -310,28 +310,33 @@ function openPostponeEventModal(e){
 
 function openSnooze(r){
   const raw=(r.snoozed_until||r.remind_at||'').slice(0,16);
+  const deliveryKey=r.id+':'+(r.snoozed_until||r.remind_at);
   openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid">
     <div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div>
     <div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div>
-    <div id="snoozeError" class="form-error field full hidden"></div>
+    <div id="snoozeError" class="form-error field full hidden" role="status"></div>
     <div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button id="submitSnooze" class="primary">Reporter</button></div>
   </form>`);
   $('#cancelSnooze').onclick=closeModal;
   $('#snoozeForm').onsubmit=async e=>{
     e.preventDefault();
-    const submit=$('#submitSnooze'), error=$('#snoozeError');
-    const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;
-    error.classList.add('hidden'); error.textContent='';
-    submit.disabled=true; submit.textContent='Report…';
-    const result=await runUiAction('Impossible de reporter le rappel',()=>api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})}));
-    if(!result.ok){
-      error.textContent=result.error?.message||'Le report a échoué.';
+    const form=e.currentTarget,submit=form.querySelector('#submitSnooze'),error=form.querySelector('#snoozeError');
+    if(submit.disabled)return;
+    const when=`${form.querySelector('#snoozeDate').value}T${form.querySelector('#snoozeTime').value}`;
+    error.classList.add('hidden');error.textContent='';submit.disabled=true;submit.textContent='Report…';
+    try{
+      await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})});
+      const update=item=>item.id===r.id?{...item,snoozed_until:when}:item;
+      state.reminders=state.reminders.map(update);
+      state.reminderRules=(state.reminderRules||[]).map(update);
+      shown.delete(deliveryKey);
+      if(form.isConnected)closeModal();
+      // A report changes this reminder only; don't wait for eleven unrelated lists.
+      renderReminders();
+    }catch(err){
+      error.textContent=err?.message||'Le report a échoué. Réessaie.';
       error.classList.remove('hidden');
-      submit.disabled=false; submit.textContent='Reporter';
-      return;
-    }
-    shown.delete(deliveryKey);
-    closeModal();await refresh();
+    }finally{submit.disabled=false;submit.textContent='Reporter'}
   };
 }
 
