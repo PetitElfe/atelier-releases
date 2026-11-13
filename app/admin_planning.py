@@ -5,9 +5,19 @@ from datetime import date,datetime,timedelta
 def initialise(c):
  c.executescript('''CREATE TABLE IF NOT EXISTS admin_classers(name TEXT PRIMARY KEY COLLATE NOCASE,created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS admin_action_schedules(task_id INTEGER PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,data_json TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS admin_dossier_plans(admin_id INTEGER PRIMARY KEY REFERENCES admin_documents(id) ON DELETE CASCADE,task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL);''')
+ CREATE TABLE IF NOT EXISTS admin_dossier_plans(admin_id INTEGER PRIMARY KEY REFERENCES admin_documents(id) ON DELETE CASCADE,task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL);
+ CREATE TABLE IF NOT EXISTS admin_case_contacts(admin_id INTEGER PRIMARY KEY REFERENCES admin_documents(id) ON DELETE CASCADE,name TEXT NOT NULL DEFAULT '',phone TEXT NOT NULL DEFAULT '');''')
  c.execute("INSERT OR IGNORE INTO admin_classers SELECT DISTINCT category,? FROM admin_documents WHERE TRIM(category)!=''",(datetime.now().isoformat(),))
  if not c.execute('SELECT 1 FROM admin_classers').fetchone():c.execute('INSERT INTO admin_classers VALUES(?,?)',('Général',datetime.now().isoformat()))
+
+def contact(value):
+ if not isinstance(value,dict):raise ValueError('Contact invalide.')
+ name=value.get('name','');phone=value.get('phone','')
+ if not isinstance(name,str) or not isinstance(phone,str):raise ValueError('Contact invalide.')
+ name=name.strip();phone=phone.strip()
+ if len(name)>120 or any(ord(x)<32 for x in name):raise ValueError('Nom de contact invalide.')
+ if phone and (len(phone)>40 or not re.fullmatch(r'\+?[0-9 ()..-]+',phone) or not 3<=len(re.sub(r'\D','',phone))<=18):raise ValueError('Numéro de téléphone invalide.')
+ return {'name':name,'phone':phone}
 
 def classer_name(value):
  if not isinstance(value,str):raise ValueError('Nom de classeur invalide.')
@@ -100,6 +110,9 @@ def command(c,path,body,workspace):
   return {'ok':True,'name':name}
  if path.endswith('/case-state'):
   identity=int(body['admin_id']);state=body.get('state')
+  if 'base_updated_at' in body:
+   current=c.execute('SELECT updated_at FROM admin_documents WHERE id=?',(identity,)).fetchone()
+   if not current or current[0]!=body['base_updated_at']:raise LookupError('Cette démarche a changé sur le PC. Actualise avant de réessayer.')
   if state not in workspace.STATES:raise ValueError('État invalide.')
   plan=c.execute('SELECT task_id FROM admin_dossier_plans WHERE admin_id=?',(identity,)).fetchone()
   if plan and plan['task_id']:
@@ -121,6 +134,8 @@ def command(c,path,body,workspace):
    p=c.execute('SELECT task_id FROM admin_dossier_plans WHERE admin_id=?',(identity,)).fetchone();plan_task=p['task_id'] if p else None
    c.execute('UPDATE admin_documents SET title=?,category=?,notes=?,updated_at=? WHERE id=?',(title,category,notes,stamp,identity))
   else:identity=c.execute('INSERT INTO admin_documents(title,category,notes,created_at,updated_at) VALUES(?,?,?,?,?)',(title,category,notes,stamp,stamp)).lastrowid
+  if 'contact' in body:
+   details=contact(body['contact']);c.execute('INSERT INTO admin_case_contacts VALUES(?,?,?) ON CONFLICT(admin_id) DO UPDATE SET name=excluded.name,phone=excluded.phone',(identity,details['name'],details['phone']))
   action={**body,'title':title,'admin_id':identity,'task_id':plan_task}
   if plan_task:
    item=next(x for x in workspace.snapshot(c)['actions'] if x['id']==plan_task)

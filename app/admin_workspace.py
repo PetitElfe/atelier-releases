@@ -126,7 +126,8 @@ def snapshot(c):
  associations={}
  for r in c.execute('SELECT file_id,admin_id FROM admin_local_file_links'):associations.setdefault(r['file_id'],[]).append(r['admin_id'])
  for f in files:f['admin_ids']=sorted(set(associations.get(f['id'],[])+([f['admin_id']] if f['admin_id'] else [])))
- return {'actions':tasks,'files':files,'cases':[dict(r) for r in c.execute('SELECT * FROM admin_documents WHERE archived=0')],'classers':[r[0] for r in c.execute('SELECT name FROM admin_classers ORDER BY name COLLATE NOCASE')],'plans':{str(r['admin_id']):r['task_id'] for r in c.execute('SELECT * FROM admin_dossier_plans')}}
+ contacts={str(r['admin_id']):{'name':r['name'],'phone':r['phone']} for r in c.execute('SELECT * FROM admin_case_contacts')}
+ return {'contacts':contacts,'actions':tasks,'files':files,'cases':[dict(r) for r in c.execute('SELECT * FROM admin_documents WHERE archived=0')],'classers':[r[0] for r in c.execute('SELECT name FROM admin_classers ORDER BY name COLLATE NOCASE')],'plans':{str(r['admin_id']):r['task_id'] for r in c.execute('SELECT * FROM admin_dossier_plans')}}
 
 def configured(data):
  path=Path(data)/'admin-workspace.json'
@@ -225,7 +226,9 @@ def native(c,data,body):
  raise ValueError('Action inconnue.')
 
 def serve(h,method,p,data,database,port):
- if not p.startswith('/api/admin-workspace'):return False
+ mobile=p.startswith('/api/mobile/admin-workspace')
+ if not mobile and not p.startswith('/api/admin-workspace'):return False
+ if mobile:p=p.replace('/api/mobile/admin-workspace','/api/admin-workspace',1)
  try:
   if method!='GET':
    origin=h.headers.get('Origin')
@@ -234,9 +237,19 @@ def serve(h,method,p,data,database,port):
    if not 2<=size<=120000:raise ValueError('Requête invalide.')
   with sqlite3.connect(database,timeout=15) as c:
    c.row_factory=sqlite3.Row;c.execute('PRAGMA foreign_keys=ON')
-   if method=='GET' and p=='/api/admin-workspace':h._json({**snapshot(c),'documents_root':configured(data)});return True
+   if method=='GET' and p=='/api/admin-workspace':
+    result=snapshot(c)
+    if mobile:
+     import utility_safety
+     result['installation_id']=utility_safety.identity(data);result.pop('files',None)
+    else:result['documents_root']=configured(data)
+    h._json(result);return True
    body=h._body()
    if not isinstance(body,dict):raise ValueError('Requête invalide.')
+   if mobile:
+    import utility_safety
+    if p not in ('/api/admin-workspace/classer','/api/admin-workspace/dossier','/api/admin-workspace/case-state','/api/admin-workspace/action'):raise ValueError('Commande mobile indisponible.')
+    if body.get('installation_id')!=utility_safety.identity(data):raise LookupError('Cette adresse correspond à une autre installation du PC.')
    c.execute('BEGIN IMMEDIATE')
    if p=='/api/admin-workspace/native':
     # No arbitrary file operation can be initiated from a tailnet/remote page.

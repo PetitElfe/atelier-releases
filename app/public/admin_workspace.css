@@ -10,3 +10,5 @@
 @media(max-width:700px){.admin-editor-basics,.admin-plan-fields{grid-template-columns:1fr}.admin-toolbar>input{width:100%}.admin-toolbar>button:nth-last-child(3){margin-left:0}.admin-case-summary{gap:5px;padding:9px 6px}.admin-case-when{width:100%}.admin-classer-tabs{gap:2px}.admin-weekdays span{padding:7px 8px}}
 
 #adminView .life-admin-archives-section[hidden]{display:none!important}
+
+.admin-contact-copy{display:block;margin:0 0 10px;padding:5px 0;background:transparent;border:0;color:inherit;text-align:left;font:inherit;min-height:30px}

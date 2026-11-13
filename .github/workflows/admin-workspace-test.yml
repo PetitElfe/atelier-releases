@@ -1,7 +1,7 @@
 name: Administrative workflow, local files and recurring actions TEST
 on:
   push:
-    branches: [test/admin-compact-20261113]
+    branches: [test/admin-contacts-20261113]
 permissions:
   contents: read
 jobs:
