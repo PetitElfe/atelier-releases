@@ -29,7 +29,7 @@ class ContactTests(unittest.TestCase):
    headers={'Content-Length':'70'}
    def _body(self):return {'installation_id':'wrong','action':'browse'}
    def _json(self,value,status=200):self.result=(value,status)
-  db=self.root/'test.db';self.c.commit();self.c.backup(__import__('sqlite3').connect(db));h=Handler()
+  db=self.root/'test.db';self.c.commit();target=__import__('sqlite3').connect(db);self.c.backup(target);target.close();h=Handler()
   with patch.object(A,'native',side_effect=AssertionError('No native file access')):
    for path in ['/api/mobile/admin-workspace/native','/api/mobile/admin-workspace/dossier']:
     A.serve(h,'POST',path,self.root,db,8876);self.assertIn(h.result[1],(400,409))

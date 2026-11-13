@@ -441,7 +441,7 @@
     },
     {
       "path": "admin_workspace.py",
-      "sha256": "7b1db7228e8da53f7afed358e01f9ea6b5f3ee5759992d9a3513b3c9b35d9f61"
+      "sha256": "52f13588287bde0e2a658559a01ba6b89f288f34ada76e04370fe489295152d0"
     },
     {
       "path": "public/admin_workspace.js",

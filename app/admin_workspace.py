@@ -1,6 +1,7 @@
 """Administrative actions and references to the user's own Windows document folder."""
 import base64,calendar,hashlib,json,os,re,sqlite3,threading,uuid,sys
 import admin_planning
+from contextlib import closing
 from datetime import date,datetime,timedelta
 from pathlib import Path
 from urllib.parse import urlparse
@@ -235,7 +236,7 @@ def serve(h,method,p,data,database,port):
    if origin and origin!=f'http://127.0.0.1:{port}':h._json({'error':'Origine refusée.'},403);return True
    size=int(h.headers.get('Content-Length','0'))
    if not 2<=size<=120000:raise ValueError('Requête invalide.')
-  with sqlite3.connect(database,timeout=15) as c:
+  with closing(sqlite3.connect(database,timeout=15)) as c:
    c.row_factory=sqlite3.Row;c.execute('PRAGMA foreign_keys=ON')
    if method=='GET' and p=='/api/admin-workspace':
     result=snapshot(c)
@@ -243,7 +244,7 @@ def serve(h,method,p,data,database,port):
      import utility_safety
      result['installation_id']=utility_safety.identity(data);result.pop('files',None)
     else:result['documents_root']=configured(data)
-    h._json(result);return True
+    c.commit();h._json(result);return True
    body=h._body()
    if not isinstance(body,dict):raise ValueError('Requête invalide.')
    if mobile:
