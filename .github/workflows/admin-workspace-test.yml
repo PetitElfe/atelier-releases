@@ -1,7 +1,7 @@
 name: Administrative workflow, local files and recurring actions TEST
 on:
   push:
-    branches: [test/admin-workspace-20261113]
+    branches: [test/admin-compact-20261113]
 permissions:
   contents: read
 jobs:
@@ -36,4 +36,4 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: python -m unittest discover -s tests -p test_admin_workspace.py
+      - run: python -m unittest discover -s tests -p 'test_admin_*.py'

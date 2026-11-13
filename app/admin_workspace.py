@@ -1,5 +1,6 @@
 """Administrative actions and references to the user's own Windows document folder."""
-import base64,calendar,hashlib,json,os,re,sqlite3,threading,uuid
+import base64,calendar,hashlib,json,os,re,sqlite3,threading,uuid,sys
+import admin_planning
 from datetime import date,datetime,timedelta
 from pathlib import Path
 from urllib.parse import urlparse
@@ -21,6 +22,7 @@ def initialise(c):
  relative_path TEXT NOT NULL UNIQUE, kind TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'todo', created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS admin_local_file_links(file_id INTEGER NOT NULL REFERENCES admin_local_files(id) ON DELETE CASCADE,admin_id INTEGER NOT NULL REFERENCES admin_documents(id) ON DELETE CASCADE,PRIMARY KEY(file_id,admin_id));
  CREATE TABLE IF NOT EXISTS admin_workspace_operations(id TEXT PRIMARY KEY,result_json TEXT NOT NULL);''')
+ admin_planning.initialise(c)
 
 def iso(value):
  if not value:return None
@@ -58,8 +60,9 @@ def task_saved(c,task_id):
  state='done' if row['completed'] else None
  if state:c.execute("UPDATE admin_action_details SET state='done',revision=revision+1 WHERE task_id=?",(task_id,))
  else:c.execute("UPDATE admin_action_details SET state=CASE WHEN state='done' THEN 'todo' ELSE state END,revision=revision+1 WHERE task_id=?",(task_id,))
- if not state or row['archived'] or row['rhythm']=='none' or row['next_task_id']:return
- following=next_date(row['due_date'] or row['occurrence_date'],row['rhythm'],row['anchor_day'])
+ if not state or row['archived'] or row['rhythm']=='none' or row['next_task_id']:admin_planning.sync_case(c,task_id);return
+ following=admin_planning.next_occurrence(c,task_id,row,next_date)
+ if not following:admin_planning.sync_case(c,task_id);return
  existing=c.execute('SELECT task_id FROM admin_action_details WHERE series_key=? AND occurrence_date=?',(row['series_key'],following)).fetchone()
  if existing:new=existing['task_id']
  else:
@@ -70,7 +73,9 @@ def task_saved(c,task_id):
   for reminder in c.execute("SELECT title,remind_at FROM reminders WHERE entity_type='task' AND entity_id=?",(task_id,)).fetchall():
    when=(datetime.fromisoformat(reminder['remind_at'])+delta).isoformat()
    c.execute("INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES('task',?,?,?,'pending',?)",(new,reminder['title'],when,stamp))
+ admin_planning.save_schedule(c,new,admin_planning.schedule(c,task_id))
  c.execute('UPDATE admin_action_details SET next_task_id=? WHERE task_id=?',(new,task_id))
+ admin_planning.sync_case(c,task_id)
 
 def save_action(c,body):
  identity=body.get('task_id');old=None
@@ -84,14 +89,18 @@ def save_action(c,body):
  if start and due and start>due:raise ValueError('La date de préparation doit précéder ou égaler l’échéance.')
  rhythm=body.get('rhythm','none');state=body.get('state','todo');urls=links(body.get('links',[]));owner=body.get('admin_id') or None
  if rhythm not in ('none','weekly','fortnightly','monthly') or state not in STATES:raise ValueError('Rythme ou état invalide.')
+ due,start,plan=admin_planning.normalize(c,identity,body,rhythm,due,start,iso)
+ if start and due and start>due:raise ValueError('La préparation doit précéder l’échéance.')
  if rhythm!='none' and not due:raise ValueError('Une action répétée doit avoir une première échéance.')
  if owner and not c.execute('SELECT 1 FROM admin_documents WHERE id=? AND archived=0',(int(owner),)).fetchone():raise ValueError('Démarche introuvable ou archivée.')
  important=body.get('important',False)
  if type(important) is not bool:raise ValueError('Importance invalide.')
+ notes=str(body.get('notes',old['notes'] if old else ''))
+ if len(notes)>8000:raise ValueError('Notes limitées à 8 000 caractères.')
  stamp=datetime.now().isoformat()
  if old:
-  c.execute('UPDATE tasks SET title=?,due_date=?,important=?,completed=?,updated_at=? WHERE id=?',(title,due,int(important),int(state=='done'),stamp,identity))
- else:identity=c.execute('INSERT INTO tasks(title,due_date,important,completed,created_at,updated_at) VALUES(?,?,?,?,?,?)',(title,due,int(important),int(state=='done'),stamp,stamp)).lastrowid
+  c.execute('UPDATE tasks SET title=?,due_date=?,important=?,completed=?,notes=?,updated_at=? WHERE id=?',(title,due,int(important),int(state=='done'),notes,stamp,identity))
+ else:identity=c.execute('INSERT INTO tasks(title,due_date,important,completed,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',(title,due,int(important),int(state=='done'),notes,stamp,stamp)).lastrowid
  current=c.execute('SELECT * FROM admin_action_details WHERE task_id=?',(identity,)).fetchone()
  anchor=current['anchor_day'] if current and old and due==old['due_date'] else int((due or date.today().isoformat())[-2:])
  if current:
@@ -102,17 +111,22 @@ def save_action(c,body):
   when=datetime.fromisoformat(str(body['remind_at'])).replace(microsecond=0).isoformat()
   c.execute("DELETE FROM reminders WHERE entity_type='task' AND entity_id=? AND status='pending'",(identity,))
   c.execute("INSERT INTO reminders(entity_type,entity_id,title,remind_at,status,created_at) VALUES('task',?,?,?,'pending',?)",(identity,title,when,stamp))
+ if current and due and due!=current['occurrence_date']:
+  if c.execute('SELECT 1 FROM admin_action_details WHERE series_key=? AND occurrence_date=? AND task_id!=?',(current['series_key'],due,identity)).fetchone():raise ValueError('Une occurrence existe déjà à cette date.')
+  c.execute('UPDATE admin_action_details SET occurrence_date=? WHERE task_id=?',(due,identity))
+ admin_planning.save_schedule(c,identity,plan)
  task_saved(c,identity)
  return {'task_id':identity}
 
 def snapshot(c):
+ c.execute("INSERT OR IGNORE INTO admin_classers SELECT DISTINCT category,? FROM admin_documents WHERE TRIM(category)!=''",(datetime.now().isoformat(),))
  tasks=[dict(row) for row in c.execute('SELECT t.*,a.admin_id,a.start_date,a.rhythm,a.state,a.links_json,a.revision,a.next_task_id FROM tasks t JOIN admin_action_details a ON a.task_id=t.id WHERE t.archived=0 ORDER BY t.completed,t.important DESC,COALESCE(a.start_date,t.due_date,\'9999\'),t.id')]
- for t in tasks:t['state']='done' if t['completed'] else ('todo' if t['state']=='done' else t['state']);t['links']=json.loads(t.pop('links_json'))
+ for t in tasks:t['schedule']=admin_planning.schedule(c,t['id']);t['state']='done' if t['completed'] else ('todo' if t['state']=='done' else t['state']);t['links']=json.loads(t.pop('links_json'))
  files=[dict(r) for r in c.execute('SELECT * FROM admin_local_files ORDER BY id DESC')]
  associations={}
  for r in c.execute('SELECT file_id,admin_id FROM admin_local_file_links'):associations.setdefault(r['file_id'],[]).append(r['admin_id'])
  for f in files:f['admin_ids']=sorted(set(associations.get(f['id'],[])+([f['admin_id']] if f['admin_id'] else [])))
- return {'actions':tasks,'files':files}
+ return {'actions':tasks,'files':files,'cases':[dict(r) for r in c.execute('SELECT * FROM admin_documents WHERE archived=0')],'classers':[r[0] for r in c.execute('SELECT name FROM admin_classers ORDER BY name COLLATE NOCASE')],'plans':{str(r['admin_id']):r['task_id'] for r in c.execute('SELECT * FROM admin_dossier_plans')}}
 
 def configured(data):
  path=Path(data)/'admin-workspace.json'
@@ -235,6 +249,13 @@ def serve(h,method,p,data,database,port):
      target=Path(data)/'admin-workspace.json';tmp=target.with_suffix('.tmp');tmp.write_text(json.dumps({'root':value}),encoding='utf-8');os.replace(tmp,target);result={'ok':True}
     else:
      with _FILE_LOCK:result=native(c,data,body)
+   elif p in ('/api/admin-workspace/classer','/api/admin-workspace/dossier','/api/admin-workspace/case-state'):
+    operation=str(body.get('operation_id',''))
+    if not re.fullmatch('[a-f0-9-]{36}',operation):raise ValueError('Identifiant d’action invalide.')
+    previous=c.execute('SELECT result_json FROM admin_workspace_operations WHERE id=?',(operation,)).fetchone()
+    if previous:result=json.loads(previous[0])
+    else:
+     result=admin_planning.command(c,p,body,sys.modules[__name__]);c.execute('INSERT INTO admin_workspace_operations VALUES(?,?)',(operation,json.dumps(result)))
    elif p=='/api/admin-workspace/action':
     operation=str(body.get('operation_id',''))
     if not re.fullmatch('[a-f0-9-]{36}',operation):raise ValueError('Identifiant d’action invalide.')

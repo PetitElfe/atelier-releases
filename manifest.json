@@ -25,7 +25,7 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "50b54d7682b40707815af0a5cb0e9cc00383fcfc46d26751a7dcaa7b93f1f537"
+      "sha256": "f976e426ab403d2c8a61253a2b9941422a723819b85719d3a8cba0db37df931d"
     },
     {
       "path": "app_part2.py",
@@ -441,17 +441,21 @@
     },
     {
       "path": "admin_workspace.py",
-      "sha256": "854eb7c7381da56a95ce94737555af1fb69d1bf1535bd95a47b20ce405b0c252"
+      "sha256": "0bc62a1f3193fb6cbf410de9e1f47ec40d7d58a8a52e096aaa0162e97327592d"
     },
     {
       "path": "public/admin_workspace.js",
-      "sha256": "0ff712ec83e73f1702cc162ee5c71e8f948fa26ca3394773a0d87e3b2c7313e6"
+      "sha256": "f6d4ce6d93719651a84c6ba03ef204e10a13cde0a380ed1ca1acf4932bb22a27"
     },
     {
       "path": "public/admin_workspace.css",
-      "sha256": "6aeaba47d36149c0e8c3ca71ba640de64991aca0f4dc28bdc85e86054c1b456d"
+      "sha256": "ad5df2d1bda78c81ec12018fa14492431e2947462d4d494879cb28a66d2caeac"
+    },
+    {
+      "path": "admin_planning.py",
+      "sha256": "ef291f37f3557090a5ab2ffb2abd57d04d455eb0e3815469c2be3b9c17fe92a2"
     }
   ],
-  "notes": "Administratif : classeurs, actions et liens récurrents, préparation avant échéance, états à faire/en cours/fait et documents PDF/Word reliés au dossier local. Priorités rouges partagées avec les tâches.",
-  "build_sequence": 2026111303
+  "notes": "Administratif compact : classeurs personnalisables, saisie unique avec date/jours/période, répétitions bornées et icônes SVG homogènes. Documents, liens et tâches existants conservés.",
+  "build_sequence": 2026111304
 }

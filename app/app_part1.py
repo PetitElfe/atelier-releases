@@ -16,7 +16,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
