@@ -12,12 +12,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          config: core.autocrlf=false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
       - run: python tools/test_desktop_window_lock.py
+      - name: Exercise actual repair in a disposable profile
+        if: runner.os == 'Windows'
+        run: python tools/test_nathan_lock_repair.py
       - name: Check repair PowerShell syntax
         if: runner.os == 'Windows'
         shell: pwsh
