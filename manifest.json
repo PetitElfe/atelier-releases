@@ -441,7 +441,7 @@
     },
     {
       "path": "admin_workspace.py",
-      "sha256": "3710429e6c39598dd961d92b8c1ef2c0582061312ae5fd79669850b9b9e61f10"
+      "sha256": "854eb7c7381da56a95ce94737555af1fb69d1bf1535bd95a47b20ce405b0c252"
     },
     {
       "path": "public/admin_workspace.js",
@@ -453,5 +453,5 @@
     }
   ],
   "notes": "Administratif : classeurs, actions et liens récurrents, préparation avant échéance, états à faire/en cours/fait et documents PDF/Word reliés au dossier local. Priorités rouges partagées avec les tâches.",
-  "build_sequence": 2026111302
+  "build_sequence": 2026111303
 }

@@ -93,8 +93,9 @@ def save_action(c,body):
   c.execute('UPDATE tasks SET title=?,due_date=?,important=?,completed=?,updated_at=? WHERE id=?',(title,due,int(important),int(state=='done'),stamp,identity))
  else:identity=c.execute('INSERT INTO tasks(title,due_date,important,completed,created_at,updated_at) VALUES(?,?,?,?,?,?)',(title,due,int(important),int(state=='done'),stamp,stamp)).lastrowid
  current=c.execute('SELECT * FROM admin_action_details WHERE task_id=?',(identity,)).fetchone()
+ anchor=current['anchor_day'] if current and old and due==old['due_date'] else int((due or date.today().isoformat())[-2:])
  if current:
-  c.execute('UPDATE admin_action_details SET admin_id=?,start_date=?,rhythm=?,state=?,links_json=?,anchor_day=?,revision=revision+1 WHERE task_id=?',(owner,start,rhythm,state,json.dumps(urls),int((due or date.today().isoformat())[-2:]),identity))
+  c.execute('UPDATE admin_action_details SET admin_id=?,start_date=?,rhythm=?,state=?,links_json=?,anchor_day=?,revision=revision+1 WHERE task_id=?',(owner,start,rhythm,state,json.dumps(urls),anchor,identity))
  else:
   c.execute('INSERT INTO admin_action_details(task_id,admin_id,start_date,rhythm,state,links_json,series_key,occurrence_date,anchor_day) VALUES(?,?,?,?,?,?,?,?,?)',(identity,owner,start,rhythm,state,json.dumps(urls),uuid.uuid4().hex,due or date.today().isoformat(),int((due or date.today().isoformat())[-2:])))
  if body.get('remind_at'):

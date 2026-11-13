@@ -50,3 +50,11 @@ class AdministrativeWorkspaceTests(unittest.TestCase):
   (self.root/'report.pdf').write_bytes(b'%PDF-fixture');(self.root/'admin-workspace.json').write_text(json.dumps({'root':str(self.root)}));self.c.execute("INSERT INTO admin_documents VALUES(2,'Dossier emploi','Emploi',0)")
   for owner in (1,2):A.native(self.c,self.root,{'action':'register','path':'report.pdf','kind':'document','admin_id':owner})
   files=A.snapshot(self.c)['files'];self.assertEqual(len(files),1);self.assertEqual(files[0]['admin_ids'],[1,2]);self.assertEqual(len(list(self.root.glob('*.pdf'))),1)
+
+ def test_monthly_completion_preserves_31_anchor_through_february(self):
+  self.task(due_date='2027-01-31',start_date='2027-01-25',rhythm='monthly')
+  for expected in ('2027-02-28','2027-03-31'):
+   current=next(t for t in A.snapshot(self.c)['actions'] if not t['completed'])
+   A.save_action(self.c,{**current,'task_id':current['id'],'important':bool(current['important']),'state':'done'})
+   following=next(t for t in A.snapshot(self.c)['actions'] if not t['completed'])
+   self.assertEqual(following['due_date'],expected)
