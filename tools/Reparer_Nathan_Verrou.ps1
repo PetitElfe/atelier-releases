@@ -9,7 +9,7 @@ $data = Join-Path $base 'data'
 if (!(Test-Path -LiteralPath $target) -or !(Test-Path -LiteralPath (Join-Path $data 'atelier.db'))) { throw 'Installation Nathan introuvable.' }
 if (Test-Path -LiteralPath (Join-Path $data 'updater.lock')) { throw 'Une mise a jour est encore active. Attends sa fin avant de relancer.' }
 $expectedOld = '5629470982060603971dc49e386028478488b5d047696b6fc5c68d4bcc6205ce'
-$expectedNew = 'cce0a59b836dcb72b08f5c23fa896484cef4b1018b601a5aade9f36d49a3b3bd'
+$expectedNew = '0caa8a8e67146c25aabb3d9984e13b358c8ea099a9fa907ab5715f9d468fa0c7'
 $hash = (FileHash $target)
 if ($hash -eq $expectedNew) { Write-Host 'Correctif deja applique.'; exit 0 }
 if ($hash -ne $expectedOld) { throw 'Version locale differente : aucun fichier modifie.' }
