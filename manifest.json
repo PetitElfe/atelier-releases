@@ -397,7 +397,7 @@
     },
     {
       "path": "local_icon.ps1",
-      "sha256": "8c60fbe444d2ad6a34f0d46c407a6c0608cda52e1e79ac046ab791fd842866c9"
+      "sha256": "0af04bb089ed67118a7c1c20ac5e09afdf30332309e2176418b63e76a49dd3c5"
     },
     {
       "path": "public/local_icon.js",
