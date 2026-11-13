@@ -50,7 +50,7 @@ if($Mode -ne 'ImportTest'){
     Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class AtelierApplyWindowIcon{[DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern IntPtr LoadImage(IntPtr h,string p,uint t,int x,int y,uint f);[DllImport("user32.dll",SetLastError=true)]public static extern IntPtr SendMessageTimeout(IntPtr w,uint m,UIntPtr p,IntPtr l,uint f,uint ms,out UIntPtr result);[DllImport("user32.dll")]public static extern bool DestroyIcon(IntPtr i);}'
     foreach($process in Get-Process){
       try{
-        if(-not $process.Path -or -not $process.MainWindowHandle -or -not $process.MainWindowTitle.StartsWith("L'Atelier du Goblin") -and -not $process.MainWindowTitle.StartsWith('L’Atelier du Goblin')){continue}
+        if(-not $process.Path -or -not $process.MainWindowHandle -or -not $process.MainWindowTitle.Replace([char]0x2019,[char]39).StartsWith("L'Atelier du Goblin")){continue}
         if(-not [string]::Equals([AtelierIconPath]::Canonical($process.Path),$canonicalTarget,[StringComparison]::OrdinalIgnoreCase)){continue}
         $applied=$true
         foreach($pair in @(@(0,16),@(1,48))){
