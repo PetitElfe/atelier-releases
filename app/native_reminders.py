@@ -1,5 +1,7 @@
 """Opt-in native TEST reminders, kept alive by the existing private tray companion."""
 from datetime import datetime,timedelta
+from contextlib import contextmanager
+from sqlite_context import connect
 import hashlib
 import json
 import os
@@ -27,8 +29,11 @@ def initialise(c):
       PRIMARY KEY(reminder_id,due_key))''')
 
 
+@contextmanager
 def _connect(data):
-    c=sqlite3.connect(Path(data)/'atelier.db',timeout=10);c.row_factory=sqlite3.Row;return c
+    with connect(Path(data)/'atelier.db',timeout=10) as c:
+        c.row_factory=sqlite3.Row
+        yield c
 
 
 def config(data=DATA):

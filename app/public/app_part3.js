@@ -427,7 +427,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Alimentation',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings'){
     renderSettings();
@@ -966,7 +966,7 @@ const homeShortcutDefs=[
   {id:'reminders',title:'Rappels',description:'Voir les rappels à traiter.',view:'reminders'},
   {id:'library',title:'Bibliothèque',description:'Ouvrir les domaines et les carnets.',view:'library'},
   {id:'organisation',title:'Habitudes & cycle',description:'Accéder à tes suivis personnels.',view:'organisation'},
-  {id:'kitchen',title:'Courses & repas',description:'Retrouver les listes et les aliments.',view:'kitchen'},
+  {id:'kitchen',title:'Alimentation',description:'Retrouver les listes et les aliments.',view:'kitchen'},
   {id:'cuisine',title:'Recettes',description:'Ouvrir la bibliothèque de recettes.',view:'cuisine'},
   {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
 ];

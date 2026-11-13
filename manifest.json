@@ -65,7 +65,7 @@
     },
     {
       "path": "native_reminders.py",
-      "sha256": "06077ce7b423b02f740047e78a2d1f0290285619f951d0d35a733ec30f80e9b4"
+      "sha256": "79d30534893cce53b1f194e0b1de26505e917adbb9f6dd18394efdbbc900923f"
     },
     {
       "path": "native_toasts.ps1",
@@ -93,7 +93,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "5abf298037892a4fafa07226edcbbb07b3b801e1babcd38fccc09e3a47951c08"
+      "sha256": "b498d3a6ebe011c60e14180efe180851aebc14b68407fe2f872e87f9e7e9ee2e"
     },
     {
       "path": "public/big_refonte.css",
@@ -341,7 +341,7 @@
     },
     {
       "path": "quick_capture_native.py",
-      "sha256": "e447a436ece08f1e9538286ecf1e645294eae4aca6a7030769fd47ea5e6a5ef3"
+      "sha256": "e1c1fb56acc7309951b348929d26e771271cd3fad7a03b810fa557a229d90d61"
     },
     {
       "path": "reminder_occurrences.py",
@@ -473,11 +473,15 @@
     },
     {
       "path": "public/daily_features.js",
-      "sha256": "bbec8bfc45ee128ade6edab78bb8d4dfd84684a11ca6382ad0fca790481f589b"
+      "sha256": "bf863cd94eaae71edf34b76c0880e80443454cbb23d91ec5d96e43581e511c41"
     },
     {
       "path": "public/daily_features.css",
       "sha256": "98bf76ef4e9c708900c6f2dde16294a297d31aa4436a79bb93e7cb3776900c47"
+    },
+    {
+      "path": "sqlite_context.py",
+      "sha256": "4f969862f48fe99f6aa9f59979900636b674ee23c041b8ff66e67602fb1a2bd4"
     }
   ],
   "notes": "Démarches : contacts multiples, calendrier, tâches et sélection multiple de documents. Quantités, fiches rapides et apports renseignés. Retour aux carnets et réglages d’affichage.",

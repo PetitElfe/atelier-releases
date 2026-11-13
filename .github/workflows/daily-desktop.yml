@@ -3,6 +3,7 @@ name: L’Atelier du Goblin — Windows TEST
 on:
   push:
     branches: [test/daily-workspace-20261113]
+    paths: [app/desktop_shell.py, .github/workflows/daily-desktop.yml]
 
 permissions:
   contents: write
@@ -95,4 +96,6 @@ jobs:
         shell: pwsh
         run: |
           (Get-FileHash dist/LAtelierDuGoblin_TEST.exe -Algorithm SHA256).Hash.ToLower() + '  LAtelierDuGoblin_TEST.exe' | Set-Content dist/LAtelierDuGoblin_TEST.exe.sha256 -Encoding ascii
+          gh release view windows-test-editing-20261113 *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Host 'Existing verified native editing window preserved'; exit 0 }
           gh release create windows-test-editing-20261113 dist/LAtelierDuGoblin_TEST.exe dist/LAtelierDuGoblin_TEST.exe.sha256 --prerelease --target "${{ github.sha }}" --title 'Fenêtre Windows TEST — correction orthographique' --notes 'Menus natifs WebView2 réactivés pour la correction et copier/coller dans les champs. Même installation TEST, données conservées. Fermer la fenêtre avant de lancer le nouvel EXE. Aucun ZIP nécessaire.'

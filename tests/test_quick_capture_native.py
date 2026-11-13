@@ -1,3 +1,7 @@
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0,str(_Path(__file__).resolve().parents[1]/'app'))
+from sqlite_context import connect as managed_sqlite_connect
 import json
 import sqlite3
 import sys
@@ -24,7 +28,7 @@ class NativeCaptureTests(unittest.TestCase):
     def test_multiline_capture_keeps_data_local(self):
         with tempfile.TemporaryDirectory() as directory:
             db=Path(directory)/'atelier.db'
-            with sqlite3.connect(db) as c:
+            with managed_sqlite_connect(db) as c:
                 c.executescript('''
                 CREATE TABLE quick_captures(id INTEGER PRIMARY KEY,destination TEXT,body TEXT,seen INTEGER DEFAULT 0,created_at TEXT);
                 CREATE TABLE admin_documents(id INTEGER PRIMARY KEY,title TEXT,category TEXT,notes TEXT,created_at TEXT,updated_at TEXT);
@@ -35,7 +39,7 @@ class NativeCaptureTests(unittest.TestCase):
             capture.save_capture(db,'tâches','Faire un dossier')
             capture.save_capture(db,'administratif','Demander un justificatif')
             capture.save_capture(db,'post-it','Une note\nà la ligne')
-            with sqlite3.connect(db) as c:
+            with managed_sqlite_connect(db) as c:
                 self.assertEqual(c.execute('SELECT body FROM quick_captures').fetchone()[0],'Ligne 1\nLigne 2')
                 self.assertEqual(c.execute('SELECT title FROM tasks').fetchone()[0],'Faire un dossier')
                 self.assertEqual(c.execute('SELECT title FROM admin_documents').fetchone()[0],'Demander un justificatif')
