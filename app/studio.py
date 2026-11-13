@@ -437,8 +437,13 @@ def widget_data(c, context):
         values=reliable if len(reliable)>=2 else intervals
         average=max(21,min(45,int(sum(v*(i+1) for i,v in enumerate(values))/sum(range(1,len(values)+1))+.5)))
         next_day=dates[-1]+timedelta(days=average)
-        while next_day<today:next_day+=timedelta(days=average)
-        cycle={'next_date':next_day.isoformat(),'estimated':True}
+        manual=False
+        if c.execute("SELECT 1 FROM sqlite_master WHERE name='alimentation_records'").fetchone():
+            for row in c.execute("SELECT data_json FROM alimentation_records WHERE kind='cycle-plan'"):
+                plan=json.loads(row['data_json'])
+                if plan.get('last')==dates[-1].isoformat():
+                    next_day=date.fromisoformat(plan['next']);manual=True
+        cycle={'next_date':next_day.isoformat(),'estimated':True,'manual':manual,'overdue':next_day<today}
     return items,cycle
 
 
