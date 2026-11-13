@@ -59,7 +59,7 @@ if($Mode -ne 'ImportTest'){
           $icon=[AtelierApplyWindowIcon]::LoadImage([IntPtr]::Zero,$OutputIcon,1,$pair[1],$pair[1],0x10)
           if($icon -eq [IntPtr]::Zero){throw 'Cannot load icon'}
           $result=[UIntPtr]::Zero
-          $ack=[AtelierApplyWindowIcon]::SendMessageTimeout($hwnd,0x80,[UIntPtr]$pair[0],$icon,2,1500,[ref]$result)
+          $ack=[AtelierApplyWindowIcon]::SendMessageTimeout($hwnd,0x80,([UIntPtr]::new([uint32]$pair[0])),$icon,2,1500,[ref]$result)
           if($ack -eq [IntPtr]::Zero){$applied=$false;[AtelierApplyWindowIcon]::DestroyIcon($icon)|Out-Null}
         }
         if($applied){$windowCount++}

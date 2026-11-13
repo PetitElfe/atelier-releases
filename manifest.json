@@ -393,11 +393,11 @@
     },
     {
       "path": "local_icon.py",
-      "sha256": "23df134d3ef41d000efb2a0825b696844e4c144e81ebd1196af04bee90562079"
+      "sha256": "580f602995be8d123de8b1e57cde28e0f1f126511e4b95b79b193ea318ca397d"
     },
     {
       "path": "local_icon.ps1",
-      "sha256": "0af04bb089ed67118a7c1c20ac5e09afdf30332309e2176418b63e76a49dd3c5"
+      "sha256": "22b3446cdbdd39ed3b588366f95c45792e88c455bb7d7cd6003f4dfa71420ead"
     },
     {
       "path": "public/local_icon.js",

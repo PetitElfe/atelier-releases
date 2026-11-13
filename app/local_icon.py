@@ -34,7 +34,7 @@ def _powershell(data,exe,mode,output=None):
     if output:args+=['-OutputIcon',str(output)]
     done=subprocess.run(args,stdin=subprocess.DEVNULL,capture_output=True,timeout=600 if mode=='Choose' else 25,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if done.returncode==2:return False
-    if done.returncode:raise RuntimeError('Impossible de préparer l’icône locale. Choisis un PNG valide, de 16 Mo maximum et de dimensions raisonnables.')
+    if done.returncode:raise RuntimeError('Impossible de préparer l’icône locale. Choisis un PNG valide, de 16 Mo maximum et de dimensions raisonnables.' if mode in ('Choose','ImportTest') else 'Windows n’a pas confirmé le changement d’icône. La copie enregistrée est conservée ; tu peux réessayer.')
     try:return json.loads(done.stdout.decode('utf-8-sig').strip())
     except (ValueError,UnicodeError,AttributeError):return True
 
