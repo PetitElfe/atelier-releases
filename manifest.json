@@ -349,7 +349,7 @@
     },
     {
       "path": "studio.py",
-      "sha256": "d91c41227f5d30b2446dd4269b0e596e665c61eada78dbe47284b10545e48453"
+      "sha256": "ca02d2920cbcdd513128bf54c35673c004e8ce2f2a472b388104153444d69e80"
     },
     {
       "path": "tracker_rituals.py",
@@ -485,5 +485,5 @@
     }
   ],
   "notes": "Démarches : contacts multiples, calendrier, tâches et sélection multiple de documents. Quantités, fiches rapides et apports renseignés. Retour aux carnets et réglages d’affichage.",
-  "build_sequence": 2026111307
+  "build_sequence": 2026111308
 }
