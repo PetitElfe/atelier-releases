@@ -352,6 +352,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
         if official_icon_publish.serve(self,self.command,p,DATA,PORT,HOST):return
         if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
@@ -654,9 +655,10 @@ class Handler(BaseHTTPRequestHandler):
                 data = dict(row); data['found'] = True
                 return self._json(data)
             if p == '/api/tasks':
-                rows = c.execute('''SELECT t.*,o.title AS objective_title,o.node_type AS objective_node_type
+                rows = c.execute('''SELECT t.*,o.title AS objective_title,o.node_type AS objective_node_type,a.start_date,a.state AS action_state,a.rhythm AS action_rhythm
                                     FROM tasks t
                                     LEFT JOIN objective_nodes o ON o.id=t.objective_node_id
+                                    LEFT JOIN admin_action_details a ON a.task_id=t.id
                                     WHERE t.archived=0
                                     ORDER BY t.completed,t.important DESC,COALESCE(t.due_date,'9999-12-31'),t.order_index,t.id''').fetchall()
                 return self._json([dict(r) for r in rows])
@@ -745,6 +747,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
         if official_icon_publish.serve(self,self.command,p,DATA,PORT,HOST):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'POST',p,parse_qs(u.query),DB_PATH):return
@@ -1456,6 +1459,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
         if health_vault.serve(self,self.command,p,DATA):return
         if studio.serve(self,self.command,p,parse_qs(u.query),globals()):return
         if utility_details.serve(self,'PUT',p,parse_qs(u.query),DB_PATH):return
@@ -2220,6 +2224,7 @@ class Handler(BaseHTTPRequestHandler):
                 objective_maps.reconcile_automatic(c,progression,ts)
                 if d.get('completed') and not old['completed']:
                     progression.award(c,source_kind='task',source_id=tid)
+                admin_workspace.task_saved(c,tid)
                 try:utility_details.save_task(c,tid,body.get('utility_details'))
                 except (ValueError,TypeError,LookupError) as ex:c.rollback();return self._json({'error':str(ex)},409)
                 utility_sync.record(c,sync_lease);c.commit(); return self._json({'ok':True})

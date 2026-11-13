@@ -89,7 +89,7 @@ function lifeNode(tag,cls,text){const el=document.createElement(tag);if(cls)el.c
 function lifeButton(label,callback,cls=''){const b=lifeNode('button',cls,label);b.type='button';b.onclick=callback;return b}
 async function lifeAction(label,fn){const result=await runUiAction(label,fn);if(result.ok)await loadLifeTools();return result.ok}
 function renderLifeTools(){
-  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();renderHomeDailyTrackers();
+  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();renderHomeDailyTrackers();window.AtelierAdmin?.enhance();
 }
 /* Accueil : CINQ lignes visibles, mais aucune limite de lignes à cocher.
    Les cases utilisent directement les mêmes tracker_board_marks que les grilles. */
@@ -658,7 +658,7 @@ function renderLifeTrackers(){
 function renderLifeAdmin(){
   const root=$('#adminList');if(!root)return;root.replaceChildren();
   if(!lifeAdmin.length)root.append(lifeNode('p','muted','Aucune démarche enregistrée.'));
-  const statusNames={todo:'À faire',waiting:'En attente',done:'Terminée'};
+  const statusNames={todo:'À faire',waiting:'En cours',done:'Fait'};
   const allEvents=[...new Map((state.events||[]).filter(e=>e.id).map(e=>[Number(e.id),e])).values()]
     .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
   const query=($('#adminSearch')?.value||'').trim().toLocaleLowerCase('fr-FR');

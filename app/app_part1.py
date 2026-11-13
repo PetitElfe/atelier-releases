@@ -6,7 +6,7 @@ from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
 import groceries
-import local_icon, official_icon_publish
+import local_icon, official_icon_publish, admin_workspace
 import studio, utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
@@ -16,7 +16,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -449,6 +449,7 @@ with conn() as c:
     studio.initialise(c)
     event_preparations.initialise(c)
     admin_docs.initialise(c)
+    admin_workspace.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
     # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
     if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():

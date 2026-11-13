@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "b79f5113d2f8ce26341fe601fedd1bfb91fd3771b3ab6ebccbeff22c376a6ff2"
+      "sha256": "50b54d7682b40707815af0a5cb0e9cc00383fcfc46d26751a7dcaa7b93f1f537"
     },
     {
       "path": "app_part2.py",
-      "sha256": "d93cde8f8fb6de89947e84de7b6b1322ce10f0c9a6da0f612053f166994c9e45"
+      "sha256": "3da44747c2bd24885bd129461f5bfc6a93d860bc37865de4563fcdd235374df4"
     },
     {
       "path": "app_part3.py",
@@ -85,11 +85,11 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "603896da9dbdb0d4fa2888bbefb9028676d78d854d1148b5ff4c7d06bfcfb732"
+      "sha256": "01857f6cb815882e2a4a27c093b3acd4d64b8598ba72361db769b56933081e13"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "ea8e0042e0cc9a8c717f0360fefc40003def8d3ca860554bde21b5ab45d1b157"
+      "sha256": "76c3f0d26221503f30e994cadb80869168a2f402060a07a94607f7c066500681"
     },
     {
       "path": "public/app_part3.js",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "126ae5ec44e5045c2f8b47e3e48a02477790ef7a318f6c2af18db35ecc5000b7"
+      "sha256": "043db750ed7d02a76ce84865cc2e95d34917c1a6db48ff5cdda2c53fac0d9e0f"
     },
     {
       "path": "public/interface_reference.css",
@@ -217,7 +217,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "95386cb7c17080a9d01c96739b59a430d3e27d3e550fd84d224d0bd402e40e04"
+      "sha256": "1638e482ce6cbabc72d545de493b6bcce4c6c049eba6721ffe069eef13cbefea"
     },
     {
       "path": "public/mental-health.html",
@@ -301,7 +301,7 @@
     },
     {
       "path": "public/studio_trackers.js",
-      "sha256": "bad1f7a491c76fca5034189ffa5993bbf2b44c334059bf97c5869545fa209f0a"
+      "sha256": "64e30d37ddc9891c6b741a4f4d7483b93550bc18a5d5d07b60e2f183261e551f"
     },
     {
       "path": "public/styles.css",
@@ -438,8 +438,20 @@
     {
       "path": "public/official_icon_publish.js",
       "sha256": "0c23ed8d5e372aa5c1fc2afbd25f852ca049ca05f0d812426009ebccfd9969d5"
+    },
+    {
+      "path": "admin_workspace.py",
+      "sha256": "3710429e6c39598dd961d92b8c1ef2c0582061312ae5fd79669850b9b9e61f10"
+    },
+    {
+      "path": "public/admin_workspace.js",
+      "sha256": "0ff712ec83e73f1702cc162ee5c71e8f948fa26ca3394773a0d87e3b2c7313e6"
+    },
+    {
+      "path": "public/admin_workspace.css",
+      "sha256": "6aeaba47d36149c0e8c3ca71ba640de64991aca0f4dc28bdc85e86054c1b456d"
     }
   ],
-  "notes": "Icône : application Windows vérifiée, réapplication sans renvoi du PNG, correction du suivi des fenêtres.",
-  "build_sequence": 2026111301
+  "notes": "Administratif : classeurs, actions et liens récurrents, préparation avant échéance, états à faire/en cours/fait et documents PDF/Word reliés au dossier local. Priorités rouges partagées avec les tâches.",
+  "build_sequence": 2026111302
 }

@@ -316,7 +316,7 @@ function renderWeek(){
       }
       // Une tâche avec heure reste un petit rappel, elle n'invente pas de durée.
       tasks.forEach(t=>{
-        const button=document.createElement('button');button.type='button';button.className='week-item week-task';
+        const button=document.createElement('button');button.type='button';button.className='week-item week-task'+(t.important&&!t.completed?' atelier-important':'');
         button.textContent='☐ '+t.title;button.title=t.title;
         button.addEventListener('click',()=>openTaskModal(t));cell.appendChild(button);
       });
@@ -401,8 +401,8 @@ function renderTasks(){
   if(!visible.length){root.innerHTML='<div class="empty">'+(state.tasks.length?'Aucune tâche dans ce filtre.':'Le petit carnet est vide pour le moment.')+'</div>';return}
   const sorted=[...visible].sort((a,b)=>a.completed-b.completed || b.important-a.important || (a.order_index-b.order_index));
   sorted.forEach(t=>{
-    const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'');
-    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(fmtFrenchDate(parseYMD(t.due_date))):'Sans date'}${!t.completed&&t.due_date&&t.due_date<ymd(new Date())?' · En retard':''}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
+    const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'')+(t.important&&!t.completed?' atelier-important':'');row.dataset.taskId=t.id;
+    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.action_state==='doing'?'◐ ':''}${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(fmtFrenchDate(parseYMD(t.due_date))):'Sans date'}${!t.completed&&t.due_date&&t.due_date<ymd(new Date())?' · En retard':''}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
     row.querySelector('input').addEventListener('change',async e=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({completed:e.target.checked})});await refresh()});
     row.querySelector('.edit').addEventListener('click',()=>openTaskModal(t));
     row.querySelector('.archive').addEventListener('click',async()=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
@@ -1706,7 +1706,7 @@ function renderLibraryOverview(domain){
   const taskRoot=$('#libraryDomainTasks');taskRoot.innerHTML='';
   if(!tasks.length)taskRoot.innerHTML='<div class="library-small-empty">Aucune tâche liée à ce domaine.</div>';
   tasks.slice(0,12).forEach(task=>{
-    const row=document.createElement('div');row.className='library-domain-task'+(task.completed?' is-done':'');
+    const row=document.createElement('div');row.className='library-domain-task'+(task.completed?' is-done':'')+(task.important&&!task.completed?' atelier-important':'');row.dataset.taskId=task.id;
     row.innerHTML=`<button class="library-task-toggle" type="button">${task.completed?'✓':'○'}</button><button class="library-task-open" type="button"><strong>${esc(task.title)}</strong><span>${esc(task.objective_title||domain.title)}${task.due_date?' · '+esc(task.due_date):''}</span></button>`;
     row.querySelector('.library-task-toggle').onclick=async()=>{await api(`/api/tasks/${task.id}`,{method:'PUT',body:JSON.stringify({completed:!task.completed})});await refresh()};
     row.querySelector('.library-task-open').onclick=()=>openTaskModal(task);
