@@ -18,7 +18,7 @@ render=function(){
  if(!active){wasActive=false;return previous()}
  if(!wasActive){wasActive=true;previous()}
  const content=document.getElementById('content'),base=pcUrl||'';
- document.getElementById('title').textContent='Courses';document.getElementById('subtitle').textContent='';
+ document.getElementById('title').textContent='Alimentation';document.getElementById('subtitle').textContent='';
  for(const b of document.querySelectorAll('[data-mobile-go]'))b.classList.toggle('active',b.dataset.mobileSection==='shopping');
  if(client&&binding===base){if(!host.isConnected)content.replaceChildren(host);legacyNotice(content);client.render();return}
  client?.dispose();content.replaceChildren();host=document.createElement('div');content.append(host);binding=base;

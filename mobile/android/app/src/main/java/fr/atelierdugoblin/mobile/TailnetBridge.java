@@ -36,10 +36,10 @@ public final class TailnetBridge {
                 uri.getRawQuery() != null || uri.getRawFragment() != null) return false;
             if (!method.equals("GET") && !method.equals("POST") && !method.equals("PUT")) return false;
             if (path.contains("..") || path.contains("//") || path.contains("#")) return false;
-            if (method.equals("GET")) return path.equals("/api/mobile/admin-workspace") || path.equals("/api/groceries") || path.matches("^/api/studio/snapshot(?:\\?day=[0-9]{4}-[0-9]{2}-[0-9]{2})?$") || path.matches("^/api/studio/assets/[a-f0-9]{64}\\?json=1$") || path.equals("/api/reminders") || path.equals("/api/sync/capabilities") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
+            if (method.equals("GET")) return path.equals("/api/alimentation") || path.matches("^/api/alimentation/lookup\\?code=[0-9]{8,14}$") || path.equals("/api/mobile/admin-workspace") || path.equals("/api/groceries") || path.matches("^/api/studio/snapshot(?:\\?day=[0-9]{4}-[0-9]{2}-[0-9]{2})?$") || path.matches("^/api/studio/assets/[a-f0-9]{64}\\?json=1$") || path.equals("/api/reminders") || path.equals("/api/sync/capabilities") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
                 path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/recipes") ||
                 path.matches("^/api/events\\?start=[0-9]{4}-[0-9]{2}-[0-9]{2}&end=[0-9]{4}-[0-9]{2}-[0-9]{2}$");
-            if (method.equals("POST")) return path.matches("^/api/mobile/admin-workspace/(classer|dossier|case-state|action)$") || path.matches("^/api/groceries/(cart|checkout|food|remove)$") || path.equals("/api/studio/actions") || path.equals("/api/reminders/mobile-action") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
+            if (method.equals("POST")) return path.equals("/api/alimentation") || path.matches("^/api/mobile/admin-workspace/(classer|dossier|case-state|action|contact|contact-link|task-link|event)$") || path.matches("^/api/groceries/(cart|checkout|food|remove)$") || path.equals("/api/studio/actions") || path.equals("/api/reminders/mobile-action") || path.equals("/api/tasks") || path.equals("/api/shopping") ||
                 path.equals("/api/mobile/notes") || path.equals("/api/mobile/notes-v2") || path.equals("/api/mobile/mental") || path.equals("/api/events");
             return path.matches("^/api/(tasks|shopping|events|recipes)/[0-9]+$");
         } catch (Exception e) { return false; }
