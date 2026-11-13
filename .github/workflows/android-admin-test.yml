@@ -179,7 +179,7 @@ jobs:
           set -euo pipefail
           tag="android-test-v$RELEASE_VERSION"
           if gh release view "$tag" >/dev/null 2>&1; then exit 1; fi
-          gh release create "$tag" LAtelierDuGoblin-Mobile.apk* --prerelease --target "${{ github.sha }}" --title "Android TEST $RELEASE_VERSION — Administratif et contacts" --notes 'Administratif en liste compacte : classeurs, contacts, états, dates et répétitions partagés avec Windows TEST d59d2f01. Clic contact ouvre le composeur, sans appel automatique. File hors connexion et conflits conservés. Même certificat et identifiant, icône officielle conservée, remplacement signé et contact natif vérifiés sur émulateur. Installer Windows TEST avant de relier cette rubrique. Pas de désinstallation.'
+          gh release create "$tag" LAtelierDuGoblin-Mobile.apk* --prerelease --target "${{ github.sha }}" --title "Android TEST $RELEASE_VERSION — Administratif et contacts" --notes 'Administratif en liste compacte : classeurs, contacts, états, dates et répétitions partagés avec Windows TEST 16d48f90. Clic contact ouvre le composeur, sans appel automatique. File hors connexion et conflits conservés. Même certificat et identifiant, icône officielle conservée, remplacement signé et contact natif vérifiés sur émulateur. Installer Windows TEST avant de relier cette rubrique. Pas de désinstallation.'
 
   sync-browser:
     runs-on: ubuntu-latest
@@ -188,7 +188,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 72c89d07dc2612d0058a643135d172997c243876
+          ref: 2149afe5a9053795f80670f3bad5edbcb50d3f8d
           path: pc
       - uses: actions/setup-python@v5
         with:
