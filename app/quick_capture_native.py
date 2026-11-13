@@ -8,6 +8,7 @@ import ctypes
 from ctypes import wintypes
 import json
 import sqlite3
+from sqlite_context import connect as sqlite_connect
 import time
 from pathlib import Path
 from datetime import datetime
@@ -52,7 +53,7 @@ def save_capture(db_path,destination,body):
     body=str(body).strip()
     if not body or len(body)>10000:raise ValueError("Écris une note de 10 000 caractères maximum.")
     ts=datetime.now().replace(microsecond=0).isoformat()
-    with sqlite3.connect(db_path,timeout=5) as c:
+    with sqlite_connect(db_path,timeout=5) as c:
         c.execute("PRAGMA busy_timeout=5000")
         if destination=="tâches":
             c.execute("""INSERT INTO tasks(title,due_date,due_time,notes,completed,archived,important,order_index,created_at,updated_at)

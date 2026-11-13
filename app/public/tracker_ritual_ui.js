@@ -7,7 +7,8 @@ const trackerRitualButton=(label,action,cls='')=>{
   const button=trackerMake('button',cls,label);button.type='button';button.onclick=action;return button;
 };
 function trackerOpenRitual(row,day){
-  const steps=Array.isArray(row.steps)?row.steps:[];
+  const weekday=(new Date(day+'T12:00:00').getDay()+6)%7;
+  const steps=(Array.isArray(row.steps)?row.steps:[]).filter(s=>s.weekday==null||s.weekday===weekday);
   if(!steps.length){trackerConfigureRow(row);return}
   openModal('<h2>Mon petit rituel</h2><div id="trackerRitualModal"></div>');
   const root=document.getElementById('trackerRitualModal');
@@ -107,6 +108,14 @@ async function trackerConfigureRow(row){
   });
   weekday.value=row.weekday==null?'':String(row.weekday);
   form.append(field('Jour fixe (facultatif)',weekday));
+  let advancedDays=null,repeat=null,reference=null;
+  if(row.schedule_explicit){
+    weekday.closest('label').hidden=true;
+    advancedDays=trackerMake('fieldset','studio-weekdays');advancedDays.append(trackerMake('legend','','Jours à cocher'));
+    for(const [i,name]of trackerRitualDayNames.entries()){const label=trackerMake('label'),check=trackerMake('input');check.type='checkbox';check.value=i;check.checked=(row.weekdays||[]).includes(i);label.append(check,trackerMake('span','',name));advancedDays.append(label)}
+    form.append(advancedDays);repeat=trackerMake('select');for(const [value,label]of [['1','Chaque semaine'],['2','Une semaine sur deux']]){const option=trackerMake('option','',label);option.value=value;repeat.append(option)}repeat.value=String(row.interval_weeks||1);form.append(field('Rythme des semaines',repeat));
+    reference=trackerMake('input');reference.type='date';reference.value=row.anchor_monday||ymd(monday(new Date()));form.append(field('Semaine active de référence',reference));
+  }
   let target=null;
   if(row.mode==='number'){
     target=trackerMake('input');target.type='number';target.min=1;target.max=1000;target.required=false;
@@ -145,7 +154,9 @@ async function trackerConfigureRow(row){
     if(step.id)input.dataset.stepId=step.id;
     const remove=trackerRitualButton('×',()=>wrap.remove());
     remove.setAttribute('aria-label','Retirer cette étape (historique conservé)');
-    wrap.append(input,remove);stepFields.append(wrap);
+    const day=document.createElement('select');day.setAttribute('aria-label','Jour de cette étape');
+    [['','Chaque jour'],...trackerRitualDayNames.map((n,i)=>[String(i),n])].forEach(([v,n])=>{const o=document.createElement('option');o.value=v;o.textContent=n;day.append(o)});day.value=step.weekday==null?'':String(step.weekday);
+    wrap.append(input,day,remove);stepFields.append(wrap);
   }
   if(row.mode==='check'){
     for(const step of row.steps||[])newStep(step);
@@ -159,9 +170,11 @@ async function trackerConfigureRow(row){
   form.addEventListener('submit',async event=>{
     event.preventDefault();
     const steps=[...stepFields.querySelectorAll('input')].map(input=>({
-      ...(input.dataset.stepId?{id:Number(input.dataset.stepId)}:{}),title:input.value.trim()
+      ...(input.dataset.stepId?{id:Number(input.dataset.stepId)}:{}),title:input.value.trim(),weekday:input.parentElement.querySelector('select').value===''?null:Number(input.parentElement.querySelector('select').value)
     }));
-    const payload={title:title.value.trim(),weekday:weekday.value===''?null:Number(weekday.value),
+    const chosen=advancedDays?[...advancedDays.querySelectorAll('input:checked')].map(n=>Number(n.value)):null;
+    if(chosen&&!chosen.length){showUiError(new Error('Choisis au moins un jour.'),'Planning');return}
+    const payload={...(chosen?{weekdays:chosen,interval_weeks:Number(repeat.value),anchor_monday:reference.value}:{}),title:title.value.trim(),weekday:chosen?(chosen.length===1?chosen[0]:null):(weekday.value===''?null:Number(weekday.value)),
       target_count:target&&target.value.trim()?Number(target.value):null,
       linked_type:linkType.value,linked_id:linkType.value?Number(linkId.value):null,steps};
     save.disabled=true;

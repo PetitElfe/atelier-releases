@@ -76,7 +76,7 @@ function bindCalendarDropTarget(cell,date,time=null){
       const base=new Date(`${event.event_date}T${event.start_time||'00:00'}`);
       const shiftedBase=new Date(base.getTime()+delta);
       const localDateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      const shifted=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+      const shifted=(state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
         .map(r=>({title:r.title||'',remind_at:localDateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
       const result=await runUiAction('Impossible de déplacer la série',()=>api(`/api/events/${event.id}`,{
         method:'PUT',body:JSON.stringify({event_date:ymd(shiftedBase),start_time:pad(shiftedBase.getHours())+':'+pad(shiftedBase.getMinutes()),reminders:shifted})
@@ -91,7 +91,7 @@ function bindCalendarDropTarget(cell,date,time=null){
       const nextDate=new Date(`${date}T${allDay?'00:00':newTime}`);
       const delta=nextDate.getTime()-oldDate.getTime();
       const dateTime=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      const remind=state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
+      const remind=(state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(event.id)&&r.status!=='done')
         .map(r=>({title:r.title||'',remind_at:dateTime(new Date(new Date(r.remind_at).getTime()+delta))}));
       let endTime=event.end_time||null;
       if(!allDay&&event.end_time){
@@ -153,20 +153,45 @@ function addCalendarHoverActions(wrapper,event){
 
 /* Relative date badge on month cells: exact calendar months plus remaining days,
    in both directions; calculations use UTC dates to avoid DST discrepancies. */
-function atelierRelativeDateLabel(date){
-  const now=new Date(),a=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
-  const b=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
-  if(a===b)return 'J0 · aujourd’hui';
+function atelierRelativeDateParts(date,now=new Date()){
+  const a=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()),b=Date.UTC(date.getFullYear(),date.getMonth(),date.getDate());
+  if(a===b)return {label:'J0',description:'Aujourd’hui'};
   const ahead=b>a,early=new Date(Math.min(a,b)),late=new Date(Math.max(a,b));
   const y=early.getUTCFullYear(),m=early.getUTCMonth(),d=early.getUTCDate();
   let months=(late.getUTCFullYear()-y)*12+late.getUTCMonth()-m;
   const plus=n=>Date.UTC(y,m+n,Math.min(d,new Date(Date.UTC(y,m+n+1,0)).getUTCDate()));
   while(months>0&&plus(months)>late.getTime())months--;
-  const days=Math.round((late.getTime()-plus(months))/86400000);
-  const duration=months?('M'+(ahead?'+':'-')+months+(days?', J'+(ahead?'+':'-')+days:'')):'J'+(ahead?'+':'-')+days;
-  return duration+(ahead?' · dans le futur':' · dans le passé');
+  const days=Math.round((late.getTime()-plus(months))/86400000),sign=ahead?'−':'+';
+  const label=months?'M'+sign+months+(days?' · J'+sign+days:''):'J'+sign+days;
+  const words=[months?months+' mois':'',days?days+' jour'+(days===1?'':'s'):''].filter(Boolean).join(' et ');
+  return {label,description:(ahead?'Dans ':'Il y a ')+words};
 }
+function atelierRelativeDateLabel(date){return atelierRelativeDateParts(date).label}
+// Position in viewport space, including the app's CSS zoom and browser zoom.
+let atelierRelativeDateOwner=null;
+function atelierHideRelativeDate(){
+  const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true;
+  atelierRelativeDateOwner?.querySelector('.day-number')?.removeAttribute('aria-describedby');
+  atelierRelativeDateOwner=null;
+}
+function atelierShowRelativeDate(cell){
+  if(!cell.isConnected||!cell.getBoundingClientRect().width)return;
+  atelierHideRelativeDate();
+  const relative=atelierRelativeDateParts(parseYMD(cell.dataset.date));cell.dataset.relativeDate=relative.label;cell.dataset.relativeDescription=relative.description;
+  cell.querySelector('.day-number')?.setAttribute('aria-label','Voir les rendez-vous du '+fmtFrenchDate(parseYMD(cell.dataset.date))+' · '+relative.description);
+  let tip=document.getElementById('atelierRelativeDateFloat');
+  if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';tip.setAttribute('role','tooltip');document.body.append(tip)}
+  tip.textContent=cell.dataset.relativeDate;tip.setAttribute('aria-label',cell.dataset.relativeDescription);tip.hidden=false;atelierRelativeDateOwner=cell;cell.querySelector('.day-number')?.setAttribute('aria-describedby',tip.id);
+  // The day owns its hint, so inherited zoom cannot move it into another day.
+  cell.append(tip);
+  tip.style.left='';tip.style.top='';
+}
+window.addEventListener('resize',atelierHideRelativeDate);
+window.addEventListener('scroll',atelierHideRelativeDate,true);
+document.addEventListener('pointerdown',atelierHideRelativeDate,true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')atelierHideRelativeDate()});
 function renderMonth(){
+  atelierHideRelativeDate();
   const y=state.cursor.getFullYear(), m=state.cursor.getMonth(); $('#monthTitle').textContent=`${months[m][0].toUpperCase()+months[m].slice(1)} ${y}`;
   const first=new Date(y,m,1), start=monday(first); const grid=$('#monthGrid'); grid.innerHTML='';
   for(let i=0;i<42;i++){
@@ -174,24 +199,24 @@ function renderMonth(){
     const forecast=recorded?null:cycleForecastForDay(ds);
     const cell=document.createElement('div');
     cell.className='day-cell'+(d.getMonth()!==m?' outside':'')+(ds===ymd(new Date())?' today':'')+(recorded?' cycle-recorded':'')+(forecast?' cycle-forecast':'')+(forecast&&ds===forecast.start?' cycle-forecast-start':'');
-    cell.dataset.relativeDate=atelierRelativeDateLabel(d);
-    // Une infobulle attachée au document évite l'empilement sous la ligne du dessus.
-    cell.addEventListener('mouseenter',()=>{
-      let tip=document.getElementById('atelierRelativeDateFloat');
-      if(!tip){tip=document.createElement('div');tip.id='atelierRelativeDateFloat';document.body.append(tip)}
-      tip.textContent=cell.dataset.relativeDate;
-      const bounds=cell.getBoundingClientRect();
-      tip.style.left=Math.max(8,Math.min(window.innerWidth-180,bounds.left+bounds.width/2-80))+'px';
-      tip.style.top=Math.min(window.innerHeight-40,bounds.bottom+5)+'px';
-      tip.hidden=false;
-    });
-    cell.addEventListener('mouseleave',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
-    cell.addEventListener('focusout',()=>{const tip=document.getElementById('atelierRelativeDateFloat');if(tip)tip.hidden=true});
+    const relative=atelierRelativeDateParts(d);cell.dataset.date=ds;cell.dataset.relativeDate=relative.label;cell.dataset.relativeDescription=relative.description;
 
     if(forecast)cell.dataset.cycleForecast='Règles possibles autour du '+fmtFrenchDate(parseYMD(forecast.start))+' (± '+forecast.spread+' jours). Durée estimée : '+forecast.duration+' jours.';
     cell.innerHTML=`<button class="day-number day-list-toggle" type="button"
       title="Voir tous les rendez-vous du ${ds}" aria-label="Voir tous les rendez-vous du ${ds}">${d.getDate()}</button>
       <button class="day-add" type="button" title="Ajouter un rendez-vous">+</button>`;
+    const dateButton=cell.querySelector('.day-number');dateButton.removeAttribute('title');
+    dateButton.setAttribute('aria-label','Voir les rendez-vous du '+fmtFrenchDate(d)+' · '+relative.description);
+    const hoverDate=event=>{
+      const target=document.elementFromPoint(event.clientX,event.clientY);
+      if(target?.closest('.event-pill,.calendar-month-event,.day-add,.more-btn'))atelierHideRelativeDate();
+      else if(atelierRelativeDateOwner!==cell)atelierShowRelativeDate(cell);
+    };
+    cell.addEventListener('mouseenter',hoverDate);
+    cell.addEventListener('pointermove',hoverDate,true);
+    dateButton.addEventListener('focus',()=>atelierShowRelativeDate(cell));
+    cell.addEventListener('mouseleave',atelierHideRelativeDate);
+    dateButton.addEventListener('blur',atelierHideRelativeDate);
     const allDayEvents=state.events.filter(e=>e.instance_date===ds);
     cell.querySelector('.day-list-toggle').addEventListener('click',()=>openDayList(ds,allDayEvents));
     cell.querySelector('.day-add').addEventListener('click',()=>openEventModal(null,ds));bindCalendarDropTarget(cell,ds);bindCalendarDateContextMenu(cell,ds);
@@ -200,7 +225,7 @@ function renderMonth(){
       const b=document.createElement('button'); b.className=`event-pill ${eventClass(e)}${eventInstanceClosed(e)?' event-instance-closed':''}`; const mark=eventInstanceIcon(e); b.textContent=`${mark?mark+' ':''}${e.all_day?'':fmtTime(e.start_time)+' '}${e.title}`; b.addEventListener('click',()=>openEventModal(e));bindCalendarEventActions(b,e); b.title=e.title; const wrap=document.createElement('div');wrap.className='calendar-month-event';wrap.appendChild(b);addCalendarHoverActions(wrap,e);cell.appendChild(wrap);
     });
     if(items.length>3){ const more=document.createElement('button'); more.className='more-btn'; more.textContent=`+ ${items.length-3} autre${items.length-3>1?'s':''}`; more.addEventListener('click',()=>openDayList(ds,items)); cell.appendChild(more); }
-    cell.title=forecast?cell.dataset.cycleForecast+' Double-clique pour ajouter un rendez-vous.':'Double-clique pour ajouter un rendez-vous';
+    // Forecast details stay on their own discreet mark; no duplicate native tooltip on the date.
     cell.addEventListener('dblclick',ev=>{ if(ev.target.closest('button')) return; state.cursor=new Date(d); openEventModal(null,ds); });
     grid.appendChild(cell);
   }
@@ -264,7 +289,7 @@ function renderWeek(){
     const tl=document.createElement('div');tl.className='time-label';tl.textContent=pad(hour)+':00';tl.style.gridColumn='1';tl.style.gridRow=String(hour+2);grid.appendChild(tl);
     for(let i=0;i<7;i++){
       const ds=dates[i],cell=document.createElement('div');
-      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'');cell.style.gridColumn=String(i+2);cell.style.gridRow=String(hour+2);
+      cell.className='week-slot'+(ds===ymd(new Date())?' week-current-day':'')+(cycleForecastForDay(ds)?' cycle-forecast':'')+(cycleShowMarksPreference()&&isRecordedCycleDay(ds)?' cycle-recorded':'');cell.style.gridColumn=String(i+2);cell.style.gridRow=String(hour+2);
       bindCalendarDropTarget(cell,ds,pad(hour)+':00');
       bindCalendarDateContextMenu(cell,ds,pad(hour)+':00');
       const dayEvents=state.events.filter(e=>e.instance_date===ds);
@@ -291,7 +316,7 @@ function renderWeek(){
       }
       // Une tâche avec heure reste un petit rappel, elle n'invente pas de durée.
       tasks.forEach(t=>{
-        const button=document.createElement('button');button.type='button';button.className='week-item week-task';
+        const button=document.createElement('button');button.type='button';button.className='week-item week-task'+(t.important&&!t.completed?' atelier-important':'');
         button.textContent='☐ '+t.title;button.title=t.title;
         button.addEventListener('click',()=>openTaskModal(t));cell.appendChild(button);
       });
@@ -376,8 +401,8 @@ function renderTasks(){
   if(!visible.length){root.innerHTML='<div class="empty">'+(state.tasks.length?'Aucune tâche dans ce filtre.':'Le petit carnet est vide pour le moment.')+'</div>';return}
   const sorted=[...visible].sort((a,b)=>a.completed-b.completed || b.important-a.important || (a.order_index-b.order_index));
   sorted.forEach(t=>{
-    const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'');
-    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(fmtFrenchDate(parseYMD(t.due_date))):'Sans date'}${!t.completed&&t.due_date&&t.due_date<ymd(new Date())?' · En retard':''}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
+    const row=document.createElement('div');row.className='task-row'+(t.completed?' done':'')+(t.important&&!t.completed?' atelier-important':'');row.dataset.taskId=t.id;
+    row.innerHTML=`<input type="checkbox" ${t.completed?'checked':''} aria-label="Terminer"><div><div class="task-title">${t.action_state==='doing'?'◐ ':''}${t.important?'👺 ':''}${esc(t.title)}</div><div class="task-meta">${t.due_date?esc(fmtFrenchDate(parseYMD(t.due_date))):'Sans date'}${!t.completed&&t.due_date&&t.due_date<ymd(new Date())?' · En retard':''}${t.due_time?' · '+fmtTime(t.due_time):''}${t.objective_title?' · 🎯 '+esc(t.objective_title):''}</div></div><div class="task-actions"><button class="edit">Modifier</button><button class="up">↑</button><button class="down">↓</button><button class="archive">Archiver</button></div>`;
     row.querySelector('input').addEventListener('change',async e=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({completed:e.target.checked})});await refresh()});
     row.querySelector('.edit').addEventListener('click',()=>openTaskModal(t));
     row.querySelector('.archive').addEventListener('click',async()=>{await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({archived:true})});await refresh()});
@@ -570,8 +595,9 @@ function showAtelierContextMenu(anchor,actions){
     b.onclick=()=>{menu.remove();action.run()};menu.appendChild(b)}
   document.body.appendChild(menu);
   const x=anchor.clientX??anchor.getBoundingClientRect().left,y=anchor.clientY??anchor.getBoundingClientRect().bottom;
-  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menu.offsetWidth-8))+'px';
-  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menu.offsetHeight-8))+'px';
+  const ui=window.AtelierDisplay?.factor||1;
+  menu.style.left=Math.max(8,Math.min(x/ui,window.innerWidth/ui-menu.offsetWidth-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y/ui,window.innerHeight/ui-menu.offsetHeight-8))+'px';
   const dismiss=e=>{if(!menu.contains(e.target))menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
   setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
   menu.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.remove();anchor.focus?.()}});
@@ -769,7 +795,7 @@ function renderCuisineLibrary(){
 
 
 function openRenameRecipeBookModal(book){
-  openModal(`<h2>Renommer le livre</h2><form id="renameRecipeBookForm" class="form-grid">
+  openModal(`<h2>Renommer le rayon</h2><form id="renameRecipeBookForm" class="form-grid">
     <div class="field full"><label>Nouveau nom</label><input name="name" required value="${esc(book.name)}"></div>
     <div class="form-actions field full"><button type="button" id="cancelRenameBook">Annuler</button><button class="primary">Renommer</button></div>
   </form>`);
@@ -777,20 +803,17 @@ function openRenameRecipeBookModal(book){
   $('#renameRecipeBookForm').onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
-    const result=await runUiAction("Impossible de renommer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'PUT',body:JSON.stringify(payload)}));
+    const result=await runUiAction("Impossible de renommer le rayon",()=>api(`/api/recipe-books/${book.id}`,{method:'PUT',body:JSON.stringify(payload)}));
     if(!result.ok)return;
     closeModal();await refresh();
   };
 }
 
 async function deleteRecipeBook(book){
-  const count=Number(book.recipe_count)||0;
-  const message=count
-    ? `Supprimer le livre « ${book.name} » ? Ses ${count} recette${count>1?'s':''} seront déplacées dans « À classer ».`
-    : `Supprimer le livre « ${book.name} » ?`;
-  const ok=await askUiConfirm('Supprimer le livre',message,'Supprimer',true);
+  const message=`Supprimer le rayon « ${book.name} » ? Ses recettes, y compris les recettes archivées, seront déplacées dans « À classer ».`;
+  const ok=await askUiConfirm('Supprimer le rayon',message,'Supprimer',true);
   if(!ok)return;
-  const result=await runUiAction("Impossible de supprimer le livre",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
+  const result=await runUiAction("Impossible de supprimer le rayon",()=>api(`/api/recipe-books/${book.id}`,{method:'DELETE'}));
   if(!result.ok)return;
   if(String(recipeBookFilter)===String(book.id))recipeBookFilter='all';
   await refresh();
@@ -856,17 +879,18 @@ function openMealIdeaPicker(){
 }
 
 function openRecipeBookModal(){
-  openModal(`<h2>Nouveau livre de recettes</h2><form id="recipeBookForm" class="form-grid">
-    <div class="field full"><label>Nom du livre</label><input name="name" required placeholder="ex. Soupes, Pains, Recettes de Mamie…"></div>
-    <div class="field-help full">Pour l’instant, on crée seulement le livre. Les options personnalisables du livre seront définies pendant les prochains tests.</div>
+  openModal(`<h2>Nouveau rayon de recettes</h2><form id="recipeBookForm" class="form-grid">
+    <div class="field full"><label>Nom du rayon</label><input name="name" required placeholder="ex. Soupes, Pains, Recettes de Mamie…"></div>
+    <div class="field-help full">Un rayon regroupe tes recettes : par exemple Soupes, Desserts ou Recettes de famille.</div>
     <div class="form-actions field full"><button type="button" id="cancelRecipeBook">Annuler</button><button class="primary">Créer</button></div>
   </form>`);
   $('#cancelRecipeBook').onclick=closeModal;
   $('#recipeBookForm').onsubmit=async e=>{
     e.preventDefault();
     const payload=Object.fromEntries(new FormData(e.currentTarget).entries());
-    const result=await runUiAction("Impossible de créer le livre",()=>api('/api/recipe-books',{method:'POST',body:JSON.stringify(payload)}));
+    const result=await runUiAction("Impossible de créer le rayon",()=>api('/api/recipe-books',{method:'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
+    recipeBookFilter=result.value.id||'all';recipeSearchQuery='';
     closeModal();await refresh();showView('cuisine');
   };
 }
@@ -1082,7 +1106,7 @@ function openRecipeModal(item=null,prefill=null){
   const recipeSteps=parseRecipeSteps(source.recipe||'');
   let mealImageData=source.image_data||'';
   const fallbackBook=state.recipeBooks.find(x=>String(x.name).toLowerCase()==='à classer')?.id||state.recipeBooks[0]?.id||'';
-  const selectedBook=Number(source.book_id)||Number(fallbackBook)||'';
+  const selectedBook=Number(source.book_id)||(state.recipeBooks.some(x=>String(x.id)===String(recipeBookFilter))?Number(recipeBookFilter):0)||Number(fallbackBook)||'';
   const bookOptions=state.recipeBooks.map(book=>`<option value="${book.id}" ${Number(book.id)===Number(selectedBook)?'selected':''}>${esc(book.name)}</option>`).join('');
   openModal(`<form id="mealForm" class="recipe-form recipe-form-04">
     <div class="recipe-edit-heading">
@@ -1107,7 +1131,7 @@ function openRecipeModal(item=null,prefill=null){
 
       <div class="recipe-edit-summary">
         <div class="recipe-edit-meta">
-          <label class="field"><span>Livre</span><select name="book_id">${bookOptions}</select></label>
+          <label class="field"><span>Rayon</span><select name="book_id">${bookOptions}</select></label>
           <label class="field"><span>Recette prévue pour</span><div class="servings-input-line"><input name="base_servings" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="4" value="${source.base_servings?Math.max(1,Number(source.base_servings)||1):''}"><span>personnes</span></div></label>
         </div>
         <label class="field recipe-note-field"><span>Petite note</span><textarea name="notes" placeholder="Variante, accompagnement, conseil…">${esc(source.notes||'')}</textarea></label>
@@ -1199,6 +1223,7 @@ function openRecipeModal(item=null,prefill=null){
     payload.image_data=mealImageData;
     const result=await runUiAction("Impossible d’enregistrer la recette",()=>api(editing?`/api/recipes/${item.id}`:'/api/recipes',{method:editing?'PUT':'POST',body:JSON.stringify(payload)}));
     if(!result.ok)return;
+    if(!editing){recipeBookFilter=payload.book_id||'all';recipeSearchQuery=''}
     closeModal();
     await refresh();
     if(editing&&state.view==='recipe'){
@@ -1493,18 +1518,22 @@ function insertLibraryEditorToken(token,part){
   editor.focus();
 }
 
+let libraryLoadRequest=0;
 async function loadLibraryNotebooks(domainId,preferredNotebookId=null,preferredPageId=null){
+  const request=++libraryLoadRequest;
   if(!domainId)return;
   libraryNotebookState={domainId:Number(domainId),sections:[],loading:true};
   renderLibraryDomain();
   try{
     const data=await api(`/api/objective-library?node_id=${encodeURIComponent(domainId)}`);
+    if(request!==libraryLoadRequest||Number(librarySelectedDomainId)!==Number(domainId))return;
     libraryNotebookState={domainId:Number(domainId),sections:data.sections||[],loading:false};
     if(preferredNotebookId&&libraryNotebookById(preferredNotebookId))librarySelectedNotebookId=Number(preferredNotebookId);
     else if(librarySelectedNotebookId&&!libraryNotebookById(librarySelectedNotebookId))librarySelectedNotebookId=null;
     if(preferredPageId&&libraryPageById(preferredPageId))librarySelectedPageId=Number(preferredPageId);
     else if(librarySelectedPageId&&!libraryPageById(librarySelectedPageId))librarySelectedPageId=null;
   }catch(err){
+    if(request!==libraryLoadRequest||Number(librarySelectedDomainId)!==Number(domainId))return;
     libraryNotebookState={domainId:Number(domainId),sections:[],loading:false};
     showUiError(err,'Impossible de charger les carnets');
   }
@@ -1677,7 +1706,7 @@ function renderLibraryOverview(domain){
   const taskRoot=$('#libraryDomainTasks');taskRoot.innerHTML='';
   if(!tasks.length)taskRoot.innerHTML='<div class="library-small-empty">Aucune tâche liée à ce domaine.</div>';
   tasks.slice(0,12).forEach(task=>{
-    const row=document.createElement('div');row.className='library-domain-task'+(task.completed?' is-done':'');
+    const row=document.createElement('div');row.className='library-domain-task'+(task.completed?' is-done':'')+(task.important&&!task.completed?' atelier-important':'');row.dataset.taskId=task.id;
     row.innerHTML=`<button class="library-task-toggle" type="button">${task.completed?'✓':'○'}</button><button class="library-task-open" type="button"><strong>${esc(task.title)}</strong><span>${esc(task.objective_title||domain.title)}${task.due_date?' · '+esc(task.due_date):''}</span></button>`;
     row.querySelector('.library-task-toggle').onclick=async()=>{await api(`/api/tasks/${task.id}`,{method:'PUT',body:JSON.stringify({completed:!task.completed})});await refresh()};
     row.querySelector('.library-task-open').onclick=()=>openTaskModal(task);
@@ -1753,6 +1782,7 @@ function renderLibraryPageEditor(notebook,page){
     <div id="libraryBacklinks" class="library-backlinks ${backlinks.length?'':'hidden'}"><span>LIENS VERS CETTE PAGE</span><div></div></div>
   </article>`;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);
   body.innerHTML='';body.appendChild(renderLibraryEditableText(page.notes||''));
   const reading=$('#libraryReadingView');reading.innerHTML='';reading.appendChild(renderLibraryRichText(page.notes||''));
   const backlinksRoot=$('#libraryBacklinks>div');
@@ -2080,7 +2110,7 @@ function librarySanitizeHtml(raw){
   const parser=new DOMParser();
   const doc=parser.parseFromString('<div id="atelier-rich-root">'+String(raw||'')+'</div>','text/html');
   const root=doc.querySelector('#atelier-rich-root');
-  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','SUP','SUB','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','HR','FIGURE','IMG']);
+  const allowed=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','SUP','SUB','SPAN','A','FONT','H1','H2','H3','UL','OL','LI','BLOCKQUOTE','PRE','HR','FIGURE','IMG','TABLE','THEAD','TBODY','TFOOT','TR','TD','TH','CAPTION']);
   [...root.querySelectorAll('*')].forEach(el=>{
     if(!allowed.has(el.tagName)){
       el.replaceWith(...el.childNodes);return;
@@ -2766,6 +2796,9 @@ function libraryApplySavedData(page,data){
   if(!page||!data)return;
   page.title=data.title||'Sans titre';
   page.notes=data.notes||LIBRARY_RICH_PREFIX;
+  // libraryPageById returns a view copy; keep the notebook's source entry fresh too.
+  const stored=(libraryNotebookState.sections||[]).flatMap(section=>section.entries||[]).find(entry=>Number(entry.id)===Number(page.id));
+  if(stored){stored.title=page.title;stored.notes=page.notes}
   libraryConfirmedSnapshots.set(Number(page.id),JSON.stringify(data));
   libraryClearConfirmedDraft(page,data);
   if(Number(librarySelectedPageId)===Number(page.id)&&$('#libraryPageBody')){
@@ -2814,6 +2847,8 @@ function saveLibraryPageData(page,data,{silent=false}={}){
 }
 function scheduleLibraryAutosave(page,{immediate=false}={}){
   if(!page)return;
+  const owner=$('#libraryPageBody')?.dataset.pageId;
+  if(owner&&Number(owner)!==Number(page.id))return;
   clearTimeout(libraryAutosaveTimerV12);
   const data=libraryEditorData(page);
   // Protéger aussi les changements de page déclenchés avant la fin du délai.
@@ -2833,6 +2868,8 @@ function flushLibraryAutosave(page=null){
   clearTimeout(libraryAutosaveTimerV12);
   const current=page||libraryPageById(librarySelectedPageId);
   if(!current||!$('#libraryPageBody'))return libraryLastSavePromise;
+  const owner=$('#libraryPageBody').dataset.pageId;
+  if(owner&&Number(owner)!==Number(current.id))return librarySaveQueues.get(Number(current.id))||Promise.resolve(true);
   const data=libraryEditorData(current);
   const saved=libraryConfirmedSnapshots.get(Number(current.id))||librarySavedSnapshot;
   if(JSON.stringify(data)===saved)return librarySaveQueues.get(Number(current.id))||Promise.resolve(true);
@@ -3133,6 +3170,7 @@ function renderLibraryPageEditor(notebook,page){
   libraryWireFind();
   $('#libraryWriterFind').onclick=libraryShowFind;
   const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  body.dataset.pageId=String(page.id);
   const serverData={title:page.title||'Sans titre',notes:page.notes||LIBRARY_RICH_PREFIX};
   const durableDraft=libraryReadDraft(page);
   if(durableDraft&&(durableDraft.title!==serverData.title||durableDraft.notes!==serverData.notes)){
@@ -3257,7 +3295,7 @@ function renderLibraryNotebookContent(domain){
     b.innerHTML=`<span class="library-page-list-number">${index+1}</span><strong>${esc(entry.title)}</strong>`;
     b.onclick=async()=>{
       if(Number(entry.id)===Number(librarySelectedPageId))return;
-      await flushLibraryAutosave();
+      if(await flushLibraryAutosave()===false)return;
       librarySelectedPageId=Number(entry.id);libraryEditorMode='write';renderLibraryNotebookContent(domain);
     };
     pageList.appendChild(b);
@@ -3344,7 +3382,8 @@ function scheduleLibraryHistory(){
 }
 function libraryApplyHistoryState(state,page){
   if(!state)return;
-  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');if(!body||!title)return;
+  const body=$('#libraryPageBody'),title=$('#libraryPageTitleInput');
+  if(!body||!title)return;
   libraryHistoryApplying=true;
   title.value=state.title;body.innerHTML=state.html;wireLibraryEditorContents(body,page);
   libraryHistoryApplying=false;

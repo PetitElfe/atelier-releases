@@ -1,0 +1,82 @@
+name: Windows TEST isolated delivery
+on:
+  push:
+    branches: [test/windows-library-calendar-20261103]
+    paths:
+      - '.github/workflows/windows-test-delivery.yml'
+      - 'tools/windows_delivery/**'
+      - 'tools/build_windows_test_delivery.py'
+      - 'tests/test_windows_delivery_install.py'
+permissions:
+  contents: read
+jobs:
+  package-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Package pinned Windows TEST launcher
+        shell: pwsh
+        run: |
+          $revision=(Get-Content tools/windows_delivery/revision.json -Raw | ConvertFrom-Json).payload_revision
+          python tools/build_windows_test_delivery.py --revision $revision
+      - name: Test actual upgrade on disposable Windows E drive
+        env:
+          GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+          PYTHONUTF8: '1'
+        run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261109
+          path: |
+            dist/Goblin_MAJ_Windows_TEST_20261109.zip
+            dist/Goblin_MAJ_Windows_TEST_20261109.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: package-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Goblin_MAJ_Windows_TEST_20261109
+          path: delivery
+      - name: Publish approved isolated TEST prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/goblin-release-notes.md <<'NOTES'
+          Refonte Windows TEST : tableaux, budget, albums et outils personnels.
+
+          Télécharge le ZIP et choisis Extraire tout. Ferme L’Atelier TEST, puis double-clique sur Installer_la_MAJ_TEST.cmd dans le dossier extrait. Attends MISE À JOUR RÉUSSIE et ouvre ton raccourci habituel. Python et Internet sont nécessaires ; le lanceur explique si les fichiers du ZIP manquent.
+
+          Trackers : tableaux plats, onglets, To-do en premier, plusieurs tableaux par onglet, menus au clic droit, lignes déplaçables sans poignée, compteur au clic, sous-étapes par jour et remplissage progressif. Cases quotidiennes et grilles annuelles à 12/4/2/1 cases, semaines ISO 52/53 ; lien avec l’accueil et les séances de sport.
+
+          Budget : revenus, charges fixes/variables, crédits, notes mensuelles, enveloppes par catégorie et alertes de dépassement. Bocaux de projets/économies distincts des dépenses, courses avec quantités/prix/total, achats prévus, archives mensuelles et règles récurrentes conservées.
+
+          Albums : étagères, photos personnelles, Polaroids, légendes, scotchs, textes/polices/stickers, cadrage, déplacement/redimensionnement, pression du stylet, gomme et annuler/rétablir. Brouillons et versions en conflit conservés. Carnets : tableaux et listes persistants, schémas au stylet, accès au journal privé.
+
+          Mes outils : cartes recto/verso, questions/réponses et images, activités et vrais sons personnels à importer, exercices et minuteurs. Post-it du Bureau avec formats contextuels. Recette flottante. Repas : note puis confirmation des unités à déduire du stock. Le brouillon nutrition/assiette reste désactivé.
+
+          Application vérifiée : 21c5186bf1dbb1b874c117ae9d408fed8796545a ; 133 contrôles Python, essais navigateur, installation sur Windows isolé avec reprise des anciennes données. Compatibilité avec Android 0.1.15 TEST. Les essais du vrai PC, du téléphone, du stylet XP-Pen, des Post-it et des autorisations/sons natifs restent à confirmer sur les appareils.
+
+          Réservé à E:\LATELIER_TEST_0180, port 8876. Sauvegarde automatique avant remplacement et canal personnel conservé. Aucun changement de main, de l’installation stable ni de Nathan. Scripts Python/CMD ; mode d’emploi dans LIRE_MOI.txt. Les anciennes versions publiées restent disponibles.
+          NOTES
+          cd delivery
+          sha256sum -c Goblin_MAJ_Windows_TEST_20261109.zip.sha256
+          cd ..
+          if gh release view windows-test-refonte-20261109 >/dev/null 2>&1; then
+            echo 'Existing TEST release preserved; no replacement performed.'
+            exit 0
+          fi
+          gh release create windows-test-refonte-20261109 delivery/* --prerelease --target "$GITHUB_SHA" --title "Windows TEST — Tableaux, budget et albums — 09/11/2026" --notes-file /tmp/goblin-release-notes.md

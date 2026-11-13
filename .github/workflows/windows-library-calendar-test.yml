@@ -1,0 +1,26 @@
+name: Windows TEST library and calendar
+on:
+  push:
+    branches: [test/windows-library-calendar-20261103]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/windows_library_calendar_browser_test.cjs
+      - run: node tools/objective_map_browser_test.cjs
+      - run: node tools/library_browser_test.cjs
+      - run: node tools/calendar_priority_browser_test.cjs
+      - run: node tools/cycle_compact_browser_test.cjs
+      - run: python tools/release_smoke.py

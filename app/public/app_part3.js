@@ -86,7 +86,7 @@ function openEventModal(e=null,presetDate=null,presetTime=null,duplicate=false){
   const reminders=Array.isArray(e?.reminders)
     ? e.reminders
     : e?.id
-      ? state.reminders.filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(e.id)&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at||'').slice(0,16)}))
+      ? (state.reminderRules||state.reminders).filter(r=>r.entity_type==='event'&&Number(r.entity_id)===Number(e.id)&&r.status!=='done').map(r=>({title:r.title||'',remind_at:(r.snoozed_until||r.remind_at||'').slice(0,16)}))
       : [];
   // Une occurrence de série affiche les rappels à sa date effective,
   // sans modifier les rappels modèles de la série.
@@ -310,28 +310,33 @@ function openPostponeEventModal(e){
 
 function openSnooze(r){
   const raw=(r.snoozed_until||r.remind_at||'').slice(0,16);
+  const deliveryKey=r.id+':'+(r.snoozed_until||r.remind_at);
   openModal(`<h2>Reporter le rappel</h2><form id="snoozeForm" class="form-grid">
     <div class="field"><label>Nouvelle date</label><input id="snoozeDate" type="date" required value="${esc(raw.slice(0,10)||ymd(new Date()))}"></div>
     <div class="field"><label>Nouvelle heure</label><input id="snoozeTime" type="time" required value="${esc(raw.length>=16?raw.slice(11,16):'')}"></div>
-    <div id="snoozeError" class="form-error field full hidden"></div>
+    <div id="snoozeError" class="form-error field full hidden" role="status"></div>
     <div class="form-actions field full"><button type="button" id="cancelSnooze">Annuler</button><button id="submitSnooze" class="primary">Reporter</button></div>
   </form>`);
   $('#cancelSnooze').onclick=closeModal;
   $('#snoozeForm').onsubmit=async e=>{
     e.preventDefault();
-    const submit=$('#submitSnooze'), error=$('#snoozeError');
-    const when=`${$('#snoozeDate').value}T${$('#snoozeTime').value}`;
-    error.classList.add('hidden'); error.textContent='';
-    submit.disabled=true; submit.textContent='Report…';
-    const result=await runUiAction('Impossible de reporter le rappel',()=>api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})}));
-    if(!result.ok){
-      error.textContent=result.error?.message||'Le report a échoué.';
+    const form=e.currentTarget,submit=form.querySelector('#submitSnooze'),error=form.querySelector('#snoozeError');
+    if(submit.disabled)return;
+    const when=`${form.querySelector('#snoozeDate').value}T${form.querySelector('#snoozeTime').value}`;
+    error.classList.add('hidden');error.textContent='';submit.disabled=true;submit.textContent='Report…';
+    try{
+      await api(`/api/reminders/${r.id}/snooze`,{method:'PUT',body:JSON.stringify({snoozed_until:when})});
+      const update=item=>item.id===r.id?{...item,snoozed_until:when}:item;
+      state.reminders=state.reminders.map(update);
+      state.reminderRules=(state.reminderRules||[]).map(update);
+      shown.delete(deliveryKey);
+      if(form.isConnected)closeModal();
+      // A report changes this reminder only; don't wait for eleven unrelated lists.
+      renderReminders();
+    }catch(err){
+      error.textContent=err?.message||'Le report a échoué. Réessaie.';
       error.classList.remove('hidden');
-      submit.disabled=false; submit.textContent='Reporter';
-      return;
-    }
-    shown.delete(r.id);
-    closeModal();await refresh();
+    }finally{submit.disabled=false;submit.textContent='Reporter'}
   };
 }
 
@@ -340,6 +345,8 @@ function localIsoSeconds(d=new Date()){
 }
 async function checkDue(){
   try{
+    const native=await api('/api/native-reminders/status');
+    if(native.available&&native.enabled&&!native.error)return;
     const due=await api(`/api/reminders/due?now=${encodeURIComponent(localIsoSeconds())}`);
     due.forEach(r=>notifyReminder(r));
   }catch(e){
@@ -348,7 +355,8 @@ async function checkDue(){
 }
 const shown=new Set();
 function notifyReminder(r){
-  if(shown.has(r.id))return;
+  const deliveryKey=r.id+':'+(r.snoozed_until||r.remind_at);
+  if(shown.has(deliveryKey))return;
   if(typeof lifeReminderChime==='function')lifeReminderChime();
   const title=r.title||r.entity_title||`Rappel #${r.id}`;
   const kind=reminderKindLabel(r);
@@ -375,10 +383,10 @@ function notifyReminder(r){
   const t=document.createElement('div');
   t.className='toast';
   t.innerHTML=`<strong>🔔 ${esc(title)}</strong><div class="task-meta">${esc(when)} · ${esc(kind)}</div><div class="task-actions"><button class="finish reminder-icon-action" title="Fini" aria-label="Fini">✓</button><button class="later reminder-icon-action" title="Reporter" aria-label="Reporter">↪</button></div>`;
-  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(r.id);t.remove();await refresh()};
-  t.querySelector('.later').onclick=()=>{shown.delete(r.id);t.remove();openSnooze(r)};
+  t.querySelector('.finish').onclick=async()=>{await api(`/api/reminders/${r.id}/done`,{method:'PUT',body:'{}'});shown.delete(deliveryKey);t.remove();await refresh()};
+  t.querySelector('.later').onclick=()=>{shown.delete(deliveryKey);t.remove();openSnooze(r)};
   $('#toastArea').appendChild(t);
-  shown.add(r.id);
+  shown.add(deliveryKey);
 }
 
 async function checkRuntimeCompatibility(){
@@ -424,7 +432,7 @@ function showView(view){
   $$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
   $$('.view').forEach(v=>v.classList.remove('active-view'));
   $(`#${view}View`).classList.add('active-view');
-  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Courses & repas',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
+  const titles={home:'Accueil',calendar:'Calendrier',tasks:'Tâches',library:'Bibliothèque',reminders:'Rappels',organisation:'Habitudes & routines',budget:'Budget et dépenses',kitchen:'Alimentation',cuisine:'Cuisine',recipe:'Recette',settings:'Paramètres',trackers:'Trackers',admin:'Administratif',captures:'Boîte de réception'};
   $('#pageTitle').textContent=localStorage.getItem('atelierNavLabel_'+view)||titles[view]||'L’Atelier';
   if(view==='settings'){
     renderSettings();
@@ -462,9 +470,9 @@ function syncSideNavEdge(left){
   const nav=$('#sideNav');
   if(!nav)return;
   const width=nav.offsetWidth||220;
-  const onLeft=left+(width/2)<window.innerWidth/2;
+  const onLeft=left+(width/2)<window.innerWidth/layoutUiScale()/2;
   nav.classList.toggle('side-nav-on-left',onLeft);
-  const collapseX=onLeft?-(left+width):(window.innerWidth-left);
+  const collapseX=onLeft?-(left+width):(window.innerWidth/layoutUiScale()-left);
   nav.style.setProperty('--side-nav-collapse-x',collapseX+'px');
 }
 
@@ -472,9 +480,11 @@ function setSideNavCollapsed(collapsed){
   const nav=$('#sideNav');
   if(!nav)return;
   const storedLeft=parseFloat(nav.style.left);
-  const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left;
+  const left=Number.isFinite(storedLeft)?storedLeft:nav.getBoundingClientRect().left/layoutUiScale();
   syncSideNavEdge(left);
   nav.classList.toggle('is-collapsed',collapsed);
+  nav.inert=!!collapsed;
+  nav.setAttribute('aria-hidden',String(!!collapsed));
   localStorage.setItem('atelierSideNavCollapsed',collapsed?'1':'0');
   const headerButton=$('#sideNavHeaderToggle');
   if(headerButton){
@@ -482,11 +492,7 @@ function setSideNavCollapsed(collapsed){
     headerButton.setAttribute('aria-label',collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques');
     headerButton.title=collapsed?'Ouvrir le tiroir des rubriques':'Fermer le tiroir des rubriques';
   }
-  const toggle=$('#sideNavToggle');
-  if(toggle){
-    toggle.setAttribute('aria-label',collapsed?'Afficher le menu':'Masquer le menu');
-    toggle.title=collapsed?'Afficher le menu':'Masquer le menu';
-  }
+
 }
 
 function clampSideNavPosition(left,top){
@@ -494,9 +500,9 @@ function clampSideNavPosition(left,top){
   const width=nav?.offsetWidth||220;
   const height=nav?.offsetHeight||260;
   const minLeft=0;
-  const maxLeft=Math.max(minLeft,window.innerWidth-width);
+  const maxLeft=Math.max(minLeft,window.innerWidth/layoutUiScale()-width);
   const minTop=8;
-  const maxTop=Math.max(minTop,window.innerHeight-height-8);
+  const maxTop=Math.max(minTop,window.innerHeight/layoutUiScale()-height-8);
   return {left:Math.min(maxLeft,Math.max(minLeft,left)),top:Math.min(maxTop,Math.max(minTop,top))};
 }
 
@@ -507,7 +513,7 @@ function applySideNavPosition(pos=null){
   if(!saved){
     try{saved=JSON.parse(localStorage.getItem('atelierSideNavPosition')||'null')}catch(e){saved=null}
   }
-  const fallback={left:window.innerWidth-(nav.offsetWidth||220),top:84};
+  const fallback={left:window.innerWidth/layoutUiScale()-(nav.offsetWidth||220),top:84};
   // Une position intermédiaire est valide pendant le glisser : ne jamais
   // effacer la préférence lorsque le tiroir traverse le milieu de l'écran.
   // Le clamp suivant suffit à garder le tiroir visible à l'écran.
@@ -534,13 +540,13 @@ function initSideNavDrag(){
     if(e.button!==0)return;
     e.preventDefault();
     const rect=nav.getBoundingClientRect();
-    active=true;startX=e.clientX;startY=e.clientY;startLeft=parseFloat(nav.style.left)||rect.left;startTop=parseFloat(nav.style.top)||rect.top;
+    active=true;startX=e.clientX;startY=e.clientY;startLeft=parseFloat(nav.style.left)||rect.left/layoutUiScale();startTop=parseFloat(nav.style.top)||rect.top/layoutUiScale();
     handle.setPointerCapture?.(e.pointerId);
     nav.classList.add('is-dragging');
   });
   handle.addEventListener('pointermove',e=>{
     if(!active)return;
-    const next=applySideNavPosition({left:startLeft+(e.clientX-startX),top:startTop+(e.clientY-startY)});
+    const next=applySideNavPosition({left:startLeft+(e.clientX-startX)/layoutUiScale(),top:startTop+(e.clientY-startY)/layoutUiScale()});
     if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
   });
   const stop=e=>{
@@ -561,7 +567,6 @@ window.addEventListener('resize',()=>{
   const next=applySideNavPosition();
   if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
 });
-$('#sideNavToggle').onclick=()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed'));
 $('#sideNavHeaderToggle')?.addEventListener('click',()=>setSideNavCollapsed(!$('#sideNav').classList.contains('is-collapsed')));
 $('#addStandaloneReminder').onclick=()=>openReminderModal();
 $$('.calendar-modes button').forEach(b=>b.addEventListener('click',()=>setCalendarMode(b.dataset.calendarMode)));
@@ -713,8 +718,8 @@ async function atelierCheckForUpdates({automatic=false}={}){
     }
     if(message){
       message.textContent=result.available
-        ? 'Nouvelle révision 0.18.0 disponible ('+result.revision.slice(0,8)+'). Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
-        : 'L’Atelier '+atelierEditionChannel()+' est à jour ('+result.revision.slice(0,8)+').';
+        ? (result.repair_required?'Des fichiers de cette installation sont incomplets ou modifiés. Réinstaller la livraison TEST réparera l’application. ':'Nouvelle livraison '+(result.latest_build?'build '+result.latest_build:'0.18.0')+' disponible. ')+ 'Une sauvegarde des données '+atelierEditionChannel()+' sera créée avant le redémarrage.'
+        : 'L’Atelier '+atelierEditionChannel()+' est à jour · build '+(result.installed_build||'inconnu')+'. Référence de livraison : '+result.revision.slice(0,8)+'.';
     }
   }catch(error){
     // No false "update available" claim when GitHub cannot be contacted.
@@ -805,6 +810,7 @@ $('#settingsInstallUpdate').onclick=async()=>{
   button.disabled=true;check.disabled=true;
   message.textContent='Démarrage de l’assistant de mise à jour…';
   try{
+    if(window.atelierSafety){await window.atelierSafety.flush();await window.atelierSafety.request('snapshot',{browser:await window.atelierSafety.browserCopy()})}
     await atelierUpdateRequest('/api/update/start',{
       method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Update':'1'},
       body:JSON.stringify({revision:atelierUpdateCandidate})
@@ -858,7 +864,7 @@ $('#settingsNavReset').onclick=()=>{
   setSideNavCollapsed(false);
   const nav=$('#sideNav');
   if(nav){
-    const next=applySideNavPosition({left:window.innerWidth-(nav.offsetWidth||220),top:84});
+    const next=applySideNavPosition({left:window.innerWidth/layoutUiScale()-(nav.offsetWidth||220),top:84});
     if(next)localStorage.setItem('atelierSideNavPosition',JSON.stringify(next));
   }
 };
@@ -965,7 +971,7 @@ const homeShortcutDefs=[
   {id:'reminders',title:'Rappels',description:'Voir les rappels à traiter.',view:'reminders'},
   {id:'library',title:'Bibliothèque',description:'Ouvrir les domaines et les carnets.',view:'library'},
   {id:'organisation',title:'Habitudes & cycle',description:'Accéder à tes suivis personnels.',view:'organisation'},
-  {id:'kitchen',title:'Courses & repas',description:'Retrouver les listes et les aliments.',view:'kitchen'},
+  {id:'kitchen',title:'Alimentation',description:'Retrouver les listes et les aliments.',view:'kitchen'},
   {id:'cuisine',title:'Recettes',description:'Ouvrir la bibliothèque de recettes.',view:'cuisine'},
   {id:'settings',title:'Paramètres',description:'Configurer L’Atelier.',view:'settings'}
 ];
@@ -1088,6 +1094,8 @@ function initHomeModuleLibrary(){
 
 let globalLayoutEditing=false;
 let globalLayoutItems=[];
+let globalLayoutKeyboardReady=false;
+const globalLayoutRegistered=new WeakSet();
 
 function getGlobalLayoutSpecs(){
   const base=[
@@ -1117,13 +1125,25 @@ function getGlobalLayoutSpecs(){
     '#kitchenView .kitchen-panel',
     '#calendarView .mini-panel',
     '#cuisineView .recipe-library-sidebar','#cuisineView .recipe-library-content',
-    '#settingsView .settings-card'
+    '#settingsView .settings-card',
+    '.studio-budget-columns > section','.studio-budget-summary','.studio-todo-list',
+    '.studio-tracker-document','.health-content','.studio-spread','#studioTools > section','#studioSport > section',
+    '#capturesView > section','#albumsView .studio-album-shelf'
   ].join(',');
   const extra=[...document.querySelectorAll(selector)].map((el,index)=>{
     const view=el.closest('.view')?.id.replace(/View$/,'')||'home';
-    const id=el.id||'panel_'+index;
+    const board=el.dataset.trackerBoardId||el.dataset.boardId;
+    const heading=el.querySelector('h2,h3,.studio-tracker-title')?.textContent?.trim();
+    const stable=board?'board_'+board:heading?Array.from(heading).map(c=>c.codePointAt(0).toString(16)).join('_'):null;
+    const id=el.id||stable||'panel_'+index;
     return {view,id,el,key:'atelierModuleLayout_'+view+'_'+id};
   });
+  for(const view of document.querySelectorAll('main .view[id]')){
+    const name=view.id.replace(/View$/,'');
+    if([...base,...extra].some(item=>item.view===name))continue;
+    const panels=[...view.children].filter(el=>el.matches('section,article,div,iframe')&&!el.matches('.toolbar,.studio-tabs,.layout-controls'));
+    for(const [index,el]of panels.entries())extra.push({view:name,id:el.id||'content_'+index,el,key:'atelierViewLayout_'+name+'_'+(el.id||'content_'+index)});
+  }
   const seen=new Set();
   return [...base,...extra].filter(item=>{
     if(seen.has(item.el))return false;
@@ -1197,7 +1217,7 @@ function openLayoutModuleSettings(item){
     if(!homeCanvasReady||!isHomeCanvasItem(item))return;
     const d=readGlobalLayout(item);
     d.y=12;
-    d.x=Math.max(0,Math.min(d.x,Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width)));
+    d.x=Math.max(0,Math.min(d.x,Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width/layoutUiScale())));
     saveGlobalLayout(item,d);applyGlobalLayout(item,d);
     closeModal();window.scrollTo({top:0,behavior:'instant'});
   };
@@ -1271,6 +1291,7 @@ let homeCanvasActivationReady=false;
 let homeCanvas=null;
 let homeCanvasMeasurePending=false;
 let homeCanvasReflowPending=false;
+function layoutUiScale(){return window.AtelierDisplay?.factor||1}
 function homeVisibleX(savedX,canvasWidth,elementWidth){
   const x=Number.isFinite(Number(savedX))?Number(savedX):0;
   return Math.round(Math.max(0,Math.min(x,Math.max(0,canvasWidth-elementWidth))));
@@ -1347,7 +1368,7 @@ function requestHomeCanvasMeasure(){
       if(item.el.classList.contains('home-module-off'))continue;
       const r=item.el.getBoundingClientRect();
       if(!r.width||!r.height)continue;
-      bottom=Math.max(bottom,r.bottom-frame.top);
+      bottom=Math.max(bottom,(r.bottom-frame.top)/layoutUiScale());
     }
     // Hors édition, la page doit s'arrêter après le dernier module réellement
     // visible. Aucun espace artificiel ne doit forcer une barre de défilement.
@@ -1357,7 +1378,7 @@ function requestHomeCanvasMeasure(){
       // les modules tiennent sur l'écran. Ce surplus disparaît à « Terminer ».
       const canvasDocumentTop=frame.top+window.scrollY;
       const editingRoom=Math.max(
-        window.innerHeight-canvasDocumentTop+440,
+        (window.innerHeight-canvasDocumentTop)/layoutUiScale()+440,
         bottom+440
       );
       height=Math.max(height,Math.ceil(editingRoom));
@@ -1426,7 +1447,7 @@ function activateHomeCanvas(){
         // A new module must not adopt an arbitrary legacy-flow position.
         next=homeSuggestedLayout(item);
       }else if(hasLegacy&&m.rect.width>0&&m.rect.height>0){
-        next={...m.old,x:Math.round(m.rect.left-homeLeft),y:Math.round(m.rect.top-minTop+14)};
+        next={...m.old,x:Math.round((m.rect.left-homeLeft)/layoutUiScale()),y:Math.round((m.rect.top-minTop)/layoutUiScale()+14)};
       }else{
         next=homeSuggestedLayout(item);
         if(hasLegacy&&m.rect.width===0){
@@ -1477,18 +1498,18 @@ function clearHomeCanvasGuides(){
 function homeCanvasMagnet(item,x,y,event){
   clearHomeCanvasGuides();
   if(!homeCanvas||event?.altKey)return {x,y};
-  const rect=item.el.getBoundingClientRect(),w=rect.width,h=rect.height;
+  const rect=item.el.getBoundingClientRect(),w=rect.width/layoutUiScale(),h=rect.height/layoutUiScale();
   const candidatesX=[{value:(homeCanvas.clientWidth-w)/2,line:homeCanvas.clientWidth/2}];
   const candidatesY=[];
   for(const other of globalLayoutItems.filter(isHomeCanvasItem)){
     if(other===item||other.el.classList.contains('home-module-off'))continue;
     const r=other.el.getBoundingClientRect();
-    if(!r.width||!r.height)continue;
+    if(!(r.width/layoutUiScale())||!(r.height/layoutUiScale()))continue;
     const left=parseFloat(other.el.style.left)||0,top=readGlobalLayout(other).y;
-    candidatesX.push({value:left,line:left},{value:left+r.width-w,line:left+r.width},
-      {value:left+(r.width-w)/2,line:left+r.width/2});
-    candidatesY.push({value:top,line:top},{value:top+r.height-h,line:top+r.height},
-      {value:top+(r.height-h)/2,line:top+r.height/2});
+    candidatesX.push({value:left,line:left},{value:left+(r.width/layoutUiScale())-w,line:left+(r.width/layoutUiScale())},
+      {value:left+((r.width/layoutUiScale())-w)/2,line:left+(r.width/layoutUiScale())/2});
+    candidatesY.push({value:top,line:top},{value:top+(r.height/layoutUiScale())-h,line:top+(r.height/layoutUiScale())},
+      {value:top+((r.height/layoutUiScale())-h)/2,line:top+(r.height/layoutUiScale())/2});
   }
   function closest(value,candidates,guide){
     let nearest=null,dist=8;
@@ -1515,7 +1536,7 @@ function setupHomeCanvasKeyboard(){
     event.preventDefault();
     const item=selectedHomeCanvasItem,d=readGlobalLayout(item),step=event.shiftKey?10:1;
     d.x=parseFloat(item.el.style.left)||0;
-    const w=item.el.getBoundingClientRect().width;
+    const w=item.el.getBoundingClientRect().width/layoutUiScale();
     if(event.key==='ArrowLeft')d.x-=step;
     if(event.key==='ArrowRight')d.x+=step;
     if(event.key==='ArrowUp')d.y-=step;
@@ -1541,9 +1562,9 @@ function beginHomeCanvasDrag(event,item){
   item.el.classList.add('layout-selected');
   function updatePosition(){
     if(!active||!homeCanvas)return;
-    const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width);
-    let x=Math.max(0,Math.min(maxX,initial.x+clientX-initial.clientX));
-    let y=Math.max(0,initial.y+clientY-initial.clientY+window.scrollY-initial.scrollY);
+    const maxX=Math.max(0,homeCanvas.clientWidth-item.el.getBoundingClientRect().width/layoutUiScale());
+    let x=Math.max(0,Math.min(maxX,initial.x+(clientX-initial.clientX)/layoutUiScale()));
+    let y=Math.max(0,initial.y+(clientY-initial.clientY+window.scrollY-initial.scrollY)/layoutUiScale());
     const positioned=homeCanvasMagnet(item,x,y,{altKey:altHeld});
     d.x=Math.round(Math.max(0,Math.min(maxX,positioned.x)));
     d.y=Math.round(Math.max(0,positioned.y));
@@ -1616,7 +1637,7 @@ function ensureLayoutNaturalHeight(item){
   el.style.marginBottom='';
   const rect=el.getBoundingClientRect();
   if(rect.height>0){
-    item.layoutNaturalHeight=rect.height;
+    item.layoutNaturalHeight=rect.height/layoutUiScale();
     item.layoutNaturalMarginBottom=parseFloat(getComputedStyle(el).marginBottom)||0;
   }
   el.style.minHeight=oldHeight;
@@ -1630,7 +1651,7 @@ function applyGlobalLayout(item,d){
     item.el.style.width=d.width!=null?Math.round(d.width)+'px':'';
     item.el.style.maxWidth=canvasWidth+'px';
     item.el.style.left='0px';
-    const renderedWidth=item.el.getBoundingClientRect().width;
+    const renderedWidth=item.el.getBoundingClientRect().width/layoutUiScale();
     item.el.style.left=homeVisibleX(d.x,canvasWidth,renderedWidth)+'px';
     item.el.style.top=Math.max(0,d.y||0)+'px';
     item.el.style.setProperty('--layout-x','0px');
@@ -1650,7 +1671,7 @@ function applyGlobalLayout(item,d){
     const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
     if(value){
       const rect=item.el.getBoundingClientRect();
-      value.textContent=Math.round(rect.width)+' × '+Math.round(rect.height);
+      value.textContent=Math.round(rect.width/layoutUiScale())+' × '+Math.round(rect.height/layoutUiScale());
     }
     requestHomeCanvasMeasure();
     return;
@@ -1676,7 +1697,7 @@ function applyGlobalLayout(item,d){
   const value=item.el.querySelector(':scope > .layout-controls .layout-scale-value');
   if(value){
     const rect=item.el.getBoundingClientRect();
-    value.textContent=Math.round(rect.width)+' × '+Math.round(rect.height);
+    value.textContent=Math.round(rect.width/layoutUiScale())+' × '+Math.round(rect.height/layoutUiScale());
   }
 }
 function layoutUndoKey(view){return 'atelierLayoutResetUndo_'+view}
@@ -1741,20 +1762,23 @@ function layoutResizeGeometry(axis,start,dx,dy,limits,freeform=false){
 }
 
 function initGlobalLayoutEditor(){
-  globalLayoutItems=getGlobalLayoutSpecs();
-  setupHomeCanvasKeyboard();
+  const existing=new Map(globalLayoutItems.map(item=>[item.el,item]));
+  globalLayoutItems=getGlobalLayoutSpecs().map(item=>existing.get(item.el)||item);
+  if(!globalLayoutKeyboardReady){setupHomeCanvasKeyboard();globalLayoutKeyboardReady=true}
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   // Le clic normal d'un encadré (notamment le mini-calendrier) ne doit PAS
   // activer ses boutons et liens pendant la manipulation de la disposition.
-  $$('.view').forEach(view=>view.addEventListener('click',event=>{
+  $$('.view').forEach(view=>{if(view.dataset.layoutCapture)return;view.dataset.layoutCapture='1';view.addEventListener('click',event=>{
     if(!globalLayoutEditing||view.id!==state.view+'View')return;
     const target=event.target.closest?.('.layout-object');
     if(!target||event.target.closest('.layout-controls'))return;
     event.preventDefault();
     event.stopImmediatePropagation();
-  },true));
+  },true)});
 
   globalLayoutItems.forEach(item=>{
+    if(globalLayoutRegistered.has(item.el)&&item.el.querySelector(':scope > .layout-controls'))return;
+    globalLayoutRegistered.add(item.el);
     item.el.classList.add('layout-object');
     let controls=item.el.querySelector(':scope > .layout-controls');
     if(!controls){
@@ -1819,8 +1843,8 @@ function initGlobalLayoutEditor(){
       const d=readGlobalLayout(item),sx=event.clientX,sy=event.clientY,ox=d.x,oy=d.y;
       item.el.classList.add('layout-selected');
       const move=ev=>{
-        d.x=clamp(ox+ev.clientX-sx,-window.innerWidth+100,window.innerWidth-100);
-        d.y=clamp(oy+ev.clientY-sy,-window.innerHeight+100,window.innerHeight*2);
+        d.x=clamp(ox+(ev.clientX-sx)/layoutUiScale(),-window.innerWidth+100,window.innerWidth-100);
+        d.y=clamp(oy+(ev.clientY-sy)/layoutUiScale(),-window.innerHeight+100,window.innerHeight*2);
         applyGlobalLayout(item,d);
         // Persist also during dragging: a lost pointerup must never lose a placement.
         saveGlobalLayout(item,d);
@@ -1844,7 +1868,7 @@ function initGlobalLayoutEditor(){
       const d=readGlobalLayout(item),rect=item.el.getBoundingClientRect();
       const original={...d};
       const canvasItem=homeCanvasReady&&isHomeCanvasItem(item);
-      const initial={x:d.x,y:d.y,width:rect.width,height:rect.height};
+      const initial={x:d.x,y:d.y,width:rect.width/layoutUiScale(),height:rect.height/layoutUiScale()};
       const minWidth=item.id==='journal'?480:item.id==='calendar'?175:180;
       const minHeight=item.id==='journal'?340:item.id==='homeDailyTrackersWidget'?185:item.id==='calendar'?130:90;
       const bounds={
@@ -1860,7 +1884,7 @@ function initGlobalLayoutEditor(){
       const apply=ev=>{
         if(!active||ev.pointerId!==pointerId)return;
         const next=layoutResizeGeometry(axis,initial,
-          ev.clientX-sx,ev.clientY-sy+window.scrollY-scrollY,bounds,ev.shiftKey);
+          (ev.clientX-sx)/layoutUiScale(),(ev.clientY-sy+window.scrollY-scrollY)/layoutUiScale(),bounds,ev.shiftKey);
         d.x=next.x;d.y=next.y;d.scale=1;
         if(!['top','bottom','height'].includes(axis))d.width=next.width;
         if(!['left','right','width'].includes(axis))d.height=next.height;
@@ -1932,6 +1956,8 @@ function initGlobalLayoutEditor(){
 
 initHomeModuleLibrary(); initNavCustomization();
 applyCalendarMode(); syncNotifyButton(); initGlobalLayoutEditor();
+let layoutMountTimer;
+new MutationObserver(records=>{if(!records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&!n.matches('.layout-controls')&&!n.closest('.layout-controls'))))return;clearTimeout(layoutMountTimer);layoutMountTimer=setTimeout(initGlobalLayoutEditor,150)}).observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
 // Toujours démarrer sur l'Accueil, sans réouvrir l'onglet de la session précédente.
 localStorage.setItem('atelierLastView','home');
 refresh().then(()=>{
@@ -2030,8 +2056,7 @@ function cycleEstimate(){
   const last=dates[dates.length-1];
   let next=localDayAdd(last,avg);
   const today=ymd(new Date());
-  let skipped=0;
-  while(next<today&&skipped<240){next=localDayAdd(next,avg);skipped++;}
+  // Keep an overdue estimate visible until the user confirms or postpones it.
   return {next,average:avg,approxDays:Math.max(0,dayDistance(today,next)),
     duration,spread,last,sampleCount:values.length,observedDuration:durations.length>0};
 }
@@ -2141,11 +2166,11 @@ function budgetRow(entry){
     const confirm=document.createElement('button');confirm.textContent='Confirmer';confirm.onclick=async()=>{
       const value=await askBudgetPaymentAmount(entry);
       if(value===null)return;
-      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',...value},'Confirmation impossible');
+      await budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'confirmed',revision:entry.revision,...value},'Confirmation impossible');
     };row.appendChild(confirm);
   }
   if(entry.status==='pending'||entry.status==='presumed'){
-    const skip=document.createElement('button');skip.textContent='Non effectué';skip.onclick=()=>budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'skipped'},'Modification impossible');row.appendChild(skip);
+    const skip=document.createElement('button');skip.textContent='Non effectué';skip.onclick=()=>budgetRequest('/api/budget/'+entry.id+'/status','PUT',{status:'skipped',revision:entry.revision},'Modification impossible');row.appendChild(skip);
   }
   return row;
 }

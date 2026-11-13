@@ -49,8 +49,7 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
   });
   assert.equal(fail.status,409,'Monday must be gray and protected server-side');
   await api('/api/tracker-board-rows/'+tuesday.id+'/mark','PUT',{day:tuesdayDay,value:true});
-  assert.equal((await api('/api/tracker-boards/daily?day='+tuesdayDay)).items
-    .find(x=>x.row_id===tuesday.id).done,true);
+  assert.ok(!(await api('/api/tracker-boards/daily?day='+tuesdayDay)).items.some(x=>x.row_id===tuesday.id),'Purely weekly rows stay out of the Home To-do');assert.equal((await api('/api/tracker-boards')).find(b=>b.id===week.id).rows[0].marks[tuesdayDay],'1');
   if(todayWeekday!==1)assert.ok(!(await api('/api/tracker-boards/daily?day='+day)).items
     .some(x=>x.row_id===tuesday.id),'Tuesday-only row must not clutter other days');
   const cfg=(await api('/api/tracker-boards')).find(x=>x.id===habit.id).rows.find(x=>x.id===morning.id);
@@ -63,13 +62,13 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
-  const card=page.locator('.tracker-board').filter({has:page.locator('h3:text-is("Habitudes")')});
-  assert.match(await card.locator('.tracker-board-range').innerText(),new RegExp(String(now.getFullYear())));
+  await page.waitForFunction(()=>window.AtelierStudio?.ready&&lifeBoards.length===2);await page.getByRole('tab',{name:'Habitudes',exact:true}).click();
+  const card=page.locator('.studio-tracker-document');
+  assert.ok((await card.locator('h3').innerText()).includes('Habitudes'));
   assert.equal(await card.locator('p').filter({hasText:'Une case représente'}).count(),0,
     'Redundant explanatory line was removed');
   const row=card.locator('.tracker-grid-line').filter({hasText:'Se lever à 9 h'});
-  await row.locator('.tracker-row-title').click();
+  await row.locator('.tracker-row-label button').click();
   await page.locator('#trackerRitualModal').waitFor({state:'visible'});
   assert.equal(await page.locator('.tracker-ritual-step').count(),2);
   await page.locator('.tracker-ritual-step input').nth(0).check();
@@ -93,7 +92,7 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
   const cell=numberRow.locator('.tracker-day-cell')
     .filter({hasText:/./}).first();
   // Find today's exact cell by the accessible date, even after layout re-renders.
-  const numToday=numberRow.locator('.tracker-cell-wrap.tracker-today .tracker-day-cell');
+  const numToday=numberRow.locator('.tracker-day-cell').nth(now.getDate()-1);
   for(let value=1;value<=10;value++){
     await numToday.click();
     await page.waitForFunction(async({id,day,value})=>{
@@ -117,10 +116,10 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
   assert.equal(confirmed,2,'Ten cups must stay complete in both daily view and persisted marks');
   await page.evaluate(()=>showView('home'));
   await page.waitForFunction(()=>document.querySelectorAll('#homeDailyTrackersList label').length>=2);
-  assert.ok((await page.locator('#homeDailyTrackersList').innerText()).includes('10/10'));
+  assert.equal(await page.getByRole('button',{name:'Boire dix verres · 100 %',exact:true}).getAttribute('aria-pressed'),'true');
   await page.reload({waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelectorAll('.tracker-board').length===2);
+  await page.waitForFunction(()=>window.AtelierStudio?.ready&&lifeBoards.length===2);await page.getByRole('tab',{name:'Habitudes',exact:true}).click();
   assert.equal((await api('/api/tracker-boards')).find(x=>x.id===habit.id).rows
     .find(x=>x.id===morning.id).marks[day],'1');
   assert.equal(await page.locator('#sideNav [data-view="preparations"]').count(),0);
@@ -129,32 +128,14 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
     method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({day,value:true})
   });
   assert.equal(denied.status,409,'A ritual cannot bypass its pending steps');
-  // La To-do et chaque tableau ont des positions X/Y indépendantes.
-  await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelectorAll('#trackerBoardList .tracker-board').length===2 &&
-    document.querySelector('#trackerBoardList .atelier-tracker-tasks'));
-  await page.locator('#globalLayoutEdit').click();
-  await page.waitForFunction(()=>document.querySelector('#trackersView').classList.contains('layout-editing'));
-  const boardA=page.locator('#trackerBoardList .tracker-board').first();
-  const boardB=page.locator('#trackerBoardList .tracker-board').nth(1);
-  const beforeA=await boardA.evaluate(el=>Number.parseFloat(el.style.top));
-  const beforeB=await boardB.evaluate(el=>Number.parseFloat(el.style.top));
-  const title=boardA.locator('.tracker-board-head');
-  const position=await title.boundingBox();
-  assert.ok(position,'Tracker header visible');
-  await page.mouse.move(position.x+45,position.y+10);
-  await page.mouse.down();
-  await page.mouse.move(position.x+65,position.y+120,{steps:8});
-  await page.mouse.up();
-  const afterA=await boardA.evaluate(el=>Number.parseFloat(el.style.top));
-  const afterB=await boardB.evaluate(el=>Number.parseFloat(el.style.top));
-  assert.ok(afterA>beforeA+50,'The selected Tracker can move freely downward');
-  assert.equal(afterB,beforeB,'Moving one Tracker does not move the other');
-  await page.reload({waitUntil:'domcontentloaded'});
-  await page.evaluate(()=>showView('trackers'));
-  await page.waitForFunction(()=>document.querySelectorAll('#trackerBoardList .tracker-board').length===2);
-  const restored=await page.locator('#trackerBoardList .tracker-board').first().evaluate(el=>Number.parseFloat(el.style.top));
-  assert.ok(Math.abs(restored-afterA)<5,'Tracker free vertical coordinate survives reload');
+  // The requested document view replaces the old floating canvas. Multiple tables remain grouped and persisted.
+  await page.evaluate(async ids=>{await AtelierStudio.create('tracker-tab',{title:'Rituels regroupés',board_ids:ids});await AtelierStudio.refresh();showView('trackers')},[habit.id,week.id]);
+  await page.getByRole('tab',{name:'Rituels regroupés',exact:true}).click();
+  assert.equal(await page.locator('.studio-tracker-document').count(),2);
+  assert.equal(await page.locator('.studio-tracker-document .tracker-row-grip').count(),0);
+  assert.equal(await page.getByRole('tab').first().innerText(),'To-do list');
+  await page.reload();await page.waitForFunction(()=>AtelierStudio.ready);await page.evaluate(()=>showView('trackers'));
+  await page.waitForFunction(()=>document.querySelectorAll('.studio-tracker-document').length===2);
   console.log('PASS: two-step ritual, 1..10 click counter, weekly Tuesday, linked task, F5, no forgotten Journal/Preparatifs UI');
  }finally{await browser?.close();proc.kill();rmSync(data,{recursive:true,force:true})}
 })().catch(error=>{console.error(error);process.exitCode=1});

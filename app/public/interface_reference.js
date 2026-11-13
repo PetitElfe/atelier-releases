@@ -2,35 +2,24 @@
    Préférences de présentation locales; ne modifie ni rendez-vous ni données SQLite. */
 (()=>{'use strict';
  const root=document.documentElement;
- const scales=[80,85,90,95,100,105,110,115,120];
+ const scales=[80,85,90,95,100,105,110,115,120,125,130,140,150,160];
  const themes={goblin:'Goblin sombre',sage:'Sauge',mauve:'Mauve',bleu:'Bleu nuit',miel:'Miel'};
  const safeGet=(k,d)=>{try{return localStorage.getItem(k)||d}catch(_){return d}};
  const safeSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
- const apply=()=>{
-   const size=Number(safeGet('atelier-ui-scale','100'));
-   const theme=safeGet('atelier-ui-theme','goblin');
-   // Ne jamais agrandir le document entier : l'Accueil conserve des coordonnées
-   // de widgets libres et un zoom de la racine change sa largeur utilisable.
-   // Les vues à mise en page fluide peuvent être agrandies indépendamment.
-   const actual=scales.includes(size)?size:100;
-   root.style.zoom=actual<=100?actual+'%':'100%';
-   document.querySelectorAll('main .view').forEach(view=>{
-     view.style.zoom=actual>100 && view.id!=='homeView'?actual+'%':'';
-   });
-   root.dataset.atelierTheme=Object.hasOwn(themes,theme)?theme:'goblin';
- };
+ const apply=()=>window.AtelierDisplay.apply();
  apply();
  const settings=document.querySelector('#settingsView .settings-grid');
  if(settings){
    const section=document.createElement('section');section.className='settings-card atelier-appearance-settings';
-   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Comme sur Discord : réduis toute l’interface ou agrandis-la. Les réglages restent sur cet ordinateur.</p></div></div><label class="settings-field"><span>Taille globale de l’interface</span><select id="atelierUiScale"></select></label><label class="settings-field"><span>Thème de couleurs</span><select id="atelierUiTheme"></select></label><p class="muted">Le mode 100 % conserve les dimensions habituelles. Au-dessus de 100 %, l’Accueil garde sa géométrie pour éviter les chevauchements ; les autres rubriques peuvent être agrandies.</p>';
+   section.innerHTML='<div class="settings-card-title"><span class="settings-card-icon">Aa</span><div><h3>Affichage et couleurs</h3><p>Règle le zoom de toute l’application en conservant ses proportions. Les réglages restent sur cet ordinateur.</p></div></div><label>Zoom de l’application<select id="atelierUiScale"><option value="auto">Automatique · échelle Windows</option></select></label><label>Police<select id="atelierUiFont"><option value="classic">Classique · Georgia</option><option value="system">Système · Segoe UI</option><option value="arial">Arial</option></select></label><label>Thème de couleurs<select id="atelierUiTheme"></select></label><p id="atelierDisplayStatus" class="muted"></p><p class="muted">Automatique respecte l’échelle Windows sans agrandir les textes séparément. Ctrl + / Ctrl − : zoom ; Ctrl 0 : 100 %. Les zooms du carnet et de la carte restent indépendants.</p>';
    const size=section.querySelector('#atelierUiScale'),theme=section.querySelector('#atelierUiTheme');
    for(const value of scales){const opt=document.createElement('option');opt.value=value;opt.textContent=value+' %';size.append(opt)}
    for(const [key,label] of Object.entries(themes)){const opt=document.createElement('option');opt.value=key;opt.textContent=label;theme.append(opt)}
-   size.value=safeGet('atelier-ui-scale','100');theme.value=safeGet('atelier-ui-theme','goblin');
+   size.value=safeGet('atelier-ui-scale','auto');theme.value=safeGet('atelier-ui-theme','goblin');
    size.addEventListener('change',()=>{safeSet('atelier-ui-scale',size.value);apply()});
    theme.addEventListener('change',()=>{safeSet('atelier-ui-theme',theme.value);apply()});
-   settings.append(section);
+   const font=section.querySelector('#atelierUiFont');font.value=safeGet('atelier-ui-font','classic');font.onchange=()=>{safeSet('atelier-ui-font',font.value);apply()};
+   settings.append(section);apply();
  }
  const calendar=document.querySelector('.calendar-modes');
  const monthPanel=document.querySelector('#monthPanel');
@@ -267,7 +256,7 @@ function atelierOpenRowMenu(event,items){
   const btn=document.createElement('button');btn.type='button';btn.setAttribute('role','menuitem');
   btn.textContent=label;btn.onclick=()=>{close();action()};menu.append(btn);
  }
- menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(event.clientX,window.innerWidth-180))+'px';
+ menu.style.position='fixed';menu.style.left=Math.max(8,Math.min(event.clientX/(window.AtelierDisplay?.factor||1),window.innerWidth/(window.AtelierDisplay?.factor||1)-180))+'px';
  menu.style.top=Math.max(8,Math.min(event.clientY,window.innerHeight-110))+'px';
  document.body.append(menu);
  setTimeout(()=>{document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true)},0);

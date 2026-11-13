@@ -25,6 +25,14 @@
     #journalBook .journal-primary-content,#journalBook .journal-secondary-content{min-height:0;max-height:none!important;flex:1 1 auto;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding-bottom:14px}
     @media(max-width:1250px){.top-brand{gap:6px;flex-wrap:wrap}#topXpLevel{font-size:12px}}
   </style>
+  <link rel="stylesheet" href="/library_refresh.css" />
+  <link rel="stylesheet" href="/library_moodboard.css" />
+  <link rel="stylesheet" href="/calendar_decor.css" />
+  <link rel="stylesheet" href="/personal_design.css" />
+  <link rel="stylesheet" href="/recipe_shelves.css" />
+  <link rel="stylesheet" href="/studio.css">
+  <link rel="stylesheet" href="/grounding_cards.css">
+<link rel="stylesheet" href="admin_workspace.css">
 </head>
 <body class="home-active">
   <header class="topbar">
@@ -37,7 +45,7 @@
       <input id="jumpDate" class="top-date-picker" type="date" aria-label="Aller à une date" />
     </div>
     <div class="top-actions">
-      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Ouvrir mes Post-it du bureau" aria-label="Ouvrir mes Post-it du bureau"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v12H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5M8 12h8M8 16h6"/></svg></button>
+      <button id="quickPostitsHeader" class="icon-button secondary" type="button" title="Nouveau Post-it sur le Bureau" aria-label="Nouveau Post-it sur le Bureau"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v12H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M15 3v5h5M8 12h8M8 16h6"/></svg></button>
       <button id="quickAddHomeModule" class="icon-button secondary" type="button" title="Ajouter un module à l’accueil" aria-label="Ajouter un module à l’accueil"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
       <button id="settingsBtn" class="icon-button secondary" type="button" title="Paramètres" aria-label="Paramètres"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 2h3.2l.55 2.1 1.45.6 1.9-1.1 2.3 2.3-1.1 1.9.6 1.45L21.4 9.8v3.4l-2.1.55-.6 1.45 1.1 1.9-2.3 2.3-1.9-1.1-1.45.6-.55 2.1h-3.2l-.55-2.1-1.45-.6-1.9 1.1-2.3-2.3 1.1-1.9-.6-1.45L2.6 13.2V9.8l2.1-.55.6-1.45-1.1-1.9 2.3-2.3 1.9 1.1 1.45-.6L10.4 2Z"/><circle cx="12" cy="11.5" r="3"/></svg><span id="settingsUpdateDot" class="atelier-update-dot hidden" aria-hidden="true"></span></button>
       <button id="globalLayoutEdit" class="secondary" type="button" aria-label="Modifier la disposition des modules" title="Modifier la disposition des modules" aria-pressed="false"><svg class="top-ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20zM14.5 6.5l3 3"/></svg><span class="top-action-label">Modifier</span></button>
@@ -49,9 +57,6 @@
 
   <nav id="sideNav" class="tabs side-nav side-nav-right" aria-label="Navigation principale">
     <div id="sideNavDragHandle" class="side-nav-drag-handle" title="Glisser pour déplacer le menu" aria-label="Glisser pour déplacer le menu">⋮⋮</div>
-    <button id="sideNavToggle" class="side-nav-toggle" type="button" aria-label="Masquer le menu" title="Masquer le menu">
-      <span class="side-nav-arrow">›</span>
-    </button>
     <div class="side-nav-links">
       <button data-view="home" class="active">Accueil</button>
       <button data-view="calendar">Calendrier</button>
@@ -60,11 +65,11 @@
       <button data-view="reminders">Rappels</button>
       <button data-view="organisation">Habitudes & routines</button>
       <button data-view="trackers">Trackers</button>
-      <button type="button" id="openMentalNotebook" onclick="window.open('/mental-health.html','_blank','noopener')">Carnet de santé mentale</button>
+      <button type="button" id="openMentalNotebook">Santé</button>
       <button data-view="admin">Administratif</button>
-      <button data-view="captures">Boîte de réception <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
+      <button data-view="captures">Notes et captures <span id="captureNavBadge" class="capture-nav-badge hidden"></span></button>
       <button data-view="budget">Budget</button>
-      <button data-view="kitchen">Courses & repas</button>
+      <button data-view="kitchen">Alimentation</button>
       <button data-view="cuisine">Cuisine</button>
       <button type="button" id="openJdrWorkspace" onclick="window.location.href='/jdr.html'">Table JDR</button>
       <button id="renameNavButton" type="button" class="secondary atelier-nav-customize">✎ Renommer le tiroir</button>
@@ -95,7 +100,7 @@
       </div>
 
       <div id="journalBook" data-home-module="journal" class="journal-book" aria-label="Journal de l’Atelier">
-        <section class="journal-page journal-left">
+        <section id="journalLeftArt" class="journal-page journal-left" aria-label="Page gauche du journal">
           <div class="journal-primary-content">
           <div class="journal-date" id="homeDate"></div>
 
@@ -116,7 +121,7 @@
           <div class="journal-secondary-content"><div class="journal-heading">Mes démarches</div><div id="journalAdminSummary"></div></div>
         </section>
 
-        <section class="journal-page journal-right">
+        <section id="journalRightArt" class="journal-page journal-right" aria-label="Page droite du journal">
           <div class="journal-primary-content">
           <div class="journal-section">
             <div class="journal-title-row"><button type="button" id="homeAllObjectives" class="journal-heading journal-heading-button home-heading-button" title="Ouvrir les objectifs dans la Bibliothèque">Activité</button></div>
@@ -171,7 +176,7 @@
             <h2 id="monthTitle"></h2>
             <button id="nextMonth" aria-label="Mois suivant">›</button>
           </div>
-          
+
         </div>
         <div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
         <div id="monthGrid" class="month-grid"></div>
@@ -184,7 +189,7 @@
               <button id="prevWeek" type="button" aria-label="Semaine précédente">‹</button>
               <h3 id="weekTitle"></h3>
               <button id="nextWeek" type="button" aria-label="Semaine suivante">›</button>
-              
+
             </div>
             <button id="addEventWeek" type="button" class="primary">+ Rendez-vous</button>
           </div>
@@ -204,9 +209,7 @@
       <div id="libraryHubPanel" class="library-hub-panel">
         <div class="library-head">
           <div>
-            <div class="section-kicker">TES ESPACES</div>
-            <h2>Bibliothèque</h2>
-            <p class="muted">Un domaine est un espace complet : Anglais, Art, JDR, LoL… avec ses carnets, ses sous-objectifs, ses tâches et son avancée.</p>
+            <h2 class="visually-hidden">Bibliothèque</h2>
           </div>
           <button id="addLibraryDomain" class="primary" type="button">+ Nouveau domaine</button>
         </div>
@@ -349,7 +352,7 @@
     </section>
 
     <section id="kitchenView" class="view">
-      <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Courses, aliments & repas</h2></div></div>
+      <div class="panel-head"><div><div class="section-kicker">CUISINE</div><h2>Alimentation</h2></div></div>
       <div class="kitchen-grid">
         <section id="shoppingPanel" class="kitchen-panel">
           <div class="kitchen-head"><div><h3>Liste de courses</h3><p>Prépare la liste, coche ce que tu prends, puis valide.</p></div><div class="kitchen-head-actions"><button id="addShopping">+ Article</button><button id="validateShopping" class="primary">✓ Valider les achats</button></div></div>
@@ -370,13 +373,13 @@
     <section id="cuisineView" class="view">
       <div class="panel-head cuisine-library-head">
         <div>
-          <div class="section-kicker">OBJECTIF · CUISINE</div>
-          <h2>Bibliothèque de recettes</h2>
-          <p class="muted">Les recettes vivent ici. Les « idées de repas » ne sont qu’une sélection de cette bibliothèque.</p>
+
+          <h2 class="visually-hidden">Mes grimoires</h2>
+
         </div>
         <div class="cuisine-library-actions">
           <button id="importRecipe" type="button">Importer une recette</button>
-          <button id="addRecipeBook" type="button">+ Livre</button>
+          <button id="addRecipeBook" type="button">+ Grimoire</button>
           <button id="addRecipe" class="primary" type="button">+ Recette</button>
         </div>
       </div>
@@ -384,8 +387,8 @@
       <div class="cuisine-library">
         <aside class="recipe-library-sidebar">
           <label for="recipeSearch">Rechercher</label>
-          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Nom, livre, note…">
-          <div class="recipe-books-title">Livres</div>
+          <input id="recipeSearch" type="search" autocomplete="off" placeholder="Titre, rayon, ingrédient…">
+          <div class="recipe-books-title">Mes grimoires</div>
           <div id="recipeBookShelf" class="recipe-book-shelf"></div>
         </aside>
         <section class="recipe-library-content">
@@ -396,7 +399,7 @@
 
 
     <section id="trackersView" class="view life-view">
-      <div class="panel-head tracker-heading"><div><h2>Mes tableaux</h2><p class="muted">Un tableau, un rythme, tes propres cases.</p></div><button id="trackerBoardCreateToggle" type="button" class="primary" aria-controls="trackerBoardCreateForm" aria-expanded="false">＋ Nouveau tableau</button></div>
+      <div class="panel-head tracker-heading"><div><h2 class="visually-hidden">Trackers</h2><p class="muted">Un tableau, un rythme, tes propres cases.</p></div><button id="trackerBoardCreateToggle" type="button" class="primary" aria-controls="trackerBoardCreateForm" aria-expanded="false">＋ Nouveau tableau</button></div>
       <form id="trackerBoardCreateForm" class="life-form tracker-board-create hidden" aria-label="Créer un tableau">
         <label>Nom du tableau<input name="title" maxlength="100" required placeholder="Ex. : Bien-être, lectures, projets…"></label>
         <label>Couleur des cases<select name="color"><option value="sage">Sauge</option><option value="rose">Rose poudré</option><option value="mauve">Mauve</option><option value="gold">Miel</option><option value="blue">Bleu brume</option><option value="peach">Pêche</option></select></label>
@@ -429,11 +432,11 @@
       </details>
     </section>
     <section id="adminView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2><p class="muted">À faire, en attente ou terminé. Les documents restent uniquement sur cet ordinateur.</p></div></div>
+      <div class="panel-head"><div><span class="section-kicker">MES DÉMARCHES</span><h2>Administratif</h2></div></div>
       <form id="adminCreateForm" class="life-form"><label>Démarche<input name="title" maxlength="180" required placeholder="Ex. : Envoyer un dossier"></label><label>Catégorie<select name="category"><option>Santé</option><option>Logement</option><option>CAF</option><option>Emploi</option><option>Identité</option><option>Autre</option></select></label><label>Échéance<input name="due_date" type="date"></label><label class="life-form-wide">Notes<textarea name="notes" rows="2" placeholder="Pièces à réunir, contact, référence…"></textarea></label><button type="submit" class="primary">+ Ajouter</button></form>
       <div class="admin-workspace-toolbar" role="search" aria-label="Trouver une démarche">
         <label>Rechercher une démarche<input id="adminSearch" type="search" placeholder="Nom, catégorie ou notes…" autocomplete="off"></label>
-        <label>Afficher<select id="adminStatusFilter"><option value="all">Toutes les démarches</option><option value="todo">À faire</option><option value="waiting">En attente</option><option value="done">Terminées</option></select></label>
+        <label>Afficher<select id="adminStatusFilter"><option value="all">Toutes les démarches</option><option value="todo">À faire</option><option value="waiting">En cours</option><option value="done">Fait</option></select></label>
         <span class="admin-workspace-count" id="adminVisibleCount" aria-live="polite"></span>
       </div>
       <div id="adminList" class="life-card-list"></div>
@@ -445,7 +448,7 @@
       </section>
     </section>
     <section id="capturesView" class="view life-view">
-      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Boîte de réception</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
+      <div class="panel-head"><div><span class="section-kicker">RANGEMENT</span><h2>Notes et captures</h2><p class="muted">Les idées envoyées par #Carnet et les autres destinations restent surlignées jusqu’à leur première consultation.</p></div><button id="capturesOpenQuick" type="button" class="primary">+ Capture rapide</button></div>
       <div id="captureInbox" class="life-card-list"></div>
     </section>
     <section id="settingsView" class="view settings-view">
@@ -460,6 +463,7 @@
         </div>
 
         <div class="settings-grid">
+
 
           <section class="settings-card" id="settingsUpdatesCard">
             <div class="settings-card-title">
@@ -554,6 +558,7 @@
               <span>Notifications Brave / Windows</span>
               <strong id="settingsNotificationStatus">—</strong>
             </div>
+            <div id="nativeReminderControls"><p id="nativeReminderStatus" role="status">Vérification des rappels natifs…</p><button id="nativeReminderEnable" type="button">Activer les rappels Windows via le compagnon</button><button id="nativeReminderTest" type="button">Tester une notification Windows</button></div>
             <button id="settingsNotificationPermission" type="button">Autoriser les notifications</button>
             <label class="settings-toggle">
               <input id="settingsNotificationPersistent" type="checkbox">
@@ -575,12 +580,33 @@
             <button id="settingsNavReset" type="button">Remettre le tiroir à droite</button>
           </section>
 
+          <section class="settings-card" id="settingsLocalIconCard"><div class="settings-card-title"><span class="settings-card-icon">▧</span><div><h3>Icône de l’application</h3><p>Choix local privé, ou publication volontaire d’une icône officielle commune.</p></div></div><button id="localIconChoose" type="button">Choisir mon PNG sur cet ordinateur</button><button id="localIconReset" type="button">Rétablir l’icône d’origine</button><p id="localIconStatus" class="muted" role="status"></p><p class="muted">Le choix local reste privé. La publication officielle distribue une copie de l’icône via GitHub à tous les PC et aux futures mises à jour Android, sans envoi dans ce chat. Ton fichier de travail reste chez toi.</p></section>
           <section class="settings-card" id="settingsQuickCaptureCard"><div class="settings-card-title"><span class="settings-card-icon">✎</span><div><h3>Capture rapide</h3><p>Note une idée et range-la avec #Carnet, #Tâches, #Administratif…</p></div></div><label class="settings-field">Raccourci dans L’Atelier<input id="settingsQuickCaptureShortcut" readonly placeholder="Clique puis appuie sur la combinaison"></label><button id="settingsQuickCaptureOpen" type="button">✎ Ouvrir la capture rapide</button><p class="muted">Le raccourci fonctionne dans l’application et, sur Windows, même lorsqu’elle est fermée si le compagnon Post-it reste actif près de l’horloge. <span id="settingsGlobalShortcutStatus"></span></p></section>
           <section class="settings-card"><div class="settings-card-title"><span class="settings-card-icon">⌨</span><div><h3>Raccourcis pratiques</h3><p>Quelques commandes utiles de L’Atelier.</p></div></div><div class="atelier-settings-shortcuts"><span>Feuilleter un carnet en lecture</span><strong>← / →</strong><span>Rechercher dans un carnet</span><strong>Ctrl + F</strong><span>Placement précis sur l’Accueil</span><strong>Flèches · Maj + flèche · Échap</strong></div></section><section class="settings-card settings-card-muted">
             <div class="settings-card-title">
               <span class="settings-card-icon">✦</span>
               <div><h3>À venir</h3><p>Apparence, accessibilité, sauvegardes et options propres à chaque compte viendront progressivement.</p></div>
             </div>
+          </section>
+          <section class="settings-card" id="settingsSafetyCard">
+            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">↺</span><div><h3>Sauvegardes et diagnostic</h3><p>Conserver une copie complète et récupérer ses données.</p></div></div>
+            <p>Une copie automatique est créée au démarrage. La première copie complète est conservée ; les copies récentes et une copie par jour sur 30 jours sont gardées.</p>
+            <div class="safety-actions"><button id="safetyExport" type="button">Exporter toutes mes données</button><button id="safetySnapshot" type="button">Sauvegarder maintenant</button><button id="safetyChoose" type="button">Vérifier une sauvegarde à restaurer</button><input hidden type="file" accept="application/json,.json" id="safetyFile"></div>
+            <p>Le fichier exporté contient aussi tes documents et carnets privés. Garde-le dans un emplacement personnel, sur un autre support si possible.</p>
+            <label><input type="checkbox" id="safetyNewProfile"> Cette installation est nouvelle et vide : autoriser la récupération d’une ancienne copie de la même édition.</label><div id="safetyRestorePreview" hidden></div><p id="safetyMessage" role="status" aria-live="polite"></p>
+            <button type="button" id="safetyRefresh">Actualiser le diagnostic</button><button type="button" id="safetyExportDiagnostics">Exporter le diagnostic sans mes contenus</button><button type="button" id="safetyRestart">Redémarrer l’application</button><pre id="safetyDiagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+          </section>
+          <section class="settings-card" id="settingsPersonalDesignCard">
+            <div class="settings-card-title"><span class="settings-card-icon" aria-hidden="true">✎</span><div><h3>Mes dessins</h3><p>Habille L’Atelier avec tes propres créations.</p></div></div>
+            <p id="personalDesignAvailability">Vérification de ton installation TEST…</p>
+            <button type="button" id="personalDesignStart" disabled>Ouvrir le mode création</button>
+            <p>Choisis une zone, glisse ton dessin dessus, ajuste le rendu puis enregistre ton thème. Les boutons gardent leur fonction.</p>
+            <p>Ce mode est réservé à l’installation Windows TEST de Léo (8876). Il n’est pas protégé par un mot de passe sur cet ordinateur.</p>
+            <details><summary>Préparer mes dessins dans Clip Studio Paint</summary>
+              <p>Garde ton original en .clip avec ses calques. Pour l’application, utilise Fichier → Exporter (calque simple) → PNG. Pour les contours transparents, masque le calque Papier et active l’export de la transparence.</p>
+              <p>Les dimensions sont données en pixels pour chaque zone. Dessiner à deux fois la taille affichée aide à garder des contours nets ; les ppp ne changent pas la taille à l’écran. Pour un bouton, garde le centre lisible. Pour un fond, évite les détails forts derrière les textes.</p>
+              <a href="https://help.clip-studio.com/fr-fr/manual_fr/210_file/Exporter_des_fichiers.htm" target="_blank" rel="noopener noreferrer">Guide officiel d’export Clip Studio Paint</a>
+            </details>
           </section>
         </div>
       </div>
@@ -640,6 +666,7 @@
     <div class="quick-capture-foot"><span id="quickCaptureDestination">Destination : Carnet</span><button id="quickCaptureSend" type="button" class="primary">Envoyer</button></div>
     </div>
   </div>
+  <script src="/safety_boot.js"></script>
   <script src="/app_part1.js"></script>
   <script src="/app_part2.js"></script>
   <script src="/postits.js"></script>
@@ -649,9 +676,42 @@
   <script src="/objective_map.js"></script>
   <script src="/progression_view.js"></script>
   <script src="/life_tools.js"></script>
+<script src="admin_contacts.js"></script>
+<script src="admin_workspace.js"></script>
   <script src="/standalone_preparations.js"></script>
   <script src="/tracker_ritual_ui.js"></script>
   <script src="/editor_flow.js"></script>
+  <link rel="stylesheet" href="/display_preferences.css">
+  <script src="/display_preferences.js"></script>
+  <script src="/local_icon.js"></script>
+  <script src="/official_icon_publish.js"></script>
   <script src="/interface_reference.js"></script>
+  <script src="/library_moodboard.js"></script>
+  <link rel="stylesheet" href="/book_spines.css">
+  <script src="/library_refresh.js"></script>
+  <script src="/utility_details.js"></script>
+  <script src="/budget_support.js"></script>
+  <script src="/calendar_decor.js"></script>
+  <script src="/personal_design.js"></script>
+  <script src="/creator_access.js"></script>
+  <script src="/recipe_shelves.js"></script>
+  <script src="/kitchen_timers.js"></script>
+  <script src="/utility_safety.js"></script>
+  <script src="/utility_notes.js"></script>
+  <script src="/utility_live.js"></script>
+  <script src="/native_reminders.js"></script>
+  <link rel="stylesheet" href="/groceries.css">
+  <script src="/groceries_ui.js"></script>
+  <script src="/studio_core.js"></script>
+  <script src="/studio_trackers.js"></script>
+  <script src="/studio_budget.js"></script>
+  <script src="/studio_album.js"></script>
+  <script src="/grounding_cards.js"></script>
+  <script src="/studio_tools.js"></script>
+  <script src="/health_vault_crypto.js"></script>
+  <script src="/health_space.js"></script>
+  <script src="/groceries_pc.js"></script>
+  <script>window.AtelierDisplay.apply();</script>
+<link rel="stylesheet" href="/daily_features.css"><script src="/daily_features.js"></script>
 </body>
 </html>

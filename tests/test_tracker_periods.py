@@ -33,6 +33,22 @@ def window(unit, count, anchor, shift=0, today=datetime.date(2026, 10, 28)):
 
 
 class PeriodTests(unittest.TestCase):
+    def test_iso_week_53_then_week_1_and_fortnight_heading(self):
+        last=window('weeks',1,'2020-12-28',today=datetime.date(2021,1,1))
+        first=window('weeks',1,'2020-12-28',today=datetime.date(2021,1,4))
+        pair=window('weeks',2,'2020-12-28',today=datetime.date(2021,1,1))
+        self.assertEqual(last['heading'],'Semaine 53')
+        self.assertEqual(first['heading'],'Semaine 1')
+        self.assertEqual(pair['heading'],'Deux semaines · 53–1 · 2020–2021')
+
+    def test_annual_cleaning_schedules_have_12_4_2_or_1_cells(self):
+        for unit,count in [('month',12),('quarter',4),('semester',2),('year',1)]:
+            p=namespace['tracker_window']({'period_unit':'years','period_count':1,'anchor_date':'2026-01-01','mark_unit':unit},today=datetime.date(2026,11,9))
+            self.assertEqual(len(p['columns']),count)
+            self.assertEqual(p['columns'][0]['day'],'2026-01-01')
+        p=namespace['tracker_window']({'period_unit':'years','period_count':1,'anchor_date':'2026-01-01','mark_unit':'quarter'},today=datetime.date(2026,11,9))
+        self.assertEqual([c['label'] for c in p['columns']],['T1','T2','T3','T4'])
+
     def test_old_monthly_board_stays_calendar_month(self):
         p = window("months",1,"2000-01-01")
         self.assertEqual((p["start"],p["end"]), ("2026-10-01","2026-10-31"))

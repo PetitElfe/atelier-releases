@@ -89,7 +89,7 @@ function lifeNode(tag,cls,text){const el=document.createElement(tag);if(cls)el.c
 function lifeButton(label,callback,cls=''){const b=lifeNode('button',cls,label);b.type='button';b.onclick=callback;return b}
 async function lifeAction(label,fn){const result=await runUiAction(label,fn);if(result.ok)await loadLifeTools();return result.ok}
 function renderLifeTools(){
-  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();renderHomeDailyTrackers();
+  renderTrackerBoards();renderLifeTrackers();renderLifeAdmin();renderLifeCaptures();renderJournalLifePage();renderHomeDailyTrackers();window.AtelierAdmin?.enhance();
 }
 /* Accueil : CINQ lignes visibles, mais aucune limite de lignes à cocher.
    Les cases utilisent directement les mêmes tracker_board_marks que les grilles. */
@@ -266,7 +266,7 @@ function renderTrackerBoards(){
   if(lifeBoardArchivesVisible&&archiveRoot){
     if(!lifeArchivedBoards.length)archiveRoot.append(lifeNode('p','life-muted','Aucun tableau archivé.'));
     lifeArchivedBoards.forEach(board=>{
-      const item=lifeNode('div','tracker-archived-entry');
+      const item=lifeNode('div','tracker-archived-entry');item.dataset.archivedBoardId=board.id;
       const summary=board.archive_summary;
       item.append(lifeNode('strong','',board.title));
       if(summary){
@@ -658,7 +658,7 @@ function renderLifeTrackers(){
 function renderLifeAdmin(){
   const root=$('#adminList');if(!root)return;root.replaceChildren();
   if(!lifeAdmin.length)root.append(lifeNode('p','muted','Aucune démarche enregistrée.'));
-  const statusNames={todo:'À faire',waiting:'En attente',done:'Terminée'};
+  const statusNames={todo:'À faire',waiting:'En cours',done:'Fait'};
   const allEvents=[...new Map((state.events||[]).filter(e=>e.id).map(e=>[Number(e.id),e])).values()]
     .sort((a,b)=>String(a.event_date).localeCompare(String(b.event_date)));
   const query=($('#adminSearch')?.value||'').trim().toLocaleLowerCase('fr-FR');
@@ -720,9 +720,8 @@ function renderLifeAdmin(){
     const noteHeading=lifeNode('label','life-admin-notes-title','Notes et prochaine action');
     const notes=lifeNode('textarea','life-admin-notes');
     notes.setAttribute('aria-label','Notes et prochaine action de '+item.title);
-    notes.value=item.notes||'';notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
-    const save=lifeButton('Enregistrer les notes',()=>lifeAction('Enregistrer les notes',()=>lifeApi(
-      '/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})})));
+    let adminDrafts={};try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}notes.value=adminDrafts[item.id]??item.notes??'';notes.oninput=()=>{try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}adminDrafts[item.id]=notes.value;try{localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}catch{}};notes.rows=2;notes.placeholder='Notes, pièces à préparer, contact…';
+    const save=lifeButton('Enregistrer les notes',async()=>{const ok=await lifeAction('Enregistrer les notes',()=>lifeApi('/api/admin/'+item.id,{method:'PUT',body:JSON.stringify({notes:notes.value})}));if(ok){try{adminDrafts=JSON.parse(localStorage.getItem('atelier-admin-note-drafts-v1')||'{}')}catch{}delete adminDrafts[item.id];localStorage.setItem('atelier-admin-note-drafts-v1',JSON.stringify(adminDrafts))}});
     const eventPanel=lifeNode('div','life-admin-link-panel');
     const eventLabel=lifeNode('label','life-admin-link-label','Rendez-vous associé (facultatif)');
     const eventSelect=lifeNode('select','life-admin-event-select');
@@ -768,7 +767,10 @@ function renderLifeAdmin(){
         if(ok)await lifeAction('Supprimer le document',()=>lifeApi(
           '/api/admin/'+item.id+'/attachments/'+file.id,{method:'DELETE'}));
       },'life-danger');
-      line.append(link,remove);fileList.append(line);
+      const rename=lifeButton('Renommer',async()=>{const value=prompt('Nouveau nom du document (garde son extension)',file.filename);if(!value||value===file.filename)return;await lifeAction('Renommer le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,filename:value})}))});
+      const documentState=lifeNode('select','life-document-state');documentState.setAttribute('aria-label','État du document '+file.filename);for(const [value,label] of Object.entries({blank:'Vierge',completed:'Complété',sent:'Envoyé',waiting:'En attente',valid:'Valide',expired:'Expiré'})){const option=lifeNode('option','',label);option.value=value;documentState.append(option)}documentState.value=file.document_state||'blank';documentState.onchange=()=>lifeAction('Classer le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,document_state:documentState.value})}));
+      const move=lifeNode('select','life-document-move');move.setAttribute('aria-label','Ranger le document '+file.filename);for(const destination of lifeAdmin){const option=lifeNode('option','',destination.title);option.value=destination.id;move.append(option)}move.value=String(item.id);move.onchange=async()=>{const destination=Number(move.value);if(destination===item.id)return;if(!confirm('Déplacer ce document dans cette démarche ? Son contenu original et un historique du rangement seront conservés.')){move.value=String(item.id);return}await lifeAction('Ranger le document',()=>lifeApi('/api/admin/'+item.id+'/attachments/'+file.id,{method:'PUT',body:JSON.stringify({revision:file.metadata_revision||0,admin_id:destination})}))};
+      link.title+=' · Original : '+(file.original_filename||file.filename);line.append(link,rename,documentState,move,remove);fileList.append(line);
     }
     if(!(item.attachments||[]).length)fileList.append(lifeNode('small','life-muted','Aucun document joint.'));
     files.append(fileList);
@@ -966,7 +968,10 @@ function lifeSuggestions(){
     button.setAttribute('role','option');root.append(button);
   });
 }
+let lifeCaptureSession=0;
 function lifeOpenCapture(){
+  lifeCaptureSession++;
+  $('#quickCaptureSend').disabled=false;
   const overlay=$('#quickCaptureOverlay');overlay.classList.remove('hidden');
   lifeCaptureChoice='carnet';lifeSetText('#quickCaptureDestination','Destination : Carnet / boîte de réception');
   $('#quickCaptureText').value='';$('#quickCaptureSuggestions').classList.add('hidden');
@@ -981,6 +986,7 @@ $('#quickCaptureText')?.addEventListener('input',()=>{
   lifeSetText('#quickCaptureDestination','Destination : '+(dest?.label||'Carnet'));
 });
 $('#quickCaptureSend')?.addEventListener('click',async()=>{
+  const session=lifeCaptureSession;
   const {destination,body}=lifeParseCapture();
   if(!body){$('#quickCaptureText').focus();return}
   const btn=$('#quickCaptureSend');btn.disabled=true;
@@ -996,7 +1002,8 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
     }else{
       await lifeApi('/api/captures',{method:'POST',body:JSON.stringify({destination,body})});
     }
-    lifeCloseCapture();await loadLifeTools();await refresh();
+    if(session===lifeCaptureSession)lifeCloseCapture();
+    await loadLifeTools();await refresh();
     const toast=lifeNode('div','toast');
     const pending=['carnet','rappels','tracker'].includes(destination);
     const pendingText=destination==='rappels'?'À planifier dans la boîte de réception ; aucun rappel daté n’a été créé.':
@@ -1007,7 +1014,7 @@ $('#quickCaptureSend')?.addEventListener('click',async()=>{
         'Destination : '+(lifeDestinations.find(d=>d.key===destination)?.tag||destination)));
     $('#toastArea').append(toast);setTimeout(()=>toast.remove(),4500);
   }catch(err){showUiError(err,'Impossible de ranger la note')}
-  finally{btn.disabled=false}
+  finally{if(session===lifeCaptureSession)btn.disabled=false}
 });
 function lifeShortcut(){return localStorage.getItem('atelierQuickCaptureShortcut')||'Ctrl+Shift+Space'}
 function lifeShortcutFromEvent(e){

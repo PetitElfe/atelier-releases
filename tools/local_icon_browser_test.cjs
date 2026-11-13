@@ -1,0 +1,14 @@
+const{chromium}=require('playwright'),{spawn}=require('node:child_process'),fs=require('node:fs'),{join}=require('node:path'),{tmpdir}=require('node:os'),assert=require('node:assert/strict');
+const data=fs.mkdtempSync(join(tmpdir(),'atelier-local-icon-')),base='http://127.0.0.1:18991',server=spawn('python',['app/app.py'],{env:{...process.env,ATELIER_DATA_DIR:data,ATELIER_PORT:'18991',ATELIER_NO_BROWSER:'1'},stdio:'ignore'});
+(async()=>{let browser;try{for(let i=0;i<100;i++){try{if((await fetch(base+'/api/local-icon/status')).ok)break}catch{}await new Promise(r=>setTimeout(r,100))}
+ const real=await(await fetch(base+'/api/local-icon/status')).json();assert.equal(real.available,false);assert.deepEqual(Object.keys(real).sort(),['available','custom','message','phase']);
+ let blocked=await fetch(base+'/api/local-icon/choose',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});assert.equal(blocked.status,403);
+ let bytes=await fetch(base+'/api/local-icon/choose',{method:'POST',headers:{'Origin':base,'X-Atelier-Local-Icon':'1','Content-Type':'application/json'},body:JSON.stringify({filename:'private.png',base64:'DO_NOT_ACCEPT'})});assert.equal(bytes.status,400);
+ browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1280,height:900}}),requests=[],errors=[];page.on('pageerror',e=>errors.push(e.message));let custom=false;
+ await page.route('**/api/local-icon/status',r=>r.fulfill({json:{available:true,custom,phase:'idle',message:''}}));
+ await page.route('**/api/local-icon/choose',r=>{requests.push({url:r.request().url(),body:r.request().postData()});custom=true;return r.fulfill({json:{ok:true}})});
+ await page.route('**/api/local-icon/reset',r=>{requests.push({url:r.request().url(),body:r.request().postData()});custom=false;return r.fulfill({json:{ok:true}})});
+ await page.goto(base);await page.waitForFunction(()=>window.AtelierStudio?.ready);await page.evaluate(()=>showView('settings'));await page.getByRole('button',{name:'Icône de l’application',exact:true}).click();assert.equal(await page.locator('#settingsLocalIconCard input[type=file]').count(),0,'No browser image selection/upload');
+ await page.locator('#localIconChoose').click();await page.waitForFunction(()=>!document.querySelector('#localIconReset').disabled);await page.locator('#localIconReset').click();await page.waitForFunction(()=>document.querySelector('#localIconReset').disabled);
+ assert.equal(requests.length,2);assert.ok(requests.every(r=>r.body==='{}'&&r.url.startsWith(base)),'Only empty local commands; never image bytes or a source path');assert.deepEqual(errors,[]);console.log('PASS: local icon setting, no browser file upload, only empty local commands, cross-origin/asset-body guards, reset');
+}finally{if(browser)await browser.close();server.kill();await new Promise(r=>server.once('exit',r));fs.rmSync(data,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});

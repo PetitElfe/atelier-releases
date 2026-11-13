@@ -6,13 +6,19 @@ const days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const api = async (url, opts={}) => {
+  if(['POST','PUT'].includes(opts.method)&&/^\/api\/(tasks|shopping|events|recipes)(?:\/\d+)?$/.test(url)&&typeof opts.body==='string'){
+    try{const payload=JSON.parse(opts.body);if(!payload._sync){const match=url.match(/^\/api\/([^/]+)(?:\/(\d+))?$/),rows=state[match[1]]||[],row=match[2]?rows.find(x=>String(x.id)===match[2]):null;
+      if(opts.method==='POST'||(row&&Object.keys(payload).every(k=>k in row&&!['id','created_at','updated_at'].includes(k)))){payload._sync={id:'desktop-'+crypto.randomUUID()};if(row)payload._sync.base=Object.fromEntries(Object.keys(payload).filter(k=>k!=='_sync').map(k=>[k,row[k]]));opts={...opts,body:JSON.stringify(payload)}}
+    }}catch(_){}
+  }
+
   const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
   const raw=await r.text();
   let data={};
   try{data=raw?JSON.parse(raw):{}}catch(e){data={raw}}
   if(!r.ok){
     const err=new Error(data.error||data.detail||raw||`Erreur HTTP ${r.status}`);
-    err.status=r.status; err.data=data; throw err;
+    err.status=r.status; err.data=data; window.dispatchEvent(new CustomEvent('atelier-api-error',{detail:{path:url.split('?')[0].replace(/\/\d+/g,'/:id'),status:r.status}}));throw err;
   }
   return data;
 };
@@ -61,6 +67,7 @@ async function refresh(){
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
     ['tasks',api('/api/tasks')],
     ['reminders',api('/api/reminders')],
+    ['reminderRules',api('/api/reminders?templates=1')],
     ['preparationsUpcoming',api('/api/preparations/upcoming')],
     ['shopping',api('/api/shopping')],
     ['foods',api('/api/foods')],
@@ -88,7 +95,7 @@ function renderHome(){
     deadlineRoot.innerHTML='<div class="deadline-empty">Rien d’urgent pour le moment.</div><div class="deadline-empty">&nbsp;</div><div class="deadline-empty">&nbsp;</div>';
   }else{
     deadlines.forEach(d=>{
-      const b=document.createElement('button'); b.type='button'; b.className='deadline-line';
+      const b=document.createElement('button'); b.type='button'; b.className='deadline-line'+(d.type==='task'?' atelier-important':'');
       const time=d.type==='event'&&d.item?.start_time?fmtTime(d.item.start_time)+(d.item.end_time?'–'+fmtTime(d.item.end_time):''):d.item?.due_time?fmtTime(d.item.due_time):'';
       b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span class="deadline-text">${esc(d.title)}</span><span class="deadline-time">${esc(time)}</span>`;
       b.addEventListener('click',()=>d.type==='task'?openTaskModal(d.item):openEventModal(d.item)); deadlineRoot.appendChild(b);
@@ -104,13 +111,13 @@ function renderHome(){
   try{const stored=JSON.parse(localStorage.getItem(completedTodayKey)||'[]');
       checkedToday=Array.isArray(stored)?stored.map(Number):[];}catch(_){}
   const keptToday=new Set(checkedToday);
-  const todayTasks=state.tasks.filter(t=>(!t.due_date || t.due_date<=today)&&
+  const todayTasks=state.tasks.filter(t=>(!t.due_date || t.due_date<=today || t.start_date&&t.start_date<=today)&&
     (!t.completed || t.due_date===today || keptToday.has(Number(t.id))))
     .sort((a,b)=>Number(a.completed)-Number(b.completed))
     .slice(0,10);
   if(!todayTasks.length) taskRoot.innerHTML='<div class="journal-empty">Rien à faire pour le moment c:</div>';
   todayTasks.forEach(t=>{
-    const row=document.createElement('div');row.className='journal-task journal-task-interactive'+(t.completed?' is-completed':'');
+    const row=document.createElement('div');row.className='journal-task journal-task-interactive'+(t.completed?' is-completed':'')+(t.important&&!t.completed?' atelier-important':'');row.dataset.taskId=t.id;
     const check=document.createElement('input');check.type='checkbox';check.className='journal-task-check';
     check.checked=!!t.completed;
     check.setAttribute('aria-label','Terminer : '+t.title);
@@ -126,7 +133,7 @@ function renderHome(){
       }else{check.checked=!requested;check.disabled=false}
     });
     const title=document.createElement('button');title.type='button';title.className='journal-task-open';
-    title.textContent=(t.important?'✦ ':'')+t.title;title.title='Modifier la tâche';
+    title.textContent=(t.action_state==='doing'?'◐ ':'')+(t.important?'✦ ':'')+t.title;title.title='Modifier la tâche';
     title.onclick=()=>openTaskModal(t);
     const time=document.createElement('span');time.className='journal-task-time';time.textContent=t.due_time?fmtTime(t.due_time):'';
     row.append(check,title,time);taskRoot.appendChild(row);
@@ -138,7 +145,7 @@ function renderHome(){
   if(preview){
     preview.replaceChildren();
     for(const task of todayTasks.slice(0,6)){
-      const line=document.createElement('div');line.className='home-todo-row'+(task.completed?' is-done':'');
+      const line=document.createElement('div');line.className='home-todo-row'+(task.completed?' is-done':'')+(task.important&&!task.completed?' atelier-important':'');line.dataset.taskId=task.id;
       const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!task.completed;
       checkbox.setAttribute('aria-label','Terminer : '+task.title);
       checkbox.onchange=async()=>{
@@ -152,7 +159,7 @@ function renderHome(){
           await refresh();
         }else{checkbox.checked=!requested;checkbox.disabled=false}
       };
-      const title=document.createElement('button');title.type='button';title.textContent=task.title;
+      const title=document.createElement('button');title.type='button';title.textContent=(task.action_state==='doing'?'◐ ':'')+task.title;
       title.onclick=()=>openTaskModal(task);line.append(checkbox,title);preview.append(line);
     }
     if(!todayTasks.length){const empty=document.createElement('p');empty.textContent='Rien à faire pour aujourd’hui c:';preview.append(empty)}

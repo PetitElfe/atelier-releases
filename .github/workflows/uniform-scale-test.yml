@@ -1,0 +1,49 @@
+name: Uniform desktop zoom and layout repair TEST
+on:
+  push:
+    branches: [test/scale-misu-20261112, test/scale-nathan-20261112]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - if: github.ref_name == 'test/scale-misu-20261112'
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - if: github.ref_name == 'test/scale-nathan-20261112'
+        run: |
+          python tools/build_nathan_bundle.py
+          python -m unittest discover -s tests -p test_budget_manual_cash.py
+          python -m unittest discover -s tests -p test_budget_removal.py
+          python -m unittest discover -s tests -p test_nathan_current_install.py
+      - run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/display_preferences_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
+      - run: node tools/budget_opening_browser_test.cjs
+      - run: node tools/budget_refinement_browser_test.cjs
+      - run: node tools/tracker_schedule_order_browser_test.cjs
+      - run: node tools/cycle_compact_browser_test.cjs
+      - run: node tools/week_clarity_forecast_browser_test.cjs
+      - run: node tools/studio_browser_test.cjs
+      - run: ATELIER_TEST_ZOOM=125 node tools/studio_browser_test.cjs
+      - run: node tools/objective_map_browser_test.cjs
+      - run: node tools/home_refresh_browser_test.cjs
+      - run: node tools/home_upcoming_overlay_browser_test.cjs
+      - run: node tools/preparations_tracker_home_browser_test.cjs
+      - run: node tools/desktop_repairs_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Uniform_display_evidence
+          path: artifacts
+          if-no-files-found: ignore

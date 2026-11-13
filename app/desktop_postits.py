@@ -9,6 +9,8 @@ from __future__ import annotations
 import datetime as dt
 from contextlib import contextmanager
 import json
+import hashlib
+import re
 import os
 from pathlib import Path
 import shutil
@@ -17,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from native_postit_paper import SHAPES,PaperBackdrop,content_rect,minimum_size,TRANSPARENT
 
 BASE = Path(r"E:\LATELIER_TEST_0180")
 CODE = BASE / "code_0180"
@@ -25,6 +28,7 @@ DB = DATA / "atelier.db"
 SCRIPT = CODE / "app" / "desktop_postits.py"
 LOCK = DATA / "desktop-postits.lock"
 WAKE = DATA / "desktop-postits-wake.txt"
+RUNTIME = DATA / "desktop-postits-runtime.json"
 AUTORUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 AUTORUN_NAME = "LAtelierDuGoblinPostitsTEST"
 COLORS = {
@@ -39,6 +43,47 @@ COLORS = {
     "deep-blue": ("#506F89", "#FBF3EB"),
     "deep-green": ("#4D705D", "#FBF3EB"),
 }
+
+
+def note_corner_radius(shape, width, height):
+    """Round the real window on Windows 10 as well as Windows 11."""
+    if shape == 'square':
+        return 0
+    if shape == 'pill':
+        return max(0, min(44, int(width) // 4, int(height) // 2))
+    return max(0, min(20, int(width) // 4, int(height) // 4))
+
+
+def apply_note_shape(window, shape):
+    if os.name != 'nt':
+        return False
+    import ctypes
+    from ctypes import wintypes
+    user, gdi = ctypes.windll.user32, ctypes.windll.gdi32
+    user.GetParent.argtypes = [wintypes.HWND]
+    user.GetParent.restype = wintypes.HWND
+    user.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    gdi.CreateRoundRectRgn.argtypes = [ctypes.c_int] * 6
+    gdi.CreateRoundRectRgn.restype = wintypes.HANDLE
+    gdi.CreateRectRgn.argtypes = [ctypes.c_int] * 4
+    gdi.CreateRectRgn.restype = wintypes.HANDLE
+    gdi.DeleteObject.argtypes = [wintypes.HANDLE]
+    user.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HANDLE, wintypes.BOOL]
+    hwnd = user.GetParent(window.winfo_id()) or window.winfo_id()
+    bounds = wintypes.RECT()
+    if not user.GetWindowRect(hwnd, ctypes.byref(bounds)):
+        return False
+    width, height = bounds.right-bounds.left, bounds.bottom-bounds.top
+    radius = note_corner_radius(shape, width, height)
+    region = (gdi.CreateRoundRectRgn(0, 0, width+1, height+1, radius*2, radius*2)
+              if radius else gdi.CreateRectRgn(0, 0, width, height))
+    if not region:
+        return False
+    if not user.SetWindowRgn(hwnd, region, True):
+        gdi.DeleteObject(region)
+        return False
+    # Windows owns the region after SetWindowRgn succeeds.
+    return True
 
 
 def _guard():
@@ -70,6 +115,7 @@ def _db(db_path=DB):
 
 
 def _update_in_progress():
+    if (DATA/'safety-maintenance.json').exists():return True
     try:
         status = json.loads((DATA / "updater-state.json").read_text(encoding="utf-8"))
         return status.get("phase") in (
@@ -89,13 +135,14 @@ def create_layout_table(db_path=DB):
         columns = {r["name"] for r in c.execute("PRAGMA table_info(desktop_postit_layout)")}
         if "locked" not in columns:
             c.execute("ALTER TABLE desktop_postit_layout ADD COLUMN locked INTEGER NOT NULL DEFAULT 0")
+        if 'corner_rounded' not in columns:c.execute('ALTER TABLE desktop_postit_layout ADD COLUMN corner_rounded INTEGER')
         c.commit()
 
 
 def note_rows(db_path=DB):
     with _db(db_path) as c:
         return [dict(r) for r in c.execute(
-            """SELECT p.*,l.x,l.y,l.width,l.height,l.locked
+            """SELECT p.*,l.x,l.y,l.width,l.height,l.locked,l.corner_rounded
                FROM home_postits p LEFT JOIN desktop_postit_layout l ON p.id=l.note_id
                WHERE p.archived=0 ORDER BY p.id"""
         )]
@@ -103,7 +150,7 @@ def note_rows(db_path=DB):
 
 def save_edit(note_id, prior, title, body, color, shape, db_path=DB):
     """Atomic compare-and-swap: never silently overwrite web editor changes."""
-    if color not in COLORS or shape not in ("square", "rounded", "pill"):
+    if color not in COLORS or shape not in SHAPES:
         raise ValueError("Couleur ou forme incorrecte.")
     title = str(title).strip()[:120] or "Sans titre"
     body = str(body)[:20000]
@@ -120,7 +167,7 @@ def save_edit(note_id, prior, title, body, color, shape, db_path=DB):
 
 def save_layout(note_id, x, y, width, height, db_path=DB):
     x, y = int(x), int(y)
-    width, height = max(220, min(950, int(width))), max(160, min(900, int(height)))
+    width, height = max(240, min(1600, int(width))), max(175, min(1400, int(height)))
     with _db(db_path) as c:
         c.execute(
             """INSERT INTO desktop_postit_layout(note_id,x,y,width,height)
@@ -141,8 +188,21 @@ def set_layout_lock(note_id, locked, db_path=DB):
             raise ValueError("La position de cette note doit être enregistrée avant verrouillage.")
 
 
-def create_note(db_path=DB):
+def set_corner_style(note_id,rounded,db_path=DB):
     with _db(db_path) as c:
+        if not c.execute('UPDATE desktop_postit_layout SET corner_rounded=? WHERE note_id=?',(int(bool(rounded)),int(note_id))).rowcount:
+            raise ValueError('Enregistre la position du Post-it avant ses coins.')
+
+
+def create_note(db_path=DB, request_id=None):
+    if request_id is not None and (not isinstance(request_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',request_id)):
+        raise ValueError('Identifiant de création invalide.')
+    with _db(db_path) as c:
+        c.execute('CREATE TABLE IF NOT EXISTS desktop_postit_requests(id TEXT PRIMARY KEY,note_id INTEGER NOT NULL)')
+        c.execute('BEGIN IMMEDIATE')
+        if request_id:
+            previous=c.execute('SELECT note_id FROM desktop_postit_requests WHERE id=?',(request_id,)).fetchone()
+            if previous:return previous['note_id']
         count=c.execute("SELECT COUNT(*) FROM home_postits WHERE archived=0").fetchone()[0]
         if count>=100:
             raise ValueError("Archive quelques Post-it avant d'en ajouter.")
@@ -150,6 +210,7 @@ def create_note(db_path=DB):
         cur=c.execute("""INSERT INTO home_postits
             (title,body,color,shape,archived,created_at,updated_at)
             VALUES('Nouveau Post-it','','gold','rounded',0,?,?)""", (stamp,stamp))
+        if request_id:c.execute('INSERT INTO desktop_postit_requests VALUES(?,?)',(request_id,cur.lastrowid))
         return cur.lastrowid
 
 
@@ -236,34 +297,74 @@ def is_running():
             return False
 
 
-def wake():
-    # The companion checks this on its own clock; server may shut down now.
-    WAKE.write_text(str(time.time_ns()), encoding="ascii")
+def source_signature():
+    digest=hashlib.sha256(SCRIPT.read_bytes());paper=SCRIPT.with_name('native_postit_paper.py')
+    if paper.exists():digest.update(b'\0native_postit_paper\0'+paper.read_bytes())
+    return digest.hexdigest()
 
 
-def launch():
+def ensure_current_companion():
+    if not is_running():return
+    try:
+        runtime=json.loads(RUNTIME.read_text(encoding='utf-8'))
+        if runtime.get('source')==source_signature():return
+    except (OSError,ValueError):pass
+    raise RuntimeError('Un ancien compagnon Post-it est encore ouvert. Près de l’horloge Windows, ouvre son icône puis « Quitter les Post-it ». Rouvre ensuite les Post-it dans L’Atelier. Aucune nouvelle note n’a été créée.')
+
+
+def wake(note_id=None, show_all=False, note_ids=None):
+    value=json.dumps({'token':str(time.time_ns()),'note_id':note_id,'show_all':show_all,'note_ids':note_ids or []})
+    WAKE.write_text(value,encoding='ascii')
+    return value
+
+
+def _wait_for_display(note_id=None, *, process=None, wake_token=None, timeout=8):
+    expected=source_signature()
+    deadline=time.monotonic()+timeout
+    while time.monotonic()<deadline:
+        if process is not None and process.poll() is not None:
+            try:
+                lines=(DATA/'desktop-postits.log').read_text(encoding='utf-8',errors='replace').splitlines()
+                detail=next((line.strip() for line in reversed(lines) if line.strip()),'Arrêt du processus.')[:600]
+            except OSError:detail='Le processus s’est arrêté.'
+            raise RuntimeError('Le compagnon Post-it ne démarre pas : '+detail+' La note reste conservée ; réessaie sans en recréer une.')
+        try:
+            runtime=json.loads(RUNTIME.read_text(encoding='utf-8'))
+            if runtime.get('source')==expected and runtime.get('ready') and (wake_token is None or runtime.get('wake_token')==wake_token):
+                if note_id is not None and note_id in runtime.get('visible_ids',[]):return
+                if note_id is None and (wake_token is None or runtime.get('wake_token')==wake_token):return
+        except (OSError,ValueError):pass
+        time.sleep(.08)
+    raise RuntimeError('Le compagnon n’a pas confirmé l’affichage du Post-it. La note reste conservée. Ferme le compagnon près de l’horloge puis réessaie ; la même demande sera reprise sans doublon.')
+
+
+def launch(note_id=None, *, show_all=False, visible_ids=None):
     _guard()
+    ensure_current_companion()
     if is_running():
-        wake()
-        return {"ok": True, "running": True, "already_running": True}
+        token=wake(note_id,show_all=show_all,note_ids=visible_ids) if note_id is not None or show_all or visible_ids is not None else None
+        _wait_for_display(note_id,wake_token=token)
+        return {"ok": True, "running": True, "already_running": True, "display_confirmed":True}
     flags = (getattr(subprocess, "CREATE_NO_WINDOW", 0) |
              getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     env = os.environ.copy()
     env.update(ATELIER_DATA_DIR=str(DATA), ATELIER_PORT="8876")
     logfile = (DATA / "desktop-postits.log").open("ab", buffering=0)
+    arguments=(['--notes',','.join(map(str,visible_ids))] if visible_ids is not None else ['--note',str(note_id)] if note_id is not None else [] if show_all else ['--background'])
     # Never hold CODE/app as the working directory: Windows then refuses
     # to rename that folder during updates, even after the server stops.
     try:
-        subprocess.Popen([_pythonw(), str(SCRIPT)], cwd=str(DATA),
+        process=subprocess.Popen([_pythonw(), str(SCRIPT)]+arguments, cwd=str(DATA),
                          env=env, stdin=subprocess.DEVNULL,
                          stdout=logfile, stderr=subprocess.STDOUT,
                          close_fds=True, creationflags=flags)
     finally:
         logfile.close()
-    return {"ok": True, "running": True, "already_running": False}
+    _wait_for_display(note_id,process=process)
+    return {"ok": True, "running": True, "already_running": False, "display_confirmed":True}
 
 
-def _run_gui():
+def _run_gui(on_ready=None):
     import tkinter as tk
     from tkinter import messagebox
     import msvcrt
@@ -276,10 +377,14 @@ def _run_gui():
         wake()
         return
 
+    loaded_signature=source_signature()
+    RUNTIME.write_text(json.dumps({'pid':os.getpid(),'source':loaded_signature}),encoding='utf-8')
+    restart_requested=False
     create_layout_table()
     root = tk.Tk()
     root.withdraw()
-    closed = set()
+    initial_ids=({int(i) for i in sys.argv[sys.argv.index('--notes')+1].split(',') if i} if '--notes' in sys.argv else {int(sys.argv[sys.argv.index('--note')+1])} if '--note' in sys.argv else set() if '--background' in sys.argv else None)
+    closed = {n['id'] for n in note_rows() if initial_ids is not None and n['id'] not in initial_ids}
     windows = {}
     wake_value = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
     tray = None
@@ -291,8 +396,13 @@ def _run_gui():
             self.pending = None
             self.geo_pending = None
             self.lock_restore_pending = None
+            self.shape_pending = None
+            self.last_shaped_size = None
+            self.drag_origin = None
+            self.paper=None
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
             self.window = tk.Toplevel(root)
+            self.window.overrideredirect(tray is not None)
             if tray is not None:
                 # WS_EX_TOOLWINDOW removes a note from taskbar and Alt+Tab.
                 self.window.wm_attributes("-toolwindow", True)
@@ -305,12 +415,22 @@ def _run_gui():
             x, y = max(0, min(int(x), max_x)), max(0, min(int(y), max_y))
             w, h = note["width"] or 300, note["height"] or 260
             self.window.geometry(f"{w}x{h}+{x}+{y}")
-            self.window.minsize(240, 175)
+            self.window.minsize(*minimum_size(note['shape']))
+            self.corners=tk.BooleanVar(value=bool(note.get('corner_rounded')) if note.get('corner_rounded') is not None else note['shape']!='square')
+            self.paper_area=tk.Frame(self.window,bg=paper)
+            self.paper_area.place(x=0,y=0,relwidth=1,relheight=1)
             self.locked = bool(note["locked"])
             self.fixed_geometry = (int(x),int(y),int(w),int(h))
             self.window.resizable(not self.locked, not self.locked)
-            self.header = tk.Frame(self.window, bg=paper)
+            self.header = tk.Frame(self.paper_area, bg=paper)
             self.header.pack(fill="x", padx=10, pady=(9, 1))
+            self.drag_handle = tk.Label(self.header, text="⠿", bg=paper, fg=ink,
+                                        font=("Segoe UI", 13), width=2, cursor="fleur")
+            self.drag_handle.pack(side="left")
+            for widget in (self.header, self.drag_handle):
+                widget.bind('<ButtonPress-1>', self._drag_start)
+                widget.bind('<B1-Motion>', self._drag_move)
+                widget.bind('<ButtonRelease-1>', self._drag_end)
             self.title = tk.Entry(self.header, relief="flat", bg=paper, fg=ink,
                                   font=("Segoe UI", 12, "bold"), insertbackground=ink)
             self.title.pack(side="left", fill="x", expand=True)
@@ -318,12 +438,10 @@ def _run_gui():
             self.new_button = tk.Button(self.header, text="＋", relief="flat",
                                         font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
                                         padx=8,pady=5,command=self._new_note, cursor="hand2")
-            self.new_button.pack(side="right", padx=(5, 0))
             self.lock_button = tk.Button(self.header, relief="flat",
                                         bg=paper, fg=ink, cursor="hand2",
                                         font=("Segoe UI",12),padx=9,pady=6,
                                         command=self._toggle_lock)
-            self.lock_button.pack(side="right", padx=(5, 0))
             self._refresh_lock_button()
             self.color = tk.StringVar(value=note["color"])
             self.palette = tk.OptionMenu(self.header, self.color, *COLORS.keys(),
@@ -332,33 +450,58 @@ def _run_gui():
                                    activebackground=paper, highlightthickness=0,
                                    relief="flat", width=7)
             self.palette.pack(side="right")
-            self.body = tk.Text(self.window, wrap="word", undo=True, relief="flat",
+            self.body = tk.Text(self.paper_area, wrap="word", undo=True, relief="flat",
                                 bg=paper, fg=ink, insertbackground=ink,
                                 font=("Segoe UI", 11), padx=12, pady=10)
             self.body.pack(fill="both", expand=True)
             self.body.insert("1.0", note["body"])
-            self.footer = tk.Frame(self.window, bg=paper)
+            self.footer = tk.Frame(self.paper_area, bg=paper)
             self.footer.pack(fill="x", padx=9, pady=(5, 2))
             self.ok_button = tk.Button(self.footer, text="✓ OK", bg=paper, fg=ink,
                                        relief="groove", font=("Segoe UI", 11, "bold"),
                                        padx=12,pady=6,command=self._close, cursor="hand2")
-            self.ok_button.pack(side="right")
             self.delete_button = tk.Button(self.footer, text="Supprimer", bg=paper, fg=ink,
                                            relief="flat", font=("Segoe UI", 10),
                                            padx=9,pady=6,command=self._delete, cursor="hand2")
             self.delete_button.pack(side="left")
-            self.hint = tk.Label(self.window, text="● Enregistré · Post-it indépendant",
+            self.resize_grip = tk.Label(self.footer, text="↘", bg=paper, fg=ink,
+                                        font=("Segoe UI", 12), cursor="size_nw_se", padx=9, pady=3)
+            # Resize handles live on the native border, not a permanent button.
+            self.resize_grip.bind('<ButtonPress-1>', self._resize_start)
+            self.resize_grip.bind('<B1-Motion>', self._resize_move)
+            self.resize_grip.bind('<ButtonRelease-1>', self._drag_end)
+            self.hint = tk.Label(self.paper_area, text="● Enregistré · Post-it indépendant",
                                  bg=paper, fg=ink, font=("Segoe UI", 8),
                                  anchor="w", padx=10)
-            self.hint.pack(fill="x", pady=(0, 5))
-            self.menu = tk.Menu(self.window, tearoff=0)
+            self.hint.pack(fill="x", padx=12, pady=(0, 9))
+            menu_style=dict(tearoff=0,font=('Segoe UI',10),bg='#253128',fg='#ebeadd',activebackground='#455c45',activeforeground='#ffffff',borderwidth=1,relief='solid')
+            self.menu = tk.Menu(self.window, **menu_style)
+            self.menu.add_command(label='Modifier le texte',command=lambda:self.body.focus_set())
             self.menu.add_command(label="Nouveau Post-it", command=self._new_note)
             self.menu.add_command(label="Mes archives…", command=self._show_archives)
             self.menu.add_command(label="Verrouiller / Déverrouiller la position", command=self._toggle_lock)
+            colors_menu=tk.Menu(self.menu,**menu_style)
+            for color_name in COLORS:
+                colors_menu.add_radiobutton(label={'gold':'Doré','sage':'Sauge','mauve':'Mauve','blue':'Bleu','pink':'Rose','red':'Rouge','peach':'Pêche','cream':'Crème','deep-blue':'Bleu profond','deep-green':'Vert profond'}.get(color_name,color_name),variable=self.color,value=color_name,command=self._change_color)
+            self.menu.add_cascade(label="Couleur",menu=colors_menu)
+            shapes_menu=tk.Menu(self.menu,**menu_style)
+            for label,shape,width,height in (("Carré","square",300,300),("Feuille arrondie","rounded",320,400),("Bandeau","pill",460,210),("Étoile","star",540,540),("Cœur","heart",460,440),("Rond","circle",360,360)):
+                shapes_menu.add_command(label=label,command=lambda s=shape,w=width,h=height:self._change_format(s,w,h))
+            self.menu.add_cascade(label="Format",menu=shapes_menu)
+            self.menu.add_command(label='Taille…',command=self._size_dialog)
+            self.menu.add_checkbutton(label='Coins arrondis',variable=self.corners,command=self._change_corners)
+            self.palette.pack_forget()
+            self.delete_button.pack_forget()
             self.menu.add_separator()
             self.menu.add_command(label="Archiver ce Post-it", command=self._archive)
             self.menu.add_command(label="Supprimer définitivement…", command=self._delete)
             self.menu.add_command(label="✓ OK · Enregistrer et fermer", command=self._close)
+            self.menu_button = tk.Button(self.header, text="···", relief="flat",
+                                         font=("Segoe UI", 14, "bold"), bg=paper, fg=ink,
+                                         padx=9, pady=3, cursor="hand2", command=self._open_menu)
+            self.close_button=tk.Button(self.header,text="×",relief="flat",font=("Segoe UI",14),bg=paper,fg=ink,padx=8,pady=3,cursor="hand2",command=self._delete)
+            self.close_button.pack(side="right")
+            self.menu_button.pack(side="right")
             self.window.bind("<Button-3>", self._menu)
             self.title.bind("<Button-3>", self._menu)
             self.body.bind("<Button-3>", self._menu)
@@ -370,7 +513,129 @@ def _run_gui():
             self.body.bind("<KP_Enter>", self._insert_newline)
             self.body.edit_modified(False)
             self.window.bind("<Configure>", self._geometry_changed)
-            self.window.protocol("WM_DELETE_WINDOW", self._close)
+            self.window.protocol("WM_DELETE_WINDOW", self._delete)
+            self.window.bind('<Alt-F4>', lambda _: (self._close(), 'break')[1])
+            self.window.update_idletasks()
+            self.paper=PaperBackdrop(self.window,self._native_geometry,lambda:root.after_idle(self._save_geometry),self._paper_menu,lambda:self.locked)
+            self.window.configure(bg=TRANSPARENT)
+            self.window.attributes('-transparentcolor',TRANSPARENT)
+            self.window.bind('<Destroy>',self._destroy_paper,add='+')
+            self.window.bind('<Unmap>',self._mapping_changed,add='+')
+            self.window.bind('<Map>',self._mapping_changed,add='+')
+            root.after_idle(self._apply_shape)
+
+        def _paper_menu(self,x,y):
+            from types import SimpleNamespace
+            self._menu(SimpleNamespace(x_root=x,y_root=y))
+
+        def _native_geometry(self,geometry):
+            if self.locked:return
+            x,y,w,h=geometry
+            self.window.geometry(f'{w}x{h}+{x}+{y}')
+            self.window.update_idletasks()
+            if self.shape_pending:root.after_cancel(self.shape_pending);self.shape_pending=None
+            self._apply_shape()
+
+        def _mapping_changed(self,event):
+            if event.widget!=self.window:return
+            # Windows/Tk can temporarily unmap the wrapper while resizing it.
+            # Do not hide its owner in the middle of that transition: hiding
+            # the owner would hide the editor too, with no subsequent redraw.
+            self.last_shaped_size=None
+            root.after_idle(self._sync_mapping)
+
+        def _sync_mapping(self):
+            if not self.window.winfo_exists() or not self.paper:return
+            if self.window.state()=='normal' and self.window.winfo_ismapped():self._apply_shape()
+            else:self.paper.hide()
+
+        def _size_dialog(self):
+            if self.locked:
+                self.hint.config(text='Déverrouille la position pour modifier la taille')
+                return
+            dialog=tk.Toplevel(self.window);dialog.title('Taille du Post-it');dialog.resizable(False,False)
+            dialog.transient(self.window)
+            values=[]
+            for row,(label,value) in enumerate([('Largeur (px)',self.window.winfo_width()),('Hauteur (px)',self.window.winfo_height())]):
+                tk.Label(dialog,text=label).grid(row=row,column=0,padx=12,pady=8,sticky='w')
+                entry=tk.Entry(dialog,width=10);entry.insert(0,str(value));entry.grid(row=row,column=1,padx=12,pady=8);values.append(entry)
+            def apply():
+                try:
+                    w,h=[int(e.get()) for e in values];mw,mh=minimum_size(self.note['shape'])
+                    if not(mw<=w<=1600 and mh<=h<=1400):raise ValueError(f'Largeur : {mw} à 1600 px ; hauteur : {mh} à 1400 px.')
+                except ValueError as error:
+                    messagebox.showerror('Taille du Post-it',str(error),parent=dialog);return
+                self._native_geometry((self.window.winfo_x(),self.window.winfo_y(),w,h))
+                self.last_shaped_size=None;root.after_idle(self._apply_shape);root.after_idle(self._save_geometry);dialog.destroy()
+            tk.Button(dialog,text='Annuler',command=dialog.destroy).grid(row=2,column=0,padx=12,pady=12)
+            tk.Button(dialog,text='Appliquer',command=apply).grid(row=2,column=1,padx=12,pady=12)
+            dialog.bind('<Return>',lambda _:apply());dialog.bind('<Escape>',lambda _:dialog.destroy());values[0].focus_set()
+
+        def _destroy_paper(self,event):
+            if event.widget==self.window and self.paper:self.paper.destroy();self.paper=None
+
+        def _change_corners(self):
+            self._save_geometry()
+            try:set_corner_style(self.note['id'],self.corners.get());self.note['corner_rounded']=int(self.corners.get())
+            except (sqlite3.Error,OSError,ValueError) as error:messagebox.showerror('Post-it',str(error),parent=self.window)
+            self.last_shaped_size=None;root.after_idle(self._apply_shape)
+
+        def present(self):
+            self.window.deiconify()
+            if self.paper:self.last_shaped_size=None;self._apply_shape();self.paper.raise_briefly()
+            # A tool window can otherwise open behind the foreground WebView.
+            # Raise it for this explicit request, then restore ordinary stacking.
+            self.window.attributes('-topmost',True)
+            self.window.lift()
+            self.window.focus_force()
+            def release():
+                if self.window.winfo_exists():self.window.attributes('-topmost',False)
+            root.after(220,release)
+
+        def _open_menu(self):
+            try:
+                self.menu.tk_popup(self.menu_button.winfo_rootx(),
+                                   self.menu_button.winfo_rooty()+self.menu_button.winfo_height())
+            finally:
+                self.menu.grab_release()
+
+        def _drag_start(self, event):
+            if self.locked:
+                self.hint.config(text="Position verrouillée · options dans ···")
+                return 'break'
+            self.drag_origin=(event.x_root,event.y_root,self.window.winfo_x(),self.window.winfo_y())
+
+        def _drag_move(self, event):
+            if self.locked or not self.drag_origin:return 'break'
+            px,py,x,y=self.drag_origin
+            self.window.geometry(f'+{max(0,x+event.x_root-px)}+{max(0,y+event.y_root-py)}')
+
+        def _resize_start(self, event):
+            if not self.locked:
+                self.drag_origin=(event.x_root,event.y_root,self.window.winfo_width(),self.window.winfo_height())
+
+        def _resize_move(self, event):
+            if self.locked or not self.drag_origin:return 'break'
+            px,py,w,h=self.drag_origin
+            self.window.geometry(f'{max(240,w+event.x_root-px)}x{max(175,h+event.y_root-py)}')
+
+        def _drag_end(self, _):
+            self.drag_origin=None
+            self._save_geometry()
+
+        def _apply_shape(self):
+            self.shape_pending=None
+            if not self.window.winfo_exists():return
+            if self.window.state()!='normal':
+                if self.paper:self.paper.hide()
+                return
+            w,h=self.window.winfo_width(),self.window.winfo_height()
+            size=(w,h,self.note['shape'],self.color.get(),self.corners.get(),self.window.winfo_x(),self.window.winfo_y())
+            if size==self.last_shaped_size:return
+            if self.paper:
+                self.paper_area.place(relwidth='',relheight='',x=content_rect(self.note['shape'],w,h)[0],y=content_rect(self.note['shape'],w,h)[1],width=content_rect(self.note['shape'],w,h)[2],height=content_rect(self.note['shape'],w,h)[3])
+                self.paper.update((self.window.winfo_x(),self.window.winfo_y(),w,h),self.note['shape'],COLORS[self.color.get()][0],self.corners.get())
+                self.last_shaped_size=size
 
         def _refresh_lock_button(self):
             self.lock_button.configure(text="🔒" if self.locked else "🔓")
@@ -415,13 +680,30 @@ def _run_gui():
             self.hint.config(text="🔒 Position et taille verrouillées" if self.locked
                              else "🔓 Position et taille modifiables")
 
+        def _change_format(self,shape,width,height):
+            if not self._save():return
+            try:
+                if not save_edit(self.note["id"],self.note,self.note["title"],self.note["body"],self.note["color"],shape):
+                    self.hint.config(text="Modifié ailleurs : actualise le Post-it")
+                    return
+                self.note["shape"]=shape
+                if self.note.get('corner_rounded') is None:self.corners.set(shape!='square')
+                self.window.minsize(*minimum_size(shape))
+                self.menu.entryconfigure('Coins arrondis',state='disabled' if shape=='circle' else 'normal')
+                if not self.locked:
+                    self.window.geometry(f"{width}x{height}+{self.window.winfo_x()}+{self.window.winfo_y()}")
+                root.after_idle(self._apply_shape)
+                self.hint.config(text="Format enregistré"+(" · taille verrouillée" if self.locked else ""))
+            except (sqlite3.Error,OSError,ValueError) as error:
+                messagebox.showerror("Post-it",str(error),parent=self.window)
+
         def _new_note(self):
             if _update_in_progress():
                 self.hint.config(text="● Patiente jusqu’à la fin de la mise à jour")
                 return
             try:
-                create_note()
-                wake()
+                note_id=create_note()
+                wake(note_id)
             except (sqlite3.Error,OSError,ValueError) as error:
                 messagebox.showerror("Post-it", str(error), parent=self.window)
 
@@ -433,6 +715,9 @@ def _run_gui():
                 self.menu.tk_popup(event.x_root, event.y_root)
             finally:
                 self.menu.grab_release()
+            # Stop Tk bindtag propagation: title/body and Toplevel both bind
+            # Button-3. Otherwise a second menu reopens after choosing an action.
+            return "break"
 
         def _insert_newline(self, _=None):
             self.body.insert("insert", "\n")
@@ -454,7 +739,7 @@ def _run_gui():
 
         def _change_color(self):
             paper, ink = COLORS[self.color.get()]
-            for item in (self.window, self.header, self.title, self.palette,
+            for item in (self.paper_area, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -463,6 +748,7 @@ def _run_gui():
             self.hint.config(fg=ink)
             self.palette.config(fg=ink, activebackground=paper)
             self._changed()
+            root.after_idle(self._apply_shape)
 
         def _save(self):
             self.pending = None
@@ -511,7 +797,7 @@ def _run_gui():
             self.body.edit_modified(False)
             self.color.set(note["color"])
             paper, ink = COLORS.get(note["color"], COLORS["gold"])
-            for item in (self.window, self.header, self.title, self.palette,
+            for item in (self.paper_area, self.header, self.title, self.palette, self.drag_handle, self.menu_button, self.close_button, self.resize_grip,
                          self.footer, self.ok_button, self.delete_button,
                          self.new_button, self.lock_button, self.body, self.hint):
                 item.configure(bg=paper)
@@ -519,10 +805,12 @@ def _run_gui():
             self.body.config(fg=ink, insertbackground=ink)
             self.hint.config(fg=ink)
             self.window.title("L'Atelier du Goblin · " + note["title"])
+            root.after_idle(self._apply_shape)
 
         def _geometry_changed(self, event):
             if event.widget != self.window or self.window.state() != "normal":
                 return
+            if not self.shape_pending:self.shape_pending=root.after(8,self._apply_shape)
             if self.locked:
                 # Ne pas repositionner à chaque événement Configure : cela fait
                 # trembler la fenêtre lorsque Windows termine un glisser.
@@ -649,7 +937,7 @@ def _run_gui():
                 return
             try:
                 if restore_note(rows[current[0]]["id"]):
-                    wake()
+                    wake(rows[current[0]]["id"])
                 dialog.destroy()
             except (sqlite3.Error,OSError,ValueError) as exc:
                 messagebox.showerror("Archives",str(exc),parent=dialog)
@@ -661,16 +949,15 @@ def _run_gui():
         # Closing a note with OK only hides it for this session.
         closed.clear()
         for window in list(windows.values()):
-            window.window.deiconify()
-            window.window.lift()
+            window.present()
         wake()
 
     def create_new():
         if _update_in_progress():
             return
         try:
-            create_note()
-            wake()
+            note_id=create_note()
+            wake(note_id)
         except (sqlite3.Error,OSError,ValueError) as exc:
             messagebox.showerror("Post-it",str(exc),parent=root)
 
@@ -692,6 +979,7 @@ def _run_gui():
                 root.after_cancel(widget.geo_pending)
                 widget._save_geometry()
         root.quit()
+        return True
 
     try:
         from windows_tray import WindowsTray
@@ -703,15 +991,42 @@ def _run_gui():
         print("Windows tray unavailable:",exc,flush=True)
         tray = None
 
+    def publish_runtime():
+        visible=[note_id for note_id,widget in windows.items() if widget.window.winfo_exists() and widget.window.winfo_viewable()]
+        value={'pid':os.getpid(),'source':loaded_signature,'ready':True,'visible_ids':visible,'wake_token':wake_value}
+        try:
+            pending=RUNTIME.with_suffix('.tmp')
+            pending.write_text(json.dumps(value),encoding='utf-8');pending.replace(RUNTIME)
+        except OSError as exc:print('Post-it display confirmation:',str(exc),flush=True)
+
     def sync():
-        nonlocal wake_value
+        nonlocal wake_value,restart_requested
         if _update_in_progress():
             root.after(1700, sync)
             return
         try:
+            if source_signature()!=loaded_signature:
+                if quit_all():restart_requested=True;return
+                root.after(1700,sync);return
+        except OSError:pass
+        try:
+            import native_reminders
+            native_reminders.tick()
+        except (ImportError,OSError,RuntimeError):pass
+        try:
             current_wake = WAKE.read_text(encoding="ascii") if WAKE.exists() else ""
             if current_wake != wake_value:
-                closed.clear()
+                try:request=json.loads(current_wake)
+                except ValueError:request={}
+                if not isinstance(request,dict):request={}
+                if request.get('show_all'):closed.clear()
+                targets={i for i in request.get('note_ids',[]) if type(i) is int}
+                target=request.get('note_id')
+                if type(target) is int:targets.add(target)
+                closed.difference_update(targets)
+                for note_id,widget in list(windows.items()):
+                    if request.get('show_all') or note_id in targets:
+                        widget.present()
                 wake_value = current_wake
             rows = note_rows()
             ids = {row["id"] for row in rows}
@@ -726,6 +1041,8 @@ def _run_gui():
                     windows[note["id"]].refresh(note)
                 elif note["id"] not in closed:
                     windows[note["id"]] = NoteWindow(note, i)
+                    windows[note["id"]].present()
+            root.after_idle(publish_runtime)
         except (OSError, sqlite3.Error) as exc:
             print("Post-it sync error:", str(exc), flush=True)
         root.after(1700, sync)
@@ -739,6 +1056,7 @@ def _run_gui():
         hotkey_cleanup = quick_capture_native.install(root, DATA, DB, on_postit=wake)
     except (OSError, RuntimeError, AttributeError, ImportError) as exc:
         print("Capture globale indisponible:", str(exc), flush=True)
+    if on_ready is not None:root.after_idle(on_ready)
     try:
         root.mainloop()
     finally:
@@ -748,16 +1066,22 @@ def _run_gui():
         for widget in list(windows.values()):
             widget._save()
             widget._save_geometry()
+        # All callbacks belong to this GUI session. Never let a pending shape,
+        # geometry or polling callback survive destroying its Tk interpreter.
+        for callback in root.tk.call('after','info'):
+            root.after_cancel(callback)
         if tray is not None:
             tray.destroy()
         root.destroy()
         lock_file.close()
+        RUNTIME.unlink(missing_ok=True)
+    return {'visible_ids':list(windows)} if restart_requested else False
 
 
 def _self_test():
     with tempfile.TemporaryDirectory() as work:
         db = Path(work) / "test.db"
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.executescript("""PRAGMA foreign_keys=ON;
             CREATE TABLE home_postits (
               id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL,
@@ -788,10 +1112,10 @@ def _self_test():
         assert len(archived_notes(db))==1
         assert restore_note(2,db)
         assert any(row["id"]==2 for row in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=2")
         # Ancienne base v6 : ajouter une colonne locked sans perte de géométrie.
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("ALTER TABLE desktop_postit_layout RENAME TO old_layout")
             c.execute("""CREATE TABLE desktop_postit_layout(
                 note_id INTEGER PRIMARY KEY,x INTEGER NOT NULL,y INTEGER NOT NULL,
@@ -802,13 +1126,13 @@ def _self_test():
         create_layout_table(db)
         assert note_rows(db)[0]["x"]==321 and note_rows(db)[0]["locked"]==0
         assert not any(note["title"] == "Archivée" for note in note_rows(db))
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             c.execute("UPDATE home_postits SET archived=1 WHERE id=1")
         assert all(note['id'] != 1 for note in note_rows(db))
         assert any(note['id'] == fresh for note in note_rows(db))
         assert delete_note(1,db)
         assert not delete_note(1,db)
-        with sqlite3.connect(db) as c:
+        with _db(db) as c:
             assert c.execute("SELECT COUNT(*) FROM desktop_postit_layout WHERE note_id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=1").fetchone()[0]==0
             assert c.execute("SELECT COUNT(*) FROM home_postits WHERE id=?", (fresh,)).fetchone()[0]==1
@@ -820,4 +1144,5 @@ if __name__ == "__main__":
         _self_test()
     else:
         _guard()
-        _run_gui()
+        restart=_run_gui()
+        if restart:launch(visible_ids=restart['visible_ids'])

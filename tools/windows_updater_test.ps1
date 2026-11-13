@@ -19,6 +19,11 @@ try {
   # an outdated local manifest entry (no real user files).
   $manifestPath=Join-Path $code 'manifest.json'
   $manifest=Get-Content $manifestPath -Raw | ConvertFrom-Json
+  # Newer private utility builds must stay on their private TEST channel.
+  # The shared foundation is intentionally older and is rejected as a downgrade.
+  if ($manifest.build_sequence -gt 0) {
+    '{"branch":"test/windows-library-calendar-20261103"}' | Set-Content -Path (Join-Path $data 'windows-test-channel.json') -Encoding utf8
+  }
   $manifest.files[0].sha256=('0'*64)
   $manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath -Encoding utf8
   $env:ATELIER_DATA_DIR=$data

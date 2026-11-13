@@ -5,7 +5,9 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
+import groceries
+import local_icon, official_icon_publish, admin_workspace
+import studio, utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
 ROOT = Path(__file__).resolve().parent
 INSTALL_ROOT = ROOT.parent
@@ -14,7 +16,7 @@ DATA = Path(os.environ.get('ATELIER_DATA_DIR', str(INSTALL_ROOT / 'data')))
 DB_PATH = DATA / 'atelier.db'
 HOST = '127.0.0.1'
 PORT = int(os.environ.get('ATELIER_PORT', '8765'))
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 28
 
 def atelier_version():
     version_file = ROOT / 'VERSION'
@@ -24,6 +26,7 @@ def atelier_version():
         return '0.0.5'
 
 DATA.mkdir(exist_ok=True)
+utility_safety.apply_pending(DATA,atelier_version(),SCHEMA_VERSION,PORT)
 
 SCHEMA = '''
 PRAGMA foreign_keys = ON;
@@ -213,6 +216,14 @@ CREATE TABLE IF NOT EXISTS budget_settings (
  id INTEGER PRIMARY KEY CHECK(id=1), opening_balance_cents INTEGER NOT NULL DEFAULT 0,
  opening_date TEXT NOT NULL DEFAULT '2026-01-01'
 );
+CREATE TABLE IF NOT EXISTS budget_month_openings (
+ month TEXT PRIMARY KEY, amount_cents INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1
+);
+-- Manual reconciliation changes cash without inventing an income or expense.
+CREATE TABLE IF NOT EXISTS budget_cash_adjustments (
+ month TEXT PRIMARY KEY, reference_date TEXT NOT NULL, adjustment_cents INTEGER NOT NULL,
+ revision INTEGER NOT NULL DEFAULT 1
+);
 CREATE TABLE IF NOT EXISTS budget_rules (
  id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL CHECK(kind IN ('income','fixed')),
  title TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Général',
@@ -236,6 +247,7 @@ CREATE TABLE IF NOT EXISTS budget_entries (
  status TEXT NOT NULL CHECK(status IN ('pending','presumed','confirmed','skipped')),
  source TEXT NOT NULL CHECK(source IN ('scheduled','manual')),
  actual_date TEXT, notes TEXT DEFAULT '', created_at TEXT NOT NULL,
+ archived INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 1, occurrence_date TEXT,
  UNIQUE(rule_id, scheduled_date), UNIQUE(debt_id, scheduled_date)
 );
 CREATE TABLE IF NOT EXISTS budget_month_notes (
@@ -404,6 +416,13 @@ def _backup_db_before_migration():
     destination = sqlite3.connect(target)
     try:
         source.backup(destination)
+        original=backup_dir/'atelier-original-before-first-migration.db'
+        if not original.exists():
+            temporary=original.with_suffix('.db.tmp')
+            first=sqlite3.connect(temporary)
+            try:source.backup(first)
+            finally:first.close()
+            os.replace(temporary,original)
     finally:
         destination.close()
         source.close()
@@ -419,10 +438,20 @@ _backup_db_before_migration()
 with conn() as c:
     c.execute('PRAGMA journal_mode = WAL')
     c.executescript(SCHEMA)
+    import alimentation
+    alimentation.initialise(c)
+    groceries.initialise(c)
     progression.initialise(c)
     objective_maps.initialise(c)
+    library_moodboard.initialise(c)
+    utility_sync.initialise(c)
+    native_reminders.initialise(c)
+    reminder_occurrences.initialise(c)
+    utility_details.initialise(c)
+    studio.initialise(c)
     event_preparations.initialise(c)
     admin_docs.initialise(c)
+    admin_workspace.initialise(c)
     # Première activation uniquement : créer un Post-it vide « Aujourd'hui ».
     # Ne jamais recréer une note que l'utilisateur a archivée ou supprimée.
     if not c.execute('SELECT 1 FROM home_postits LIMIT 1').fetchone():
@@ -560,6 +589,17 @@ with conn() as c:
     ):
         if column not in row_columns:
             c.execute(f'ALTER TABLE tracker_board_rows ADD COLUMN {column} {definition}')
+    # Recoverable budget deletion keeps original dates, state and receipts.
+    budget_cols = {r['name'] for r in c.execute('PRAGMA table_info(budget_entries)')}
+    for column in ('archived', 'revision'):
+        if column not in budget_cols:
+            default = 0 if column == 'archived' else 1
+            c.execute(f'ALTER TABLE budget_entries ADD COLUMN {column} INTEGER NOT NULL DEFAULT {default}')
+    if 'occurrence_date' not in budget_cols:
+        c.execute('ALTER TABLE budget_entries ADD COLUMN occurrence_date TEXT')
+    c.execute("UPDATE budget_entries SET occurrence_date=scheduled_date WHERE occurrence_date IS NULL AND source='scheduled'")
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_budget_rule_occurrence ON budget_entries(rule_id,occurrence_date)')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_budget_debt_occurrence ON budget_entries(debt_id,occurrence_date)')
     admin_cols = {r['name'] for r in c.execute('PRAGMA table_info(admin_documents)')}
     if 'event_id' not in admin_cols:
         c.execute('ALTER TABLE admin_documents ADD COLUMN event_id INTEGER REFERENCES events(id) ON DELETE SET NULL')

@@ -23,6 +23,8 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   await ready();browser=await chromium.launch({headless:true});
   const context=await browser.newContext({viewport:{width:1665,height:900}});
   const page=await context.newPage();const errors=[];
+  const testDate=process.env.ATELIER_TEST_DATE;
+  if(testDate)await page.clock.setFixedTime(new Date(testDate+'T12:00:00'));
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>showView('calendar'));
@@ -70,7 +72,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.equal(dimensions.horizontalScroll,false,'2K width should fit without horizontal scroll');
   assert.equal(dimensions.verticalScroll,true,'Large hourly rows must remain vertically scrollable at 900px');
   // Reuse a temporary SQLite instance; test only real date entries.
-  const today=new Date(),todayStr=ymd(today),starts=[-84,-56,-26].map(d=>ymd(add(today,d)));
+  const today=testDate?new Date(testDate+'T12:00:00'):new Date(),todayStr=ymd(today),starts=[-84,-56,-26].map(d=>ymd(add(today,d)));
   for(const start of starts)await api('/api/cycle-periods','POST',{start_date:start,end_date:null});
   await page.evaluate(()=>refreshOrganisation());
   const forecast=await page.evaluate(()=>cycleEstimate());
@@ -78,11 +80,22 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.equal(forecast.approxDays,3);
   assert.equal(forecast.duration,5,'No recorded end => 5-day tentative display');
   const next=ymd(add(today,3));
-  await page.evaluate(()=>setCalendarMode('month'));
+  // The prediction and the latest recorded period can be in different months.
+  await page.evaluate(async iso=>{
+    state.cursor=parseYMD(iso);
+    await refresh();
+    setCalendarMode('month');
+  },forecast.next);
   const forecastCell=page.locator('#monthGrid .day-cell.cycle-forecast-start');
   assert.ok(await forecastCell.count()>=1,'Future period shown in faint red');
-  assert.match(await forecastCell.first().getAttribute('title'),/Règles possibles/);
-  assert.equal(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,true);
+  assert.match(await forecastCell.first().getAttribute('aria-description'),/Règles possibles/);assert.equal(await forecastCell.first().getAttribute('title'),null,'Forecast has an accessible description without a second tooltip');
+  await page.evaluate(async iso=>{
+    state.cursor=parseYMD(iso);
+    await refresh();
+    setCalendarMode('month');
+  },starts[starts.length-1]);
+  assert.equal(await page.locator('#monthGrid .day-cell.cycle-recorded').count()>0,true,
+    'Recorded period visible in its actual month');
   // A forecast three days ahead can be in the NEXT calendar week (e.g. Sat -> Tue).
   // Display the week containing the predicted date; don't require it in today's week.
   await page.evaluate(async iso=>{

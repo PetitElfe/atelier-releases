@@ -1,0 +1,84 @@
+name: Utility data safety and conflict protection TEST
+on:
+  push:
+    branches: [test/utility-complete-20261104]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python tools/release_smoke.py
+      - run: node --check app/public/recipe_shelves.js
+      - run: npm install --no-save playwright
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/utility_safety_browser_test.cjs
+      - run: node tools/utility_complete_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
+      - run: node tools/personal_design_browser_test.cjs
+      - run: node tools/library_browser_test.cjs
+      - run: node tools/domain_moodboard_browser_test.cjs
+      - run: node tools/windows_library_calendar_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Utility_safety_screenshots
+          path: artifacts/utility-*.png
+          if-no-files-found: ignore
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate native Windows shortcut registration (disposable runner)
+        shell: powershell
+        run: |
+          $link = Join-Path $env:TEMP 'GoblinNativeTest.lnk'
+          & powershell.exe -NoProfile -NonInteractive -STA -File app/native_toasts.ps1 -Mode register -Target (Get-Command python.exe).Source -Arguments '--version' -Link $link
+          if ($LASTEXITCODE -ne 0) { throw 'Native shortcut registration failed' }
+          if (!(Test-Path $link)) { throw 'Native shortcut missing' }
+          Remove-Item $link
+      - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
+      - run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
+        env:
+          GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+          PYTHONUTF8: '1'
+
+  utility-areas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [life_tools, tracker_ritual, home_reference, home_upcoming_overlay, week_clarity_forecast, cycle_compact, calendar_priority, preparations_tracker_home, objective_map, big_refonte]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/${{ matrix.test }}_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Utility_area_${{ matrix.test }}
+          path: artifacts/
+          if-no-files-found: ignore

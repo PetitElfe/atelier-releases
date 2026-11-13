@@ -1,0 +1,14 @@
+/* Shared leather-and-paper spines: CSS only, no generated artwork. */
+.atelier-book,.library-compact-domain button.domain-book-spine.atelier-book{--leather:#4b5946;position:relative;display:flex;flex:0 0 auto;align-items:center;justify-content:center;width:58px;min-width:46px;height:var(--spine-height,180px);min-height:0;padding:20px 9px;writing-mode:horizontal-tb;border:1px solid #c6af795e;border-left:5px solid #0005;border-right:3px solid #d9c7a55c;border-radius:3px 7px 5px 2px;background:linear-gradient(90deg,#0005,transparent 20%,#fff1 50%,transparent 82%,#0004),var(--leather);color:#f1e5c8;box-shadow:3px 1px 0 #b7ac8c,4px 4px 7px #0005;text-shadow:0 1px 1px #0008;cursor:pointer;transition:transform .12s}
+.atelier-book::before,.atelier-book::after{content:'';position:absolute;left:3px;right:2px;height:6px;border-block:1px solid #d8bd7f99;box-shadow:0 2px 2px #0004}.atelier-book::before{top:12px}.atelier-book::after{bottom:12px}
+.atelier-book .atelier-spine-title{writing-mode:vertical-rl;transform:rotate(180deg);text-orientation:mixed;font:600 15px/1.35 Georgia,serif;white-space:nowrap;max-height:100%;overflow:hidden;text-overflow:ellipsis;letter-spacing:.4px}
+.atelier-book:hover,.atelier-book:focus-visible{transform:translateY(-4px);outline:2px solid #d6bf86;outline-offset:3px;color:#fff1cb}.atelier-book.active{outline:2px solid #d6bf86;outline-offset:3px}
+.library-domain-spines{display:none}.library-domain-volumes{display:flex;align-items:flex-end;gap:7px;padding:12px 12px 6px;margin:0 10px 18px;border-bottom:7px solid #806a4d;box-shadow:0 4px 4px #0005;overflow:auto;min-height:180px}
+.library-domain-volumes .atelier-book{width:49px}.library-domain-card .library-domain-open{padding-bottom:8px}
+.library-compact-domain .atelier-book{--spine-height:154px;width:39px;min-width:39px;padding:18px 5px}.library-compact-domain .atelier-book .atelier-spine-title{font-size:12px}
+#studioPrivateJournalBook.atelier-book{width:65px;min-height:180px;height:205px;align-self:end;margin:20px;--leather:#66506c}
+@media(prefers-reduced-motion:reduce){.atelier-book{transition:none}}
+
+.library-domain-card:has(.library-domain-volumes){background:linear-gradient(145deg,#201b17,#171411);border:1px solid #4b4036;border-radius:14px;box-shadow:0 10px 24px #0003;overflow:hidden}.library-domain-card:has(.library-domain-volumes) .library-domain-open{min-height:0;background:none;border:0;border-radius:0;box-shadow:none}.library-domain-card:has(.library-domain-volumes) .library-domain-volumes{margin-top:0}.library-domain-card:has(.library-domain-volumes) .library-domain-open:hover{transform:none}
+
+.studio-book-shelf .studio-album-cover.atelier-book{display:flex;width:64px;height:220px;padding:22px 10px;background:linear-gradient(90deg,#0005,transparent 20%,#fff1 50%,transparent 82%,#0004),var(--leather)}.studio-album-cover.atelier-book small{display:none}

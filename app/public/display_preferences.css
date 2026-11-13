@@ -1,0 +1,53 @@
+/* Shared surfaces: preserve event/category colours, book covers and drawing canvases. */
+:root{--atelier-font:Georgia,'Times New Roman',serif;--atelier-text-factor:1;--panel2:color-mix(in srgb,var(--panel) 85%,var(--text));--atelier-hover:color-mix(in srgb,var(--panel) 75%,var(--gold))}
+:root[data-atelier-theme="goblin"]{--bg:#151311;--panel:#201c18;--line:#4a4036;--gold:#b79a68;--muted:#b8ada0;--text:#f2ede5}
+:root[data-atelier-theme="sage"]{--bg:#101d18;--panel:#203128;--line:#58705f;--gold:#d1dbb9;--muted:#acc1ae;--text:#f1f5e9}
+:root[data-atelier-theme="mauve"]{--bg:#191421;--panel:#2f2438;--line:#765e84;--gold:#ebc9e9;--muted:#c6b2c9;--text:#f9eef9}
+:root[data-atelier-theme="bleu"]{--bg:#101a28;--panel:#1c2b3e;--line:#577086;--gold:#b8d4ee;--muted:#aabed3;--text:#f2f8fe}
+:root[data-atelier-theme="miel"]{--bg:#24190e;--panel:#342619;--line:#916a45;--gold:#e7c583;--muted:#c9ae90;--text:#fbecda}
+body{font-family:var(--atelier-font);background:var(--bg);color:var(--text)}
+button,input,select,textarea{font-family:var(--atelier-font);line-height:1.35}
+:where(.studio-menu,.atelier-context-menu,.modal,.settings-card,.studio-fieldset,.studio-tabs,.tabs,.topbar,.sidebar,.drawer,.library-page-sidebar,.recipe-library-sidebar){background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
+:where(.studio-menu,.atelier-context-menu,.modal,.settings-card,.sidebar,.drawer) :where(input,select,textarea,button){background-color:var(--panel2);color:var(--text);border-color:var(--line)}
+:where(.studio-menu,.atelier-context-menu) button{background:transparent!important;color:var(--text)!important;white-space:normal;min-height:32px}
+:where(.studio-menu,.atelier-context-menu) button:is(:hover,:focus-visible){background:var(--atelier-hover)!important;outline-color:var(--gold)!important}
+:where(.studio-menu,.atelier-context-menu){max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto}
+:where(input,select,textarea){color-scheme:dark}
+select option,optgroup{background:var(--panel);color:var(--text)}
+.primary{background:var(--atelier-hover);color:var(--text);border-color:var(--gold)}
+.atelier-appearance-settings label{display:grid;gap:6px;margin-top:12px}
+.atelier-appearance-settings select{width:100%;min-height:36px}
+.atelier-appearance-settings p{line-height:1.5}
+.home-daily-tracker-name,.home-daily-tracker-subtitle{line-height:1.35!important}
+.home-widget-content{overflow:auto}
+
+:where(.side-nav,.atelier-settings-nav,.settings-preview,.settings-toggle,.settings-card-icon,.atelier-row-context-menu){background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
+:where(.studio-tabs,.atelier-settings-nav,.side-nav,.tabs) button{background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
+:where(.studio-tabs button.selected,.atelier-settings-nav button.active,.side-nav button.active,.tabs button.active,.calendar-modes button.active,.health-folder-nav .active){background:var(--atelier-hover)!important;color:var(--text)!important;border-color:var(--gold)!important}
+:where(.atelier-row-context-menu) button{background:transparent!important;color:var(--text)!important;white-space:normal}
+:where(.atelier-row-context-menu) button:is(:hover,:focus-visible){background:var(--atelier-hover)!important}
+.atelier-context-menu button.danger{color:#f6aca5!important}
+.topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit){background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
+.topbar :is(#globalHomeShortcut,#sideNavHeaderToggle,#quickPostitsHeader,#quickAddHomeModule,#settingsBtn,#globalLayoutEdit):hover{background:var(--atelier-hover)!important;color:var(--text)!important;border-color:var(--gold)!important}
+
+
+/* Size adapts through wrapping/scrolling, never through independent font inflation. */
+.topbar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px}
+.top-brand{flex-wrap:nowrap!important;min-width:0;overflow:hidden}
+.top-brand-labels{min-width:0;flex-shrink:1}
+.top-brand-labels .eyebrow{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{flex-wrap:wrap}
+:root[data-atelier-compact=true] .topbar{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+:root[data-atelier-compact=true] .top-date-wrap{grid-column:1/-1;grid-row:2}
+:root[data-atelier-compact=true] #jumpDateLabel{font-size:24px}
+#sideNav{height:calc(var(--atelier-viewport-height,100dvh) - 96px)!important;max-height:calc(var(--atelier-viewport-height,100dvh) - 20px)!important}
+.modal{max-height:calc(var(--atelier-viewport-height,100dvh) - 24px)!important;max-width:calc(var(--atelier-viewport-width,100vw) - 28px)}
+:where(.studio-menu,.atelier-context-menu){max-width:calc(var(--atelier-viewport-width,100vw) - 16px);max-height:calc(var(--atelier-viewport-height,100dvh) - 16px)}
+:root[data-atelier-font=system] :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted),:root[data-atelier-font=arial] :where(h1,h2,h3,h4,p,label,button,input,select,textarea,small,.eyebrow,.muted){font-family:var(--atelier-font)}
+
+/* Keep the date and actions aligned without squeezing the brand into a tall column. */
+#jumpDateLabel{font-size:clamp(22px,2vw,32px);white-space:nowrap}
+.top-xp{min-width:110px;max-width:220px;flex-shrink:1}
+.top-actions{gap:8px}
+
+.topbar #topXpLevel{flex:0 1 150px!important;min-width:100px;max-width:180px}.topbar .top-brand-labels{flex:1 1 150px}.topbar .top-brand{gap:8px}

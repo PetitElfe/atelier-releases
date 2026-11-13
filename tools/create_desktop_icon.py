@@ -35,6 +35,14 @@ def make(size: int) -> Image.Image:
 
 def main():
     TARGET.parent.mkdir(parents=True, exist_ok=True)
+    import sys
+    sys.path.insert(0,str(ROOT/'app'))
+    import official_icon
+    from urllib.error import HTTPError
+    try:
+        metadata=official_icon.metadata();TARGET.write_bytes(official_icon.asset(metadata,'ico'));print('Official release icon applied');return
+    except HTTPError as exc:
+        if exc.code!=404:raise
     sizes=[16,24,32,48,64,128,256]
     im=make(256)
     im.save(TARGET,format="ICO",sizes=[(n,n) for n in sizes])
