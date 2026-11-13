@@ -47,17 +47,18 @@ if($Mode -ne 'ImportTest'){
   # Apply directly, with bounded messages; do not rely on a background watcher.
   $windowCount=0
   if($Mode -ne 'Reset'){
-    Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class AtelierApplyWindowIcon{[DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern IntPtr LoadImage(IntPtr h,string p,uint t,int x,int y,uint f);[DllImport("user32.dll",SetLastError=true)]public static extern IntPtr SendMessageTimeout(IntPtr w,uint m,UIntPtr p,IntPtr l,uint f,uint ms,out UIntPtr result);[DllImport("user32.dll")]public static extern bool DestroyIcon(IntPtr i);}'
-    foreach($process in Get-Process){
+    Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public static class AtelierApplyWindowIcon{delegate bool Visit(IntPtr w,IntPtr l);[DllImport("user32.dll")]static extern bool EnumWindows(Visit v,IntPtr l);[DllImport("user32.dll",CharSet=CharSet.Unicode)]static extern int GetWindowText(IntPtr w,System.Text.StringBuilder b,int n);[DllImport("user32.dll")]static extern uint GetWindowThreadProcessId(IntPtr w,out uint p);public static uint ProcessId(IntPtr w){uint p;GetWindowThreadProcessId(w,out p);return p;}public static IntPtr[] Windows(){var a=new System.Collections.Generic.List<IntPtr>();EnumWindows((w,l)=>{var b=new System.Text.StringBuilder(512);GetWindowText(w,b,512);if(b.ToString().Replace((char)0x2019,(char)39).StartsWith("L"+(char)39+"Atelier du Goblin"))a.Add(w);return true;},IntPtr.Zero);return a.ToArray();}[DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern IntPtr LoadImage(IntPtr h,string p,uint t,int x,int y,uint f);[DllImport("user32.dll",SetLastError=true)]public static extern IntPtr SendMessageTimeout(IntPtr w,uint m,UIntPtr p,IntPtr l,uint f,uint ms,out UIntPtr result);[DllImport("user32.dll")]public static extern bool DestroyIcon(IntPtr i);}'
+    foreach($hwnd in [AtelierApplyWindowIcon]::Windows()){
       try{
-        if(-not $process.Path -or -not $process.MainWindowHandle -or -not $process.MainWindowTitle.Replace([char]0x2019,[char]39).StartsWith("L'Atelier du Goblin")){continue}
+        $process=Get-Process -Id ([AtelierApplyWindowIcon]::ProcessId($hwnd))
+        if(-not $process.Path){continue}
         if(-not [string]::Equals([AtelierIconPath]::Canonical($process.Path),$canonicalTarget,[StringComparison]::OrdinalIgnoreCase)){continue}
         $applied=$true
         foreach($pair in @(@(0,16),@(1,48))){
           $icon=[AtelierApplyWindowIcon]::LoadImage([IntPtr]::Zero,$OutputIcon,1,$pair[1],$pair[1],0x10)
           if($icon -eq [IntPtr]::Zero){throw 'Cannot load icon'}
           $result=[UIntPtr]::Zero
-          $ack=[AtelierApplyWindowIcon]::SendMessageTimeout($process.MainWindowHandle,0x80,[UIntPtr]$pair[0],$icon,2,1500,[ref]$result)
+          $ack=[AtelierApplyWindowIcon]::SendMessageTimeout($hwnd,0x80,[UIntPtr]$pair[0],$icon,2,1500,[ref]$result)
           if($ack -eq [IntPtr]::Zero){$applied=$false;[AtelierApplyWindowIcon]::DestroyIcon($icon)|Out-Null}
         }
         if($applied){$windowCount++}
