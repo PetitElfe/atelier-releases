@@ -469,11 +469,11 @@
     },
     {
       "path": "public/admin_contacts.js",
-      "sha256": "23fad5d2a124898ec7a824f938b5ef9fc51f368ed9b00c4792ab1106cb5f6e5a"
+      "sha256": "e723ca05dd87e9ca431a2b5b2d3ee2fdda33e8caf7fb9feb240a26de3eeeae12"
     },
     {
       "path": "public/daily_features.js",
-      "sha256": "bf863cd94eaae71edf34b76c0880e80443454cbb23d91ec5d96e43581e511c41"
+      "sha256": "dc65cc0711d9e55112cea2301ade34570c40983effa5556f03d21d9d167be6d3"
     },
     {
       "path": "public/daily_features.css",
@@ -485,5 +485,5 @@
     }
   ],
   "notes": "Démarches : contacts multiples, calendrier, tâches et sélection multiple de documents. Quantités, fiches rapides et apports renseignés. Retour aux carnets et réglages d’affichage.",
-  "build_sequence": 2026111306
+  "build_sequence": 2026111307
 }
