@@ -1,5 +1,6 @@
 """Run the actual PowerShell repair only against a disposable local profile."""
 import hashlib,os,sqlite3,subprocess,tempfile
+from contextlib import closing
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as folder:
@@ -10,7 +11,7 @@ with tempfile.TemporaryDirectory() as folder:
     assert hashlib.sha256(old.encode()).hexdigest()=='5629470982060603971dc49e386028478488b5d047696b6fc5c68d4bcc6205ce'
     target.write_bytes(old.encode())
     data=base/'data';data.mkdir()
-    with sqlite3.connect(data/'atelier.db') as c:c.execute('create table keep(value)')
+    with closing(sqlite3.connect(data/'atelier.db')) as c:c.execute('create table keep(value)')
     before=(data/'atelier.db').read_bytes()
     env=dict(os.environ,LOCALAPPDATA=folder)
     cmd=['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(root/'tools/Reparer_Nathan_Verrou.ps1')]
