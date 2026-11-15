@@ -485,11 +485,11 @@
     },
     {
       "path": "public/workspace_coherence.js",
-      "sha256": "d04ecf9c139eb73910160495009c2ba7be373098bbcb3997c7bfbb3bf49b7218"
+      "sha256": "cf5a763624d71120211ec70d60ba4e03f5695ea37e39330f5016d13a0434df06"
     },
     {
       "path": "public/workspace_coherence.css",
-      "sha256": "1266172a1c9ae72d53cc2d1864340c10248d63cbc0e5b1f117fbad56e76ab6fb"
+      "sha256": "9dc029d649bc9527a6b721c46fb1be08ad905de062c71a1f78852fc6319444d9"
     },
     {
       "path": "public/energy_notebook.js",
@@ -500,6 +500,6 @@
       "sha256": "b12edeb653cb4a36351b35d2ea2408aabef18afaa4aade0d4fbbc752cbfa780b"
     }
   ],
-  "notes": "Santé mentale : accueil aides et quotidien, carnet privé chiffré des activités et de l’énergie, brouillons conservés, archives et export daté.",
-  "build_sequence": 2026111502
+  "notes": "Correction ciblée du journal d’accueil : papier visible, texte bordeaux progressif cohérent entre rappels et tâches, dates et titres alignés sans chevauchement.",
+  "build_sequence": 2026111601
 }

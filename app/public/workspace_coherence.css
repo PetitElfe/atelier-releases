@@ -32,3 +32,26 @@
 /* Burgundy conveys urgency without sacrificing text contrast on dark themes. */
 .workspace-deadline{background:color-mix(in srgb,var(--deadline-tone) 12%,var(--panel))}.workspace-deadline[data-deadline-level=soon]{background:color-mix(in srgb,var(--deadline-tone) 20%,var(--panel))}.workspace-deadline[data-deadline-level=overdue]{background:color-mix(in srgb,var(--deadline-tone) 30%,var(--panel))}
 .workspace-deadline .admin-action-title,.workspace-deadline .admin-case-name,.workspace-deadline .admin-case-when,.workspace-deadline .task-title,.workspace-deadline .deadline-text{color:var(--text)!important}
+
+/* The journal is paper: urgency changes its ink, never paints a dark chip. */
+#homeView #journalBook .workspace-deadline,
+#homeView #journalBook .atelier-important{background:transparent!important;border-inline-start:0!important;padding-inline-start:2px!important;--task-priority:var(--deadline-ink,#814a48)}
+#homeView #journalBook .deadline-line.workspace-deadline,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-tag,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-text,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-time,
+#homeView #journalBook .journal-task.workspace-deadline .journal-task-open,
+#homeView #journalBook .journal-task.atelier-important .journal-task-open{color:var(--deadline-ink,#814a48)!important}
+#homeView #journalBook .journal-task.workspace-deadline .journal-task-open,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-text{font-weight:700}
+#homeView #journalBook .deadline-line{grid-template-columns:max-content minmax(0,1fr)!important;column-gap:12px!important;background:transparent!important}
+#homeView #journalBook .deadline-tag{white-space:nowrap!important}
+#homeView #journalBook .deadline-time:empty{display:none}
+@supports(grid-template-columns:subgrid){
+ #homeView #journalBook #homeDeadlineLines{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:12px;row-gap:2px}
+ #homeView #journalBook .deadline-line{grid-template-columns:subgrid!important;grid-column:1 / -1;column-gap:12px!important}
+ #homeView #journalBook .deadline-empty{grid-column:1 / -1}
+}
+#homeView #journalBook .deadline-line .deadline-tag,
+#homeView #journalBook .deadline-line .deadline-text,
+#homeView #journalBook .deadline-line .deadline-time{color:var(--deadline-ink,#814a48)!important}

@@ -84,12 +84,12 @@ function librarySetLineHeight(value){
  // Deadline colour is computed from actual dates, not a permanent pink marker.
  function deadlineTone(){
   const tasks=window.AtelierAdmin?.data?.actions||state.tasks||[];const now=parseYMD(ymd(new Date()));
-  for(const row of document.querySelectorAll('[data-action-task-id],.admin-case-summary,.task-row,.deadline-line')){
+  for(const row of document.querySelectorAll('[data-action-task-id],.admin-case-summary,.task-row,.deadline-line,.journal-task,.home-todo-row')){
    let item;const id=row.dataset.actionTaskId||row.dataset.taskId;if(id)item=tasks.find(x=>String(x.id)===id)||state.tasks.find(x=>String(x.id)===id);
    if(!item&&row.matches('.admin-case-summary')){const card=row.closest('[data-admin-id]');const dossier=lifeAdmin.find(x=>String(x.id)===card?.dataset.adminId);item=tasks.find(x=>x.id===AtelierAdmin.data.plans[String(dossier?.id)])||dossier}
    if(!item&&row.dataset.deadlineDate)item={due_date:row.dataset.deadlineDate};
-   if(!item?.due_date){row.style.removeProperty('--deadline-tone');row.classList.remove('workspace-deadline');continue}
-   const days=Math.round((parseYMD(item.due_date)-now)/86400000);const active=!item.completed&&item.state!=='done'&&item.status!=='done';row.classList.toggle('workspace-deadline',active&&days<=7);if(active&&days<=7){row.style.setProperty('--deadline-tone',days<=0?'#9c3e4a':days<=3?'#ad5360':'#b8757e');row.dataset.deadlineLevel=days<=0?'overdue':days<=3?'soon':'week'}
+   if(!item?.due_date){row.style.removeProperty('--deadline-tone');row.style.removeProperty('--deadline-ink');delete row.dataset.deadlineLevel;row.classList.remove('workspace-deadline');continue}
+   const days=Math.round((parseYMD(item.due_date)-now)/86400000);const active=!item.completed&&item.state!=='done'&&item.status!=='done'&&(!row.matches('.journal-task,.home-todo-row')||!!item.important);if(active)row.style.setProperty('--deadline-ink',days<=0?'#622832':days<=1?'#713039':days<=3?'#7c3c40':'#88574f');else{row.style.removeProperty('--deadline-ink');delete row.dataset.deadlineLevel}row.classList.toggle('workspace-deadline',active&&days<=7);if(active&&days<=7){row.style.setProperty('--deadline-tone',days<=0?'#9c3e4a':days<=3?'#ad5360':'#b8757e');row.dataset.deadlineLevel=days<=0?'overdue':days<=3?'soon':'week'}
   }
  }
  let deadlineFrame=false;new MutationObserver(()=>{if(deadlineFrame)return;deadlineFrame=true;requestAnimationFrame(()=>{deadlineFrame=false;deadlineTone()})}).observe(document.querySelector('main'),{childList:true,subtree:true});window.addEventListener('studio-updated',deadlineTone);deadlineTone();

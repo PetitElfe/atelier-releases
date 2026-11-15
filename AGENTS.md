@@ -12,6 +12,7 @@ Puis vérifier le code réellement livré et les workflows déjà actifs. Ne pas
 - Toutes les archives sont accessibles depuis Paramètres ; aucune donnée ne doit être supprimée pour simplement déplacer cet accès.
 - Préserver l'accueil approuvé, les positions personnelles, thèmes, zoom, données, liens et fonctions satisfaisantes. Les courses deviennent un module d'accueil facultatif, sans refaire les positions existantes.
 - Même échelle et typographie cohérente, écrans et zoom vérifiés ; pas de grossissement automatique fondé uniquement sur la résolution, ni de tableau étiré pour occuper le vide.
+- Sur le papier du journal d’accueil, les échéances changent la couleur du texte vers un bordeaux sombre. Aucun aplat sombre, fond de badge, liseré rose ou texte rose pâle ; dates et titres doivent rester séparés et alignés dans les deux listes.
 - Les couleurs suivent le thème. Échéances : bordeaux discret progressivement plus marqué à l’approche, jamais rose vif.
 - Un schéma inséré est immédiatement sélectionnable, déplaçable et redimensionnable avec le même comportement qu'une image importée.
 - Examiner ces règles sur toute page modifiée et ses parcours associés sans attendre que l'utilisateur les répète. Ne pas fabriquer des réglages vides ou sans utilité.
