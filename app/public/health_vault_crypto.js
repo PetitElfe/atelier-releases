@@ -13,8 +13,9 @@
  function check(e){if(!e||e.version!==1||e.kdf?.name!=='PBKDF2-SHA256'||e.kdf.iterations!==iterations||bytes(e.salt).length!==16)throw Error('Format de coffre non reconnu.')}
  async function create(password,data){passwordCheck(password);const raw=random(32),recovery=random(32),salt=random(16);try{const key=await aes(raw),envelope={version:1,kdf:{name:'PBKDF2-SHA256',iterations},salt:base64(salt),wrapped:await seal(await derive(password,salt),raw,'password'),recovery:await seal(await aes(recovery),raw,'recovery'),payload:await seal(key,enc.encode(JSON.stringify(data)),'payload')};return {key,envelope,recoveryCode:base64(recovery)}}finally{raw.fill(0);recovery.fill(0)}}
  async function unlock(e,secret,recover=false){check(e);let raw;try{raw=await open(recover?await aes(bytes(secret.trim())):await derive(secret,bytes(e.salt)),recover?e.recovery:e.wrapped,recover?'recovery':'password');const key=await aes(raw),plain=await open(key,e.payload,'payload');try{return {key,data:JSON.parse(dec.decode(plain))}}finally{plain.fill(0)}}finally{raw?.fill(0)}}
+ async function decrypt(e,key){check(e);const plain=await open(key,e.payload,'payload');try{return JSON.parse(dec.decode(plain))}finally{plain.fill(0)}}
  async function encrypt(e,key,data){check(e);return {...e,payload:await seal(key,enc.encode(JSON.stringify(data)),'payload')}}
  async function password(e,key,oldSecret,newSecret,recover=false){passwordCheck(newSecret);const raw=await open(recover?await aes(bytes(oldSecret.trim())):await derive(oldSecret,bytes(e.salt)),recover?e.recovery:e.wrapped,recover?'recovery':'password'),salt=random(16);try{return {...e,salt:base64(salt),wrapped:await seal(await derive(newSecret,salt),raw,'password')}}finally{raw.fill(0)}}
- const api={base64,bytes,create,unlock,encrypt,password,passwordCheck,generatePassword:()=>base64(random(24))};
+ const api={base64,bytes,create,unlock,decrypt,encrypt,password,passwordCheck,generatePassword:()=>base64(random(24))};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.AtelierVaultCrypto=api;
 })(globalThis);

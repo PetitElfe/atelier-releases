@@ -1,0 +1,39 @@
+name: Private energy notebook Windows TEST
+on:
+  push:
+    branches: [test/energy-notebook-20261115]
+permissions:
+  contents: read
+jobs:
+  energy:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -q
+      - run: node --test tests/energy_notebook.test.cjs tests/health_vault_crypto.test.cjs
+      - run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/energy_notebook_browser_test.cjs
+      - run: node tools/books_health_browser_test.cjs
+      - run: node tools/workspace_coherence_browser_test.cjs
+      - run: node tools/display_preferences_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: energy-${{ matrix.os }}
+          path: artifacts/

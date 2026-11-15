@@ -149,11 +149,11 @@
     },
     {
       "path": "public/health_space.js",
-      "sha256": "277a46e8df04b5862a1fdf8ea782cc03cea786157c62e94944acde1d94bc26fc"
+      "sha256": "aad4cb9ada872e6d9108722733a8f7d62cf2d1ec727a530fed3fcbd238479097"
     },
     {
       "path": "public/health_vault_crypto.js",
-      "sha256": "948e439180dcdfb692aabfe0d137e5e10c2cca286ddb090c924114604ff8eeba"
+      "sha256": "9ee3cbe91f9b658419d4c9c4e410bad10fd8c2ea8144783c6385f55aab20126b"
     },
     {
       "path": "public/home_reference.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "96b37612d4f0933c36be0cccab9d6f19cd1c23dd83ce18d2a9dae347706d4e2b"
+      "sha256": "d2343a3da60c01377bc65cb8069a4fba268a35c45586cac4ac8b69f8b4ae79ef"
     },
     {
       "path": "public/interface_reference.css",
@@ -297,7 +297,7 @@
     },
     {
       "path": "public/studio_tools.js",
-      "sha256": "5dcd6fd054fe390331daa31527d3516d7ff3cb7476729a453d7ab486b069369c"
+      "sha256": "5efb210d517833f3709ad1aa9e8e88db16265b244f0403a42a6820ea42441b02"
     },
     {
       "path": "public/studio_trackers.js",
@@ -490,8 +490,16 @@
     {
       "path": "public/workspace_coherence.css",
       "sha256": "1266172a1c9ae72d53cc2d1864340c10248d63cbc0e5b1f117fbad56e76ab6fb"
+    },
+    {
+      "path": "public/energy_notebook.js",
+      "sha256": "1860b39a2d621bb75554f567b6ccb64b5cc1570ce6d71da1aa5364fa0e51331b"
+    },
+    {
+      "path": "public/energy_notebook.css",
+      "sha256": "b12edeb653cb4a36351b35d2ea2408aabef18afaa4aade0d4fbbc752cbfa780b"
     }
   ],
-  "notes": "Cohérence Windows : tiroir des rappels, volume progressif, éditeur en points et schémas redimensionnables, budget regroupé, archives dans les paramètres, assiette et module de courses accueil.",
-  "build_sequence": 2026111501
+  "notes": "Santé mentale : accueil aides et quotidien, carnet privé chiffré des activités et de l’énergie, brouillons conservés, archives et export daté.",
+  "build_sequence": 2026111502
 }

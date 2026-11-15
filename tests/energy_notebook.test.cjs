@@ -1,0 +1,5 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+const window={AtelierStudio:{node(){}}};vm.runInNewContext(fs.readFileSync('app/public/energy_notebook.js','utf8'),{window,Date,Number,Error});const validate=window.AtelierEnergy.validate;
+const base={occurred_at:'2026-11-15T13:45',description:'Un moment',kind:'activity',energy:'0',energy_before:'',energy_after:'10',minutes:'35',symptoms:'',help:''};
+test('zero energy and absent optional values remain distinct',()=>{const result=validate(base);assert.equal(result.energy,0);assert.equal(result.energy_before,null);assert.equal(result.energy_after,10);assert.equal(result.minutes,35)});
+test('invalid ranges, impossible dates and missing description are rejected',()=>{for(const patch of [{energy:'11'},{energy:'-1'},{minutes:'1441'},{occurred_at:'2026-02-30T13:45'},{description:' '},{kind:'unknown'},{symptoms:'x'.repeat(2001)}])assert.throws(()=>validate({...base,...patch}))});
