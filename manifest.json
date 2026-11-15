@@ -149,7 +149,7 @@
     },
     {
       "path": "public/health_space.js",
-      "sha256": "aad4cb9ada872e6d9108722733a8f7d62cf2d1ec727a530fed3fcbd238479097"
+      "sha256": "564054279f2aae7c698cb45a4bf97e5720343cf4e7f7de81fd9bce30d1e1a909"
     },
     {
       "path": "public/health_vault_crypto.js",
@@ -493,7 +493,7 @@
     },
     {
       "path": "public/energy_notebook.js",
-      "sha256": "1860b39a2d621bb75554f567b6ccb64b5cc1570ce6d71da1aa5364fa0e51331b"
+      "sha256": "d1e840a087afabce4e7a23bfe7870f8da3fb4ddec39113784a0fddb250544f38"
     },
     {
       "path": "public/energy_notebook.css",
