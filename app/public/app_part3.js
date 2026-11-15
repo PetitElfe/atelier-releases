@@ -1106,7 +1106,7 @@ function getGlobalLayoutSpecs(){
     {view:'calendar',id:'week',el:$('#weekPanel'),key:'atelierViewLayout_calendar_week'},
     {view:'tasks',id:'tasks',el:$('#taskList'),key:'atelierViewLayout_tasks_list'},
     {view:'reminders',id:'reminders',el:$('#reminderList'),key:'atelierViewLayout_reminders_list'},
-    {view:'kitchen',id:'shopping',el:$('#shoppingPanel'),key:'atelierKitchenLayout_shopping'},
+    {view:'home',id:'shopping',el:$('#shoppingPanel'),key:'atelierHomeShoppingLayout'},
     {view:'kitchen',id:'foods',el:$('#foodPanel'),key:'atelierKitchenLayout_foods'},
     {view:'kitchen',id:'meals',el:$('#mealPanel'),key:'atelierKitchenLayout_meals'},
     {view:'cuisine',id:'library',el:$('.cuisine-library'),key:'atelierViewLayout_cuisine_library'},

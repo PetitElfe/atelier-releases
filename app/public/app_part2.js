@@ -2095,7 +2095,7 @@ function libraryNotesAreRich(raw){return String(raw||'').startsWith(LIBRARY_RICH
 function libraryRichPayload(raw){return libraryNotesAreRich(raw)?String(raw).slice(LIBRARY_RICH_PREFIX.length):''}
 
 function librarySanitizeStyle(raw){
-  const allowed=new Set(['color','background-color','font-family','font-size','text-align','font-weight','font-style','text-decoration','width','max-width','margin-left','margin-right','display']);
+  const allowed=new Set(['color','background-color','font-family','font-size','text-align','font-weight','font-style','text-decoration','width','max-width','margin-left','margin-right','display','line-height','text-indent']);
   const out=[];
   String(raw||'').split(';').forEach(rule=>{
     const idx=rule.indexOf(':');if(idx<1)return;
@@ -2269,7 +2269,7 @@ function wireLibraryImageFigure(fig,page){
   controls.onclick=e=>{
     const action=e.target.closest('button')?.dataset.imgAction;if(!action)return;
     e.preventDefault();e.stopPropagation();
-    const editor=$('#libraryPageBody'),current=fig.getBoundingClientRect().width,max=Math.max(180,editor?.clientWidth||700);
+    const editor=$('#libraryPageBody'),current=fig.offsetWidth,max=Math.max(180,editor?.clientWidth||700);
     if(action==='delete')fig.remove();
     else if(['left','center','right'].includes(action))setAlign(action);
     else{
@@ -2280,8 +2280,8 @@ function wireLibraryImageFigure(fig,page){
   };
   handle.onpointerdown=e=>{
     e.preventDefault();e.stopPropagation();
-    const editor=$('#libraryPageBody'),startX=e.clientX,startW=fig.getBoundingClientRect().width,max=Math.max(180,editor?.clientWidth||700);
-    const move=ev=>{fig.style.width=Math.round(Math.max(120,Math.min(max,startW+(ev.clientX-startX))))+'px';fig.style.maxWidth='100%'};
+    const editor=$('#libraryPageBody'),startX=e.clientX,startW=fig.offsetWidth,zoom=window.AtelierDisplay?.factor||1,max=Math.max(180,editor?.clientWidth||700);
+    const move=ev=>{fig.style.width=Math.round(Math.max(120,Math.min(max,startW+(ev.clientX-startX)/zoom)))+'px';fig.style.maxWidth='100%'};
     const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);markLibraryPageDirty(page)};
     window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
   };
@@ -2492,7 +2492,7 @@ function renderLibraryPageEditor(notebook,page){
     const el=$('#'+id);if(el)el.onmousedown=()=>rememberLibraryTextSelection();
   });
   $('#libraryFontFamily').onchange=e=>libraryExec('fontName',e.target.value);
-  $('#libraryFontSize').onchange=e=>libraryExec('fontSize',e.target.value);
+  $('#libraryFontSize').onchange=e=>librarySetPointSize(e.target.value);
   $('#libraryTextColor').oninput=e=>libraryExec('foreColor',e.target.value);
   $('#libraryHighlightColor').oninput=e=>libraryExec('hiliteColor',e.target.value);
 
@@ -3123,7 +3123,7 @@ function renderLibraryPageEditor(notebook,page){
         <div class="library-toolbar-group">
           <select id="libraryBlockFormat" title="Style de paragraphe"><option value="div">Normal</option><option value="h1">Titre 1</option><option value="h2">Titre 2</option><option value="h3">Titre 3</option><option value="blockquote">Citation</option></select>
           <select id="libraryFontFamily" title="Police"><option value="Georgia">Georgia</option><option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Trebuchet MS">Trebuchet</option><option value="Courier New">Courier</option><option value="Times New Roman">Times</option></select>
-          <select id="libraryFontSize" title="Taille"><option value="1">Très petit</option><option value="2">Petit</option><option value="3" selected>Normal</option><option value="4">Grand</option><option value="5">Très grand</option><option value="6">Titre</option><option value="7">Très grand titre</option></select>
+          <label class="library-point-size">Taille <input id="libraryFontSize" title="Taille en points" type="number" min="6" max="96" step="1" value="12" aria-label="Taille en points"></label><label>Interligne <select id="libraryLineHeight" aria-label="Interligne"><option value="1">Simple</option><option value="1.15" selected>1,15</option><option value="1.5">1,5</option><option value="2">Double</option></select></label>
         </div>
         <div class="library-toolbar-group">
           <button type="button" class="library-format-btn" data-command="bold" title="Gras"><b>G</b></button>
@@ -3215,7 +3215,8 @@ function renderLibraryPageEditor(notebook,page){
   ['libraryBlockFormat','libraryFontFamily','libraryFontSize','libraryTextColor','libraryHighlightColor'].forEach(id=>{const el=$('#'+id);if(el)el.onmousedown=rememberLibraryTextSelection});
   $('#libraryBlockFormat').onchange=e=>libraryBlockFormat(e.target.value);
   $('#libraryFontFamily').onchange=e=>libraryCommand('fontName',e.target.value);
-  $('#libraryFontSize').onchange=e=>libraryCommand('fontSize',e.target.value);
+  $('#libraryFontSize').onchange=e=>librarySetPointSize(e.target.value);
+  $('#libraryLineHeight').onchange=e=>librarySetLineHeight(e.target.value);
   $('#libraryTextColor').oninput=e=>libraryCommand('foreColor',e.target.value);
   $('#libraryHighlightColor').oninput=e=>libraryCommand('hiliteColor',e.target.value);
 

@@ -97,6 +97,7 @@ function renderHome(){
     deadlines.forEach(d=>{
       const b=document.createElement('button'); b.type='button'; b.className='deadline-line'+(d.type==='task'?' atelier-important':'');
       const time=d.type==='event'&&d.item?.start_time?fmtTime(d.item.start_time)+(d.item.end_time?'–'+fmtTime(d.item.end_time):''):d.item?.due_time?fmtTime(d.item.due_time):'';
+      b.dataset.deadlineDate=d.date;
       b.innerHTML=`<span class="deadline-tag">${esc(fmtRelativeDate(d.date))}</span><span class="deadline-text">${esc(d.title)}</span><span class="deadline-time">${esc(time)}</span>`;
       b.addEventListener('click',()=>d.type==='task'?openTaskModal(d.item):openEventModal(d.item)); deadlineRoot.appendChild(b);
     });

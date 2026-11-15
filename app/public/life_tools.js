@@ -1047,7 +1047,9 @@ document.addEventListener('keydown',e=>{
   if(lifeShortcutFromEvent(e)===lifeShortcut()){e.preventDefault();lifeOpenCapture()}
 });
 function lifeSoundEnabled(){return localStorage.getItem('atelierReminderSound')==='1'}
-function lifeReminderVolume(){const n=Number(localStorage.getItem('atelierReminderVolume')||'40');return Math.max(0,Math.min(100,Number.isFinite(n)?n:40))/100}
+function lifeReminderPercent(){const raw=localStorage.getItem('atelierReminderVolume');const n=Number(raw===null?'40':raw);return Math.max(0,Math.min(100,Number.isFinite(n)?n:40))}
+// A perceptual curve gives useful quiet levels; zero is genuinely silent.
+function lifeReminderVolume(){return Math.pow(lifeReminderPercent()/100,3)}
 /* Notifications personnalisées : cinq vrais fichiers WAV peuvent être stockés
    localement, sans réseau ni upload serveur. */
 const atelierNotificationNames={
@@ -1056,7 +1058,7 @@ const atelierNotificationNames={
 };
 function atelierNotificationChosen(){const id=localStorage.getItem('atelierNotificationChosen')||'chimes';return atelierNotificationNames[id]?id:'chimes'}
 function lifeReminderChime(force=false){
- if(!force&&!lifeSoundEnabled())return;
+ if((!force&&!lifeSoundEnabled())||lifeReminderVolume()===0)return;
  const id=atelierNotificationChosen(),saved=id==='original'?null:localStorage.getItem('atelierNotificationFile_'+id);
  if(id!=='original'&&!saved){
   const status=document.getElementById('atelierNotificationStatus');
@@ -1087,14 +1089,14 @@ function lifeReminderChime(force=false){
 }
 const lifeReminderVolumeField=document.createElement('label');
 lifeReminderVolumeField.className='atelier-reminder-volume';
-lifeReminderVolumeField.innerHTML='<span>Volume de L’Atelier <output id="atelierReminderVolumeValue"></output></span><input id="atelierReminderVolume" type="range" min="0" max="100" step="5" aria-label="Volume des rappels" />';
+lifeReminderVolumeField.innerHTML='<span>Volume de L’Atelier <output id="atelierReminderVolumeValue"></output></span><input id="atelierReminderVolume" type="range" min="0" max="100" step="1" aria-label="Volume des rappels" />';
 const lifeSoundControl=$('#settingsReminderSound');
 if(lifeSoundControl){
   const card=lifeSoundControl.closest('.settings-card');
   const reference=$('#settingsTestReminderSound');
   if(reference)reference.before(lifeReminderVolumeField);else card?.append(lifeReminderVolumeField);
   const slider=$('#atelierReminderVolume'),output=$('#atelierReminderVolumeValue');
-  slider.value=String(Math.round(lifeReminderVolume()*100));output.textContent=slider.value+' %';
+  slider.value=String(lifeReminderPercent());output.textContent=slider.value+' %';
   slider.addEventListener('input',()=>{localStorage.setItem('atelierReminderVolume',slider.value);output.textContent=slider.value+' %'});
 }
 /* Un seul choix de notification et cinq emplacements de fichiers locaux. */

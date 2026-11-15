@@ -85,15 +85,15 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "01857f6cb815882e2a4a27c093b3acd4d64b8598ba72361db769b56933081e13"
+      "sha256": "0a96fb03466b540d10cd19a9eccf06733cc48aa0e5f5e45a3423cc2a45e7ed6a"
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "76c3f0d26221503f30e994cadb80869168a2f402060a07a94607f7c066500681"
+      "sha256": "8d3135a1cc52971294415a0bf5d845194e8d986f6e563ff542e779e273045cc5"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "c472cfe54a57ee43d0e8826105b63b741ab77f187e21ba047eeada2b9d07f0e4"
+      "sha256": "55878f50baa63ec5eef037d6fe430684a0f46ededfda0dc296f1df41b86cda3a"
     },
     {
       "path": "public/big_refonte.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "9980c3697561fc947e6e1c540ab5359ebcff8be9558080e2881adb8621c30fa4"
+      "sha256": "96b37612d4f0933c36be0cccab9d6f19cd1c23dd83ce18d2a9dae347706d4e2b"
     },
     {
       "path": "public/interface_reference.css",
@@ -193,7 +193,7 @@
     },
     {
       "path": "public/kitchen_timers.js",
-      "sha256": "64dedc667c0988d45c30eba89e291e0e0a0494772a27537b2c446f3027a9decb"
+      "sha256": "4a78319dd8d8b272158faed417f1292815eab711e7e212e453fcde9a272f220a"
     },
     {
       "path": "public/library_moodboard.css",
@@ -217,7 +217,7 @@
     },
     {
       "path": "public/life_tools.js",
-      "sha256": "1638e482ce6cbabc72d545de493b6bcce4c6c049eba6721ffe069eef13cbefea"
+      "sha256": "1d2995e062ffc0688a0108d8a45e65fbf025a2589a5bad6bc148b193600af2b3"
     },
     {
       "path": "public/mental-health.html",
@@ -289,7 +289,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "63a11384c1bfb7f3698bb46f51fa2b33983b6141e9649f38c8d67d62ebf89b94"
+      "sha256": "1cd3097b9264a0364ba3447e0d7a6aa8d2f3eef2620a81a3bdcecf3629bc6b4d"
     },
     {
       "path": "public/studio_core.js",
@@ -297,7 +297,7 @@
     },
     {
       "path": "public/studio_tools.js",
-      "sha256": "27d754088cfa1f1f45163edaf45f3e67d633ff72094618fa142f3e47d40f9e06"
+      "sha256": "b4831c67cba2663f05768e60bdc3efd7bc446190169dd0fc91c22edf3cd5656c"
     },
     {
       "path": "public/studio_trackers.js",
@@ -321,7 +321,7 @@
     },
     {
       "path": "public/utility_notes.js",
-      "sha256": "0d422b17d9eb4bbd5a18147cdcc3fbbdbc351ba7bb8e3b5ebf0a2688429fd58e"
+      "sha256": "1511ad50ab9b90bfdd410f48853cf1bec6d41d9785283f4c955473ebfa066403"
     },
     {
       "path": "public/utility_safety.js",
@@ -445,7 +445,7 @@
     },
     {
       "path": "public/admin_workspace.js",
-      "sha256": "5941e9a55e8e921762e7f94d596f18ad11cc6e338713e7d74fc267043d67c2c4"
+      "sha256": "a80a904f327607ae8b8530dc67238a657de4d712a1639b7b41be0594fcd8a839"
     },
     {
       "path": "public/admin_workspace.css",
@@ -473,7 +473,7 @@
     },
     {
       "path": "public/daily_features.js",
-      "sha256": "dc65cc0711d9e55112cea2301ade34570c40983effa5556f03d21d9d167be6d3"
+      "sha256": "2e2e7d0f8c1676ed48e01d76267f75b560e888fad6e78b26690c47e74cc2ea7a"
     },
     {
       "path": "public/daily_features.css",
@@ -482,8 +482,16 @@
     {
       "path": "sqlite_context.py",
       "sha256": "4f969862f48fe99f6aa9f59979900636b674ee23c041b8ff66e67602fb1a2bd4"
+    },
+    {
+      "path": "public/workspace_coherence.js",
+      "sha256": "fd915a859bc03f8480c9dec7ff9933db785153ce7ee218cfe408c5097a58e23e"
+    },
+    {
+      "path": "public/workspace_coherence.css",
+      "sha256": "279dd2972605f6e2c3350281cf9f56432d8ec7848c04316a9c187b617019267d"
     }
   ],
-  "notes": "Correctif du report des rappels : fermeture après enregistrement, conservation de la saisie en cas d’erreur et mise à jour immédiate sans recharger toute l’application.",
-  "build_sequence": 2026111309
+  "notes": "Cohérence Windows : tiroir des rappels, volume progressif, éditeur en points et schémas redimensionnables, budget regroupé, archives dans les paramètres, assiette et module de courses accueil.",
+  "build_sequence": 2026111501
 }

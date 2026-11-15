@@ -1,5 +1,7 @@
 /* Named cooking timers use persistent server reminders, including native delivery. */
 (()=>{'use strict';
+ // Desktop cooking timers are retired; keep stored jobs and phone timers intact.
+ return;
  const root=document.getElementById('cuisineView');if(!root)return;
  const key='atelier-kitchen-timers-v1';let timers=[];try{timers=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(timers))timers=[]}catch{}
  const panel=document.createElement('section');panel.id='kitchenTimersPanel';panel.className='organisation-module';panel.innerHTML='<h3>Mes minuteurs de cuisine</h3><p>Chaque cuisson a son propre rappel. Pour les recevoir fenêtre fermée, active les rappels Windows dans les Paramètres et garde le compagnon près de l’horloge.</p><form id="kitchenTimerForm" class="form-grid"><label>Nom de la cuisson<input name="label" maxlength="80" required placeholder="Œufs, four, pâtes…"></label><label>Minutes<input name="minutes" type="number" min="0" max="1440" value="8" required></label><label>Secondes<input name="seconds" type="number" min="0" max="59" value="0" required></label><button type="submit">Démarrer ce minuteur</button></form><p id="kitchenTimerStatus" role="status"></p><div id="kitchenTimerRows" aria-label="Cuissons en cours"></div>';

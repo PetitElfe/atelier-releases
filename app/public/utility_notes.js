@@ -24,5 +24,6 @@
    for(const [id,d] of Object.entries(drafts)){if(documentState.notes.some(n=>n.id===id))continue;const button=document.createElement('button');button.type='button';button.textContent='Reprendre le brouillon · '+(d.note?.title||'Sans titre');button.onclick=()=>open(id);list.prepend(button)}
  }
  $('sharedNoteNew').onclick=()=>open(null);$('sharedNotesReload').onclick=load;$('sharedNotesSearch').oninput=draw;$('sharedNotesTag').onchange=draw;$('sharedNotesArchive').onclick=()=>{archive=!archive;$('sharedNotesArchive').setAttribute('aria-pressed',String(archive));$('sharedNotesArchive').textContent=archive?'Voir les notes actives':'Voir les archives';draw()};
+ window.AtelierSharedNotes={archives:async()=>{archive=true;await load();draw()},active:()=>{archive=false;draw()}};
  window.atelierSharedNotesReload=load;const previous=showView;showView=function(view){previous(view);if(view==='captures')load()};draw();
 })();
