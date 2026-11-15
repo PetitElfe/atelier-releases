@@ -1828,13 +1828,13 @@ function initGlobalLayoutEditor(){
       window.removeEventListener('pointercancel',cancel);
       applyGlobalLayout(item,d);
     }
-    if(isHomeCanvasItem(item)){
-      item.el.addEventListener('pointerdown',event=>{
-        if(!homeCanvasReady||!globalLayoutEditing||state.view!=='home'||event.button!==0)return;
-        if(event.target.closest('.layout-controls'))return;
-        beginHomeCanvasDrag(event,item);
-      });
-    }
+    // Modules such as Courses can join the home canvas after registration.
+    // Check their current role on interaction, not just during initialization.
+    item.el.addEventListener('pointerdown',event=>{
+      if(!isHomeCanvasItem(item)||!homeCanvasReady||!globalLayoutEditing||state.view!=='home'||event.button!==0)return;
+      if(event.target.closest('.layout-controls'))return;
+      beginHomeCanvasDrag(event,item);
+    });
     const beginMove=event=>{
       if(!globalLayoutEditing||state.view!==item.view||event.button!==0)return;
       if(homeCanvasReady&&isHomeCanvasItem(item)){beginHomeCanvasDrag(event,item);return;}

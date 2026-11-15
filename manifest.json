@@ -93,7 +93,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "55878f50baa63ec5eef037d6fe430684a0f46ededfda0dc296f1df41b86cda3a"
+      "sha256": "9817b0c00d58c8595400bbd56d2adda31d5103e07d99de5e60749ebd24469785"
     },
     {
       "path": "public/big_refonte.css",
@@ -500,6 +500,6 @@
       "sha256": "b12edeb653cb4a36351b35d2ea2408aabef18afaa4aade0d4fbbc752cbfa780b"
     }
   ],
-  "notes": "Correction ciblée du journal d’accueil : papier visible, texte bordeaux progressif cohérent entre rappels et tâches, dates et titres alignés sans chevauchement.",
-  "build_sequence": 2026111601
+  "notes": "Correction du déplacement du module Courses dans l’accueil : sélection, glisser-déposer, redimensionnement et position conservée.",
+  "build_sequence": 2026111602
 }
