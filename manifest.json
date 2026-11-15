@@ -473,7 +473,7 @@
     },
     {
       "path": "public/daily_features.js",
-      "sha256": "2e2e7d0f8c1676ed48e01d76267f75b560e888fad6e78b26690c47e74cc2ea7a"
+      "sha256": "616ab610ae1834a2943797a7b11ac33a0d9f93afbf79bb3affeac3c480380ae5"
     },
     {
       "path": "public/daily_features.css",
@@ -485,11 +485,11 @@
     },
     {
       "path": "public/workspace_coherence.js",
-      "sha256": "fd915a859bc03f8480c9dec7ff9933db785153ce7ee218cfe408c5097a58e23e"
+      "sha256": "45709ed6c65292c8d79ab49caa82ca3f9f3d4f1166c0131ba9298fbb8923ca7f"
     },
     {
       "path": "public/workspace_coherence.css",
-      "sha256": "279dd2972605f6e2c3350281cf9f56432d8ec7848c04316a9c187b617019267d"
+      "sha256": "efbdd89d156bb1b8bb3689409e11edba5838f9011109316759f8d32eeadf8864"
     }
   ],
   "notes": "Cohérence Windows : tiroir des rappels, volume progressif, éditeur en points et schémas redimensionnables, budget regroupé, archives dans les paramètres, assiette et module de courses accueil.",

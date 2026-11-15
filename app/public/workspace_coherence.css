@@ -25,3 +25,5 @@
 
 .workspace-deadline .admin-case-when{color:var(--deadline-tone)!important}.workspace-archive-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
 #workspaceArchives #sharedNotesPanel{margin:8px 0;border:0;padding:0}#workspaceArchives #sharedNoteNew{display:none}
+
+.workspace-plate-legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.8em;margin:4px 0 12px;color:var(--muted,var(--text))}.workspace-plate-legend span:before{content:"";display:inline-block;width:7px;height:7px;margin-right:4px;background:#789b73;border-radius:2px}.workspace-plate-legend span:nth-child(2):before{background:#bcac7c}.workspace-plate-legend span:nth-child(3):before{background:#a27b79}

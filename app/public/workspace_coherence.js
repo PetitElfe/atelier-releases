@@ -6,11 +6,13 @@ function librarySetPointSize(value){
  editor.focus();restoreLibraryTextSelection();
  // Use the browser's editing transaction so replacing selected text stays undoable.
  document.execCommand('styleWithCSS',false,true);
+ // Force a distinct temporary size only in the selection; leave earlier large text alone.
+ document.execCommand('fontSize',false,'1');
  const previous=new Set(editor.querySelectorAll('[style]'));
- const oldSizes=new Map([...previous].map(n=>[n,n.style.fontSize]));
+ const oldSizes=new Map([...previous].map(n=>[n,n.style.fontSize]));const oldFonts=new Set(editor.querySelectorAll('font[size="7"]'));
  document.execCommand('fontSize',false,'7');
  for(const n of editor.querySelectorAll('[style]'))if(n.style.fontSize==='xxx-large'&&(!previous.has(n)||oldSizes.get(n)!=='xxx-large'))n.style.fontSize=points+'pt';
- for(const n of editor.querySelectorAll('font[size="7"]')){n.removeAttribute('size');n.style.fontSize=points+'pt'}
+ for(const n of editor.querySelectorAll('font[size="7"]'))if(!oldFonts.has(n)){n.removeAttribute('size');n.style.fontSize=points+'pt'}
  rememberLibraryTextSelection();editor.dispatchEvent(new Event('input',{bubbles:true}));
 }
 function librarySetLineHeight(value){
@@ -56,7 +58,7 @@ function librarySetLineHeight(value){
  // One existing list in a narrow right drawer, without cloning actions or reminder IDs.
  const panel=$('remindersView'),drawer=N('aside','workspace-reminder-drawer');drawer.id='workspaceReminderDrawer';drawer.hidden=true;drawer.setAttribute('aria-label','Rappels');
  const close=B('×',()=>setDrawer(false));close.setAttribute('aria-label','Fermer les rappels');const head=panel.querySelector('h2');head.textContent='Rappels';panel.querySelector('.panel-head').prepend(close);panel.querySelector(':scope>p.muted')?.remove();drawer.append(panel);document.body.append(drawer);
- const trigger=B('',()=>setDrawer(drawer.hidden),'workspace-reminder-trigger');trigger.id='workspaceReminderToggle';trigger.setAttribute('aria-controls',drawer.id);trigger.innerHTML='<span aria-hidden="true">‹</span><span class="workspace-reminder-count">0</span>';document.body.append(trigger);let returnFocus=null;
+ const trigger=B('',()=>setDrawer(drawer.hidden),'workspace-reminder-trigger');trigger.id='workspaceReminderToggle';trigger.setAttribute('aria-controls',drawer.id);trigger.setAttribute('aria-expanded','false');trigger.innerHTML='<span aria-hidden="true">‹</span><span class="workspace-reminder-count">0</span>';document.body.append(trigger);let returnFocus=null;
  function setDrawer(open){if(open)returnFocus=document.activeElement;drawer.hidden=!open;trigger.setAttribute('aria-expanded',String(open));trigger.querySelector('span').textContent=open?'›':'‹';panel.classList.toggle('active-view',open);if(open)close.focus();else if(drawer.contains(document.activeElement))returnFocus?.focus()}
  const previousReminders=renderReminders;renderReminders=function(...args){const r=previousReminders(...args);const count=state.reminders.filter(x=>x.status!=='done').length;trigger.querySelector('.workspace-reminder-count').textContent=count;trigger.setAttribute('aria-label',(drawer.hidden?'Ouvrir':'Fermer')+' les rappels · '+count);return r};renderReminders();
  function tidyTitle(view){const normalize=s=>s.trim().toLocaleLowerCase('fr');const value=normalize(title.textContent);for(const h of document.querySelectorAll('#'+view+'View > .panel-head h2,#'+view+'View > .view-head h2'))if(normalize(h.textContent)===value)h.hidden=true}tidyTitle(state.view);
