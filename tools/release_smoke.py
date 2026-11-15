@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import closing
 import http.client
 import json
 import os
@@ -459,7 +460,7 @@ def check_server(version: str) -> None:
             stop_server(proc)
 
         db = data / "atelier.db"
-        with sqlite3.connect(db) as c:
+        with closing(sqlite3.connect(db)) as c:
             if c.execute("PRAGMA user_version").fetchone()[0] != 28:
                 fail("PRAGMA user_version n'a pas été appliqué.")
             mood_cols={row[1] for row in c.execute("PRAGMA table_info(library_moodboards)")}
