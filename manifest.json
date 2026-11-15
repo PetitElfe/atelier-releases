@@ -489,7 +489,7 @@
     },
     {
       "path": "public/workspace_coherence.css",
-      "sha256": "372da1a5803152d8ff897d7ede82a47d355d5d15b89bfcd2f83191e04eee0e28"
+      "sha256": "1266172a1c9ae72d53cc2d1864340c10248d63cbc0e5b1f117fbad56e76ab6fb"
     }
   ],
   "notes": "Cohérence Windows : tiroir des rappels, volume progressif, éditeur en points et schémas redimensionnables, budget regroupé, archives dans les paramètres, assiette et module de courses accueil.",
