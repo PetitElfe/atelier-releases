@@ -89,7 +89,7 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "8d3135a1cc52971294415a0bf5d845194e8d986f6e563ff542e779e273045cc5"
+      "sha256": "c1b4dc4f95276841eaff50a2232ea3447e1f697eee7ff0b4f93a2d3020d5aad7"
     },
     {
       "path": "public/app_part3.js",
@@ -297,7 +297,7 @@
     },
     {
       "path": "public/studio_tools.js",
-      "sha256": "b4831c67cba2663f05768e60bdc3efd7bc446190169dd0fc91c22edf3cd5656c"
+      "sha256": "5dcd6fd054fe390331daa31527d3516d7ff3cb7476729a453d7ab486b069369c"
     },
     {
       "path": "public/studio_trackers.js",

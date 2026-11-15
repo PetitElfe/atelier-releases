@@ -2278,12 +2278,15 @@ function wireLibraryImageFigure(fig,page){
     }
     markLibraryPageDirty(page);
   };
+  handle.style.touchAction='none';
   handle.onpointerdown=e=>{
-    e.preventDefault();e.stopPropagation();
+    if(e.button!==0)return;
+    e.preventDefault();e.stopPropagation();fig.draggable=false;
+    try{handle.setPointerCapture(e.pointerId)}catch(_){}
     const editor=$('#libraryPageBody'),startX=e.clientX,startW=fig.offsetWidth,zoom=window.AtelierDisplay?.factor||1,max=Math.max(180,editor?.clientWidth||700);
-    const move=ev=>{fig.style.width=Math.round(Math.max(120,Math.min(max,startW+(ev.clientX-startX)/zoom)))+'px';fig.style.maxWidth='100%'};
-    const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);markLibraryPageDirty(page)};
-    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+    const move=ev=>{if(ev.pointerId!==e.pointerId)return;fig.style.width=Math.round(Math.max(120,Math.min(max,startW+(ev.clientX-startX)/zoom)))+'px';fig.style.maxWidth='100%'};
+    const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);window.removeEventListener('blur',up);handle.removeEventListener('lostpointercapture',up);fig.draggable=true;try{if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)}catch(_){}markLibraryPageDirty(page)};
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);window.addEventListener('blur',up);handle.addEventListener('lostpointercapture',up);
   };
   fig.ondragstart=e=>{libraryDraggedFigure=fig;e.dataTransfer.effectAllowed='move'};
   fig.ondragend=()=>{libraryDraggedFigure=null};
@@ -2340,7 +2343,7 @@ async function insertLibraryImage(file,page){
   try{
     const data=await readLibraryImage(file);if(!data)return;
     const fig=document.createElement('figure');fig.dataset.atelierImage='1';fig.dataset.imageAlign='center';fig.style.width='55%';fig.style.maxWidth='100%';
-    const img=document.createElement('img');img.src=data;img.alt='Image du carnet';fig.appendChild(img);
+    const img=document.createElement('img');img.src=data;img.alt='Image du carnet';await img.decode();fig.appendChild(img);
     libraryInsertNodeAtSelection(fig);wireLibraryImageFigure(fig,page);markLibraryPageDirty(page);
   }catch(err){showUiError(err,"Impossible d’ajouter l’image")}
 }
