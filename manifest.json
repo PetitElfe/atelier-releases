@@ -85,7 +85,7 @@
     },
     {
       "path": "public/app_part1.js",
-      "sha256": "0a96fb03466b540d10cd19a9eccf06733cc48aa0e5f5e45a3423cc2a45e7ed6a"
+      "sha256": "b044a20e66093418dbebb43c422cc582448c891d27531fba9e69b9617169169c"
     },
     {
       "path": "public/app_part2.js",
@@ -413,7 +413,7 @@
     },
     {
       "path": "public/groceries_pc.js",
-      "sha256": "ada60b472ba8ca8fe1a1032a9e6d0ee70d489ad38773ea9fdc15037ae27ee9fb"
+      "sha256": "928feafc7e557385f467fcc7178d5c544fe0615d174a3576be2c0688272d29d4"
     },
     {
       "path": "public/groceries.css",

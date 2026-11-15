@@ -61,7 +61,7 @@ function fmtRelativeDate(s){
   return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
 }
 
-async function refresh(){
+async function refresh(options={}){
   const start=new Date(state.cursor.getFullYear(),state.cursor.getMonth()-1,1), end=new Date(state.cursor.getFullYear(),state.cursor.getMonth()+2,0);
   const reqs=[
     ['events',api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`)],
@@ -78,9 +78,9 @@ async function refresh(){
   ];
   const results=await Promise.allSettled(reqs.map(x=>x[1]));
   results.forEach((r,i)=>{if(r.status==='fulfilled')state[reqs[i][0]]=r.value;});
-  render();
+  render(options);
 }
-function render(){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(typeof renderLibrary==='function'&&state.view==='library'&&!window.__atelierLibraryViewRestoring)renderLibrary(); updateClock(); }
+function render(options={}){ renderHome(); renderMonth(); renderWeek(); renderTasks(); renderReminders(); renderKitchen(); renderCuisineLibrary(); if(!options.preserveLibrary&&typeof renderLibrary==='function'&&state.view==='library'&&!window.__atelierLibraryViewRestoring)renderLibrary(); updateClock(); }
 
 function renderHome(){
   const now=new Date(), today=ymd(now);
