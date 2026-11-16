@@ -498,6 +498,9 @@ class Handler(BaseHTTPRequestHandler):
             with conn() as c:
                 return self._json([dict(row) for row in c.execute(
                     'SELECT * FROM home_postits WHERE archived=? ORDER BY id',(archived,)).fetchall()])
+        if p == '/api/groceries/recovery-search':
+            import grocery_recovery
+            return self._json(grocery_recovery.search(DATA,PORT,utility_safety.identity(DATA)))
         if p == '/api/groceries/history':
             with conn() as c:
                 rows=c.execute('SELECT id,name,price,purchase_count,updated_at FROM shopping_items WHERE archived=1 ORDER BY updated_at DESC,id DESC LIMIT 1000').fetchall()

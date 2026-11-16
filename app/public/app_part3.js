@@ -680,7 +680,7 @@ function renderSettings(){
 function atelierEditionChannel(){return location.port==='8877'?'Nathan':'TEST';}
 let atelierUpdateCandidate=null,atelierUpdatePolling=false;
 let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false,atelierUpdateStarting=false;
-const ATELIER_UPDATE_NOTICE_INTERVAL=30*60*1000;
+const ATELIER_UPDATE_NOTICE_INTERVAL=60*1000;
 function atelierSetUpdateNotice(available){
   const dot=$('#settingsUpdateDot'),label=$('#settingsUpdateAvailable');
   const gear=$('#settingsBtn');
@@ -692,10 +692,10 @@ function atelierSetUpdateNotice(available){
     gear.setAttribute('aria-label',gear.title);
   }
 }
-async function atelierCheckForUpdates({automatic=false}={}){
+async function atelierCheckForUpdates({automatic=false,force=false}={}){
   if(atelierUpdatePolling||atelierUpdateCheckActive)return;
   if(automatic&&(document.visibilityState==='hidden'||
-      Date.now()-atelierUpdateLastCheck<ATELIER_UPDATE_NOTICE_INTERVAL))return;
+      !force&&Date.now()-atelierUpdateLastCheck<ATELIER_UPDATE_NOTICE_INTERVAL))return;
   atelierUpdateCheckActive=true;
   atelierUpdateLastCheck=Date.now();
   const check=$('#settingsCheckUpdates'),message=$('#settingsUpdateMessage');
@@ -796,11 +796,12 @@ function atelierShowEdition(){
 }
 atelierShowEdition();
 // Alertes discrètes : jamais de mise à jour sans confirmation explicite.
-setTimeout(()=>atelierCheckForUpdates({automatic:true}),5000);
+setTimeout(()=>atelierCheckForUpdates({automatic:true,force:true}),1200);
 setInterval(()=>atelierCheckForUpdates({automatic:true}),ATELIER_UPDATE_NOTICE_INTERVAL);
-window.addEventListener('focus',()=>atelierCheckForUpdates({automatic:true}));
+window.addEventListener('focus',()=>atelierCheckForUpdates({automatic:true,force:true}));
+window.addEventListener('online',()=>atelierCheckForUpdates({automatic:true,force:true}));
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible')atelierCheckForUpdates({automatic:true});
+  if(document.visibilityState==='visible')atelierCheckForUpdates({automatic:true,force:true});
 });
 async function atelierInstallUpdate({confirm=true}={}){
   if(!atelierUpdateCandidate||atelierUpdatePolling||atelierUpdateStarting)return;

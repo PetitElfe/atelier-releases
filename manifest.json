@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "c4a1c7fdb32e1be6e927a568d7650470e43a80e8b9766dd6af0e55f4391da2dc"
+      "sha256": "88dd341fc92d36372d3fa56356a54d5282b9f7d2231df3c2f59a1d34d060c2fd"
     },
     {
       "path": "app_part3.py",
@@ -93,7 +93,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "e3c670d34253ad8734e18f3b2bfbf8a28c7388c63265bad7b0d10233631b3819"
+      "sha256": "2d89190cc5291eed54bb32a558251165f1461d171eabfe7ea60dd8c789969685"
     },
     {
       "path": "public/big_refonte.css",
@@ -409,7 +409,7 @@
     },
     {
       "path": "public/groceries_ui.js",
-      "sha256": "3c53439ba05c423cacbb047c07ecae3981dd93c858d0eb14acef4cef3d7771c3"
+      "sha256": "2fa6ec513c87fa5c55d38c499cde09520a3836cb76c6aea1dc44a8a56512af4d"
     },
     {
       "path": "public/groceries_pc.js",
@@ -485,7 +485,7 @@
     },
     {
       "path": "public/workspace_coherence.js",
-      "sha256": "05666179e216d3ad64d69a8de05f2374a6e678a09636325fa8d78179645fe153"
+      "sha256": "cc0695c447654b93e065f22e533309191ee8599cb16a560cb99c2ec57f07978e"
     },
     {
       "path": "public/workspace_coherence.css",
@@ -502,8 +502,12 @@
     {
       "path": "desktop_restart.py",
       "sha256": "bb1b5363be02d849b0aa7d6ac7e2841291ffcbffecac15745935563eae072c20"
+    },
+    {
+      "path": "grocery_recovery.py",
+      "sha256": "2786a3e5e8bfaff8c4ab653253d45373096560fe279424ef8c398141e0ed2d80"
     }
   ],
-  "notes": "Corrige la réouverture du lanceur Windows après mise à jour : nouvelle extraction indépendante du runtime Python, sans réutiliser le dossier temporaire supprimé de l’ancienne fenêtre.",
-  "build_sequence": 2026111604
+  "notes": "Détection des mises à jour au lancement, au retour et chaque minute visible. Recherche locale des courses dans les sauvegardes, récupération sélective sans restauration globale, retour liste/inventaire au clic droit.",
+  "build_sequence": 2026111605
 }
