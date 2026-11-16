@@ -55,3 +55,11 @@
 #homeView #journalBook .deadline-line .deadline-tag,
 #homeView #journalBook .deadline-line .deadline-text,
 #homeView #journalBook .deadline-line .deadline-time{color:var(--deadline-ink,#814a48)!important}
+
+/* Compact top-bar reminders and update indicator, without framed tabs. */
+.top-actions #workspaceReminderToggle,.top-actions #atelierUpdateStar{position:relative;inset:auto;display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;height:40px;min-height:40px;padding:7px;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0;color:var(--text)}
+.top-actions #atelierUpdateStar.has-update{color:#e7c44d}.top-actions #atelierUpdateStar.has-update svg{fill:currentColor}
+.top-actions #workspaceReminderToggle .workspace-reminder-count{position:absolute;right:0;top:0;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:10px;background:#e8a6a6;color:#49272e;font:700 11px/17px system-ui;text-align:center}
+.top-actions .workspace-reminder-count[hidden]{display:none}
+#atelierUpdateProgress{position:fixed;top:110px;right:20px;z-index:9000;max-width:min(340px,85vw);padding:12px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font-size:.85rem;box-shadow:0 4px 15px #0003}
+#atelierUpdateProgress[hidden]{display:none}

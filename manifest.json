@@ -29,7 +29,7 @@
     },
     {
       "path": "app_part2.py",
-      "sha256": "6954557f518dc1622300510e30bdc2d15ca4f1beaa3059eb2d33f275027fb76b"
+      "sha256": "c4a1c7fdb32e1be6e927a568d7650470e43a80e8b9766dd6af0e55f4391da2dc"
     },
     {
       "path": "app_part3.py",
@@ -93,7 +93,7 @@
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "9817b0c00d58c8595400bbd56d2adda31d5103e07d99de5e60749ebd24469785"
+      "sha256": "e3c670d34253ad8734e18f3b2bfbf8a28c7388c63265bad7b0d10233631b3819"
     },
     {
       "path": "public/big_refonte.css",
@@ -161,7 +161,7 @@
     },
     {
       "path": "public/index.html",
-      "sha256": "d2343a3da60c01377bc65cb8069a4fba268a35c45586cac4ac8b69f8b4ae79ef"
+      "sha256": "1fdb6c876c67109ac067dacec0cbdf7d714e45f24ca1ebd98118cccfb81e447b"
     },
     {
       "path": "public/interface_reference.css",
@@ -409,7 +409,7 @@
     },
     {
       "path": "public/groceries_ui.js",
-      "sha256": "e1e6af09af3943bce5e2294f5d5ac29f1db5d0a3635a469af5545a4f5708a77f"
+      "sha256": "3c53439ba05c423cacbb047c07ecae3981dd93c858d0eb14acef4cef3d7771c3"
     },
     {
       "path": "public/groceries_pc.js",
@@ -417,7 +417,7 @@
     },
     {
       "path": "public/groceries.css",
-      "sha256": "1932d665fe99232c00115827779baad2cb7c97f63e4efc6e21219582e3951bee"
+      "sha256": "066a54e68d0002fd6e5190bba31fdd87476b5b9d84f24e98f44d678b0fa4ea9a"
     },
     {
       "path": "official_icon.py",
@@ -485,11 +485,11 @@
     },
     {
       "path": "public/workspace_coherence.js",
-      "sha256": "cf5a763624d71120211ec70d60ba4e03f5695ea37e39330f5016d13a0434df06"
+      "sha256": "05666179e216d3ad64d69a8de05f2374a6e678a09636325fa8d78179645fe153"
     },
     {
       "path": "public/workspace_coherence.css",
-      "sha256": "9dc029d649bc9527a6b721c46fb1be08ad905de062c71a1f78852fc6319444d9"
+      "sha256": "0fe5acc94c5de0a338f47dd58a1ad2ffe3c504ac0986e42310316fae439ff168"
     },
     {
       "path": "public/energy_notebook.js",
@@ -498,8 +498,12 @@
     {
       "path": "public/energy_notebook.css",
       "sha256": "b12edeb653cb4a36351b35d2ea2408aabef18afaa4aade0d4fbbc752cbfa780b"
+    },
+    {
+      "path": "desktop_restart.py",
+      "sha256": "d25394601335fc5efe62043d5928b5f03b9326d50fbfd2634d7fde69c2bc71a3"
     }
   ],
-  "notes": "Correction du déplacement du module Courses dans l’accueil : sélection, glisser-déposer, redimensionnement et position conservée.",
-  "build_sequence": 2026111602
+  "notes": "Courses : protection contre les réponses périmées, brouillons et ajout multiligne, récupération dans les archives. Cloche avec badge pastel et étoile de mise à jour en un clic, réouverture complète de la fenêtre TEST.",
+  "build_sequence": 2026111603
 }

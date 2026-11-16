@@ -679,12 +679,13 @@ function renderSettings(){
 /* ALPHA 0.18.0 — mises à jour TEST et Nathan : même interface, données séparées. */
 function atelierEditionChannel(){return location.port==='8877'?'Nathan':'TEST';}
 let atelierUpdateCandidate=null,atelierUpdatePolling=false;
-let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false;
+let atelierUpdateLastCheck=0,atelierUpdateCheckActive=false,atelierUpdateStarting=false;
 const ATELIER_UPDATE_NOTICE_INTERVAL=30*60*1000;
 function atelierSetUpdateNotice(available){
   const dot=$('#settingsUpdateDot'),label=$('#settingsUpdateAvailable');
   const gear=$('#settingsBtn');
-  if(dot)dot.classList.toggle('hidden',!available);
+  if(dot)dot.classList.add('hidden');
+  const star=$('#atelierUpdateStar');if(star){star.classList.toggle('has-update',available);star.title=available?'Installer la mise à jour et redémarrer':'L’Atelier est à jour';star.setAttribute('aria-label',star.title)}
   if(label)label.classList.toggle('hidden',!available);
   if(gear){
     gear.title=available?'Paramètres — mise à jour disponible':'Paramètres';
@@ -755,7 +756,8 @@ async function atelierPollUpdate(){
     try{
       const state=await atelierUpdateRequest('/api/update/status');
       if(state.phase==='success'){
-        message.textContent='Mise à jour installée ! Rechargement de L’Atelier…';
+        message.textContent='Mise à jour installée. Redémarrage complet…';
+        try{await atelierUpdateRequest('/api/update/restart-window',{method:'POST',headers:{'X-Atelier-Update':'1'}})}catch{}
         // Après l’arrêt/redémarrage du serveur, forcer un nouvel HTML/JS.
         window.location.replace('/?atelier_reloaded='+Date.now());
         return;
@@ -800,13 +802,14 @@ window.addEventListener('focus',()=>atelierCheckForUpdates({automatic:true}));
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')atelierCheckForUpdates({automatic:true});
 });
-$('#settingsInstallUpdate').onclick=async()=>{
-  if(!atelierUpdateCandidate||atelierUpdatePolling)return;
+async function atelierInstallUpdate({confirm=true}={}){
+  if(!atelierUpdateCandidate||atelierUpdatePolling||atelierUpdateStarting)return;
   const message=$('#settingsUpdateMessage'),button=$('#settingsInstallUpdate'),check=$('#settingsCheckUpdates');
-  const accepted=await askUiConfirm('Installer la mise à jour '+atelierEditionChannel(),
+  const accepted=!confirm||await askUiConfirm('Installer la mise à jour '+atelierEditionChannel(),
     'L’Atelier enregistrera une sauvegarde, s’arrêtera brièvement, puis redémarrera seul. La version habituelle ne sera pas touchée.',
     'Installer et redémarrer');
   if(!accepted)return;
+  atelierUpdateStarting=true;const star=$('#atelierUpdateStar');if(star)star.disabled=true;
   button.disabled=true;check.disabled=true;
   message.textContent='Démarrage de l’assistant de mise à jour…';
   try{
@@ -819,8 +822,14 @@ $('#settingsInstallUpdate').onclick=async()=>{
   }catch(error){
     message.textContent='Impossible de commencer : '+(error?.message||'erreur inconnue');
     button.disabled=false;check.disabled=false;
-  }
-};
+  }finally{atelierUpdateStarting=false;if(star)star.disabled=false}
+}
+$('#settingsInstallUpdate').onclick=()=>atelierInstallUpdate();
+const updateStar=$('#atelierUpdateStar'),updateToast=$('#atelierUpdateProgress');
+updateStar.onclick=async()=>{if(atelierUpdateStarting||atelierUpdatePolling||atelierUpdateCheckActive)return;updateToast.hidden=false;if(!atelierUpdateCandidate)await atelierCheckForUpdates();if(atelierUpdateCandidate)await atelierInstallUpdate({confirm:false});else updateToast.textContent=$('#settingsUpdateMessage').textContent};
+new MutationObserver(()=>{if(!updateToast.hidden)updateToast.textContent=$('#settingsUpdateMessage').textContent}).observe($('#settingsUpdateMessage'),{childList:true,subtree:true,characterData:true});
+// Also bootstrap a full native restart when this update was installed by the older UI.
+setTimeout(async()=>{try{const s=await atelierUpdateRequest('/api/update/status');if(s.phase==='success')await atelierUpdateRequest('/api/update/restart-window',{method:'POST',headers:{'X-Atelier-Update':'1'}})}catch{}},1500);
 $('#settingsExportBrowserData').onclick=()=>{
   const message=$('#settingsUpdateMessage');
   try{

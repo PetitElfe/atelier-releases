@@ -498,6 +498,10 @@ class Handler(BaseHTTPRequestHandler):
             with conn() as c:
                 return self._json([dict(row) for row in c.execute(
                     'SELECT * FROM home_postits WHERE archived=? ORDER BY id',(archived,)).fetchall()])
+        if p == '/api/groceries/history':
+            with conn() as c:
+                rows=c.execute('SELECT id,name,price,purchase_count,updated_at FROM shopping_items WHERE archived=1 ORDER BY updated_at DESC,id DESC LIMIT 1000').fetchall()
+            return self._json([dict(row) for row in rows])
         if p == '/api/groceries':
             with conn() as c:
                 result=groceries.snapshot(c);result['installation_id']=utility_safety.identity(DATA)
@@ -1052,6 +1056,15 @@ class Handler(BaseHTTPRequestHandler):
                 edition='NATHAN' if PORT==8877 else 'MISU'
                 return self._json(local_icon.change(DATA,local_icon.executable(DATA,edition),p.rsplit('/',1)[-1]))
             except (RuntimeError,ValueError) as ex:return self._json({'error':str(ex)},409)
+        if p == '/api/update/restart-window':
+            if self.headers.get('Origin')!=f'http://{HOST}:{PORT}' or self.headers.get('X-Atelier-Update')!='1':
+                return self._json({'error':'Action réservée à cette installation.'},403)
+            try:
+                updater.guard()
+                import desktop_restart
+                return self._json(desktop_restart.schedule(updater.BASE,DATA,updater.status().get('revision','')))
+            except (RuntimeError,OSError,ValueError) as exc:
+                return self._json({'error':str(exc)},409)
         if p == '/api/update/start':
             # Only this installation's localhost UI may initiate an update.
             # The per-edition port is fixed by the server configuration.
