@@ -34,7 +34,7 @@ try {
   $window=$windows[0]
   State 'closing' 'Fermeture de la fenêtre TEST.'
   if(-not $window.CloseMainWindow()){throw 'La fermeture de la fenêtre a été refusée.'}
-  if(-not $window.WaitForExit(20000)){throw 'La fenêtre reste ouverte. Ferme-la puis relance L’Atelier.'}
+  if(-not $window.WaitForExit(20000)){throw "La fenêtre reste ouverte. Ferme-la puis relance L’Atelier."}
   # The old host closes its own server and releases its single-window lock.
   Start-Sleep -Milliseconds 1200
   Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe)
