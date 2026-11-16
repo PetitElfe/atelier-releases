@@ -9,8 +9,8 @@ async function api(path,method='GET',body){const r=await fetch(base+path,{method
  for(let n=0;n<150;n++){try{await api('/api/runtime-version');break}catch{}await new Promise(r=>setTimeout(r,100))}
  browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1920,height:1080}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  // Hold the initial empty snapshot until a new list is already acknowledged.
- let release,held;const gate=new Promise(r=>release=r);let once=true;
- await page.route('**/api/groceries',async route=>{if(once&&route.request().method()==='GET'){once=false;const response=await route.fetch();held=true;await gate;await route.fulfill({response})}else await route.continue()});
+ let release,held;const gate=new Promise(r=>release=r);let once=true;const initialSnapshot=await api('/api/groceries');
+ await page.route('**/api/groceries',async route=>{try{if(once&&route.request().method()==='GET'){once=false;held=true;await gate;await route.fulfill({json:initialSnapshot})}else await route.continue()}catch{try{await route.abort()}catch{}}});
  await page.goto(base);await page.waitForFunction(()=>window.AtelierStudio?.ready&&window.atelierGroceries&&homeCanvasReady);
  while(!held)await new Promise(r=>setTimeout(r,25));
  await page.evaluate(()=>{setSideNavCollapsed(true);localStorage.setItem(homeModuleVisibilityKey('shopping'),'1');syncHomeModuleVisibility();const i=globalLayoutItems.find(x=>x.id==='shopping');saveGlobalLayout(i,{x:30,y:300,width:500,scale:1});applyGlobalLayout(i,readGlobalLayout(i))});
