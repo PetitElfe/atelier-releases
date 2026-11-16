@@ -28,7 +28,7 @@ async function api(path){const r=await fetch(base+path);assert.ok(r.ok);return r
  assert.equal((await api('/api/groceries')).cart[0].purchase_count,2);
  const month=new Date().toLocaleDateString('sv-SE').slice(0,7);assert.equal((await api('/api/budget?month='+month)).entries.length,0);
  await page.evaluate(()=>{showView('home');atelierGroceries.openInventory()});
- await page.locator('.workspace-shopping-title').click({button:'right'});await page.getByRole('menuitem',{name:'Liste de courses',exact:true}).click();
+ await page.locator('.workspace-shopping-title').focus();await page.keyboard.press('Shift+F10');await page.getByRole('menuitem',{name:'Liste de courses',exact:true}).click();
  await page.getByRole('textbox',{name:'Aliment · Courgettes',exact:true}).waitFor();assert.deepEqual(errors,[]);
  console.log('PASS: automatic launch/focus/minute checks without clicks or auto-install, backup search and selective recovery without budget change, inventory return');
 }finally{await browser?.close();server.kill();await new Promise(r=>setTimeout(r,350));fs.rmSync(dir,{recursive:true,force:true})}})().catch(e=>{console.error(e);process.exitCode=1});
