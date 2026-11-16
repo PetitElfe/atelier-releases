@@ -501,7 +501,7 @@
     },
     {
       "path": "desktop_restart.py",
-      "sha256": "d25394601335fc5efe62043d5928b5f03b9326d50fbfd2634d7fde69c2bc71a3"
+      "sha256": "9baca4c6cbb6e9969b161453b817cbba5f4f33c3a38cde7e1ba742ffb41d1b5d"
     }
   ],
   "notes": "Courses : protection contre les réponses périmées, brouillons et ajout multiligne, récupération dans les archives. Cloche avec badge pastel et étoile de mise à jour en un clic, réouverture complète de la fenêtre TEST.",

@@ -26,10 +26,10 @@ try {
   for($i=0;$i -lt 150 -and (Test-Path -LiteralPath (Join-Path $data 'updater.lock'));$i++){Start-Sleep -Milliseconds 200}
   if(Test-Path -LiteralPath (Join-Path $data 'updater.lock')){throw 'La mise à jour est encore en cours.'}
   if(-not (Test-Path -LiteralPath $exe)){State 'skipped' 'Aucune fenêtre native installée.';exit 0}
-  $matches=@(Get-CimInstance Win32_Process | Where-Object {$_.ExecutablePath -and $_.ExecutablePath -ieq $exe})
+  $matches=@(Get-Process -Name 'LAtelierDuGoblin_TEST' -ErrorAction SilentlyContinue | Where-Object {$_.Path -and $_.Path -ieq $exe})
   if($matches.Count -eq 0){State 'skipped' 'Installation ouverte dans un navigateur.';exit 0}
   # PyInstaller can have a bootloader and GUI child: select only the GUI window.
-  $windows=@($matches | ForEach-Object {Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue} | Where-Object {$_.MainWindowHandle -ne 0})
+  $windows=@($matches | Where-Object {$_.MainWindowHandle -ne 0})
   if($windows.Count -ne 1){throw 'Fenêtre TEST non identifiée de manière unique.'}
   $window=$windows[0]
   State 'closing' 'Fermeture de la fenêtre TEST.'

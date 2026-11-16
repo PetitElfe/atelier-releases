@@ -16,7 +16,7 @@ import desktop_restart
 class DesktopUpdateReopen(unittest.TestCase):
     def test_scoped_graceful_script(self):
         script = desktop_restart.restart_script(Path('fixture'), Path('data'))
-        self.assertIn('ExecutablePath -ieq $exe', script)
+        self.assertIn('Path -ieq $exe', script)
         self.assertIn('CloseMainWindow()', script)
         self.assertIn('WaitForExit(20000)', script)
         self.assertNotIn('Stop-Process', script)
@@ -62,7 +62,7 @@ class DesktopUpdateReopen(unittest.TestCase):
                     if result.get('phase') in ('error', 'reopened'):
                         break
                     time.sleep(.2)
-                self.assertEqual(result.get('phase'), 'reopened', result)
+                self.assertEqual(result.get('phase'), 'reopened', {'state':result,'log':(data/'desktop-restart.log').read_text(encoding='utf-8',errors='replace') if (data/'desktop-restart.log').exists() else 'missing'})
                 for _ in range(50):
                     if len(launches.read_text().splitlines()) == 2:
                         break
