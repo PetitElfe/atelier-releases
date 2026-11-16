@@ -1,3 +1,4 @@
+from contextlib import closing
 import hashlib
 import json
 from pathlib import Path
@@ -30,7 +31,7 @@ class GroceryRecoveryTests(unittest.TestCase):
             old = root.parent / 'SAUVEGARDE_AUTO_TEST_old' / 'data'
             old.mkdir(parents=True)
             (old / 'installation-id.json').write_text(json.dumps({'id':identity}))
-            with sqlite3.connect(old / 'atelier.db') as c:
+            with closing(sqlite3.connect(old / 'atelier.db')) as c:
                 c.executescript("CREATE TABLE shopping_items(id INTEGER,name TEXT);INSERT INTO shopping_items VALUES(1,'Lentilles');")
             current = root / 'atelier.db'
             current.write_bytes(b'The current database is not opened by the search')
