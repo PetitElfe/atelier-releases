@@ -501,9 +501,9 @@
     },
     {
       "path": "desktop_restart.py",
-      "sha256": "eff7f078762da9b38207f03720cba61498fb1e09b2caf8bcd6647580f069e400"
+      "sha256": "bb1b5363be02d849b0aa7d6ac7e2841291ffcbffecac15745935563eae072c20"
     }
   ],
-  "notes": "Courses : protection contre les réponses périmées, brouillons et ajout multiligne, récupération dans les archives. Cloche avec badge pastel et étoile de mise à jour en un clic, réouverture complète de la fenêtre TEST.",
-  "build_sequence": 2026111603
+  "notes": "Corrige la réouverture du lanceur Windows après mise à jour : nouvelle extraction indépendante du runtime Python, sans réutiliser le dossier temporaire supprimé de l’ancienne fenêtre.",
+  "build_sequence": 2026111604
 }

@@ -12,6 +12,18 @@ import subprocess
 import time
 
 
+def independent_environment(environ=None):
+    """The restarted one-file EXE must extract its own Python runtime.
+
+    The local server inherited the old frozen host's private bootloader state.
+    Reusing it after CloseMainWindow points at a deleted _MEI directory.
+    """
+    clean = {key: value for key, value in (os.environ if environ is None else environ).items()
+             if not key.upper().startswith('_PYI_') and key.upper() != '_MEIPASS2'}
+    clean['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
+    return clean
+
+
 def restart_script(base, data):
     def quote(path):
         return "'" + str(path).replace("'", "''") + "'"
@@ -37,6 +49,9 @@ try {
   if(-not $window.WaitForExit(20000)){throw "La fenêtre reste ouverte. Ferme-la puis relance L’Atelier."}
   # The old host closes its own server and releases its single-window lock.
   Start-Sleep -Milliseconds 1200
+  # Launch an independent one-file process, never reuse the deleted old runtime.
+  Get-ChildItem Env: | Where-Object {$_.Name -like '_PYI_*' -or $_.Name -eq '_MEIPASS2'} | ForEach-Object {Remove-Item -LiteralPath ('Env:'+$_.Name)}
+  $env:PYINSTALLER_RESET_ENVIRONMENT='1'
   Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe)
   State 'reopened' 'La fenêtre TEST a été relancée.'
 } catch {State 'error' $_.Exception.Message;exit 1}
@@ -64,6 +79,7 @@ def schedule(base, data, revision):
             subprocess.Popen(['powershell.exe', '-NoProfile', '-NonInteractive',
                               '-EncodedCommand', encoded], stdin=subprocess.DEVNULL,
                              stdout=log, stderr=log, close_fds=True,
+                             env=independent_environment(),
                              creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     except Exception:
         marker.unlink(missing_ok=True)
