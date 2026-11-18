@@ -1,0 +1,37 @@
+name: Windows TEST dated budget opening balance
+on:
+  push:
+    branches: [test/budget-opening-date-20261118]
+permissions:
+  contents: read
+jobs:
+  budget:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python tools/release_smoke.py
+      - run: python -m unittest discover -s tests -p 'test_budget*.py'
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/budget_opening_date_browser_test.cjs
+      - run: node tools/budget_opening_browser_test.cjs
+      - run: node tools/workspace_coherence_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: budget-opening-date-${{ matrix.os }}
+          path: artifacts/

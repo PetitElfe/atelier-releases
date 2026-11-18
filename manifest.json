@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "bf6df403624b584441c08ce86a6185dcd35e3a11a7d2f23158393d1ef2702585"
+      "sha256": "c44d5cce2a6aa30341d3805b1f1a781ba9865425b0c5f5efb5967fef2db053e7"
     },
     {
       "path": "app_part2.py",
-      "sha256": "88dd341fc92d36372d3fa56356a54d5282b9f7d2231df3c2f59a1d34d060c2fd"
+      "sha256": "c42ad08848e799a5994a9d3ec3ad7687336fbccbfe06b12c7af77d9bf2948d03"
     },
     {
       "path": "app_part3.py",
@@ -289,7 +289,7 @@
     },
     {
       "path": "public/studio_budget.js",
-      "sha256": "1cd3097b9264a0364ba3447e0d7a6aa8d2f3eef2620a81a3bdcecf3629bc6b4d"
+      "sha256": "8441176f6ce5c75c593d5a2c19728fa95010ca12ab27e7081a0ad938344b0bd4"
     },
     {
       "path": "public/studio_core.js",
@@ -508,6 +508,6 @@
       "sha256": "2786a3e5e8bfaff8c4ab653253d45373096560fe279424ef8c398141e0ed2d80"
     }
   ],
-  "notes": "Détection des mises à jour au lancement, au retour et chaque minute visible. Recherche locale des courses dans les sauvegardes, récupération sélective sans restauration globale, retour liste/inventaire au clic droit.",
-  "build_sequence": 2026111605
+  "notes": "Budget : solde de départ à la date choisie dans le mois, par exemple le 7 ; opérations antérieures et historique conservés, date mémorisée et calculs cohérents.",
+  "build_sequence": 2026111801
 }

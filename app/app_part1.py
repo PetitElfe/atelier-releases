@@ -217,7 +217,8 @@ CREATE TABLE IF NOT EXISTS budget_settings (
  opening_date TEXT NOT NULL DEFAULT '2026-01-01'
 );
 CREATE TABLE IF NOT EXISTS budget_month_openings (
- month TEXT PRIMARY KEY, amount_cents INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1
+ month TEXT PRIMARY KEY, amount_cents INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 1,
+ reference_date TEXT
 );
 -- Manual reconciliation changes cash without inventing an income or expense.
 CREATE TABLE IF NOT EXISTS budget_cash_adjustments (
@@ -494,6 +495,9 @@ with conn() as c:
         c.execute("ALTER TABLE events ADD COLUMN travel_time TEXT DEFAULT ''")
     if 'color' not in event_cols:
         c.execute("ALTER TABLE events ADD COLUMN color TEXT NOT NULL DEFAULT 'auto'")
+    opening_cols = {r['name'] for r in c.execute('PRAGMA table_info(budget_month_openings)').fetchall()}
+    if 'reference_date' not in opening_cols:
+        c.execute('ALTER TABLE budget_month_openings ADD COLUMN reference_date TEXT')
     shopping_cols = {r['name'] for r in c.execute('PRAGMA table_info(shopping_items)').fetchall()}
     if 'purchase_count' not in shopping_cols:
         c.execute("ALTER TABLE shopping_items ADD COLUMN purchase_count INTEGER NOT NULL DEFAULT 1")

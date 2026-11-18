@@ -14,7 +14,7 @@ async function api(path,method='GET',body){const r=await request(path,method,bod
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);await page.waitForFunction(()=>window.AtelierStudio?.ready);await page.evaluate(async()=>{showView('budget');await loadBudget('2026-11')});
  const root=page.locator('#studioBudget');await root.locator('.studio-budget-month-title').waitFor();
- const open=async()=>{await root.locator('.studio-budget-month-title').click({button:'right'});await page.getByRole('menuitem',{name:'Définir le solde au 1er du mois',exact:true}).click()};
+ const open=async()=>{await root.locator('.studio-budget-month-title').click({button:'right'});await page.getByRole('menuitem',{name:'Définir le solde de départ',exact:true}).click()};
  assert.equal(await root.locator('input[type=month]').count(),0);assert.equal(await root.locator('.studio-budget-month-title').count(),1);
  await open();
  let dialog=page.locator('#studioFormHost');await dialog.locator('[name=amount]').fill('500.50');await dialog.locator('[type=submit]').click();await dialog.waitFor({state:'detached'});

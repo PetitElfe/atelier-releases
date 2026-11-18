@@ -146,13 +146,15 @@ def budget_save_month_opening(c,body):
     amount=budget_amount(abs(value))*(-1 if value<0 else 1)
     revision=body.get('revision')
     if not isinstance(revision,int) or isinstance(revision,bool) or revision<0:raise ValueError('Révision du solde invalide.')
-    current=c.execute('SELECT revision FROM budget_month_openings WHERE month=?',(month,)).fetchone()
+    current=c.execute('SELECT revision,reference_date FROM budget_month_openings WHERE month=?',(month,)).fetchone()
+    when=budget_date(body.get('reference_date') or (current['reference_date'] if current else None) or month+'-01')
+    if when[:7]!=month:raise ValueError('Choisis une date dans le mois affiché.')
     if (current['revision'] if current else 0)!=revision:raise LookupError('Ce solde a été modifié ailleurs. Recharge le budget avant de réessayer.')
     if current:
-        changed=c.execute('UPDATE budget_month_openings SET amount_cents=?,revision=revision+1 WHERE month=? AND revision=?',(amount,month,revision)).rowcount
+        changed=c.execute('UPDATE budget_month_openings SET amount_cents=?,reference_date=?,revision=revision+1 WHERE month=? AND revision=?',(amount,when,month,revision)).rowcount
         if changed!=1:raise LookupError('Ce solde a été modifié ailleurs. Recharge le budget.')
     else:
-        changed=c.execute('INSERT OR IGNORE INTO budget_month_openings(month,amount_cents) VALUES(?,?)',(month,amount)).rowcount
+        changed=c.execute('INSERT OR IGNORE INTO budget_month_openings(month,amount_cents,reference_date) VALUES(?,?,?)',(month,amount,when)).rowcount
         if changed!=1:raise LookupError('Ce solde a été défini ailleurs. Recharge le budget.')
     return {'ok':True,'revision':revision+1}
 
@@ -182,8 +184,8 @@ def budget_snapshot(c,month,ts):
     # A monthly checkpoint supersedes earlier cash balances without changing
     # any transaction or the snapshots of earlier months.
     checkpoint=c.execute('SELECT * FROM budget_month_openings WHERE month<=? ORDER BY month DESC LIMIT 1',(first[:7],)).fetchone()
-    if checkpoint and (start>last or checkpoint['month']+'-01'>=start):
-        opening=int(checkpoint['amount_cents']);start=checkpoint['month']+'-01'
+    if checkpoint and (start>last or checkpoint['month']>=start[:7]):
+        opening=int(checkpoint['amount_cents']);start=checkpoint['reference_date'] or checkpoint['month']+'-01'
     if start>last:opening=0;start=first
     month_override=c.execute('SELECT * FROM budget_month_openings WHERE month=?',(first[:7],)).fetchone()
     month_opening=opening+int(c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0)
@@ -217,7 +219,7 @@ def budget_snapshot(c,month,ts):
     return {'month':first[:7],'entries':entries,'removed_entries':removed,'rules':[dict(x) for x in c.execute('SELECT * FROM budget_rules ORDER BY active DESC,id DESC')],
      'debts':debts,'opening_balance_cents':opening,'opening_date':start,'balance_cents':balance,
      'month_opening_balance_cents':month_opening,'month_opening_revision':month_override['revision'] if month_override else 0,
-     'month_opening_override':bool(month_override),'cash_revision':cash_revision['revision'] if cash_revision else 0,'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
+     'month_opening_date':(month_override['reference_date'] or month_override['month']+'-01') if month_override else (start if start[:7]==first[:7] else first),'month_opening_override':bool(month_override),'cash_revision':cash_revision['revision'] if cash_revision else 0,'forecast_cents':forecast,'notes':notes['notes'] if notes else '',
      'income_cents':sum(x['amount_cents'] for x in entries if x['kind']=='income' and x['status']!='skipped'),
      'expenses_cents':sum(x['amount_cents'] for x in entries if x['kind']=='expense' and x['status']!='skipped'),
      'pending_income':[x for x in pending if x['kind']=='income'],
@@ -226,7 +228,7 @@ def budget_snapshot(c,month,ts):
 def budget_save_current_balance(c,body,ts):
     from decimal import Decimal
     month=budget_month(body.get('month'))
-    if month!=date.today().replace(day=1):raise ValueError('Le solde actuel se règle dans le mois en cours. Pour un ancien mois, utilise le solde au 1er.')
+    if month!=date.today().replace(day=1):raise ValueError('Le solde actuel se règle dans le mois en cours. Pour un ancien mois, utilise le solde de départ à une date choisie.')
     value=Decimal(str(body.get('amount','')).replace(',','.'))
     amount=budget_amount(abs(value))*(-1 if value<0 else 1)
     if type(body.get('revision')) is not int or type(body.get('base_balance_cents')) is not int:raise ValueError('Version du solde requise.')
@@ -241,11 +243,11 @@ def budget_save_current_balance(c,body,ts):
     current_net=int(c.execute("SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount_cents ELSE -amount_cents END),0) FROM budget_entries WHERE archived=0 AND status='confirmed' AND COALESCE(actual_date,scheduled_date)>=? AND COALESCE(actual_date,scheduled_date)<=?",(snapshot['opening_date'],date.today().isoformat())).fetchone()[0])
     offsets=int(c.execute('SELECT COALESCE(SUM(adjustment_cents),0) FROM budget_cash_adjustments WHERE reference_date>=? AND reference_date<=?',(snapshot['opening_date'],date.today().isoformat())).fetchone()[0])
     # Detect changed anchors as well as changed payments, without rewriting history.
-    checkpoint=c.execute('SELECT month,amount_cents FROM budget_month_openings WHERE month<=? ORDER BY month DESC LIMIT 1',(month.strftime('%Y-%m'),)).fetchone()
+    checkpoint=c.execute('SELECT month,amount_cents,reference_date FROM budget_month_openings WHERE month<=? ORDER BY month DESC LIMIT 1',(month.strftime('%Y-%m'),)).fetchone()
     anchor_opening=int(settings['opening_balance_cents']) if settings else 0
     anchor_start=settings['opening_date'] if settings else '2026-01-01'
     last=month.replace(day=budget_last_day(month.year,month.month)).isoformat()
-    if checkpoint and (anchor_start>last or checkpoint['month']+'-01'>=anchor_start):anchor_opening=int(checkpoint['amount_cents']);anchor_start=checkpoint['month']+'-01'
+    if checkpoint and (anchor_start>last or checkpoint['month']>=anchor_start[:7]):anchor_opening=int(checkpoint['amount_cents']);anchor_start=checkpoint['reference_date'] or checkpoint['month']+'-01'
     if anchor_start>last:anchor_opening=0;anchor_start=month.isoformat()
     if anchor_start!=snapshot['opening_date'] or anchor_opening!=snapshot['opening_balance_cents'] or anchor_opening+current_net+offsets!=body['base_balance_cents']:raise LookupError('Une opération ou le solde a changé. Recharge le budget avant de réessayer.')
     adjustment=(current['adjustment_cents'] if current else 0)+amount-body['base_balance_cents']
