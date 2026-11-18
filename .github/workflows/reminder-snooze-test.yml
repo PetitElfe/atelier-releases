@@ -1,0 +1,28 @@
+name: Reminder report regression TEST
+on:
+  push:
+    branches: [test/reminder-snooze-20261113]
+permissions:
+  contents: read
+jobs:
+  snooze:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -p 'test_reminder_occurrences.py'
+      - if: matrix.os == 'ubuntu-latest'
+        run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/reminder_snooze_browser_test.cjs

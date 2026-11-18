@@ -90,5 +90,18 @@ class AdminDocumentsTests(unittest.TestCase):
         c.close()
 
 
+class DocumentFilingTests(unittest.TestCase):
+    def test_rename_and_move_preserve_original_bytes_and_history(self):
+        c=sqlite3.connect(':memory:');c.row_factory=sqlite3.Row
+        c.executescript('CREATE TABLE admin_documents(id INTEGER PRIMARY KEY);CREATE TABLE events(id INTEGER PRIMARY KEY);INSERT INTO admin_documents VALUES(1);INSERT INTO admin_documents VALUES(2);')
+        admin_docs.initialise(c)
+        c.execute("INSERT INTO admin_attachments(admin_id,filename,mime_type,byte_size,content,created_at) VALUES(1,'original.txt','text/plain',7,?,'now')",(b'bonjour',));c.commit()
+        admin_docs.update_document(c,1,1,{'revision':0,'filename':'00_Dossier.txt','admin_id':2,'document_state':'valid'});c.commit()
+        self.assertIsNone(admin_docs.detail(c,1,1));file=admin_docs.detail(c,2,1)
+        self.assertEqual(file['content'],b'bonjour');self.assertEqual(file['original_filename'],'original.txt');self.assertEqual(file['filename'],'00_Dossier.txt')
+        self.assertEqual(c.execute('SELECT count(*) FROM admin_document_changes').fetchone()[0],1)
+        with self.assertRaises(LookupError):admin_docs.update_document(c,2,1,{'revision':0,'filename':'stale.txt'})
+        c.close()
+
 if __name__=='__main__':
     unittest.main()

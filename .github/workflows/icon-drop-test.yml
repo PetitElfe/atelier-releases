@@ -1,0 +1,43 @@
+name: Official icon local drag-drop and bounded publisher TEST
+on:
+  push:
+    branches: [test/icon-apply-misu-20261113]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/official_icon_drop_browser_test.cjs
+      - run: node tools/local_icon_browser_test.cjs
+      - run: node tools/display_preferences_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Official_icon_drop_evidence
+          path: artifacts/
+          if-no-files-found: ignore
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s tests -p test_official_icon_publish.py
+      - run: python tools/test_official_icon_prepare_windows.py
+      - run: python tools/test_local_icon_windows.py

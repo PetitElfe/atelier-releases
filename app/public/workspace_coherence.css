@@ -1,0 +1,65 @@
+/* Layout uses available viewport space; never change the global font or zoom. */
+.workspace-reminder-trigger{position:fixed;z-index:6000;right:0;top:42%;display:flex;gap:5px;align-items:center;padding:9px 6px;border-radius:9px 0 0 9px;background:var(--panel);color:var(--text);border:1px solid var(--line);box-shadow:-2px 2px 8px #0003}
+.workspace-reminder-count{font:700 .8rem/1.5 system-ui;min-width:1.5em;border-radius:50%;background:var(--gold);color:var(--bg);text-align:center}
+.workspace-reminder-drawer{position:fixed;z-index:6100;right:0;top:0;bottom:0;width:min(410px,calc(100vw - 40px));padding:18px;background:var(--panel);color:var(--text);box-shadow:-8px 0 24px #0005;border-left:1px solid var(--line);overflow:auto;box-sizing:border-box}
+.workspace-reminder-drawer[hidden]{display:none}.workspace-reminder-drawer #remindersView{display:block!important;padding:0}.workspace-reminder-drawer .panel-head{flex-wrap:wrap}.workspace-reminder-drawer #reminderList{position:static!important;transform:none!important;width:auto!important;height:auto!important;max-height:none!important}.workspace-reminder-drawer .layout-controls{display:none!important}.workspace-reminder-drawer .reminder-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:7px;padding:10px 0;border-bottom:1px solid var(--line)}.workspace-reminder-drawer .reminder-actions{grid-column:2;display:flex;gap:5px}.workspace-reminder-drawer .reminder-actions .edit,.workspace-reminder-drawer .reminder-actions .duplicate,.workspace-reminder-drawer .reminder-actions .delete{display:none}
+#pageTitle{cursor:context-menu}#pageTitle:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
+#studioBudget .studio-envelope{position:relative;max-width:280px;padding:24px 18px 16px;border:1px solid color-mix(in srgb,var(--line) 70%,var(--text));border-radius:2px 8px 5px 3px;background:color-mix(in srgb,var(--panel) 85%,var(--text));box-shadow:3px 4px 0 color-mix(in srgb,var(--bg) 75%,var(--line));color:var(--text)}
+.studio-envelope:before{content:'';position:absolute;top:12px;left:18px;right:18px;border-top:1px solid var(--line);opacity:.5}#studioBudget .studio-envelope>.studio-budget-options{position:absolute;top:7px;right:7px}.studio-envelope h3{margin:12px 0}.studio-envelope p{font-size:.9em}
+#studioBudget .studio-grid{grid-template-columns:repeat(auto-fit,minmax(190px,260px));justify-content:start;gap:22px}
+#studioBudget .studio-jar{isolation:isolate;overflow:hidden;position:relative;background:var(--panel)!important;min-height:180px;border:2px solid var(--line);border-radius:12px 12px 25px 25px;padding:18px;box-shadow:2px 4px 9px #0003}
+#studioBudget .studio-jar:before{content:'';position:absolute;z-index:-1;left:0;right:0;bottom:0;height:var(--fill,0%);background:color-mix(in srgb,var(--jar-color,var(--gold)) 44%,transparent);transition:height .3s ease}
+#studioBudget .studio-jar:after{content:none}#studioBudget .studio-jar button{font-size:.85em}.studio-small-purchases{max-width:650px;margin-top:28px}.studio-small-purchases .kitchen-row{padding:8px 12px;min-height:0}.studio-small-purchases .kitchen-row strong{margin-left:auto}
+#studioBudget .studio-budget-columns{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px}#studioBudget .studio-budget-ledger{flex:0 1 auto;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px}#studioBudget .studio-ledger{width:auto;min-width:min(580px,100%)}
+.workspace-food-grid{display:grid!important;grid-template-columns:minmax(240px,330px) minmax(280px,1fr)!important;gap:22px;align-items:start;max-width:1150px}
+.workspace-plate-module{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;min-width:0}.workspace-plate-module h3{margin:0 0 8px}.workspace-plate-button{display:block;margin:auto;background:none!important;border:0!important;padding:0!important}.workspace-plate-button .daily-plate{display:block;width:150px;height:150px;box-sizing:content-box;max-width:100%}.workspace-plate-items{display:flex;flex-wrap:wrap;gap:4px}.workspace-plate-items button{font-size:.8em;padding:4px 6px}.workspace-food-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.workspace-food-picker{display:grid;gap:10px;max-width:520px}.workspace-food-choices{max-height:290px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px}.workspace-food-choice{display:flex!important;align-items:center;gap:10px;padding:8px!important;border-bottom:1px solid var(--line)}.workspace-food-choice input{width:18px!important;min-height:18px!important}.workspace-shopping-title{margin:0 0 12px}#homeView #shoppingPanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;box-sizing:border-box}#homeView #shoppingPanel>.workspace-shopping-title{display:block!important}#homeView .grocery-tabs,#homeView .grocery-sync:empty{display:none}
+#kitchenView #foodPanel,#kitchenView #mealPanel{min-width:0}#kitchenView .kitchen-head p{display:none}#kitchenView #mealPanel{grid-column:2}#kitchenTimersPanel{display:none!important}
+#studioJournalView.active-view{display:block!important;width:100%!important;max-width:none!important}#studioJournalView>iframe{display:block;width:100%!important;max-width:none!important;min-width:0;min-height:600px}#studioJournalView>.layout-controls{display:none}
+.library-point-size{display:flex;align-items:center;gap:4px}.library-point-size input{width:58px!important;min-width:0;min-height:30px}.library-writing-toolbar-rich label{display:flex;align-items:center;gap:4px}.library-writing-toolbar-rich input,.library-writing-toolbar-rich select{font:inherit}
+.library-writing-page{width:min(100%,850px)!important;margin:0 auto!important}.library-writing-page .library-page-body{min-height:1000px;max-height:none!important;font-size:12pt;line-height:1.15!important;padding:60px 72px!important;overflow:visible!important}.library-writing-page .library-page-body p,.library-writing-page .library-page-body div{line-height:inherit}.library-page-body figure img{display:block;max-width:100%;height:auto}
+.workspace-deadline .admin-action-title,.workspace-deadline .admin-case-name,.workspace-deadline .task-title,.workspace-deadline .deadline-text{color:var(--deadline-tone)!important;font-weight:700}.workspace-deadline{border-inline-start:3px solid var(--deadline-tone)}
+#workspaceArchives details{padding:8px 0}#workspaceArchives .life-admin-archives-section{position:static;transform:none;width:100%;max-width:100%}.workspace-archive-link{margin:12px 0}
+.studio-menu{background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}.studio-menu button:hover,.studio-menu button:focus{background:var(--panel2,var(--bg))!important}.studio-tabs button{background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}.studio-tabs button.selected{background:var(--gold)!important;color:var(--bg)!important}
+@media(max-width:850px){.workspace-food-grid{grid-template-columns:1fr!important}.workspace-food-grid #mealPanel{grid-column:auto!important}.library-writing-page .library-page-body{padding:25px!important}}
+@media(prefers-reduced-motion:reduce){#studioBudget .studio-jar:before{transition:none}}
+
+.workspace-deadline .admin-case-when{color:var(--deadline-tone)!important}.workspace-archive-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+#workspaceArchives #sharedNotesPanel{margin:8px 0;border:0;padding:0}#workspaceArchives #sharedNoteNew{display:none}
+
+.workspace-plate-legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.8em;margin:4px 0 12px;color:var(--muted,var(--text))}.workspace-plate-legend span:before{content:"";display:inline-block;width:7px;height:7px;margin-right:4px;background:#789b73;border-radius:2px}.workspace-plate-legend span:nth-child(2):before{background:#bcac7c}.workspace-plate-legend span:nth-child(3):before{background:#a27b79}
+/* A small purchase stays on one readable line, including its options. */
+#studioBudget .studio-small-purchases .kitchen-row{display:grid!important;grid-template-columns:20px minmax(0,1fr) auto 28px;gap:10px;align-items:center}#studioBudget .studio-small-purchases .kitchen-row>.studio-budget-options{grid-column:auto;margin:0;padding:4px}#studioBudget .studio-grid+.studio-add-line{max-width:542px}
+/* Burgundy conveys urgency without sacrificing text contrast on dark themes. */
+.workspace-deadline{background:color-mix(in srgb,var(--deadline-tone) 12%,var(--panel))}.workspace-deadline[data-deadline-level=soon]{background:color-mix(in srgb,var(--deadline-tone) 20%,var(--panel))}.workspace-deadline[data-deadline-level=overdue]{background:color-mix(in srgb,var(--deadline-tone) 30%,var(--panel))}
+.workspace-deadline .admin-action-title,.workspace-deadline .admin-case-name,.workspace-deadline .admin-case-when,.workspace-deadline .task-title,.workspace-deadline .deadline-text{color:var(--text)!important}
+
+/* The journal is paper: urgency changes its ink, never paints a dark chip. */
+#homeView #journalBook .workspace-deadline,
+#homeView #journalBook .atelier-important{background:transparent!important;border-inline-start:0!important;padding-inline-start:2px!important;--task-priority:var(--deadline-ink,#814a48)}
+#homeView #journalBook .deadline-line.workspace-deadline,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-tag,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-text,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-time,
+#homeView #journalBook .journal-task.workspace-deadline .journal-task-open,
+#homeView #journalBook .journal-task.atelier-important .journal-task-open{color:var(--deadline-ink,#814a48)!important}
+#homeView #journalBook .journal-task.workspace-deadline .journal-task-open,
+#homeView #journalBook .deadline-line.workspace-deadline .deadline-text{font-weight:700}
+#homeView #journalBook .deadline-line{grid-template-columns:max-content minmax(0,1fr)!important;column-gap:12px!important;background:transparent!important}
+#homeView #journalBook .deadline-tag{white-space:nowrap!important}
+#homeView #journalBook .deadline-time:empty{display:none}
+@supports(grid-template-columns:subgrid){
+ #homeView #journalBook #homeDeadlineLines{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:12px;row-gap:2px}
+ #homeView #journalBook .deadline-line{grid-template-columns:subgrid!important;grid-column:1 / -1;column-gap:12px!important}
+ #homeView #journalBook .deadline-empty{grid-column:1 / -1}
+}
+#homeView #journalBook .deadline-line .deadline-tag,
+#homeView #journalBook .deadline-line .deadline-text,
+#homeView #journalBook .deadline-line .deadline-time{color:var(--deadline-ink,#814a48)!important}
+
+/* Compact top-bar reminders and update indicator, without framed tabs. */
+.top-actions #workspaceReminderToggle,.top-actions #atelierUpdateStar{position:relative;inset:auto;display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;height:40px;min-height:40px;padding:7px;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0;color:var(--text)}
+.top-actions #atelierUpdateStar.has-update{color:#e7c44d}.top-actions #atelierUpdateStar.has-update svg{fill:currentColor}
+.top-actions #workspaceReminderToggle .workspace-reminder-count{position:absolute;right:0;top:0;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:10px;background:#e8a6a6;color:#49272e;font:700 11px/17px system-ui;text-align:center}
+.top-actions .workspace-reminder-count[hidden]{display:none}
+#atelierUpdateProgress{position:fixed;top:110px;right:20px;z-index:9000;max-width:min(340px,85vw);padding:12px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font-size:.85rem;box-shadow:0 4px 15px #0003}
+#atelierUpdateProgress[hidden]{display:none}

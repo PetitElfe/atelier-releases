@@ -1,0 +1,57 @@
+name: Compact scheduled tracker tables TEST
+on:
+  push:
+    branches: [test/tracker-layout-20261109]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python tools/release_smoke.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/tracker_layout_browser_test.cjs
+      - run: node tools/tracker_ritual_browser_test.cjs
+      - run: node tools/studio_browser_test.cjs
+      - run: node tools/preparations_tracker_home_browser_test.cjs
+      - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tracker_layout_TEST_kit
+          path: |
+            dist/Goblin_MAJ_Windows_TEST_20261109.zip
+            dist/Goblin_MAJ_Windows_TEST_20261109.zip.sha256
+          if-no-files-found: error
+  windows:
+    needs: browser
+    runs-on: windows-latest
+    timeout-minutes: 12
+    env:
+      GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.15'
+          allow-prereleases: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tracker_layout_TEST_kit
+          path: dist
+      - shell: pwsh
+        run: Expand-Archive dist/Goblin_MAJ_Windows_TEST_20261109.zip -DestinationPath dist
+      - run: python -m unittest discover -s tests -p test_windows_snapshot_upgrade.py -v
+      - run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v

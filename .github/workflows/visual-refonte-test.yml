@@ -1,0 +1,58 @@
+name: Atelier visual refonte TEST
+on:
+  push:
+    branches: [test/visual-refonte-20261108]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python tools/release_smoke.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Studio_browser_runtime
+          path: ~/.cache/ms-playwright/chromium_headless_shell-*
+          retention-days: 2
+      - run: node tools/studio_browser_test.cjs
+      - run: node tools/big_refonte_browser_test.cjs
+      - run: node tools/tracker_ritual_browser_test.cjs
+      - run: node tools/life_tools_browser_test.cjs
+      - run: node tools/preparations_tracker_home_browser_test.cjs
+      - run: node tools/library_browser_test.cjs
+      - run: node tools/domain_moodboard_browser_test.cjs
+      - run: node tools/recipe_shelves_browser_test.cjs
+      - run: node tools/windows_library_calendar_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Studio_visual_evidence
+          path: artifacts/
+          if-no-files-found: ignore
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python app/desktop_postits.py --self-test
+      - run: python tools/build_windows_test_delivery.py --revision ${{ github.sha }}
+      - run: python -m unittest discover -s tests -p test_windows_delivery_install.py -v
+        env:
+          GOBLIN_RUN_ISOLATED_DELIVERY_TEST: '1'
+          PYTHONUTF8: '1'

@@ -4,6 +4,10 @@ Uses SQLite's online backup API, never a user's live data. This tests that
 new map and progression tables survive a round-trip together with legacy
 library content and that SQLite foreign keys stay valid.
 """
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0,str(_Path(__file__).resolve().parents[1]/'app'))
+from sqlite_context import connect as managed_sqlite_connect
 import importlib.util
 from pathlib import Path
 import sqlite3
@@ -25,7 +29,7 @@ class RestoreRehearsal(unittest.TestCase):
     def test_backup_round_trip_keeps_legacy_and_new_content(self):
         with tempfile.TemporaryDirectory(prefix="atelier-test-restore-") as temp:
             paths = [Path(temp) / x for x in ("original.db", "backup.db", "restored.db")]
-            with sqlite3.connect(paths[0]) as source:
+            with managed_sqlite_connect(paths[0]) as source:
                 source.row_factory = sqlite3.Row
                 source.execute("PRAGMA foreign_keys=ON")
                 source.executescript("""
@@ -49,11 +53,11 @@ class RestoreRehearsal(unittest.TestCase):
                 maps.set_position(source,2,160.5,-14)
                 progression.award(source,source_kind="objective_step",source_id=2)
                 source.commit()
-                with sqlite3.connect(paths[1]) as backup:
+                with managed_sqlite_connect(paths[1]) as backup:
                     source.backup(backup)
             # Simulate restoration to a separate path rather than overwriting
             # the source: user data is not changed by this rehearsal.
-            with sqlite3.connect(paths[1]) as backup, sqlite3.connect(paths[2]) as restored:
+            with managed_sqlite_connect(paths[1]) as backup, managed_sqlite_connect(paths[2]) as restored:
                 backup.backup(restored)
                 restored.row_factory = sqlite3.Row
                 restored.execute("PRAGMA foreign_keys=ON")

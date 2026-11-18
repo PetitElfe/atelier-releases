@@ -1,4 +1,8 @@
 """Tests the pre-install backup on throwaway files, never live user data."""
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0,str(_Path(__file__).resolve().parents[1]/'app'))
+from sqlite_context import connect as managed_sqlite_connect
 import importlib.util
 from pathlib import Path
 import json
@@ -21,7 +25,7 @@ class BackupTests(unittest.TestCase):
             (root / "user").mkdir()
             (root / "user" / "notes.txt").write_text("Mes carnets", encoding="utf-8")
             dbpath = root / "data" / "atelier.db"
-            with sqlite3.connect(dbpath) as db:
+            with managed_sqlite_connect(dbpath) as db:
                 db.execute("CREATE TABLE memories (value TEXT)")
                 db.execute("INSERT INTO memories VALUES ('important')")
             report = tool.backup(root, destination, check_port=False)
@@ -29,7 +33,7 @@ class BackupTests(unittest.TestCase):
             self.assertFalse(report["browser_local_storage_backed_up"])
             self.assertEqual(report["file_count"], 2)
             self.assertEqual((destination / "user" / "notes.txt").read_text(encoding="utf-8"), "Mes carnets")
-            with sqlite3.connect(destination / "data" / "atelier.db") as copied:
+            with managed_sqlite_connect(destination / "data" / "atelier.db") as copied:
                 self.assertEqual(copied.execute("SELECT value FROM memories").fetchone()[0], "important")
             saved = json.loads((destination / "verification.json").read_text(encoding="utf-8"))
             self.assertEqual(saved["files_sha256"]["user/notes.txt"], tool.digest(root / "user" / "notes.txt"))

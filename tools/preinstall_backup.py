@@ -9,6 +9,7 @@ Ce script refuse une destination existante et ne supprime aucun fichier.
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 import hashlib
 import json
 from pathlib import Path
@@ -73,7 +74,7 @@ def backup(root: Path, destination: Path, *, check_port: bool = True) -> dict:
                     raise RuntimeError("Copie incoherente : " + str(rel))
                 files[str(rel).replace("\\", "/")] = expected
         for database in (destination / "data").rglob("*.db"):
-            with sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True) as conn:
+            with closing(sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)) as conn:
                 if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                     raise RuntimeError("Base SQLite endommagee : " + str(database))
         report = {
