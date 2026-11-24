@@ -591,7 +591,7 @@ function showReminderRowActions(row,anchor){
 function showAtelierContextMenu(anchor,actions){
   document.querySelector('#atelierContextMenu')?.remove();
   const menu=document.createElement('div');menu.id='atelierContextMenu';menu.className='atelier-context-menu';menu.setAttribute('role','menu');
-  for(const action of actions){const b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');b.textContent=action.label;if(action.danger)b.classList.add('danger');
+  for(const action of actions){const b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');b.textContent=action.label;if(typeof action.checked==='boolean'){b.setAttribute('role','menuitemcheckbox');b.setAttribute('aria-checked',String(action.checked));const mark=document.createElement('span');mark.className='calendar-context-check';mark.setAttribute('aria-hidden','true');b.prepend(mark)}if(action.disabled)b.disabled=true;if(action.danger)b.classList.add('danger');
     b.onclick=()=>{menu.remove();action.run()};menu.appendChild(b)}
   document.body.appendChild(menu);
   const x=anchor.clientX??anchor.getBoundingClientRect().left,y=anchor.clientY??anchor.getBoundingClientRect().bottom;

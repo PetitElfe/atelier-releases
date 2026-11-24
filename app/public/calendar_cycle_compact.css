@@ -51,3 +51,8 @@
 
 /* Sans le grand panneau cycle, les habitudes utilisent toute la largeur. */
 #organisationView .organisation-grid{grid-template-columns:minmax(0,1fr)}
+
+#atelierContextMenu [role=menuitemcheckbox]{display:flex;align-items:center;gap:8px}
+.calendar-context-check{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid currentColor;border-radius:3px;flex:none}
+[aria-checked=true]>.calendar-context-check:after{content:'✓';font:700 13px/1 system-ui}
+#calendarCycleSummary>button{display:inline-flex;align-items:center;justify-content:center;min-width:30px;width:30px;min-height:30px;height:30px;padding:3px;font:600 17px/1 system-ui}

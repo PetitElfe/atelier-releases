@@ -353,7 +353,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers(); self.wfile.write(data)
 
     def do_GET(self):
-        u = urlparse(self.path); p = u.path; q = parse_qs(u.query)
+        u = urlparse(self.path); p = u.path
+        if cycle_tracking.serve(self,self.command,p,DB_PATH):return
+        q = parse_qs(u.query)
         import alimentation
         if alimentation.serve(self,self.command,p,DB_PATH):return
         if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
@@ -758,6 +760,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); p = u.path
+        if cycle_tracking.serve(self,self.command,p,DB_PATH):return
         import alimentation
         if alimentation.serve(self,self.command,p,DB_PATH):return
         if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
@@ -1325,7 +1328,7 @@ class Handler(BaseHTTPRequestHandler):
                     end=date.fromisoformat(str(body['end_date'])) if body.get('end_date') else None
                 except (ValueError,TypeError): return self._json({'error':'Dates invalides.'},400)
                 if end and (end<start or (end-start).days>20): return self._json({'error':'La période de règles ne peut pas dépasser 21 jours.'},400)
-                overlap=c.execute('SELECT 1 FROM menstrual_periods WHERE start_date<=? AND COALESCE(end_date,start_date)>=? LIMIT 1',
+                overlap=c.execute("SELECT 1 FROM menstrual_periods WHERE start_date<=? AND CASE WHEN ongoing=1 THEN '9999-12-31' ELSE COALESCE(end_date,start_date) END>=? LIMIT 1",
                                   ((end or start).isoformat(),start.isoformat())).fetchone()
                 if overlap: return self._json({'error':'Cette période chevauche des règles déjà enregistrées. Modifie la période existante.'},409)
                 cur=c.execute('INSERT INTO menstrual_periods(start_date,end_date,notes,created_at) VALUES(?,?,?,?)',(start.isoformat(),end.isoformat() if end else None,str(body.get('notes',''))[:500],ts))
@@ -1481,6 +1484,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         u=urlparse(self.path); p=u.path
+        if cycle_tracking.serve(self,self.command,p,DB_PATH):return
         import alimentation
         if alimentation.serve(self,self.command,p,DB_PATH):return
         if admin_workspace.serve(self,self.command,p,DATA,DB_PATH,PORT):return
@@ -1672,16 +1676,16 @@ class Handler(BaseHTTPRequestHandler):
                 period_id=int(parts[2])
                 start=date.fromisoformat(str(body.get('start_date','')))
                 end=date.fromisoformat(str(body['end_date'])) if body.get('end_date') else None
-                if end and (end<start or (end-start).days>20):
-                    return self._json({'error':'La période de règles ne peut pas dépasser 21 jours.'},400)
+                if end and end<start:
+                    return self._json({'error':'La fin doit suivre le début.'},400)
                 with conn() as c:
-                    previous=c.execute('SELECT id FROM menstrual_periods WHERE id=?',(period_id,)).fetchone()
+                    previous=c.execute('SELECT id,ongoing FROM menstrual_periods WHERE id=?',(period_id,)).fetchone()
                     if not previous:return self._json({'error':'Période introuvable.'},404)
-                    overlap=c.execute('SELECT 1 FROM menstrual_periods WHERE id!=? AND start_date<=? AND COALESCE(end_date,start_date)>=? LIMIT 1',
-                                      (period_id,(end or start).isoformat(),start.isoformat())).fetchone()
+                    overlap=c.execute("SELECT 1 FROM menstrual_periods WHERE id!=? AND start_date<=? AND CASE WHEN ongoing=1 THEN '9999-12-31' ELSE COALESCE(end_date,start_date) END>=? LIMIT 1",
+                                      (period_id,(end or (date.max if previous['ongoing'] else start)).isoformat(),start.isoformat())).fetchone()
                     if overlap:return self._json({'error':'Ces dates chevauchent une autre période.'},409)
-                    c.execute('UPDATE menstrual_periods SET start_date=?,end_date=? WHERE id=?',
-                              (start.isoformat(),end.isoformat() if end else None,period_id))
+                    c.execute('UPDATE menstrual_periods SET start_date=?,end_date=?,ongoing=? WHERE id=?',
+                              (start.isoformat(),end.isoformat() if end else None,0 if end else previous['ongoing'],period_id))
                     c.commit()
                 return self._json({'ok':True})
             except (ValueError,TypeError):return self._json({'error':'Date ou identifiant invalide.'},400)

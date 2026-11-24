@@ -5,7 +5,7 @@ from pathlib import Path
 from calendar import monthrange
 import sqlite3, json, mimetypes, os, threading, webbrowser, re, html, socket, ipaddress, shutil, math
 from datetime import datetime, date, timedelta
-import groceries
+import groceries, cycle_tracking
 import local_icon, official_icon_publish, admin_workspace
 import studio, utility_details, creator_access, reminder_occurrences, native_reminders, utility_notes, utility_sync, utility_safety, personal_design, library_moodboard, progression, objective_maps, updater, desktop_postits, event_preparations, quick_capture_native, tracker_rituals, admin_docs
 
@@ -442,6 +442,7 @@ with conn() as c:
     import alimentation
     alimentation.initialise(c)
     groceries.initialise(c)
+    cycle_tracking.initialise(c)
     progression.initialise(c)
     objective_maps.initialise(c)
     library_moodboard.initialise(c)

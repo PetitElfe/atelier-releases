@@ -25,11 +25,11 @@
     },
     {
       "path": "app_part1.py",
-      "sha256": "c44d5cce2a6aa30341d3805b1f1a781ba9865425b0c5f5efb5967fef2db053e7"
+      "sha256": "74f27e9d616784f6f7481779a2a2e16b0a9bcf19c859bacb6f8faec377281132"
     },
     {
       "path": "app_part2.py",
-      "sha256": "c42ad08848e799a5994a9d3ec3ad7687336fbccbfe06b12c7af77d9bf2948d03"
+      "sha256": "e38e199dac57402b27c243544d90f01008b6636179d43f180a3bba584a48f14a"
     },
     {
       "path": "app_part3.py",
@@ -89,11 +89,11 @@
     },
     {
       "path": "public/app_part2.js",
-      "sha256": "c1b4dc4f95276841eaff50a2232ea3447e1f697eee7ff0b4f93a2d3020d5aad7"
+      "sha256": "30224415c0486b7645d0c8bbbc0a4fa33939f4841ff876c468d52dd9a9db2960"
     },
     {
       "path": "public/app_part3.js",
-      "sha256": "2d89190cc5291eed54bb32a558251165f1461d171eabfe7ea60dd8c789969685"
+      "sha256": "dc11414bffd72231f134d61661b46b6d059b7c09ad0420a473902658605afde6"
     },
     {
       "path": "public/big_refonte.css",
@@ -109,11 +109,11 @@
     },
     {
       "path": "public/calendar_cycle_compact.css",
-      "sha256": "2ed38a3e5603ced309607f9a2ef940ce1a16a9a05e66347c0672842f85fe76d9"
+      "sha256": "a3487319578ee3935c795dd11b9c6ffb4846d68955e25afcedb577b379e5fc0b"
     },
     {
       "path": "public/calendar_cycle_compact.js",
-      "sha256": "daaa26f6e8a89155d12cf58d6a64e8c98befb63daaeebc153669c60b6dc99a91"
+      "sha256": "b243ea89222e4bcb7e4e39af675f1039a449a52669940d0a730d2ac10b6e86f6"
     },
     {
       "path": "public/calendar_decor.css",
@@ -473,7 +473,7 @@
     },
     {
       "path": "public/daily_features.js",
-      "sha256": "616ab610ae1834a2943797a7b11ac33a0d9f93afbf79bb3affeac3c480380ae5"
+      "sha256": "b77f1e1c84c7ce33a60a6490c0f68971e247da003dd84ff8a96ad8b6eb58c87e"
     },
     {
       "path": "public/daily_features.css",
@@ -506,8 +506,12 @@
     {
       "path": "grocery_recovery.py",
       "sha256": "2786a3e5e8bfaff8c4ab653253d45373096560fe279424ef8c398141e0ed2d80"
+    },
+    {
+      "path": "cycle_tracking.py",
+      "sha256": "0dbeedaa1e135b5cb4350afe722bf882c7d6cfb94f5464de4f317c9e32df0f8a"
     }
   ],
-  "notes": "Budget : solde de départ à la date choisie dans le mois, par exemple le 7 ; opérations antérieures et historique conservés, date mémorisée et calculs cohérents.",
-  "build_sequence": 2026111801
+  "notes": "Cycle : début confirmé et fin manuelle près de Goblin grognon ; jours modifiables par une case dans le menu du calendrier. Historique et prévisions préservés.",
+  "build_sequence": 2026112401
 }

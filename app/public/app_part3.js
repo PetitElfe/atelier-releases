@@ -2016,14 +2016,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDue()
 let atelierLastDay=ymd(new Date());
 setInterval(()=>{const d=ymd(new Date());if(d!==atelierLastDay){atelierLastDay=d;refresh();}},60000);
 /* ALPHA 0.14 — habitudes et cycle : aucune donnée de cycle dans le journal d'Accueil. */
-const organisationState={habits:[],periods:[]};
+const organisationState={habits:[],periods:[],cycleOverrides:[]};
 let organisationRefreshSerial=0;
 async function refreshOrganisation(){
   const serial=++organisationRefreshSerial;
   try{
-    const [habits,periods]=await Promise.all([api('/api/habits'),api('/api/cycle-periods')]);
+    const [habits,periods,tracking]=await Promise.all([api('/api/habits'),api('/api/cycle-periods'),api('/api/cycle-tracking')]);
     if(serial!==organisationRefreshSerial)return;
-    organisationState.habits=habits;organisationState.periods=periods;
+    organisationState.habits=habits;organisationState.periods=periods;organisationState.cycleOverrides=tracking.overrides;
     renderOrganisation();
     renderMonth();renderWeek();
     if(typeof renderCycleHeader==='function')renderCycleHeader();
@@ -2035,8 +2035,10 @@ function localDayAdd(iso,days){
 function dayDistance(start,end){
   return Math.round((parseYMD(end)-parseYMD(start))/86400000);
 }
+function cycleActivePeriod(){return organisationState.periods.find(p=>!!p.ongoing&&p.start_date<=ymd(new Date()))||null}
 function isRecordedCycleDay(day){
-  return organisationState.periods.some(p=>p.start_date<=day&&day<=(p.end_date||p.start_date));
+  const override=organisationState.cycleOverrides.find(x=>x.day===day);if(override)return !!override.recorded;
+  return organisationState.periods.some(p=>p.start_date<=day&&day<=(p.ongoing?ymd(new Date()):(p.end_date||p.start_date)));
 }
 function cycleEstimate(){
   const dates=[...new Set(organisationState.periods.map(p=>p.start_date))].sort();
@@ -2071,6 +2073,7 @@ function cycleEstimate(){
     duration,spread,last,sampleCount:values.length,observedDuration:durations.length>0};
 }
 function cycleForecastForDay(day){
+  if(cycleActivePeriod())return null;
   if(typeof cycleShowMarksPreference!=='function'||!cycleShowMarksPreference())return null;
   if(isRecordedCycleDay(day)||day<ymd(new Date()))return null;
   const estimate=cycleEstimate();

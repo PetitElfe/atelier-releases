@@ -30,8 +30,8 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   assert.equal(await page.locator('#calendarCycleHint').count(),0);
   assert.equal(await page.locator('.cycle-module').count(),0);
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
-  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles','Aller à une date…','Décorer ce jour / ce mois']);
-  await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
+  assert.deepEqual(await page.locator('#atelierContextMenu button').allTextContents(),['Nouveau rendez-vous','Règles ce jour','Modifier une période…','Aller à une date…','Décorer ce jour / ce mois']);
+  await page.locator('#atelierContextMenu button').filter({hasText:'Modifier une période…'}).click();
   await page.locator('#cycleQuickEditor').waitFor({state:'visible'});
   const today=ymd(new Date());
   assert.equal(await page.locator('#cycleQuickForm [name=start_date]').inputValue(),today);
@@ -68,7 +68,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   await context2.close();
   // Le clic droit permet aussi de modifier et de supprimer une période existante.
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
-  await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
+  await page.locator('#atelierContextMenu button').filter({hasText:'Modifier une période…'}).click();
   const end=ymd(add(new Date(),3));
   await page.locator('#cycleQuickForm [name=end_date]').fill(end);
   await page.locator('#cycleQuickForm button[type=submit]').click();
@@ -76,7 +76,7 @@ function add(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
   periods=await api('/api/cycle-periods');
   assert.equal(periods.find(p=>p.start_date===today).end_date,end);
   await page.locator('#monthGrid .day-cell.today').click({button:'right'});
-  await page.locator('#atelierContextMenu button').filter({hasText:'Règles'}).click();
+  await page.locator('#atelierContextMenu button').filter({hasText:'Modifier une période…'}).click();
   await page.locator('.cycle-quick-delete').click();
   await page.locator('.cycle-quick-delete').click();
   await page.locator('#cycleQuickEditor').waitFor({state:'detached',timeout:12000});
