@@ -36,8 +36,6 @@ def main():
         (data/'notes.txt').write_text('Ne jamais perdre ce texte',encoding='utf-8')
         (code/'untracked_important.txt').write_text('Ancien fichier préservé',encoding='utf-8')
         # The in-place updater needs the existing manifest as its rollback marker.
-        original_manifest=b'{"version":"0.18.0","format":2,"files":[]}\n'
-        (code/'manifest.json').write_bytes(original_manifest)
         backup=root/'sauvegarde';backup.mkdir()
         updater.BASE=root;updater.CODE=code;updater.DATA=data
 
@@ -47,6 +45,11 @@ def main():
         contents={path:('TEST:'+path+'\n').encode() for path in paths}
         manifest={'version':'0.18.0','format':2,'files':[
             {'path':path,'sha256':sha(contents[path])} for path in paths]}
+        # Local manifests must pass the same structural validation as remote ones.
+        original=json.loads(json.dumps(manifest))
+        original['files'][0]['sha256']=sha((app/'app.py').read_bytes())
+        original_manifest=(json.dumps(original)+'\n').encode('utf-8')
+        (code/'manifest.json').write_bytes(original_manifest)
         manifest_bytes=(json.dumps(manifest)+'\n').encode('utf-8')
         zbuf=io.BytesIO()
         with ZipFile(zbuf,'w') as archive:

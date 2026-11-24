@@ -8,7 +8,7 @@ function cyclePreference(key){
   const saved=localStorage.getItem(key);
   // Préserver l'affichage pour une installation qui contient déjà un suivi.
   // Une nouvelle installation, sans dates, ne révèle aucun panneau par défaut.
-  return saved===null?organisationState.periods.length>0:saved==='1';
+  return saved===null?(organisationState.periods.length>0||organisationState.cycleOverrides.some(x=>x.recorded)):saved==='1';
 }
 function cycleShowInfoPreference(){return cyclePreference(CYCLE_INFO_SETTING)}
 function cycleShowMarksPreference(){return cyclePreference(CYCLE_MARKS_SETTING)}
@@ -24,44 +24,31 @@ function renderCycleHeader(){
   root.hidden=!cycleShowInfoPreference();
   if(root.hidden)return;
   const prediction=cycleEstimate();
-  const label=document.createElement('span');
-  label.className='calendar-cycle-chip';
-  if(!prediction){
-    label.textContent='Règles · estimation indisponible';
-    label.title='Enregistre au moins deux débuts de règles espacés de 21 à 45 jours pour obtenir une estimation.';
-    root.appendChild(label);
-    return;
-  }
-  const days=prediction.approxDays;
-  label.textContent='Règles estimées · J−'+days;
-  label.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+
-    ' · Cycle moyen observé : '+prediction.average+' jours. Estimation indicative.';
-  const goblin=document.createElement('span');
-  goblin.className='calendar-cycle-chip goblin-cycle-chip';
-  const before=days-14;
-  if(before>0){
-    goblin.textContent='Mode Goblin grognon dans J−'+before;
-  }else{
-    goblin.textContent='Mode Goblin grognon · fenêtre estimée';
-    goblin.classList.add('is-goblin-window');
-  }
-  goblin.title='Repère ludique fixé à 14 jours avant les prochaines règles estimées ; ne prédit pas les symptômes.';
-  root.append(label,goblin);
+  const today=ymd(new Date()),recorded=isRecordedCycleDay(today);
+  const chip=document.createElement('span');chip.className='calendar-cycle-chip goblin-cycle-chip';
+  if(cycleActivePeriod()||recorded){chip.textContent=!cycleActivePeriod()&&organisationState.periods.some(p=>p.end_date===today)?'Goblin grognon · règles terminées':'Goblin grognon · règles en cours';chip.classList.add('is-goblin-window')}
+  else if(prediction){chip.textContent='Goblin grognon · J−'+prediction.approxDays;chip.title='Prochain début estimé : '+fmtFrenchDate(parseYMD(prediction.next))+' · estimation indicative, pas une prédiction des symptômes.'}
+  else {chip.textContent='Goblin grognon · estimation indisponible';chip.title='Enregistre au moins deux débuts de règles espacés de 21 à 45 jours.'}
+  root.append(chip);
 }
 function bindCalendarDateContextMenu(element,day,time=null){
   element.addEventListener('contextmenu',event=>{
     // Laisser les rendez-vous ouvrir leur propre menu.
     if(event.target.closest('.event-pill,.calendar-month-event,.week-item,.week-timed-event,.week-card-open,.day-add,.calendar-hover-actions'))return;
     event.preventDefault();event.stopPropagation();
+    const recorded=isRecordedCycleDay(day);
     showAtelierContextMenu(event,[
       {label:'Nouveau rendez-vous',run:()=>openEventModal(null,day,time)},
-      {label:'Règles',run:()=>openCycleQuickEditor(day,event)}
+      {label:'Règles ce jour',checked:recorded,disabled:day>ymd(new Date()),run:()=>setCycleRecordedDay(day,!recorded)},
+      {label:'Modifier une période…',run:()=>openCycleQuickEditor(day,event)},
+      {label:'Aller à une date…',run:()=>openCalendarDateJump(day)},
+      ...(typeof openCalendarDecoration==='function'?[{label:'Décorer ce jour / ce mois',run:()=>openCalendarDecoration(day)}]:[])
     ]);
   });
 }
 function openCycleQuickEditor(day,anchor){
   document.querySelector('#cycleQuickEditor')?.remove();
-  const existing=organisationState.periods.find(p=>p.start_date<=day&&day<=(p.end_date||p.start_date));
+  const existing=organisationState.periods.find(p=>p.start_date<=day&&day<=(p.ongoing?ymd(new Date()):(p.end_date||p.start_date)));
   const editor=document.createElement('section');
   editor.id='cycleQuickEditor';editor.className='cycle-quick-editor';
   editor.setAttribute('role','dialog');editor.setAttribute('aria-label','Règles · édition rapide');
@@ -95,7 +82,7 @@ function openCycleQuickEditor(day,anchor){
     const limit=parseYMD(start.value);
     if(!Number.isNaN(limit.getTime())){
       limit.setDate(limit.getDate()+20);
-      end.max=ymd(limit);
+      if(existing?.ongoing)end.removeAttribute('max');else end.max=ymd(limit);
     }
   };
   start.addEventListener('change',updateMax);updateMax();
@@ -154,3 +141,9 @@ $('#settingsCycleShowMarks')?.addEventListener('change',event=>{
   localStorage.setItem(CYCLE_MARKS_SETTING,event.target.checked?'1':'0');
   renderMonth();renderWeek();
 });
+
+async function setCycleRecordedDay(day,recorded){
+ const previous=organisationState.cycleOverrides.find(x=>x.day===day);
+ const result=await runUiAction('Modifier ce jour',()=>api('/api/cycle-tracking/day',{method:'PUT',body:JSON.stringify({day,recorded,revision:previous?.revision||0})}));
+ if(result.ok){if(localStorage.getItem(CYCLE_INFO_SETTING)===null)localStorage.setItem(CYCLE_INFO_SETTING,'1');if(localStorage.getItem(CYCLE_MARKS_SETTING)===null)localStorage.setItem(CYCLE_MARKS_SETTING,'1');await refreshOrganisation()}
+}

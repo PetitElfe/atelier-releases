@@ -289,6 +289,17 @@ def _stop_own_server(child) -> None:
         _log("Stopping own server failed: " + repr(error))
 
 
+def enable_native_editing_menus():
+    # pywebview 6.2.1 disables WebView2 menus with debug=False, including spelling.
+    from webview.platforms.edgechromium import EdgeChrome
+    original = EdgeChrome.on_webview_ready
+    def ready(self, sender, args):
+        original(self, sender, args)
+        if sender.CoreWebView2 is not None:
+            sender.CoreWebView2.Settings.AreDefaultContextMenusEnabled = True
+            sender.CoreWebView2.Settings.AreDevToolsEnabled = False
+    EdgeChrome.on_webview_ready = ready
+
 def main():
     if "--self-test" in sys.argv:
         assert PORT == 8876 and "LATELIER_TEST_0180" in str(TEST_ROOT)
@@ -305,6 +316,7 @@ def main():
         if getattr(sys, "frozen", False) and _install_self():
             return
         import webview
+        enable_native_editing_menus()
         with _one_desktop_window():
             PROFILE.mkdir(parents=True, exist_ok=True)
             child = _start_local_server()

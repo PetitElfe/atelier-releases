@@ -1,4 +1,8 @@
 """Archives de Post-it : restoration exacte sur base temporaire seulement."""
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0,str(_Path(__file__).resolve().parents[1]/'app'))
+from sqlite_context import connect as managed_sqlite_connect
 import sqlite3
 import sys
 import tempfile
@@ -13,7 +17,7 @@ class DesktopPostitArchiveTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
         self.db=Path(self.temp.name)/'atelier.db'
-        with sqlite3.connect(self.db) as c:
+        with managed_sqlite_connect(self.db) as c:
             c.executescript("""
                 PRAGMA foreign_keys=ON;
                 CREATE TABLE home_postits(
@@ -23,7 +27,7 @@ class DesktopPostitArchiveTests(unittest.TestCase):
                 INSERT INTO home_postits VALUES
                   (1,'Notes multiline','Un\\ndeux\\ntrois','mauve','rounded',0,'2026-10-28','2026-10-28');
             """)
-        with sqlite3.connect(self.db) as c:
+        with managed_sqlite_connect(self.db) as c:
             c.execute('UPDATE home_postits SET body=? WHERE id=1',
                       ('Un'+chr(10)+'deux'+chr(10)+'trois',))
         desktop_postits.create_layout_table(self.db)
@@ -34,7 +38,7 @@ class DesktopPostitArchiveTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_last_archived_note_restores_text_color_and_position(self):
-        with sqlite3.connect(self.db) as c:
+        with managed_sqlite_connect(self.db) as c:
             c.execute('UPDATE home_postits SET archived=1 WHERE id=1')
         self.assertEqual(desktop_postits.note_rows(self.db),[],
                          'No active Post-it must be required to access archives')
@@ -50,7 +54,7 @@ class DesktopPostitArchiveTests(unittest.TestCase):
         self.assertEqual(desktop_postits.archived_notes(self.db),[])
 
     def test_restoration_respects_100_active_notes(self):
-        with sqlite3.connect(self.db) as c:
+        with managed_sqlite_connect(self.db) as c:
             c.execute('UPDATE home_postits SET archived=1 WHERE id=1')
             c.executemany(
               'INSERT INTO home_postits VALUES(?,?,?,?,?,?,?,?)',

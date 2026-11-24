@@ -38,12 +38,15 @@ async function api(path,method='GET',body){
   browser=await chromium.launch({headless:true});const page=await browser.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base,{waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavHeaderToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
+  await page.locator('[data-domain-view=map]').click();
   const root=page.locator('#objectiveMapRoot');
   await root.locator('.objective-map-node').first().waitFor({timeout:10000});
   assert.equal(await root.locator('.objective-map-node').count(),2);
+  assert.equal(await root.locator('[data-action="ordering"]').isVisible(),false);
+  await root.locator('[data-action="edit"]').click();
   assert.ok(await root.locator('[data-action="ordering"]').isVisible());
   await root.locator('[data-action="ordering"]').selectOption('sequential');
   await page.waitForFunction(async id=>{const response=await fetch('/api/objective-map?domain_id='+id,{cache:'no-store'});return (await response.json()).ordering==='sequential'},domain.id,{timeout:10000});
@@ -95,9 +98,10 @@ async function api(path,method='GET',body){
     return (await response.json()).nodes.find(x=>x.id===nodeId)?.required===0;
   },{domainId:domain.id,nodeId:a.id},{timeout:10000});
   await page.reload({waitUntil:'domcontentloaded'});
-  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('body.home-active #sideNavHeaderToggle, body:not(.home-active) #sideNavToggle').click();
+  if(await page.locator('#sideNav').evaluate(el=>el.classList.contains('is-collapsed')))await page.locator('#sideNavHeaderToggle').click();
   await page.locator('.tabs button[data-view="library"]').click();
   await page.locator('.library-domain-open').filter({hasText:'Cartes E2E'}).click();
+  await page.locator('[data-domain-view=map]').click();
   await root.locator('.objective-map-node').first().waitFor();
   assert.equal(await root.locator('[data-action="ordering"]').inputValue(),'sequential');
   assert.deepEqual((await api('/api/objective-map?domain_id='+domain.id)).edges,[{from_id:a.id,to_id:b.id}],
@@ -105,6 +109,7 @@ async function api(path,method='GET',body){
   assert.equal((await api('/api/objective-map?domain_id='+domain.id)).nodes.find(n=>n.id===a.id).required,0);
 
   assert.ok(await root.locator('path[marker-end]').count()>0);
+  await root.locator('[data-action="edit"]').click();
   await root.locator('[data-action="from"]').selectOption(String(a.id));
   await root.locator('[data-action="to"]').selectOption(String(b.id));
   const beforeUnlinkCanvas=await root.locator('.objective-map-canvas').elementHandle();

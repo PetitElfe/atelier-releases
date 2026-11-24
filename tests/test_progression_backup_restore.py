@@ -1,5 +1,9 @@
 """Offline recovery rehearsal on disposable SQLite data. Never touches user files."""
 from __future__ import annotations
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0,str(_Path(__file__).resolve().parents[1]/'app'))
+from sqlite_context import connect as managed_sqlite_connect
 import importlib.util
 import sqlite3
 import tempfile
@@ -26,7 +30,7 @@ class BackupRestoreTests(unittest.TestCase):
             live = Path(tmp) / "working.db"
             backup = Path(tmp) / "backup.db"
             restored = Path(tmp) / "restored.db"
-            with sqlite3.connect(live) as db:
+            with managed_sqlite_connect(live) as db:
                 db.row_factory = sqlite3.Row
                 db.execute("PRAGMA foreign_keys=ON")
                 db.executescript("""
@@ -51,13 +55,13 @@ class BackupRestoreTests(unittest.TestCase):
                 maps.set_position(db, 2, 218.5, 62.0)
                 progression.award(db,source_kind="task",source_id=42)
                 db.commit()
-                with sqlite3.connect(backup) as destination:
+                with managed_sqlite_connect(backup) as destination:
                     db.backup(destination)
 
-            with sqlite3.connect(backup) as source, sqlite3.connect(restored) as destination:
+            with managed_sqlite_connect(backup) as source, managed_sqlite_connect(restored) as destination:
                 source.backup(destination)
 
-            with sqlite3.connect(restored) as db:
+            with managed_sqlite_connect(restored) as db:
                 db.row_factory = sqlite3.Row
                 db.execute("PRAGMA foreign_keys=ON")
                 self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")

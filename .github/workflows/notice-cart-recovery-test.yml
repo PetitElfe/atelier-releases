@@ -1,0 +1,40 @@
+name: Windows TEST automatic notice and lost cart recovery
+on:
+  push:
+    branches: [test/notice-cart-recovery-20261116]
+permissions:
+  contents: read
+jobs:
+  journal:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python tools/release_smoke.py
+      - run: python -m unittest discover -s tools -p test_grocery_recovery.py
+      - run: npm install --no-save playwright@1.62.1
+      - run: npx playwright install --only-shell chromium
+      - run: node tools/recovery_notice_browser_test.cjs
+      - run: node tools/shopping_ux_browser_test.cjs
+      - run: node tools/shopping_layout_browser_test.cjs
+      - run: node tools/journal_urgency_browser_test.cjs
+      - run: node tools/workspace_coherence_browser_test.cjs
+      - run: node tools/display_preferences_browser_test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recovery-notice-${{ matrix.os }}
+          path: artifacts/

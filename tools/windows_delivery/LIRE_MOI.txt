@@ -1,0 +1,139 @@
+L'ATELIER DU GOBLIN — MISE A JOUR WINDOWS TEST
+Tableaux, budget, albums et outils personnels — 9 novembre 2026
+
+1. Termine tes saisies et ferme la fenêtre L'Atelier TEST.
+2. Extrais tout le contenu du ZIP dans un dossier de ton choix.
+3. Double-clique sur Installer_la_MAJ_TEST.cmd (sans mode administrateur).
+4. Attends « MISE À JOUR RÉUSSIE », puis ouvre ton raccourci habituel TEST.
+
+Garde les fichiers du ZIP ensemble. Ne lance pas le CMD depuis l'aperçu du ZIP.
+Le Python déjà utilisé par L'Atelier et une connexion Internet sont nécessaires.
+
+Cette livraison attend ton installation E:\LATELIER_TEST_0180, port 8876.
+Elle vérifie les empreintes des fichiers, sauvegarde la base et le code avant
+remplacement, puis redémarre le serveur. En cas d'échec d'installation, elle
+utilise la restauration du programme de mise à jour. Les sauvegardes se trouvent
+dans E:\LATELIER_TEST_0180\SAUVEGARDE_AUTO_TEST_... .
+
+Le raccourci et le profil de l'interface sont conservés. Le canal TEST de cette
+installation est fixé à la branche bibliothèque/calendrier pour éviter qu'une
+vérification suivante propose l'ancienne version du canal partagé. La version
+stable E:\00_LATELIER et l'application de Nathan ne sont pas modifiées.
+
+Ce ZIP contient des scripts Python/CMD ; il ne s'agit pas d'un EXE signé.
+En cas de message d'erreur, conserve les dossiers et envoie le message affiché.
+
+A VERIFIER APRES LA MISE A JOUR :
+- Retrouver tes carnets et les textes déjà écrits.
+- Ouvrir un domaine : petite barre de livres en haut et moodboard en dessous.
+- Ajouter une image et un texte, les déplacer/redimensionner, fermer/rouvrir.
+- Cliquer sur un livre : éditeur dans toute la zone principale.
+- Cliquer sur Parcours, puis sur la maison : retour au moodboard.
+- Ecrire, changer de carnet puis revenir : texte et dernière page conservés.
+- Décorer le calendrier : image du mois puis du jour, opacité et couleur.
+- Fermer/rouvrir : décoration conservée ; rendez-vous toujours lisibles.
+- Vérifier les bandes des règles et le bloc Goblin grognon unique.
+
+MODE PERSONNEL MES DESSINS :
+- Paramètres > Mes dessins > Ouvrir le mode création.
+- Choisis une zone ou active Viser, puis clique sur le bouton ou le fond.
+- Glisse un PNG/JPEG/WebP dessus, ou utilise Choisir une image.
+- Ajuste le cadrage et la position, puis Enregistrer le thème.
+- Dans Clip Studio Paint, garde ton original .clip et exporte un PNG.
+  Pour la transparence, masque Papier et active l’export de transparence.
+- Le Gabarit PNG donne une référence à ouvrir dans Clip Studio Paint :
+  dessine sur un autre calque et masque les repères avant l’export.
+- Exporter conserve un thème complet avec ses images dans un fichier JSON.
+- Vérifie que ton dessin reste présent après fermeture et réouverture.
+
+L’accès est limité à ton installation TEST. Dans Paramètres > Mes dessins,
+définis ton mot de passe personnel avec Protéger le mode création.
+Une nouvelle fenêtre ou un redémarrage demandera de le déverrouiller.
+Ce verrou protège les modifications dans l’interface ; il ne remplace pas
+la sécurité de ta session Windows et ne chiffre pas les fichiers DATA.
+Les dessins habillent les zones existantes ; le moodboard du domaine reste
+l’espace pour placer librement des images et des textes comme des objets.
+
+NOUVEAU DANS CETTE LIVRAISON :
+- L’ancienne flèche du tiroir a disparu de toutes les pages.
+  Le hamburger du haut ouvre et ferme le menu.
+- Cuisine : un livre par recette, avec son titre sur la tranche.
+- Rayons, recherche par titre ou ingrédient, tri et filtres conservés.
+- Options sous chaque livre : modifier, idée de repas, archiver.
+- Recettes archivées : lire puis restaurer sans perdre le texte.
+- Le lecteur adapte les quantités aux personnes choisies et le bouton
+  + Courses ajoute l’ingrédient avec cette quantité.
+- Une nouvelle recette reprend le rayon sélectionné.
+- Un déplacement annulé du moodboard conserve sa position initiale
+  et les textes saisis, sans enregistrer la position intermédiaire.
+
+A TESTER SUR TON PC : ouvrir une ancienne recette, changer les portions,
+ajouter un ingrédient aux courses, archiver puis restaurer une recette,
+créer un rayon et y enregistrer une recette, fermer puis rouvrir TEST.
+Les contrôles automatiques ne remplacent pas ces essais sur ton installation.
+
+LOT UTILITAIRE DU 4 NOVEMBRE :
+- Paramètres > Sauvegardes : export complet indépendant, copie manuelle,
+  import vérifié avec aperçu, restauration avec copie de secours et redémarrage.
+  Les exports contiennent tes données privées : conserve-les sur ton support personnel.
+- Paramètres > Notifications : active et teste les rappels Windows natifs.
+  Le compagnon près de l’horloge doit rester actif. Teste un report de 10 minutes.
+- Cuisine : minuteurs nommés indépendants, pause/reprise/arrêt.
+- Notes et captures : notes partagées, hashtags multiples, liens, brouillons,
+  archives restaurables. L’envoi depuis Android reste volontaire.
+- Carnet de santé mentale : brouillons locaux et export, récupération d’un
+  enregistrement échoué, historique privé avant révision.
+- Actualisation des vues, diagnostic et redémarrage dans les paramètres.
+- Conflits et créations rejouées protégés avec le nouveau client Android 0.1.14 TEST.
+
+RECETTE REELLE ENCORE NECESSAIRE : ancienne donnée, arrêt/redémarrage, export
+sur un support externe, restauration d’une copie de démonstration, notifications
+réduites/verrouillées/en jeu et sons personnels. Ne restaure pas une copie ancienne
+sans garder d’abord un export actuel. Le système crée aussi une copie de secours.
+
+FINITION UTILITAIRE AJOUTÉE :
+- Rappels récurrents : terminer ou reporter une date sans arrêter la série.
+- Android 0.1.14 TEST : copie des rappels du PC et notifications natives,
+  même écran éteint. Active la copie dans Paramètres sur le téléphone.
+  Actualise quand le PC et Tailscale sont accessibles. Les actions hors ligne
+  sont conservées, puis envoyées au PC ; les conflits restent visibles.
+- Tâches : liens, sous-tâches et pièces jointes de 4 Mo maximum.
+- Carnets : annotations et corrections proposées sans effacer le texte initial.
+- Budget : plafonds par catégorie et par mois, justificatifs, correction d’une
+  opération existante sans créer une seconde dépense.
+- Administratif : états des documents, renommage et rangement avec historique,
+  conservation du nom et du fichier d’origine, brouillons des notes.
+- Mes dessins : six thèmes nommés, aperçu avant application, retour au thème
+  par défaut, mot de passe personnel à définir dans les paramètres.
+- Formulaires : un champ inchangé ne remplace plus une modification récente
+  effectuée sur le téléphone. Un conflit incompatible demande une décision.
+
+Les contrôles automatiques et l’installation isolée sur un runner Windows
+sont réussis. La recette sur ton PC et ton téléphone reste à effectuer avant
+une version stable. Aucune installation réelle, promotion stable ou modification
+du canal de Nathan n’est faite par cette livraison. Les neuf extensions
+facultatives de la checklist restent hors version utilitaire.
+
+REFONTE DU 8 NOVEMBRE :
+- Trackers : onglets, plusieurs tableaux, menu par clic droit, déplacement des lignes,
+  compteurs au clic et sous-étapes par jour avec remplissage progressif.
+- Budget : colonnes mensuelles, catégories/enveloppes, bocaux de projets séparés
+  des dépenses, courses avec quantités/prix et archives des mois.
+- Albums : étagères, photos personnelles, légendes, scotch, textes et dessins,
+  annulation/rétablissement, déplacement, redimensionnement et cadrage.
+- Carnets : tableaux, listes et dessins du stylet ; journal privé conservé.
+- Mes outils : cartes recto/verso, activités, sons personnels à importer et sport.
+- Repas : noter puis confirmer les unités à retirer du stock.
+- Post-it : formats dans le menu contextuel, fenêtres Bureau conservées.
+- Compatible avec Android 0.1.15 TEST : albums modifiables, suivi hebdomadaire,
+  calendrier, widget local, notes par hashtags, sport et respiration.
+
+Les points nutrition/assiette restent en brouillon : aucune règle alimentaire
+n'est activée par cette mise à jour. Les essais du stylet XP-Pen, de l'affichage
+Windows réel et des autorisations Android restent à effectuer sur tes appareils.
+
+FINITION DU 9 NOVEMBRE :
+Les anciennes valeurs à décimales des compteurs sont conservées au clic +1
+et lors d’une séance de sport liée, y compris après annulation. Les régressions
+de bibliothèque, budget, journal, dossiers, captures et archives ont été reprises
+avec les nouvelles interactions. Le ZIP du 8 novembre reste disponible.

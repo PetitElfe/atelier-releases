@@ -1,0 +1,10 @@
+.library-real-shelf{padding:18px 20px 12px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(160deg,#34392f,#25291f);min-width:0}
+.library-real-shelf h3{margin:0 0 14px;color:#e7ddc7;font-size:18px}
+.library-shelf-books{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;padding:8px 8px 18px;border-bottom:10px solid #83684c;box-shadow:0 7px 5px -4px #0008}
+.library-shelf-book{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:20px;width:112px;min-height:150px;padding:17px 13px 13px 20px;border:1px solid #ede6d04a;border-left:7px solid #0003;border-radius:3px 10px 10px 3px;background:var(--book-color);color:#18211b;box-shadow:5px 4px 0 #c7bfa9,7px 5px 8px #0007;text-align:left;transition:transform .16s}
+.library-shelf-book strong{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.library-shelf-book small{font-size:11px;color:#18211b}
+.library-shelf-book:hover,.library-shelf-book:focus-visible{transform:translateY(-6px);outline:2px solid #e2c995;outline-offset:3px}
+.library-shelf-add{background:#777c75;color:#f5f0e4;border:2px dashed #b7b9ae;box-shadow:none;justify-content:center;font-size:14px}
+.library-domain-spines i{border-radius:2px 5px 5px 2px;box-shadow:3px 2px 0 #ad9c80;border-left:4px solid #0003}
+@media(prefers-reduced-motion:reduce){.library-shelf-book{transition:none}}

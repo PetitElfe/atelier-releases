@@ -1,0 +1,44 @@
+#monthGrid .day-cell{position:relative;isolation:isolate;margin:0!important;padding:7px 7px 26px!important;border-radius:0}
+#monthGrid .calendar-decoration{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;pointer-events:none;z-index:-1}
+/* One red hue: lighter for estimates; no decorative cycle marks. */
+#monthGrid .day-cell.cycle-forecast,#monthGrid .day-cell.cycle-forecast-start{background:linear-gradient(#bd516116,#bd516116),var(--panel);box-shadow:none;border-top:0}
+#monthGrid .day-cell.cycle-recorded{background:linear-gradient(#bd51612c,#bd51612c),var(--panel);box-shadow:none}
+#weekGrid .week-slot.cycle-forecast{background-color:color-mix(in srgb,#bd5161 8.6%,var(--panel))}
+#weekGrid .week-slot.cycle-forecast.week-current-day{background-color:color-mix(in srgb,#bd5161 8.6%,var(--panel))}
+#weekGrid .week-head.cycle-forecast:not(.week-current-day){background:color-mix(in srgb,#bd5161 8.6%,var(--panel));border-bottom:1px solid #605744}
+#atelierRelativeDateFloat{transform:none;text-align:center;white-space:nowrap}
+.calendar-decor-dialog{width:min(440px,90vw);max-height:90vh;overflow:auto;background:#292d26;color:#eee5d4;border:1px solid #8ca083;border-radius:14px;padding:22px}
+.calendar-decor-dialog::backdrop{background:#0009}
+.calendar-decor-dialog form{display:grid;gap:12px}
+.calendar-decor-dialog h3,.calendar-decor-dialog p{margin:0}
+.calendar-decor-dialog label{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.calendar-decor-dialog input[type=range]{width:100%}
+.calendar-decor-dialog input[type=color]{width:48px;height:32px;padding:2px}
+.calendar-decor-preview{height:110px;position:relative;border:1px dashed #8ca083;border-radius:8px;overflow:hidden;background:#f1e8d2}
+.calendar-decor-preview img{width:100%;height:100%;object-fit:cover}
+.calendar-decor-actions{display:flex;gap:8px;flex-wrap:wrap}
+.calendar-decor-status{font-size:12px;color:#e2c995}
+.calendar-jump-date{display:inline-flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap}
+.calendar-jump-date input{max-width:145px}
+
+/* La classe générique .cycle-forecast était un panneau avec une marge de 12 px. */
+#monthGrid .day-cell.cycle-forecast{border-left:0}
+#weekGrid .cycle-forecast{margin:0;border-radius:0}
+#weekGrid .week-slot.cycle-forecast{padding:0;border-left:0}
+@media(max-width:800px){#monthGrid .day-cell{padding:5px 5px 24px!important}}
+
+#atelierRelativeDateFloat{padding:4px 8px;border-radius:5px;font-size:11px;box-shadow:0 2px 8px #0005}
+
+/* Use background-color in the hourly grid to preserve its half-hour lines. */
+#weekGrid .week-slot.cycle-recorded{background-color:color-mix(in srgb,#bd5161 17.2%,var(--panel));box-shadow:none}
+#weekGrid .week-head.cycle-recorded{background:color-mix(in srgb,#bd5161 17.2%,var(--panel));box-shadow:none}
+#weekGrid .week-slot.cycle-recorded.week-current-day{background-color:color-mix(in srgb,#bd5161 17.2%,var(--panel))}
+/* One separator per boundary, instead of a top and bottom border stacked. */
+#weekGrid .week-slot,#weekGrid .time-label{border-top:0!important;border-bottom:1px solid var(--line)!important}
+#weekGrid .week-slot.cycle-forecast{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.35) 50%,transparent 51%)}
+#weekGrid .week-slot.cycle-forecast.week-current-day{background-image:linear-gradient(to bottom,transparent 49%,rgba(134,117,93,.40) 50%,transparent 51%),linear-gradient(90deg,rgba(207,171,92,.095),rgba(207,171,92,.045))}
+#monthGrid .day-cell{line-height:1.3}
+#monthGrid .day-cell .event-pill{line-height:1.2}
+#weekGrid .week-head.cycle-forecast{line-height:1.25}
+#weekGrid .week-head.cycle-forecast::after{content:none}
+#atelierRelativeDateFloat{position:absolute;left:50%;top:auto;bottom:5px;transform:translateX(-50%);max-width:calc(100% - 12px);box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;line-height:1.2;z-index:4}
